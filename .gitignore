@@ -1,0 +1,31 @@
+# Common
+node_modules/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Web (Vite/React)
+web/dist/
+web/dist-ssr/
+web/node_modules/
+
+# Mobile (RN/Expo)
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/node_modules/
+mobile/ios/
+mobile/android/
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.sln
+*.sw?
+
+# Project specific ignores
+WORK_DIVISION.md
+*.txt
+

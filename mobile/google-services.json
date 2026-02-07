@@ -1,0 +1,39 @@
+{
+    "project_info": {
+        "project_number": "8889588910",
+        "project_id": "ceylo-app",
+        "storage_bucket": "ceylo-app.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:8889588910:android:ce17460e21616d075ea13f",
+                "android_client_info": {
+                    "package_name": "com.ceylo.mobile"
+                }
+            },
+            "oauth_client": [
+                {
+                    "client_id": "8889588910-euqp5j8rvv07l724b36l4ku3rh05n52q.apps.googleusercontent.com",
+                    "client_type": 3
+                }
+            ],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyACNB5L3HjIjZIwuYA4T-f6cUFt-G4NOk8"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": [
+                        {
+                            "client_id": "8889588910-euqp5j8rvv07l724b36l4ku3rh05n52q.apps.googleusercontent.com",
+                            "client_type": 3
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
