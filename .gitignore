@@ -28,4 +28,5 @@ mobile/android/
 # Project specific ignores
 WORK_DIVISION.md
 *.txt
+google-services.json
 
