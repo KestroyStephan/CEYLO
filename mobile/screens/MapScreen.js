@@ -143,61 +143,84 @@ export default function MapScreen() {
         <View style={styles.container}>
             {/* Google Places Autocomplete Search */}
             <View style={styles.searchContainer}>
-                <GooglePlacesAutocomplete
-                    ref={placesRef}
-                    placeholder='Search for hotels, schools, restaurants...'
-                    onPress={handlePlaceSelect}
-                    query={{
-                        key: GOOGLE_MAPS_API_KEY,
-                        language: 'en',
-                        components: 'country:lk', // Restrict to Sri Lanka, remove this line for worldwide search
-                    }}
-                    fetchDetails={true}
-                    enablePoweredByContainer={false}
-                    styles={{
-                        container: {
-                            flex: 0,
-                        },
-                        textInputContainer: {
-                            backgroundColor: 'transparent',
-                        },
-                        textInput: {
-                            height: 48,
-                            color: '#000',
-                            fontSize: 16,
-                            backgroundColor: '#fff',
-                            borderRadius: 24,
-                            paddingHorizontal: 20,
-                            elevation: 5,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 3.84,
-                        },
-                        listView: {
-                            backgroundColor: '#fff',
-                            borderRadius: 10,
-                            marginTop: 5,
-                            elevation: 3,
-                        },
-                        row: {
-                            backgroundColor: '#fff',
-                            padding: 13,
-                            height: 60,
-                            flexDirection: 'row',
-                        },
-                        separator: {
-                            height: 0.5,
-                            backgroundColor: '#c8c7cc',
-                        },
-                        description: {
-                            fontSize: 14,
-                        },
-                        poweredContainer: {
-                            display: 'none',
-                        },
-                    }}
-                />
+                <View style={styles.searchWrapper}>
+                    <GooglePlacesAutocomplete
+                        ref={placesRef}
+                        placeholder='Search for hotels, schools, restaurants...'
+                        onPress={handlePlaceSelect}
+                        query={{
+                            key: GOOGLE_MAPS_API_KEY,
+                            language: 'en',
+                            components: 'country:lk', // Restrict to Sri Lanka, remove this line for worldwide search
+                        }}
+                        fetchDetails={true}
+                        enablePoweredByContainer={false}
+                        debounce={300}
+                        minLength={2}
+                        requestUrl={{
+                            useOnPlatform: 'web',
+                            url: 'https://maps.googleapis.com/maps/api',
+                        }}
+                        timeout={5000}
+                        keepResultsAfterBlur={true}
+                        styles={{
+                            container: {
+                                flex: 1,
+                            },
+                            textInputContainer: {
+                                backgroundColor: 'transparent',
+                            },
+                            textInput: {
+                                height: 48,
+                                color: '#000',
+                                fontSize: 16,
+                                backgroundColor: '#fff',
+                                borderRadius: 24,
+                                paddingHorizontal: 20,
+                                paddingRight: 50,
+                                elevation: 5,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.25,
+                                shadowRadius: 3.84,
+                            },
+                            listView: {
+                                backgroundColor: '#fff',
+                                borderRadius: 10,
+                                marginTop: 5,
+                                elevation: 3,
+                            },
+                            row: {
+                                backgroundColor: '#fff',
+                                padding: 13,
+                                height: 60,
+                                flexDirection: 'row',
+                            },
+                            separator: {
+                                height: 0.5,
+                                backgroundColor: '#c8c7cc',
+                            },
+                            description: {
+                                fontSize: 14,
+                            },
+                            poweredContainer: {
+                                display: 'none',
+                            },
+                        }}
+                    />
+                    <FAB
+                        icon="magnify"
+                        size="small"
+                        style={styles.searchButton}
+                        color="#fff"
+                        onPress={() => {
+                            // Trigger search by focusing the input
+                            if (placesRef.current) {
+                                placesRef.current.focus();
+                            }
+                        }}
+                    />
+                </View>
             </View>
 
             <MapView
@@ -324,6 +347,20 @@ const styles = StyleSheet.create({
         left: 20,
         right: 20,
         zIndex: 10,
+    },
+    searchWrapper: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+    },
+    searchButton: {
+        backgroundColor: '#00695c',
+        marginTop: 0,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     routeCard: {
         position: 'absolute',
