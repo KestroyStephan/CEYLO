@@ -112,6 +112,81 @@ export default function MapScreen() {
         showSnackbar('Calculating route...');
     };
 
+    // Handle search button click
+    const handleSearch = async () => {
+        if (!searchText || searchText.trim().length < 2) {
+            showSnackbar('Please enter at least 2 characters to search');
+            return;
+        }
+
+        try {
+            console.log('Searching for:', searchText);
+
+            const searchQuery = encodeURIComponent(searchText.trim());
+            // Use Geocoding API which works better from mobile apps
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${searchQuery}&key=${GOOGLE_MAPS_API_KEY}`;
+
+            console.log('Fetching from URL:', url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN'));
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                console.error('HTTP Error:', response.status, response.statusText);
+                showSnackbar('Search failed. Please try again.');
+                return;
+            }
+
+            const data = await response.json();
+            console.log('Search response status:', data.status);
+            console.log('Search results count:', data.results?.length || 0);
+
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                const place = data.results[0];
+                const location = place.geometry.location;
+
+                const newDestination = {
+                    latitude: location.lat,
+                    longitude: location.lng,
+                    name: place.formatted_address.split(',')[0], // Use first part of address as name
+                    address: place.formatted_address,
+                };
+
+                console.log('Setting destination from search:', newDestination);
+                setDestination(newDestination);
+                setShowNavigation(false);
+                setRouteInfo(null);
+
+                // Animate map to show the destination
+                if (mapRef.current) {
+                    mapRef.current.animateToRegion({
+                        latitude: location.lat,
+                        longitude: location.lng,
+                        latitudeDelta: 0.05,
+                        longitudeDelta: 0.05,
+                    }, 1000);
+                }
+
+                showSnackbar(`Found: ${newDestination.name}`);
+            } else if (data.status === 'ZERO_RESULTS') {
+                console.log('No results found for:', searchText);
+                showSnackbar('No results found. Please try a different search term.');
+            } else if (data.status === 'REQUEST_DENIED') {
+                console.error('API Error - Request Denied:', data.error_message);
+                showSnackbar('Search failed: API key issue. Please check your configuration.');
+            } else if (data.status === 'INVALID_REQUEST') {
+                console.error('Invalid request:', data.error_message);
+                showSnackbar('Invalid search. Please enter a valid location.');
+            } else {
+                console.error('Search error - Status:', data.status, 'Message:', data.error_message);
+                showSnackbar('Search failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Search error (catch block):', error);
+            console.error('Error details:', error.message, error.stack);
+            showSnackbar('Error searching for location. Please check your internet connection.');
+        }
+    };
+
     // Handle route ready
     const onRouteReady = (result) => {
         console.log('Route ready:', result);
@@ -218,16 +293,7 @@ export default function MapScreen() {
                         size="small"
                         style={styles.searchButton}
                         color="#fff"
-                        onPress={() => {
-                            // Trigger search by focusing and showing results
-                            if (placesRef.current) {
-                                placesRef.current.focus();
-                                placesRef.current.setAddressText(searchText);
-                            }
-                            if (!searchText || searchText.length < 2) {
-                                showSnackbar('Please enter at least 2 characters to search');
-                            }
-                        }}
+                        onPress={handleSearch}
                     />
                 </View>
             </View>
