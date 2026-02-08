@@ -9,12 +9,7 @@ export default function MapScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.searchContainer}>
-                <Searchbar
-                    placeholder="Search destination..."
-                    onChangeText={setSearchQuery}
-                    value={searchQuery}
-                    style={styles.searchBar}
-                />
+
             </View>
             <MapView
                 style={styles.map}
@@ -65,8 +60,7 @@ const styles = StyleSheet.create({
         right: 20,
         zIndex: 1,
     },
-    searchBar: {
-        borderRadius: 30,
+
         backgroundColor: '#fff',
         elevation: 5,
     },
