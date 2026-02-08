@@ -1,7 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/Dashboard'; // Rename existing default as Admin
+import AccommodationDashboard from './pages/dashboards/AccommodationDashboard';
+import VendorDashboard from './pages/dashboards/VendorDashboard';
+import TourProviderDashboard from './pages/dashboards/TourProviderDashboard';
+import ProviderRegister from './pages/ProviderRegister';
+
 import Users from './pages/Users';
 import Vendors from './pages/Vendors';
 import Bookings from './pages/Bookings';
@@ -27,6 +32,17 @@ function PrivateRoute({ children }) {
   return children;
 }
 
+function RoleBasedDashboard() {
+  const { userRole } = useAuth();
+
+  if (userRole === 'accommodation') return <AccommodationDashboard />;
+  if (userRole === 'vendor') return <VendorDashboard />;
+  if (userRole === 'tour_provider') return <TourProviderDashboard />;
+
+  // Default to Admin Dashboard for 'admin' or undefined (for now)
+  return <AdminDashboard />;
+}
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -36,6 +52,7 @@ function App() {
           <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register-provider" element={<ProviderRegister />} />
 
             {/* Protected Routes wrapped in Layout */}
             <Route path="/" element={
@@ -43,7 +60,7 @@ function App() {
                 <Layout />
               </PrivateRoute>
             }>
-              <Route index element={<Dashboard />} />
+              <Route index element={<RoleBasedDashboard />} />
               <Route path="users" element={<Users />} />
               <Route path="vendors" element={<Vendors />} />
               <Route path="bookings" element={<Bookings />} />

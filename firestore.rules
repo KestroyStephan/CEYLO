@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper to check role
+    function hasRole(role) {
+      return isSignedIn() 
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+      allow read: if hasRole('admin');
+    }
+
+    // Bookings (Drivers)
+    match /bookings/{bookingId} {
+      allow create: if hasRole('tourist');
+      // Drivers can see pending bookings or their own
+      allow read: if request.auth.uid == resource.data.userId 
+                  || (hasRole('driver') && (resource.data.status == 'pending' || resource.data.driverId == request.auth.uid));
+      allow update: if hasRole('driver') || hasRole('admin') || request.auth.uid == resource.data.userId;
+    }
+
+    // Tours (Guides)
+    match /tours/{tourId} {
+      allow read: if true; // Public can view tours
+      allow write: if hasRole('tour_provider') || hasRole('admin');
+      // Guides should strictly only update status?
+      allow update: if hasRole('guide') && resource.data.guideId == request.auth.uid;
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

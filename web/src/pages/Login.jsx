@@ -62,7 +62,7 @@ export default function Login() {
                     <CardContent>
                         <Box textAlign="center" mb={3}>
                             <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#00695c' }}>
-                                CEYLO Admin
+                                CEYLO Portal
                             </Typography>
                             <Typography variant="body2" color="textSecondary">
                                 Enter your credentials to access the dashboard.
@@ -116,6 +116,15 @@ export default function Login() {
                                 sx={{ color: '#00695c', mt: 1 }}
                             >
                                 Pre-fill Admin Credentials
+                            </Button>
+                            <Button
+                                fullWidth
+                                variant="text"
+                                size="small"
+                                onClick={() => navigate('/register-provider')}
+                                sx={{ color: '#00695c', mt: 1, fontWeight: 'bold' }}
+                            >
+                                Register as Partner
                             </Button>
                             <Button
                                 fullWidth

@@ -11,21 +11,35 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
+    const [userRole, setUserRole] = useState(null);
+    const [userStatus, setUserStatus] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // You might want to implement an "admin check" here if users have roles in Firestore
-    // For now, any authenticated user can access (assuming auth is restricted or handled elsewhere)
-    // Typically: const isAdmin = userDoc.data().role === 'admin';
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Here you might fetch user role from Firestore
-                // const userDoc = await getDoc(doc(db, "users", user.uid));
-                // if (userDoc.exists() && userDoc.data().role === 'admin') ...
+                try {
+                    const userRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userRef);
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setUserRole(data.role);
+                        setUserStatus(data.status);
+                    } else {
+                        // Handle case where user exists in Auth but not Firestore (e.g. legacy/error)
+                        setUserRole(null);
+                        setUserStatus(null);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user role:", error);
+                    setUserRole(null);
+                    setUserStatus(null);
+                }
                 setCurrentUser(user);
             } else {
                 setCurrentUser(null);
+                setUserRole(null);
+                setUserStatus(null);
             }
             setLoading(false);
         });
@@ -43,6 +57,8 @@ export function AuthProvider({ children }) {
 
     const value = {
         currentUser,
+        userRole,
+        userStatus,
         login,
         logout,
     };
