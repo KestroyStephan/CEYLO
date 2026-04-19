@@ -28,5 +28,5 @@ mobile/android/
 # Project specific ignores
 WORK_DIVISION.md
 *.txt
-google-services.json
+# google-services.json (removed to allow EAS build to see the force-added file)
 
