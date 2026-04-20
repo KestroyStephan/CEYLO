@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -23,7 +22,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.ceylo.mobile",
       "googleServicesFile": "./google-services.json",
       "config": {
@@ -52,9 +50,6 @@
       "eas": {
         "projectId": "eb3f0379-5016-4e76-9265-0c220b522aa0"
       }
-    },
-    "experiments": {
-      "newArchEnabled": false
     }
   }
 }
