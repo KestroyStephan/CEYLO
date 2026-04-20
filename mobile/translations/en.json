@@ -1,0 +1,20 @@
+{
+  "welcome": "Welcome to Ceylo",
+  "get_started": "Get Started",
+  "login": "Login",
+  "register": "Register",
+  "continue_guest": "Continue as Guest",
+  "select_language": "Select Language",
+  "ayubowan": "Ayubowan",
+  "home": "Home",
+  "map": "Map",
+  "ai_concierge": "AI Concierge",
+  "sos": "SOS",
+  "profile": "Profile",
+  "mood_title": "What's your vibe?",
+  "eco_explorer": "Eco Explorer",
+  "adventurer": "Adventurer",
+  "culture_seeker": "Culture Seeker",
+  "family_trip": "Family Trip",
+  "spiritual": "Spiritual"
+}

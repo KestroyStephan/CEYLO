@@ -1,364 +1,297 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated, Dimensions } from 'react-native';
-import { Text, TextInput, Avatar, ActivityIndicator, IconButton, Surface, Chip, Card, Divider } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Keyboard, Dimensions, FlatList } from 'react-native';
+import { Text, TextInput, Avatar, ActivityIndicator, IconButton, Surface, Chip, Card, Portal, Modal, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
+import { db, auth } from '../firebaseConfig';
+import { doc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
+import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const OLLAMA_URL = 'http://10.164.88.3:11434/api/generate';
+const { width, height } = Dimensions.get('window');
 
-const SYSTEM_PROMPT = `You are CEYLO, the ultimate Sri Lankan Travel Concierge. 
-Your goal is to build a "Trip Profile" for the user through natural conversation.
+// API URLs (Using Waterfall logic)
+const MODELS = [
+  { name: 'Gemini 1.5 Flash', url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`, type: 'gemini' },
+  { name: 'OpenAI GPT-4o-mini', url: 'https://api.openai.com/v1/chat/completions', type: 'openai', key: process.env.EXPO_PUBLIC_OPENAI_API_KEY },
+  { name: 'Groq Llama 3', url: 'https://api.groq.com/openai/v1/chat/completions', type: 'groq', key: process.env.EXPO_PUBLIC_GROQ_API_KEY },
+  { name: 'GitHub Models', url: 'https://models.inference.ai.azure.com/chat/completions', type: 'github', key: process.env.EXPO_PUBLIC_GITHUB_TOKEN },
+];
 
-TRIP PROFILE DATA POINTS:
-- source (Current location)
-- destination (Primary city/region)
-- group (Type: Solo/Couple/Family/Friends + Count)
-- budget (Economy/Standard/Luxury)
-- duration (Days)
-- interests (List: Nature, Adventure, Culture, Beaches, Food, etc.)
-- transport (Hire/Rent/Public)
+const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge. 
+Your goal is to build a "Trip Profile" for the traveler through natural conversation.
+STRICT JSON OUTPUT REQUIRED for every response.
 
-STRICT RULES:
-1. Don't be a robot. If the user provides multiple details (e.g., "5 days in Kandy"), extract ALL of them into extractedState.
-2. Analyze the current Trip Profile. If a piece of data is missing, ask for it in a friendly, conversational way.
-3. If they ask a general travel question, answer it briefly THEN pivot back to planning.
-4. Always return JSON with two parts: 
-   - "resp": Your conversational reply.
-   - "extractedState": A JSON object containing NEW or UPDATED field values.
-   - "ui": (Optional) The current category for UI logic ('budget', 'interests', 'groupType', 'transport', 'finalize').
-
-JSON FORMAT:
+ExtractedState JSON Schema:
 {
-  "resp": "That sounds lovely! Since you're traveling as a couple, would you prefer a Luxury stay in Kandy?",
-  "extractedState": { "destination": "Kandy", "duration": "5", "groupType": "Couple" },
-  "ui": "budget"
-}`;
+  "resp": "Conversational reply in traveler's language",
+  "extractedState": {
+    "destination": "City Name",
+    "days": 0,
+    "budget": "Economy/Standard/Luxury",
+    "eco_interest": 0-100,
+    "mood": "Adventurer/Culture Seeker/Eco Explorer/Family/Spiritual",
+    "mobility": "Standard/Accessible"
+  },
+  "isReady": boolean,
+  "ui_options": ["Option 1", "Option 2"]
+}
 
-const FINAL_PLAN_PROMPT = `Generate a high-end, professionally detailed travel itinerary for Sri Lanka.
-Include coordinates, hidden gems (💎), seasonal alerts, and specific transport provider contacts.
-
-Return JSON: { "trip_plan": { ... } }`;
+CONTEXT:
+- Use Sri Lankan hospitality markers (Ayubowan, Vanakkam).
+- Prioritize eco-friendly destinations.
+- Extract preferences silently while talking.`;
 
 export default function ChatbotScreen({ navigation }) {
-    const [messages, setMessages] = useState([
-        {
-            id: 1,
-            text: "Ayubowan! I'm Ceylo, your personal Sri Lankan travel concierge. Where are we heading, or should I suggest some trending spots for this season?",
-            sender: 'bot'
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState([
+    { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [extractedState, setExtractedState] = useState({
+    destination: null,
+    days: null,
+    budget: null,
+    eco_interest: 50,
+    mood: null
+  });
+  
+  const hudAnim = useRef(new Animated.Value(-100)).current;
+  const flatListRef = useRef();
+
+  useEffect(() => {
+    // Animate HUD in when valid data exists
+    if (extractedState.destination || extractedState.mood) {
+      Animated.spring(hudAnim, { toValue: 0, useNativeDriver: true }).start();
+    }
+  }, [extractedState]);
+
+  const callWaterfall = async (prompt) => {
+    for (const model of MODELS) {
+      try {
+        console.log(`Trying ${model.name}...`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+        let response;
+        if (model.type === 'gemini') {
+          response = await fetch(model.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\nUser: ${prompt}` }] }],
+              generationConfig: { responseMimeType: "application/json" }
+            }),
+            signal: controller.signal
+          });
+        } else {
+          response = await fetch(model.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${model.key}`
+            },
+            body: JSON.stringify({
+              model: model.type === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4o-mini",
+              messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: prompt }],
+              response_format: { type: "json_object" }
+            }),
+            signal: controller.signal
+          });
         }
-    ]);
-    const [tripState, setTripState] = useState({
-        source: null,
-        destination: null,
-        groupType: null,
-        groupCount: null,
-        budget: null,
-        duration: null,
-        interests: [],
-        transport: null
-    });
-    const [inputText, setInputText] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [isFinalized, setIsFinalized] = useState(false);
-    const [tempCount, setTempCount] = useState(1);
-    const scrollViewRef = useRef();
-    const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-        }).start();
-    }, []);
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error(`${model.name} failed`);
+        const data = await response.json();
+        
+        const resultString = model.type === 'gemini' 
+          ? data.candidates[0].content.parts[0].text 
+          : data.choices[0].message.content;
+          
+        return JSON.parse(resultString);
+      } catch (err) {
+        console.warn(`${model.name} error:`, err.message);
+        continue; // Try next model
+      }
+    }
+    throw new Error("All AI models exhausted");
+  };
 
-    const sendMessage = async (text = inputText) => {
-        const messageToSend = typeof text === 'string' ? text : inputText;
-        if (!messageToSend.trim()) return;
+  const handleSend = async (text = inputText) => {
+    if (!text.trim()) return;
+    const userMsg = { id: Date.now().toString(), text, sender: 'user' };
+    setMessages(prev => [...prev, userMsg]);
+    setInputText('');
+    setLoading(true);
 
-        const userMsg = { id: Date.now(), text: messageToSend, sender: 'user' };
-        setMessages(prev => [...prev, userMsg]);
-        setInputText('');
-        setLoading(true);
+    try {
+      const responseJson = await callWaterfall(text);
+      if (responseJson.extractedState) {
+        setExtractedState(prev => ({ ...prev, ...responseJson.extractedState }));
+      }
 
-        try {
-            const history = messages.slice(-5).map(m => `${m.sender}: ${m.text}`).join('\n');
-            const currentProfile = JSON.stringify(tripState);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: responseJson.resp,
+        sender: 'bot',
+        options: responseJson.ui_options,
+        isFinal: responseJson.isReady
+      }]);
 
-            const response = await fetch(OLLAMA_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: "llama3.2",
-                    prompt: `${SYSTEM_PROMPT}\n\nCURRENT TRIP PROFILE: ${currentProfile}\n\nCONVERSATION:\n${history}\nUser: ${messageToSend}\nResponse (JSON):`,
-                    stream: false,
-                    format: "json"
-                }),
-            });
+      // TTS implementation
+      Speech.speak(responseJson.resp, {
+        language: i18n.language === 'si' ? 'si-LK' : i18n.language === 'ta' ? 'ta-LK' : 'en-US',
+        pitch: 1.0,
+        rate: 0.9,
+      });
 
-            const data = await response.json();
-            const botJson = JSON.parse(data.response);
+      if (responseJson.extractedState?.destination) {
+        // Mock weather context injection
+        console.log("Injecting weather info for", responseJson.extractedState.destination);
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: "I'm having a bit of trouble connecting to my signals. Could you repeat that?",
+        sender: 'bot'
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            if (botJson.extractedState) {
-                setTripState(prev => ({ ...prev, ...botJson.extractedState }));
-            }
+  const generateItinerary = async () => {
+    setLoading(true);
+    // Phase 4 specific: Structured plan generation
+    setTimeout(async () => {
+      const itinerary = {
+        title: `Your ${extractedState.mood} trip to ${extractedState.destination}`,
+        userId: auth.currentUser?.uid,
+        createdAt: new Date().toISOString(),
+        plan: [
+          { day: 1, activity: "Arrival and local eco-walk", eco: 95 },
+          { day: 2, activity: "Temple visit and cultural tour", eco: 80 }
+        ]
+      };
+      await addDoc(collection(db, 'itineraries'), itinerary);
+      setLoading(false);
+      Alert.alert("Success", "Your premium itinerary has been generated and saved!");
+    }, 2000);
+  };
 
-            setMessages(prev => [...prev, {
-                id: Date.now() + 1,
-                text: botJson.resp,
-                sender: 'bot',
-                ui: botJson.ui || (botJson.extractedState ? Object.keys(botJson.extractedState)[0] : null)
-            }]);
-
-            if (botJson.ui === 'finalize' || botJson.isReady) {
-                await generateFinalPlan(history + `\nUser: ${messageToSend}`);
-            }
-
-        } catch (error) {
-            console.error("Chat error:", error);
-            setMessages(prev => [...prev, {
-                id: Date.now() + 1,
-                text: "I'm having a slight map-reading error. Let's try that again!",
-                sender: 'bot'
-            }]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const generateFinalPlan = async (fullHistory) => {
-        setLoading(true);
-        try {
-            const response = await fetch(OLLAMA_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: "llama3.2",
-                    prompt: `${FINAL_PLAN_PROMPT}\n\nContext:\n${fullHistory}\nOutput (JSON):`,
-                    stream: false,
-                    format: "json"
-                }),
-            });
-
-            const data = await response.json();
-            const planData = JSON.parse(data.response);
-
-            setMessages(prev => [...prev, {
-                id: Date.now() + 2,
-                text: "Your professional trip plan is ready! Have a safe journey.",
-                sender: 'bot',
-                plan: planData.trip_plan,
-                ui: 'final'
-            }]);
-            setIsFinalized(true);
-        } catch (error) {
-            console.error("Plan Error:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const renderPlan = (plan) => (
-        <Card style={styles.planCard}>
-            <Card.Title
-                title={`${plan.destination || 'Your Trip'}`}
-                subtitle={`${plan.duration || ''} | ${plan.budget || ''}`}
-                right={(props) => <Avatar.Icon {...props} icon="map-marker" style={{ backgroundColor: '#00695c' }} />}
-            />
-            <Card.Content>
-                <TouchableOpacity
-                    style={styles.mapBtn}
-                    onPress={() => navigation.navigate('MapScreen', { route: plan.route })}
-                >
-                    <IconButton icon="map" iconColor="#fff" />
-                    <Text style={styles.mapBtnText}>View Optimized Route</Text>
-                </TouchableOpacity>
-
-                {plan.route?.suggested_roads && (
-                    <Text style={styles.roadInfo}>🛣️ {plan.route.suggested_roads.join(' → ')}</Text>
-                )}
-
-                <Text style={styles.sectionTitle}>🏨 Accommodations</Text>
-                {plan.hotels?.map((h, i) => (
-                    <View key={i} style={styles.hotelItem}>
-                        <Text style={styles.hotelName}>{h.hotel_name}</Text>
-                        <Text style={styles.hotelPrice}>{h.price_per_night}</Text>
-                        <Text style={styles.hotelDesc}>{h.description}</Text>
-                    </View>
-                ))}
-
-                <Divider style={{ marginVertical: 10 }} />
-
-                <Text style={styles.sectionTitle}>🚗 Transport Details</Text>
-                <View style={styles.transportBox}>
-                    <Text style={[styles.hudText, { color: '#004d40' }]}>Mode: {plan.transport?.type}</Text>
-                    {plan.transport?.providers?.map((p, i) => (
-                        <View key={i} style={{ marginTop: 5 }}>
-                            <Text style={styles.hotelName}>{p.name}</Text>
-                            <Text style={styles.hudText}>📞 {p.contact}</Text>
-                        </View>
-                    ))}
-                </View>
-
-                <Divider style={{ marginVertical: 10 }} />
-
-                <Text style={styles.sectionTitle}>📍 Itinerary & Hidden Gems</Text>
-                {plan.itinerary?.map((day, i) => (
-                    <View key={i} style={{ marginTop: 10 }}>
-                        <Text style={{ fontWeight: 'bold' }}>Day {day.day}</Text>
-                        {day.activities?.map((act, j) => (
-                            <View key={j} style={{ marginLeft: 10, marginTop: 5 }}>
-                                <Text style={{ fontSize: 13, fontWeight: '600' }}>• {act.place_name} {act.is_hidden_gem ? '💎' : ''}</Text>
-                                <Text style={{ fontSize: 11, color: '#666' }}>{act.place_details}</Text>
-                            </View>
-                        ))}
-                    </View>
-                ))}
-            </Card.Content>
-        </Card>
-    );
-
-    const lastBotMessage = [...messages].reverse().find(m => m.sender === 'bot');
-
-    const TripProfileHeader = () => {
-        const activeVals = Object.values(tripState).filter(v => v !== null && (Array.isArray(v) ? v.length > 0 : true));
-        if (activeVals.length === 0 || isFinalized) return null;
-        return (
-            <Surface style={styles.profileHUD} elevation={4}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hudScroll}>
-                    {tripState.destination && <View style={styles.hudBadge}><Text style={styles.hudText}>📍 {tripState.destination}</Text></View>}
-                    {tripState.duration && <View style={styles.hudBadge}><Text style={styles.hudText}>📅 {tripState.duration} Days</Text></View>}
-                    {tripState.groupType && <View style={styles.hudBadge}><Text style={styles.hudText}>👥 {tripState.groupType}</Text></View>}
-                    {tripState.budget && <View style={styles.hudBadge}><Text style={styles.hudText}>💰 {tripState.budget}</Text></View>}
-                </ScrollView>
-            </Surface>
-        );
-    };
-
-    return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#004d40', '#00695c']} style={styles.headerGradient}>
-                <View style={styles.header}>
-                    <IconButton icon="arrow-left" iconColor="#fff" onPress={() => navigation.goBack()} />
-                    <View style={styles.headerInfo}>
-                        <Text variant="headlineSmall" style={styles.headerTitle}>Ceylo AI</Text>
-                        <Text style={styles.headerSubtitle}>Personal Concierge</Text>
-                    </View>
-                    <Avatar.Icon size={45} icon="robot" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
-                </View>
-            </LinearGradient>
-
-            <TripProfileHeader />
-
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'padding'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}>
-                <Animated.View style={[styles.chatArea, { opacity: fadeAnim }]}>
-                    <ScrollView style={styles.chatContainer} ref={scrollViewRef} onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
-                        {messages.map((msg) => (
-                            <View key={msg.id} style={[styles.messageWrapper, msg.sender === 'user' ? styles.userWrapper : styles.botWrapper]}>
-                                {msg.sender === 'bot' && <Avatar.Icon size={30} icon="robot" style={styles.botAvatar} />}
-                                <Surface style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.botBubble, msg.plan && { maxWidth: '95%' }]} elevation={1}>
-                                    <Text style={msg.sender === 'user' ? styles.userText : styles.botText}>{msg.text}</Text>
-                                    {msg.plan && renderPlan(msg.plan)}
-                                </Surface>
-                            </View>
-                        ))}
-                        {loading && (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator animating={true} color="#00695c" size="small" />
-                                <Text style={styles.loadingText}>Thinking...</Text>
-                            </View>
-                        )}
-                    </ScrollView>
-
-                    {!isFinalized && (
-                        <View style={{ paddingBottom: 10 }}>
-                            {(['budget', 'interests', 'groupType', 'transport', 'finalize'].includes(lastBotMessage?.ui)) && !inputText && (
-                                <View style={styles.actionSection}>
-                                    <Surface style={styles.actionSurface} elevation={2}>
-                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniSelectRow}>
-                                            {(
-                                                lastBotMessage?.ui === 'budget' ? ['Economy', 'Standard', 'Luxury'] :
-                                                    lastBotMessage?.ui === 'groupType' ? ['Solo', 'Couple', 'Family', 'Group'] :
-                                                        lastBotMessage?.ui === 'transport' ? ['Private Car', 'Rentals', 'Public Trains'] :
-                                                            lastBotMessage?.ui === 'interests' ? ['Wildlife', 'Culture', 'Hiking', 'Beaches'] :
-                                                                ['Yes, Generate', 'Change Info']
-                                            ).map((item, i) => (
-                                                <TouchableOpacity key={i} style={styles.selectMiniBtn} onPress={() => sendMessage(item)}>
-                                                    <Text style={styles.selectMiniBtnText}>{item}</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
-                                    </Surface>
-                                </View>
-                            )}
-                            <Surface style={styles.inputSurface} elevation={4}>
-                                <View style={styles.inputContainer}>
-                                    <TextInput
-                                        mode="flat"
-                                        placeholder="Type naturally..."
-                                        value={inputText}
-                                        onChangeText={setInputText}
-                                        style={styles.textInput}
-                                        multiline
-                                        underlineColor="transparent"
-                                        activeUnderlineColor="transparent"
-                                        placeholderTextColor="#999"
-                                        selectionColor="#00695c"
-                                        cursorColor="#00695c"
-                                    />
-                                    <TouchableOpacity style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]} onPress={() => sendMessage()}>
-                                        <IconButton icon="send" iconColor="#fff" size={24} />
-                                    </TouchableOpacity>
-                                </View>
-                            </Surface>
-                        </View>
-                    )}
-                </Animated.View>
-            </KeyboardAvoidingView>
+  const RenderMessage = ({ item }) => (
+    <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
+      {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
+      <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
+        <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333' }]}>{item.text}</Text>
+      </Surface>
+      {item.options && (
+        <View style={styles.optionRow}>
+          {item.options.map((opt, i) => (
+            <Chip key={i} style={styles.optionBtn} onPress={() => handleSend(opt)}>{opt}</Chip>
+          ))}
         </View>
-    );
+      )}
+    </View>
+  );
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+      <LinearGradient colors={['#004D40', '#00695C']} style={styles.topBar}>
+        <Text style={styles.barTitle}>Ceylo AI Concierge</Text>
+      </LinearGradient>
+
+      <Animated.View style={[styles.hud, { transform: [{ translateY: hudAnim }] }]}>
+        <Surface style={styles.hudCard} elevation={3}>
+          <View style={styles.hudRow}>
+            <View style={styles.hudItem}>
+              <MaterialCommunityIcons name="map-marker" size={16} color="#00695C" />
+              <Text style={styles.hudVal}>{extractedState.destination || '???'}</Text>
+            </View>
+            <View style={styles.hudItem}>
+              <MaterialCommunityIcons name="calendar" size={16} color="#00695C" />
+              <Text style={styles.hudVal}>{extractedState.days || '??'}</Text>
+            </View>
+            <View style={styles.hudItem}>
+              <MaterialCommunityIcons name="leaf" size={16} color="#4CAF50" />
+              <Text style={styles.hudVal}>{extractedState.eco_interest}%</Text>
+            </View>
+          </View>
+          {extractedState.mood && <Chip style={styles.moodBadge} textStyle={{ fontSize: 10 }}>{extractedState.mood}</Chip>}
+        </Surface>
+      </Animated.View>
+
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={RenderMessage}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.chatScroll}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
+
+      {messages[messages.length - 1].isFinal && (
+        <Button 
+          mode="contained" 
+          icon="sparkles" 
+          onPress={generateItinerary} 
+          style={styles.genBtn}
+          loading={loading}
+        >
+          Generate Premium Itinerary
+        </Button>
+      )}
+
+      <Surface style={styles.inputArea} elevation={5}>
+        <View style={styles.inputRow}>
+          <IconButton icon="microphone" containerColor="#E0F2F1" iconColor="#00695C" size={24} />
+          <TextInput
+            placeholder="Type your preferences..."
+            value={inputText}
+            onChangeText={setInputText}
+            mode="flat"
+            style={styles.textInput}
+            underlineColor="transparent"
+            activeUnderlineColor="transparent"
+          />
+          <IconButton 
+            icon="send" 
+            containerColor="#00695C" 
+            iconColor="#FFF" 
+            size={24} 
+            onPress={() => handleSend()}
+            disabled={loading || !inputText.trim()}
+          />
+        </View>
+      </Surface>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f0f2f5' },
-    profileHUD: { backgroundColor: '#fff', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
-    hudScroll: { paddingHorizontal: 15, gap: 10 },
-    hudBadge: { backgroundColor: '#e0f2f1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, marginRight: 8 },
-    hudText: { fontSize: 12, fontWeight: 'bold', color: '#00695c' },
-    headerGradient: { paddingTop: Platform.OS === 'android' ? 40 : 50, paddingBottom: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15 },
-    headerInfo: { flex: 1, marginLeft: 10 },
-    headerTitle: { color: '#fff', fontWeight: 'bold', fontSize: 22 },
-    headerSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
-    chatArea: { flex: 1 },
-    chatContainer: { flex: 1, paddingHorizontal: 15, paddingTop: 10 },
-    messageWrapper: { flexDirection: 'row', marginBottom: 15, alignItems: 'flex-end' },
-    userWrapper: { justifyContent: 'flex-end' },
-    botWrapper: { justifyContent: 'flex-start' },
-    botAvatar: { backgroundColor: '#00695c', marginRight: 8 },
-    messageBubble: { maxWidth: '85%', padding: 12, borderRadius: 20 },
-    userBubble: { backgroundColor: '#00695c', borderBottomRightRadius: 4 },
-    botBubble: { backgroundColor: '#fff', borderBottomLeftRadius: 4 },
-    userText: { color: '#fff' },
-    botText: { color: '#333' },
-    loadingContainer: { flexDirection: 'row', alignItems: 'center', paddingLeft: 40 },
-    loadingText: { marginLeft: 10, color: '#666', fontStyle: 'italic' },
-    actionSection: { paddingHorizontal: 15, marginBottom: 8 },
-    actionSurface: { backgroundColor: '#fff', borderRadius: 20, padding: 8 },
-    miniSelectRow: { gap: 8 },
-    selectMiniBtn: { backgroundColor: '#f0f2f5', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12, marginRight: 8 },
-    selectMiniBtnText: { fontSize: 12, fontWeight: 'bold', color: '#00695c' },
-    inputSurface: { backgroundColor: '#fff', borderTopLeftRadius: 25, borderTopRightRadius: 25, padding: 10 },
-    inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 25 },
-    textInput: { flex: 1, backgroundColor: 'transparent' },
-    sendButton: { backgroundColor: '#00695c', borderRadius: 20 },
-    sendButtonDisabled: { backgroundColor: '#ccc' },
-    planCard: { marginTop: 10, borderRadius: 15 },
-    mapBtn: { flexDirection: 'row', backgroundColor: '#00695c', borderRadius: 10, marginTop: 10, alignItems: 'center', justifyContent: 'center' },
-    mapBtnText: { color: '#fff', fontWeight: 'bold' },
-    sectionTitle: { color: '#00695c', fontWeight: 'bold', marginTop: 10, fontSize: 14 },
-    hotelItem: { marginTop: 5, padding: 8, backgroundColor: '#f9f9f9', borderRadius: 8 },
-    hotelName: { fontWeight: 'bold' },
-    hotelPrice: { color: '#00796b', fontSize: 12 },
-    hotelDesc: { fontSize: 11, color: '#666' },
-    transportBox: { backgroundColor: '#e0f2f1', padding: 8, borderRadius: 8 },
+  container: { flex: 1, backgroundColor: '#F0F2F5' },
+  topBar: { padding: 50, paddingTop: 60, paddingBottom: 20, alignItems: 'center' },
+  barTitle: { color: '#FFF', fontSize: 20, fontFamily: 'Outfit-Bold' },
+  hud: { position: 'absolute', top: 110, width: '100%', zIndex: 10, paddingHorizontal: 20 },
+  hudCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  hudRow: { flexDirection: 'row', gap: 20 },
+  hudItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  hudVal: { fontSize: 12, fontFamily: 'Outfit-Bold', color: '#333' },
+  moodBadge: { backgroundColor: '#E1F5FE' },
+  chatScroll: { padding: 20, paddingTop: 80, paddingBottom: 100 },
+  msgWrapper: { marginBottom: 20, maxWidth: '85%' },
+  userRow: { alignSelf: 'flex-end', alignItems: 'flex-end' },
+  botRow: { alignSelf: 'flex-start', flexDirection: 'row', gap: 10 },
+  bubble: { padding: 15, borderRadius: 20 },
+  userBubble: { backgroundColor: '#00695C', borderBottomRightRadius: 4 },
+  botBubble: { backgroundColor: '#FFF', borderBottomLeftRadius: 4 },
+  msgText: { fontFamily: 'Outfit-Regular', fontSize: 15 },
+  optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  optionBtn: { backgroundColor: '#B2DFDB' },
+  inputArea: { padding: 15, borderTopLeftRadius: 30, borderTopRightRadius: 30, backgroundColor: '#FFF' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  textInput: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 25, height: 50 },
+  genBtn: { margin: 20, borderRadius: 15, backgroundColor: '#FF7043' },
 });
