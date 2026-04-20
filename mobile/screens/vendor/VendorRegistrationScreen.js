@@ -37,7 +37,7 @@ export default function VendorRegistrationScreen({ navigation }) {
   const [nicBack, setNicBack] = useState(null);
   const [businessCert, setBusinessCert] = useState(null);
   const [servicePhotos, setServicePhotos] = useState([]); // max 3
-  const [uploadProgress, setUploadProgress] = useState(0); // 0ΓÇô1
+  const [uploadProgress, setUploadProgress] = useState(0); // 0-1
   const [uploadedUrls, setUploadedUrls] = useState({});
 
   // Step 3 fields
@@ -294,8 +294,8 @@ export default function VendorRegistrationScreen({ navigation }) {
 
       {/* Upload items */}
       {[
-        { label: 'NIC ΓÇö Front *', state: nicFront, setter: setNicFront },
-        { label: 'NIC ΓÇö Back *', state: nicBack, setter: setNicBack },
+        { label: 'NIC - Front *', state: nicFront, setter: setNicFront },
+        { label: 'NIC - Back *', state: nicBack, setter: setNicBack },
         { label: 'Business Certificate *', state: businessCert, setter: setBusinessCert },
       ].map(({ label, state, setter }) => (
         <View key={label}>
