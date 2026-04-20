@@ -1,93 +1,149 @@
 import React, { useEffect, useState } from 'react';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import { Typography, Box, Badge } from '@mui/material';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Typography, Box, Chip, Paper, IconButton, Tooltip, Stack } from '@mui/material';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
+import InfoIcon from '@mui/icons-material/Info';
+import StoreIcon from '@mui/icons-material/Store';
 
 function Vendors() {
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const querySnapshot = await getDocs(collection(db, "vendors"));
-                const vendors = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setRows(vendors);
-            } catch (error) {
-                console.error("Error fetching vendors: ", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+        const unsubscribe = onSnapshot(collection(db, "vendors"), (snapshot) => {
+            setRows(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setLoading(false);
+        });
+        return () => unsubscribe();
     }, []);
 
-    const handleDelete = async (id) => {
+    const handleUpdateStatus = async (id, status) => {
         try {
-            await deleteDoc(doc(db, "vendors", id));
-            setRows(rows.filter(row => row.id !== id));
+            await updateDoc(doc(db, "vendors", id), { status });
         } catch (error) {
-            console.error("Error deleting vendor: ", error);
+            console.error("Error updating vendor status: ", error);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure you want to remove this vendor?")) {
+            try {
+                await deleteDoc(doc(db, "vendors", id));
+            } catch (error) {
+                console.error("Error deleting vendor: ", error);
+            }
         }
     };
 
     const columns = [
-        { field: 'id', headerName: 'ID', width: 90 },
-        { field: 'name', headerName: 'Name', width: 150 },
-        { field: 'email', headerName: 'Email', width: 200 },
-        { field: 'service', headerName: 'Service', width: 120 },
+        { field: 'name', headerName: 'Vendor Name', width: 200, renderCell: (params) => (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <StoreIcon sx={{ mr: 1, color: '#00695c' }} />
+                <Typography fontWeight={600}>{params.value}</Typography>
+            </Box>
+        )},
+        { field: 'email', headerName: 'Email Address', width: 220 },
+        { field: 'service', headerName: 'Category', width: 150, renderCell: (params) => (
+            <Chip label={params.value || 'General'} size="small" variant="outlined" />
+        )},
         {
-            field: 'status', headerName: 'Status', width: 120, renderCell: params => (
-                <Badge color="success" bg='green'>
-                    {params.value || 'Pending'}
-                </Badge>
+            field: 'status',
+            headerName: 'Status',
+            width: 150,
+            renderCell: (params) => {
+                const status = params.value || 'pending';
+                const colors = {
+                    approved: 'success',
+                    pending: 'warning',
+                    rejected: 'error'
+                };
+                return (
+                    <Chip 
+                        label={status.toUpperCase()} 
+                        color={colors[status] || 'default'} 
+                        size="small" 
+                        sx={{ fontWeight: 700 }}
+                    />
+                );
+            }
+        },
+        {
+            field: 'performance',
+            headerName: 'Eco Score',
+            width: 120,
+            valueGetter: (params) => params.row.ecoScore || 0,
+            renderCell: (params) => (
+                <Typography color={params.value > 80 ? 'success.main' : 'warning.main'} fontWeight={700}>
+                    {params.value}%
+                </Typography>
             )
         },
         {
             field: 'actions',
             type: 'actions',
-            headerName: 'Actions',
-            width: 100,
-            getActions: ({ id }) => {
-                return [
-                    <GridActionsCellItem
-                        icon={<EditIcon />}
-                        label="Edit"
-                        className="textPrimary"
-                        onClick={() => console.log('Edit', id)}
-                        color="inherit"
-                    />,
-                    <GridActionsCellItem
-                        icon={<DeleteIcon />}
-                        label="Delete"
-                        onClick={() => handleDelete(id)}
-                        color="inherit"
-                    />,
-                ];
-            },
+            headerName: 'Review Actions',
+            width: 180,
+            getActions: (params) => [
+                <GridActionsCellItem
+                    icon={<Tooltip title="Approve Application"><CheckCircleIcon /></Tooltip>}
+                    label="Approve"
+                    onClick={() => handleUpdateStatus(params.id, 'approved')}
+                    disabled={params.row.status === 'approved'}
+                    color="success"
+                />,
+                <GridActionsCellItem
+                    icon={<Tooltip title="Reject Application"><CancelIcon /></Tooltip>}
+                    label="Reject"
+                    onClick={() => handleUpdateStatus(params.id, 'rejected')}
+                    disabled={params.row.status === 'rejected'}
+                    color="error"
+                />,
+                <GridActionsCellItem
+                    icon={<Tooltip title="Remove Vendor"><DeleteIcon /></Tooltip>}
+                    label="Delete"
+                    onClick={() => handleDelete(params.id)}
+                    color="inherit"
+                />,
+            ],
         }
     ];
 
     return (
-        <Box sx={{ height: 600, width: '100%' }}>
-            <Typography variant="h4" gutterBottom component="div" sx={{ mb: 2, fontWeight: 'bold' }}>
-                Vendor Management
-            </Typography>
-            <DataGrid
-                rows={rows}
-                columns={columns}
-                pageSize={10}
-                rowsPerPageOptions={[10]}
-                checkboxSelection
-                disableSelectionOnClick
-                loading={loading}
-            />
+        <Box sx={{ p: 1 }}>
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" fontWeight={900} color="#37474f">
+                    Vendor Partner Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Review service provider applications and monitor sustainability compliance scores.
+                </Typography>
+            </Box>
+
+            <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                <DataGrid
+                    rows={rows}
+                    columns={columns}
+                    autoHeight
+                    pageSize={10}
+                    rowsPerPageOptions={[10]}
+                    disableSelectionOnClick
+                    loading={loading}
+                    sx={{
+                        border: 'none',
+                        '& .MuiDataGrid-columnHeaders': {
+                            bgcolor: '#f8fbfc',
+                            borderBottom: '1px solid #eee'
+                        },
+                        '& .MuiDataGrid-row:hover': {
+                            bgcolor: '#f5f5f5'
+                        }
+                    }}
+                />
+            </Paper>
         </Box>
     );
 }

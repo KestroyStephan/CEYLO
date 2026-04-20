@@ -11,7 +11,14 @@ import Users from './pages/Users';
 import Vendors from './pages/Vendors';
 import Bookings from './pages/Bookings';
 import SOSAlerts from './pages/SOSAlerts';
+import SOSMonitor from './pages/SOSMonitor';
 import Login from './pages/Login';
+import Destinations from './pages/Destinations';
+import CulturalEvents from './pages/CulturalEvents';
+import Analytics from './pages/Analytics';
+import Notifications from './pages/Notifications';
+import SystemHealth from './pages/SystemHealth';
+import Reports from './pages/Reports';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme';
@@ -64,7 +71,13 @@ function App() {
               <Route path="users" element={<Users />} />
               <Route path="vendors" element={<Vendors />} />
               <Route path="bookings" element={<Bookings />} />
-              <Route path="sos" element={<SOSAlerts />} />
+              <Route path="sos" element={<SOSMonitor />} />
+              <Route path="destinations" element={<Destinations />} />
+              <Route path="events" element={<CulturalEvents />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="health" element={<SystemHealth />} />
+              <Route path="reports" element={<Reports />} />
             </Route>
 
             {/* Fallback */}

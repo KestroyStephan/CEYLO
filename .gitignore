@@ -4,11 +4,13 @@ node_modules/
 *.log
 .env*
 !.env.example
+.eslintcache
 
 # Web (Vite/React)
 web/dist/
 web/dist-ssr/
 web/node_modules/
+.vite/
 
 # Mobile (RN/Expo)
 mobile/.expo/
@@ -17,6 +19,13 @@ mobile/web-build/
 mobile/node_modules/
 mobile/ios/
 mobile/android/
+
+# Firebase
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+hub-debug.log*
 
 # IDEs
 .vscode/
