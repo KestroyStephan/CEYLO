@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './i18n';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -131,6 +131,7 @@ export default function App() {
                 {userRole !== 'vendor_onboarding' && (
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
                 )}
+                <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
                 <Stack.Screen name="OfflineMapSettings" component={OfflineMapSettings} />
                 <Stack.Screen name="EventDetail" component={EventDetailScreen} />
               </Stack.Group>
