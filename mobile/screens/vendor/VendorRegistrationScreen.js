@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Image, Animated,
@@ -8,6 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
 import { doc, setDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -20,8 +21,7 @@ const BUSINESS_TYPES = [
 ];
 
 const STEPS = ['Business Info', 'Documents', 'First Service'];
-const STEP_ICONS = ['≡ƒÅó', '≡ƒôä', 'Γ¡É'];
-
+const STEP_ICONS = ['store', 'file-document', 'briefcase'];
 export default function VendorRegistrationScreen({ navigation }) {
   const [step, setStep] = useState(0); // 0, 1, 2
 
@@ -201,7 +201,7 @@ export default function VendorRegistrationScreen({ navigation }) {
       });
 
       // Update user role
-      await updateDoc(doc(db, 'users', uid), { role: 'vendor_pending' });
+      await setDoc(doc(db, 'users', uid), { role: 'vendor_pending' }, { merge: true });
 
       navigation.replace('VendorPending');
     } catch (e) {
@@ -223,8 +223,8 @@ export default function VendorRegistrationScreen({ navigation }) {
           <View style={styles.stepItem}>
             <View style={[styles.stepCircle, idx <= step && styles.stepCircleActive, idx < step && styles.stepCircleDone]}>
               {idx < step
-                ? <Text style={styles.stepCheckmark}>Γ£ô</Text>
-                : <Text style={[styles.stepIcon, idx === step && styles.stepIconActive]}>{STEP_ICONS[idx]}</Text>}
+                ? <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                : <MaterialCommunityIcons name={STEP_ICONS[idx]} size={20} color={idx === step ? '#059669' : '#9ca3af'} />}
             </View>
             <Text style={[styles.stepLabel, idx === step && styles.stepLabelActive]}>{label}</Text>
           </View>
@@ -273,7 +273,7 @@ export default function VendorRegistrationScreen({ navigation }) {
         <TouchableOpacity style={styles.gpsBtn} onPress={autoFillGPS} disabled={gpsLoading}>
           {gpsLoading
             ? <ActivityIndicator size="small" color="#059669" />
-            : <><Text style={styles.gpsBtnIcon}>≡ƒôì</Text><Text style={styles.gpsBtnText}>GPS</Text></>}
+            : <><MaterialCommunityIcons name="map-marker" size={20} color="#059669" /><Text style={styles.gpsBtnText}>GPS</Text></>}
         </TouchableOpacity>
       </View>
 
@@ -281,7 +281,7 @@ export default function VendorRegistrationScreen({ navigation }) {
         style={styles.nextBtn}
         onPress={() => validateStep1() && setStep(1)}
       >
-        <Text style={styles.nextBtnText}>Next: Documents ΓåÆ</Text>
+        <Text style={styles.nextBtnText}>Next: Documents <MaterialCommunityIcons name="arrow-right" size={18} color="#fff" /></Text>
       </TouchableOpacity>
     </View>
   );
@@ -301,9 +301,12 @@ export default function VendorRegistrationScreen({ navigation }) {
         <View key={label}>
           <Text style={styles.label}>{label}</Text>
           <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(setter)}>
-            <Text style={styles.uploadBtnText}>
-              {state ? 'Γ£à Uploaded ΓÇö Tap to change' : '≡ƒôÄ Tap to upload'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <MaterialCommunityIcons name={state ? 'check-circle' : 'tray-arrow-up'} size={18} color="#059669" />
+              <Text style={styles.uploadBtnText}>
+                {state ? 'Uploaded — Tap to change' : 'Tap to upload'}
+              </Text>
+            </View>
           </TouchableOpacity>
           {state && <Image source={{ uri: state.uri }} style={styles.docPreview} />}
         </View>
@@ -319,7 +322,7 @@ export default function VendorRegistrationScreen({ navigation }) {
               style={styles.removePhoto}
               onPress={() => setServicePhotos((prev) => prev.filter((_, j) => j !== i))}
             >
-              <Text style={styles.removePhotoText}>Γ£ò</Text>
+              <MaterialCommunityIcons name="close" size={14} color="#fff" />
             </TouchableOpacity>
           </View>
         ))}
@@ -342,7 +345,10 @@ export default function VendorRegistrationScreen({ navigation }) {
 
       <View style={styles.btnRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setStep(0)}>
-          <Text style={styles.backBtnText}>ΓåÉ Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <MaterialCommunityIcons name="arrow-left" size={18} color="#6b7280" />
+            <Text style={styles.backBtnText}>Back</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.nextBtn, { flex: 1, marginLeft: 10 }, loading && styles.disabled]}
@@ -350,7 +356,10 @@ export default function VendorRegistrationScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.nextBtnText}>Upload & Continue ΓåÆ</Text>}
+            : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.nextBtnText}>Upload & Continue</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color="#fff" />
+              </View>}
         </TouchableOpacity>
       </View>
     </View>
@@ -397,14 +406,20 @@ export default function VendorRegistrationScreen({ navigation }) {
         style={[styles.ecoToggle, ecoCertified && styles.ecoToggleActive]}
         onPress={() => setEcoCertified(!ecoCertified)}
       >
-        <Text style={styles.ecoToggleText}>
-          {ecoCertified ? '≡ƒî┐ Eco-Certified Γ£ô' : '≡ƒî┐ Mark as Eco-Certified'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <MaterialCommunityIcons name="leaf" size={18} color={ecoCertified ? '#059669' : '#374151'} />
+          <Text style={[styles.ecoToggleText, ecoCertified && { color: '#059669' }]}>
+            {ecoCertified ? 'Eco-Certified' : 'Mark as Eco-Certified'}
+          </Text>
+        </View>
       </TouchableOpacity>
 
       <View style={styles.btnRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}>
-          <Text style={styles.backBtnText}>ΓåÉ Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <MaterialCommunityIcons name="arrow-left" size={18} color="#6b7280" />
+            <Text style={styles.backBtnText}>Back</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.submitBtn, loading && styles.disabled]}
@@ -412,7 +427,10 @@ export default function VendorRegistrationScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.nextBtnText}>Submit Application ≡ƒÜÇ</Text>}
+            : <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.nextBtnText}>Submit Application</Text>
+                <MaterialCommunityIcons name="check" size={18} color="#fff" />
+              </View>}
         </TouchableOpacity>
       </View>
     </View>
