@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, ScrollView,
@@ -6,20 +6,21 @@ import {
 import { auth, db } from '../../firebaseConfig';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const STATUS_CONFIG = {
   pending: {
-    color: '#d97706', bg: '#fffbeb', border: '#fcd34d', icon: 'ΓÅ│',
+    color: '#d97706', bg: '#fffbeb', border: '#fcd34d', icon: 'clock-outline',
     title: 'Application Under Review',
-    message: 'Your application is being reviewed by our team. This usually takes 1ΓÇô2 business days.',
+    message: 'Your application is being reviewed by our team. This usually takes 1-2 business days.',
   },
   approved: {
-    color: '#059669', bg: '#f0fdf4', border: '#6ee7b7', icon: 'Γ£à',
+    color: '#059669', bg: '#f0fdf4', border: '#6ee7b7', icon: 'check-circle-outline',
     title: 'You Are Approved!',
     message: 'Welcome to the CEYLO vendor family. Redirecting you to your dashboard...',
   },
   rejected: {
-    color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: 'Γ¥î',
+    color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: 'close-circle-outline',
     title: 'Application Rejected',
     message: null,
   },
@@ -41,7 +42,7 @@ export default function VendorPendingScreen() {
 
         if (data.status === 'approved') {
           try {
-            // Update role ΓåÆ triggers App.js onAuthStateChanged re-render ΓåÆ routes to VendorNavigator
+            // Update role -> triggers App.js onAuthStateChanged re-render -> routes to VendorNavigator
             await updateDoc(doc(db, 'users', uid), { role: 'vendor' });
           } catch (e) {
             Alert.alert('Error', e.message);
@@ -76,7 +77,7 @@ export default function VendorPendingScreen() {
       </View>
 
       <View style={[styles.statusCard, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-        <Text style={styles.statusIcon}>{cfg.icon}</Text>
+        <MaterialCommunityIcons name={cfg.icon} size={64} color={cfg.color} style={{ marginBottom: 12 }} />
         <Text style={[styles.statusTitle, { color: cfg.color }]}>{cfg.title}</Text>
         <Text style={styles.statusMessage}>
           {status === 'rejected'
@@ -87,7 +88,10 @@ export default function VendorPendingScreen() {
       </View>
 
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>≡ƒôï What happens next?</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          <MaterialCommunityIcons name="information-outline" size={18} color="#059669" />
+          <Text style={[styles.infoTitle, { marginBottom: 0, marginLeft: 6 }]}>What happens next?</Text>
+        </View>
         {status === 'pending' && (
           <>
             <Text style={styles.infoItem}>1. Our team reviews your documents</Text>
@@ -97,8 +101,8 @@ export default function VendorPendingScreen() {
         )}
         {status === 'rejected' && (
           <>
-            <Text style={styles.infoItem}>ΓÇó You may re-apply with corrected documents</Text>
-            <Text style={styles.infoItem}>ΓÇó Contact support if you believe this is an error</Text>
+            <Text style={styles.infoItem}>- You may re-apply with corrected documents</Text>
+            <Text style={styles.infoItem}>- Contact support if you believe this is an error</Text>
           </>
         )}
       </View>
