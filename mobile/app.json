@@ -6,14 +6,17 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +25,12 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.ceylo.mobile",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,6 +47,11 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "eb3f0379-5016-4e76-9265-0c220b522aa0"
+      }
+    }
   }
 }

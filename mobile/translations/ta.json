@@ -1,0 +1,20 @@
+{
+  "welcome": "Ceylo-க்கு உங்களை வரவேற்கிறோம்",
+  "get_started": "தொடங்குங்கள்",
+  "login": "உள்நுழை",
+  "register": "பதிவு செய்",
+  "continue_guest": "விருந்தினராக தொடரவும்",
+  "select_language": "மொழியைத் தேர்ந்தெடுக்கவும்",
+  "ayubowan": "வணக்கம்",
+  "home": "முகப்பு",
+  "map": "வரைபடம்",
+  "ai_concierge": "AI உதவியாளர்",
+  "sos": "அவசரகால உதவி",
+  "profile": "சுயவிவரம்",
+  "mood_title": "உங்கள் விருப்பம் என்ன?",
+  "eco_explorer": "சுற்றுச்சூழல்",
+  "adventurer": "சாகசம்",
+  "culture_seeker": "கலாச்சாரம்",
+  "family_trip": "குடும்பப் பயணம்",
+  "spiritual": "ஆன்மீகம்"
+}

@@ -39,3 +39,15 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# debug and temporary files
+debug.json
+debugAPIs.js
+debug_api.js
+result.json
+testFallback.js
+print_env.js
+
+# sensitive info
+env_keys.json
+.env
