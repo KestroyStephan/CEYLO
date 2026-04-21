@@ -131,7 +131,9 @@ export default function App() {
                 {userRole !== 'vendor_onboarding' && (
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
                 )}
-                <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
+                {userRole !== 'vendor_pending' && (
+                  <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
+                )}
                 <Stack.Screen name="OfflineMapSettings" component={OfflineMapSettings} />
                 <Stack.Screen name="EventDetail" component={EventDetailScreen} />
               </Stack.Group>
