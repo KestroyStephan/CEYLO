@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, ScrollView,
@@ -9,17 +9,17 @@ import { signOut } from 'firebase/auth';
 
 const STATUS_CONFIG = {
   pending: {
-    color: '#d97706', bg: '#fffbeb', border: '#fcd34d', icon: 'ΓÅ│',
+    color: '#d97706', bg: '#fffbeb', border: '#fcd34d', icon: '⏳',
     title: 'Application Under Review',
-    message: 'Your application is being reviewed by our team. This usually takes 1ΓÇô2 business days.',
+    message: 'Your application is being reviewed by our team. This usually takes 1-2 business days.',
   },
   approved: {
-    color: '#059669', bg: '#f0fdf4', border: '#6ee7b7', icon: 'Γ£à',
+    color: '#059669', bg: '#f0fdf4', border: '#6ee7b7', icon: '✅',
     title: 'You Are Approved!',
     message: 'Welcome to the CEYLO vendor family. Redirecting you to your dashboard...',
   },
   rejected: {
-    color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: 'Γ¥î',
+    color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: '❌',
     title: 'Application Rejected',
     message: null,
   },
@@ -41,7 +41,7 @@ export default function VendorPendingScreen() {
 
         if (data.status === 'approved') {
           try {
-            // Update role ΓåÆ triggers App.js onAuthStateChanged re-render ΓåÆ routes to VendorNavigator
+            // Update role -> triggers App.js onAuthStateChanged re-render -> routes to VendorNavigator
             await updateDoc(doc(db, 'users', uid), { role: 'vendor' });
           } catch (e) {
             Alert.alert('Error', e.message);
@@ -87,7 +87,7 @@ export default function VendorPendingScreen() {
       </View>
 
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>≡ƒôï What happens next?</Text>
+        <Text style={styles.infoTitle}>👋 What happens next?</Text>
         {status === 'pending' && (
           <>
             <Text style={styles.infoItem}>1. Our team reviews your documents</Text>
@@ -97,8 +97,8 @@ export default function VendorPendingScreen() {
         )}
         {status === 'rejected' && (
           <>
-            <Text style={styles.infoItem}>ΓÇó You may re-apply with corrected documents</Text>
-            <Text style={styles.infoItem}>ΓÇó Contact support if you believe this is an error</Text>
+            <Text style={styles.infoItem}>• You may re-apply with corrected documents</Text>
+            <Text style={styles.infoItem}>• Contact support if you believe this is an error</Text>
           </>
         )}
       </View>

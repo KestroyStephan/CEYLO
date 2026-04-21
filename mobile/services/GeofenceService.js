@@ -1,4 +1,4 @@
-﻿import * as TaskManager from 'expo-task-manager';
+import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import { NotificationService } from './NotificationService';
 
@@ -15,7 +15,7 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, ({ data: { eventType, region }, error
     console.log('[Geofence] You entered region:', region.identifier);
     // Send a local notification using our push notification service
     NotificationService.sendLocal(
-      'Cultural Event Nearby! ≡ƒÄë',
+      'Cultural Event Nearby! 🎊',
       `You are near ${region.identifier}. Tap to view details and launch AR mode.`,
       { type: 'geofence_enter', regionId: region.identifier }
     );

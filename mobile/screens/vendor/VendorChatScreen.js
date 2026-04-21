@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput,
   TouchableOpacity, KeyboardAvoidingView, Platform,
@@ -14,9 +14,9 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const QUICK_REPLIES = [
-  "I'll be there shortly! ≡ƒÖî",
-  "Your booking is confirmed Γ£à",
-  "Please share your location ≡ƒôì",
+  "I'll be there shortly! 🙌",
+  "Your booking is confirmed ✅",
+  "Please share your location 📍",
 ];
 
 export default function VendorChatScreen({ route }) {
@@ -157,9 +157,7 @@ export default function VendorChatScreen({ route }) {
           )}
           <View style={styles.msgMeta}>
             <Text style={[styles.time, isMe ? styles.timeMe : styles.timeThem]}>{timeStr}</Text>
-            {isMe && (
-              <Text style={styles.readReceipt}>{isRead ? 'Γ£ôΓ£ô' : 'Γ£ô'}</Text>
-            )}
+              <Text style={styles.readReceipt}>{isRead ? '✓✓' : '✓'}</Text>
           </View>
         </View>
       </View>
@@ -211,7 +209,7 @@ export default function VendorChatScreen({ route }) {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>≡ƒÆ¼</Text>
+              <Text style={styles.emptyIcon}>💬</Text>
               <Text style={styles.emptyText}>No messages yet</Text>
             </View>
           }
@@ -235,7 +233,7 @@ export default function VendorChatScreen({ route }) {
           </TouchableOpacity>
           <TextInput
             style={styles.textInput}
-            placeholder="Type a messageΓÇª"
+            placeholder="Type a message..."
             placeholderTextColor="#9ca3af"
             value={text}
             onChangeText={handleTyping}

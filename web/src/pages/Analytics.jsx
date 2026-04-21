@@ -31,7 +31,7 @@ function Analytics() {
             </Box>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <Paper sx={{ p: 3, borderRadius: 4 }}>
                         <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Weekly Tourist Flow</Typography>
                         <Box sx={{ height: 350 }}>
@@ -49,9 +49,9 @@ function Analytics() {
                         </Box>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Card sx={{ borderRadius: 4, bgcolor: '#e0f2f1' }}>
                                 <CardContent>
                                     <Typography variant="subtitle2" fontWeight={800} color="#00695c">ECO ADOPTION RATE</Typography>

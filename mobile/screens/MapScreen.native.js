@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, Platform } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
-import MapViewDirections from 'react-native-maps-directions';
+import MapView, { Marker, PROVIDER_GOOGLE, Polyline, MapViewDirections } from '../components/Map';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import * as Location from 'expo-location';
 import { IconButton, Text, Surface, Button, Chip } from 'react-native-paper';
@@ -9,7 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export default function MapScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   placeTitle: { fontSize: 24, fontFamily: 'Outfit-Bold', color: '#333' },
   placeType: { fontSize: 12, fontFamily: 'Outfit-SemiBold', color: '#666', letterSpacing: 1 },
-  ecoBadge: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', borderWeight: 2, borderColor: '#4CAF50' },
+  ecoBadge: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#4CAF50' },
   ecoScore: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#4CAF50' },
   ecoLabel: { fontSize: 8, fontFamily: 'Outfit-Bold', color: '#4CAF50' },
   statsRow: { flexDirection: 'row', gap: 10 },

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
   ScrollView, Modal, Animated,
@@ -122,14 +122,14 @@ export default function VendorIncomingOrderScreen({ route, navigation }) {
           onPress={handleAccept}
           disabled={submitting}
         >
-          <Text style={styles.acceptBtnText}>Γ£ô  ACCEPT</Text>
+          <Text style={styles.acceptBtnText}>✓  ACCEPT</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.rejectBtn, submitting && styles.btnDisabled]}
           onPress={() => setShowRejectModal(true)}
           disabled={submitting}
         >
-          <Text style={styles.rejectBtnText}>Γ£ò  REJECT</Text>
+          <Text style={styles.rejectBtnText}>✕  REJECT</Text>
         </TouchableOpacity>
       </View>
 

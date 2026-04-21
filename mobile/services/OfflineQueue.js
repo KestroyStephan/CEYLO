@@ -1,7 +1,7 @@
-﻿/**
+/**
  * OfflineQueue.js
  * Persistent queue for operations that fail due to no network connection.
- * Priority order on flush: SOS ΓåÆ bookings ΓåÆ reviews ΓåÆ other
+ * Priority order on flush: SOS -> bookings -> reviews -> other
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -57,7 +57,7 @@ class OfflineQueueService {
     }
   }
 
-  /** Flush the queue ΓÇö write all pending operations to Firestore */
+  /** Flush the queue — write all pending operations to Firestore */
   async flush() {
     if (this._flushing) return;
     this._flushing = true;

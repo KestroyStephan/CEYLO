@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Grid, Paper, Typography, Box, Badge, Button, 
     List, ListItem, ListItemText, Divider, Chip,
-    IconButton, Tooltip, Stack
+    IconButton, Tooltip, Stack, Alert, AlertTitle
 } from '@mui/material';
 import { collection, onSnapshot, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -12,6 +12,9 @@ import SecurityIcon from '@mui/icons-material/Security';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 
 const CameraFeed = ({ id, label, status }) => (
     <Paper sx={{ 
@@ -50,6 +53,21 @@ const CameraFeed = ({ id, label, status }) => (
 
 function SOSMonitor() {
     const [alerts, setAlerts] = useState([]);
+    const [isMuted, setIsMuted] = useState(false);
+    const audioRef = React.useRef(null);
+    
+    useEffect(() => {
+        // Initialize audio with loop
+        audioRef.current = new Audio("https://actions.google.com/sounds/v1/emergency/emergency_siren.ogg");
+        audioRef.current.loop = true;
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+    
     const [aiInsights, setAiInsights] = useState([
         "CCTV-04: Abnormal crowd gathering detected near Entrance B.",
         "System: High humidity detected in Section 12 (Wildfire Risk: 12%).",
@@ -59,10 +77,20 @@ function SOSMonitor() {
     useEffect(() => {
         const q = query(collection(db, "sos_alerts"), orderBy("timestamp", "desc"), limit(5));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setAlerts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const newAlerts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAlerts(newAlerts);
+
+            const hasActiveAlert = newAlerts.some(a => a.status === 'active');
+            
+            if (hasActiveAlert && !isMuted) {
+                audioRef.current?.play().catch(e => console.log("Audio play blocked:", e));
+            } else {
+                audioRef.current?.pause();
+                if (audioRef.current) audioRef.current.currentTime = 0;
+            }
         });
         return () => unsubscribe();
-    }, []);
+    }, [isMuted]);
 
     const dispatchEmergency = (type) => {
         alert(`Dispatching ${type} to the selected location...`);
@@ -75,23 +103,47 @@ function SOSMonitor() {
                     Emergency Command Center
                 </Typography>
                 <Stack direction="row" spacing={2}>
+                    <IconButton onClick={() => setIsMuted(!isMuted)} color={isMuted ? "default" : "error"}>
+                        {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+                    </IconButton>
                     <Button variant="contained" color="error" startIcon={<WarningIcon />} sx={{ borderRadius: 2, fontWeight: 700 }}>
                         Panic Broadcast
                     </Button>
                 </Stack>
             </Box>
 
+            {alerts.some(a => a.status === 'active') && (
+                <Alert 
+                    severity="error" 
+                    variant="filled" 
+                    icon={<WarningIcon fontSize="large" />} 
+                    sx={{ 
+                        mb: 4, 
+                        borderRadius: 3, 
+                        animation: 'pulse-bg 2s infinite',
+                        '@keyframes pulse-bg': {
+                            '0%': { backgroundColor: '#d32f2f' },
+                            '50%': { backgroundColor: '#b71c1c' },
+                            '100%': { backgroundColor: '#d32f2f' },
+                        }
+                    }}
+                >
+                    <AlertTitle sx={{ fontWeight: 900, fontSize: '1.2rem' }}>ACTIVE EMERGENCY SITUATION</AlertTitle>
+                    Multiple SOS alerts have been triggered. Immediate action required.
+                </Alert>
+            )}
+
             <Grid container spacing={3}>
                 {/* Left Column: Live Feeds */}
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                         <VideocamIcon sx={{ mr: 1, color: '#00695c' }} /> Live Security Surveillance
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}> <CameraFeed label="Main Entrance" status="idle" /> </Grid>
-                        <Grid item xs={12} sm={6}> <CameraFeed label="Forest Trail A" status="alert" /> </Grid>
-                        <Grid item xs={12} sm={6}> <CameraFeed label="Eco Village Hub" status="idle" /> </Grid>
-                        <Grid item xs={12} sm={6}> <CameraFeed label="River Crossing" status="idle" /> </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}> <CameraFeed label="Main Entrance" status="idle" /> </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}> <CameraFeed label="Forest Trail A" status="alert" /> </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}> <CameraFeed label="Eco Village Hub" status="idle" /> </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}> <CameraFeed label="River Crossing" status="idle" /> </Grid>
                     </Grid>
 
                     <Paper sx={{ mt: 3, p: 3, borderRadius: 4 }}>
@@ -107,10 +159,30 @@ function SOSMonitor() {
                                         </Badge>
                                         <ListItemText 
                                             primary={<Typography fontWeight={700}>{alert.userName || 'Unknown User'}</Typography>}
-                                            secondary={`${alert.phone || 'N/A'} • ${alert.timestamp?.toDate().toLocaleString() || 'Just now'}`}
+                                            secondary={
+                                                <Box>
+                                                    <Typography variant="body2">{alert.phone || 'N/A'}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {alert.timestamp?.toDate().toLocaleString() || 'Just now'}
+                                                    </Typography>
+                                                </Box>
+                                            }
                                         />
-                                        <Chip label={alert.status?.toUpperCase()} color={alert.status === 'active' ? 'error' : 'success'} size="small" sx={{ fontWeight: 800, mr: 2 }} />
-                                        <Button variant="outlined" size="small" color="primary">Investigate</Button>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                            {alert.location && (
+                                                <Tooltip title="View on Map">
+                                                    <IconButton 
+                                                        size="small" 
+                                                        color="secondary"
+                                                        onClick={() => window.open(`https://www.google.com/maps?q=${alert.location.latitude},${alert.location.longitude}`, '_blank')}
+                                                    >
+                                                        <MyLocationIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            <Chip label={alert.status?.toUpperCase()} color={alert.status === 'active' ? 'error' : 'success'} size="small" sx={{ fontWeight: 800 }} />
+                                            <Button variant="outlined" size="small" color="primary">Investigate</Button>
+                                        </Stack>
                                     </ListItem>
                                     {idx < alerts.length - 1 && <Divider />}
                                 </React.Fragment>
@@ -120,7 +192,7 @@ function SOSMonitor() {
                 </Grid>
 
                 {/* Right Column: AI Analysis & Dispatch */}
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                         <SensorsIcon sx={{ mr: 1, color: '#ef6c00' }} /> Situation AI Analysis
                     </Typography>

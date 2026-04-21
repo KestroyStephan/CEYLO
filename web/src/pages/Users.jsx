@@ -16,6 +16,10 @@ function Users() {
         const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
             setRows(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             setLoading(false);
+        }, (error) => {
+            console.error("Error fetching users: ", error);
+            setLoading(false);
+            // Optionally set an error state to show a message to the user
         });
         return () => unsubscribe();
     }, []);
@@ -39,14 +43,23 @@ function Users() {
     };
 
     const columns = [
-        { field: 'name', headerName: 'User', width: 220, renderCell: (params) => (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ width: 32, height: 32, mr: 1.5, bgcolor: '#e0f2f1', color: '#00695c' }}>
-                    <PersonIcon fontSize="small" />
+        { field: 'name', headerName: 'User / Business', width: 250, renderCell: (params) => (
+            <Box sx={{ display: 'flex', alignItems: 'center', py: 1 }}>
+                <Avatar sx={{ width: 40, height: 40, mr: 2, bgcolor: '#e0f2f1', color: '#00695c' }}>
+                    <PersonIcon />
                 </Avatar>
                 <Box>
-                    <Typography variant="body2" fontWeight={700}>{params.value || 'Anonymous'}</Typography>
-                    <Typography variant="caption" color="text.secondary">{params.row.email}</Typography>
+                    <Typography variant="body2" fontWeight={700}>
+                        {params.row.businessName ? `${params.row.businessName} (${params.value})` : (params.value || 'Anonymous')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                        {params.row.email}
+                    </Typography>
+                    {(params.row.phone || params.row.contact) && (
+                        <Typography variant="caption" sx={{ color: '#00695c', fontWeight: 600 }}>
+                            {params.row.phone || params.row.contact}
+                        </Typography>
+                    )}
                 </Box>
             </Box>
         )},
@@ -85,9 +98,9 @@ function Users() {
             field: 'createdAt', 
             headerName: 'Joined Date', 
             width: 180,
-            valueGetter: (params) => {
-                if (!params.row.createdAt) return 'N/A';
-                const date = params.row.createdAt.toDate ? params.row.createdAt.toDate() : new Date(params.row.createdAt);
+            valueGetter: (value, row) => {
+                if (!row.createdAt) return 'N/A';
+                const date = row.createdAt.toDate ? row.createdAt.toDate() : new Date(row.createdAt);
                 return date.toLocaleDateString();
             }
         },
@@ -129,8 +142,12 @@ function Users() {
                     rows={rows}
                     columns={columns}
                     autoHeight
-                    pageSize={10}
-                    rowsPerPageOptions={[10]}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { pageSize: 10 },
+                        },
+                    }}
+                    pageSizeOptions={[10, 25, 50]}
                     disableSelectionOnClick
                     loading={loading}
                     sx={{

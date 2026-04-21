@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   Alert, ActivityIndicator, Animated, Dimensions,
@@ -14,9 +14,9 @@ import {
 const { width } = Dimensions.get('window');
 
 const ONLINE_STATUS = [
-  { key: 'online', label: 'Online', color: '#059669', bg: '#d1fae5', icon: '≡ƒƒó' },
-  { key: 'busy', label: 'Busy', color: '#d97706', bg: '#fef3c7', icon: '≡ƒƒí' },
-  { key: 'closed', label: 'Closed', color: '#dc2626', bg: '#fee2e2', icon: '≡ƒö┤' },
+  { key: 'online', label: 'Online', color: '#059669', bg: '#d1fae5', icon: '🟢' },
+  { key: 'busy', label: 'Busy', color: '#d97706', bg: '#fef3c7', icon: '🟠' },
+  { key: 'closed', label: 'Closed', color: '#dc2626', bg: '#fee2e2', icon: '🔴' },
 ];
 
 function timeAgo(ts) {
@@ -195,7 +195,7 @@ export default function VendorDashboardScreen({ navigation }) {
           <View style={styles.header}>
             <View>
               <Text style={styles.greeting}>{greeting},</Text>
-              <Text style={styles.businessName}>{vendorData?.businessName || 'Vendor'} ≡ƒæï</Text>
+              <Text style={styles.businessName}>{vendorData?.businessName || 'Vendor'} 👋</Text>
             </View>
             {/* 3-state status toggle */}
             <View style={[styles.statusBadge, { backgroundColor: currentStatusCfg.bg }]}>
@@ -246,7 +246,7 @@ export default function VendorDashboardScreen({ navigation }) {
             <MaterialCommunityIcons name="chevron-right" size={18} color="#059669" />
           </TouchableOpacity>
 
-          <Text style={styles.sectionTitle}>≡ƒöö New Booking Requests</Text>
+          <Text style={styles.sectionTitle}>🔔 New Booking Requests</Text>
         </>
       )}
       data={pendingOrders}
@@ -282,13 +282,13 @@ export default function VendorDashboardScreen({ navigation }) {
 
             <View style={styles.orderActions}>
               <TouchableOpacity style={styles.declineBtn} onPress={() => handleDecline(item)}>
-                <Text style={styles.declineBtnText}>Γ£ò Decline</Text>
+                <Text style={styles.declineBtnText}>✕ Decline</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.acceptBtn}
                 onPress={() => handleAccept(item)}
               >
-                <Text style={styles.acceptBtnText}>Γ£ô Accept</Text>
+                <Text style={styles.acceptBtnText}>✓ Accept</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -296,7 +296,7 @@ export default function VendorDashboardScreen({ navigation }) {
       }}
       ListEmptyComponent={() => (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>≡ƒô¡</Text>
+          <Text style={styles.emptyIcon}>📭</Text>
           <Text style={styles.emptyText}>No new booking requests</Text>
           <Text style={styles.emptySubtext}>New requests will appear here in real-time</Text>
         </View>

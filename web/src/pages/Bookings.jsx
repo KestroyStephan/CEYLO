@@ -54,8 +54,12 @@ function Bookings() {
             <DataGrid
                 rows={rows}
                 columns={columns}
-                pageSize={10}
-                rowsPerPageOptions={[10]}
+                initialState={{
+                    pagination: {
+                        paginationModel: { pageSize: 10 },
+                    },
+                }}
+                pageSizeOptions={[10, 25, 50]}
                 checkboxSelection
                 disableSelectionOnClick
                 loading={loading}

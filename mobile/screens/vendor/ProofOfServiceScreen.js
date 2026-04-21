@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
@@ -41,7 +41,7 @@ export default function ProofOfServiceScreen({ route, navigation }) {
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Γ£à Proof saved', 'Service marked as completed.', [
+      Alert.alert('✅ Proof saved', 'Service marked as completed.', [
         { text: 'Back to Orders', onPress: () => navigation.popToTop() },
       ]);
     } catch (e) {
@@ -72,7 +72,7 @@ export default function ProofOfServiceScreen({ route, navigation }) {
       {/* Overlay instructions */}
       <View style={styles.overlay}>
         <View style={styles.overlayHeader}>
-          <Text style={styles.overlayTitle}>≡ƒô╖ Proof of Service</Text>
+          <Text style={styles.overlayTitle}>📷 Proof of Service</Text>
           <Text style={styles.overlaySubtitle}>
             Take a photo showing the completed service
           </Text>

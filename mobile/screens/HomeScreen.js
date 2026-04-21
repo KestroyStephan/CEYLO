@@ -181,17 +181,23 @@ export default function HomeScreen({ navigation }) {
 
       <Section title="Trending Eco Spots 🌿" data={ecoSpots} />
 
-      <Surface style={styles.eventCard} elevation={2}>
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2' }} 
-          style={styles.eventImage} 
-        />
-        <View style={styles.eventOverlay}>
-          <View style={styles.eventTag}><Text style={styles.tagText}>Happening Today</Text></View>
-          <Text style={styles.eventTitle}>Kandy Esala Perahera</Text>
-          <Text style={styles.eventLoc}>Temple of the Tooth, Kandy</Text>
-        </View>
-      </Surface>
+      <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('CulturalEvents')}>
+        <Surface style={styles.eventCard} elevation={2}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2' }} 
+            style={styles.eventImage} 
+          />
+          <View style={styles.eventOverlay}>
+            <View style={styles.eventTag}><Text style={styles.tagText}>Happening Today</Text></View>
+            <Text style={styles.eventTitle}>Kandy Esala Perahera</Text>
+            <Text style={styles.eventLoc}>Temple of the Tooth, Kandy</Text>
+            <View style={styles.exploreRow}>
+                <Text style={styles.exploreText}>View All Festivals</Text>
+                <MaterialCommunityIcons name="chevron-right" size={16} color="#FFF" />
+            </View>
+          </View>
+        </Surface>
+      </TouchableOpacity>
 
       <Section title="Hidden Gems 💎" data={hiddenGems} />
 
@@ -235,7 +241,9 @@ const styles = StyleSheet.create({
   eventTag: { backgroundColor: '#FF7043', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginBottom: 8 },
   tagText: { color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold', textTransform: 'uppercase' },
   eventTitle: { color: '#FFF', fontSize: 22, fontFamily: 'Outfit-Bold' },
-  eventLoc: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontFamily: 'Outfit-Regular' },
+  eventLoc: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontFamily: 'Outfit-Regular', marginBottom: 10 },
+  exploreRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  exploreText: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-SemiBold' },
   itinerarySection: { marginBottom: 40 },
   emptyItinerary: { borderRadius: 20, borderStyle: 'dashed', borderWidth: 2, borderColor: '#00695C', backgroundColor: 'transparent', elevation: 0 },
   emptyContent: { alignItems: 'center', padding: 30, gap: 10 },

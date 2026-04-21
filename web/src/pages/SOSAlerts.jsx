@@ -73,10 +73,10 @@ function SOSAlerts() {
             field: 'timestamp',
             headerName: 'Time',
             width: 200,
-            valueGetter: (params) => {
-                if (!params.row.timestamp) return '';
+            valueGetter: (value, row) => {
+                if (!row.timestamp) return '';
                 // Handle Firestore Timestamp or standard Date
-                const date = params.row.timestamp.toDate ? params.row.timestamp.toDate() : new Date(params.row.timestamp);
+                const date = row.timestamp.toDate ? row.timestamp.toDate() : new Date(row.timestamp);
                 return date.toLocaleString();
             }
         },
@@ -112,8 +112,12 @@ function SOSAlerts() {
             <DataGrid
                 rows={rows}
                 columns={columns}
-                pageSize={10}
-                rowsPerPageOptions={[10]}
+                initialState={{
+                    pagination: {
+                        paginationModel: { pageSize: 10 },
+                    },
+                }}
+                pageSizeOptions={[10, 25, 50]}
                 disableSelectionOnClick
                 loading={loading}
                 sx={{

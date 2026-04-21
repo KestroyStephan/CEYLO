@@ -17,11 +17,12 @@ const MapView = React.forwardRef(({ children, style, onRegionChange, initialRegi
 });
 
 const Marker = () => null;
+const Polyline = () => null;
 const PROVIDER_GOOGLE = "google";
 const MapViewDirections = () => null;
 
 export default MapView;
-export { Marker, PROVIDER_GOOGLE, MapViewDirections };
+export { Marker, Polyline, PROVIDER_GOOGLE, MapViewDirections };
 
 const styles = StyleSheet.create({
     container: {

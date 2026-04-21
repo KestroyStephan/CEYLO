@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Paper, Typography, Box, Card, CardContent, Divider, Chip } from '@mui/material';
-import { collection, getCountFromServer } from 'firebase/firestore';
+import { Grid, Paper, Typography, Box, Card, CardContent, Divider, Chip, Button } from '@mui/material';
+import { collection, getCountFromServer, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -42,9 +42,15 @@ function Dashboard() {
     useEffect(() => {
         async function fetchStats() {
             try {
+                // Query for vendors from 'users' collection
+                const vendorQuery = query(
+                    collection(db, "users"), 
+                    where("role", "in", ["vendor", "accommodation", "tour_provider"])
+                );
+
                 const [usersSnap, vendorsSnap, bookingsSnap, sosSnap] = await Promise.all([
                     getCountFromServer(collection(db, "users")),
-                    getCountFromServer(collection(db, "vendors")),
+                    getCountFromServer(vendorQuery),
                     getCountFromServer(collection(db, "bookings")),
                     getCountFromServer(collection(db, "sos_alerts"))
                 ]);
@@ -97,17 +103,46 @@ function Dashboard() {
                         {t('welcome')}
                     </Typography>
                 </Box>
-                <Chip 
-                    label="System Live" 
-                    color="success" 
-                    variant="outlined" 
-                    icon={<Box sx={{ width: 8, height: 8, bgcolor: 'success.main', borderRadius: '50%', mr: 1 }} />}
-                    sx={{ fontWeight: 700 }}
-                />
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={async () => {
+                            if(window.confirm("Seed default Sri Lankan destinations and festivals?")) {
+                                // Seeding logic here
+                                const destinations = [
+                                    { name: "Kandy", description: "The cultural capital of Sri Lanka, home to the Temple of the Sacred Tooth Relic.", imageUrl: "https://images.unsplash.com/photo-1588598116174-279585913220", ecoScore: 85, category: "Cultural Hub", isHiddenGem: false, isEco: true },
+                                    { name: "Sigiriya", description: "An ancient rock fortress known as the Eighth Wonder of the World.", imageUrl: "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a", ecoScore: 92, category: "Heritage", isHiddenGem: false, isEco: true },
+                                    { name: "Galle", description: "A historic city known for its Dutch Fort and beautiful coastal views.", imageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2", ecoScore: 78, category: "Coastal", isHiddenGem: false, isEco: false },
+                                    { name: "Ella", description: "A mountain town famous for the Nine Arch Bridge and stunning hiking trails.", imageUrl: "https://images.unsplash.com/photo-1589923188900-85dae523342b", ecoScore: 95, category: "Eco Spot", isHiddenGem: true, isEco: true }
+                                ];
+                                const events = [
+                                    { title: "Kandy Esala Perahera", date: "2026-08-18", endDate: "2026-08-28", location: "Kandy", description: "The grandest Buddhist festival featuring dancers and elephants.", type: "Cultural", category: "Festival", imageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2" },
+                                    { title: "Vesak Festival", date: "2026-05-01", location: "Colombo", description: "Festival of lanterns.", type: "Religious", category: "Festival", imageUrl: "https://images.unsplash.com/photo-1588598116174-279585913220" }
+                                ];
+                                try {
+                                    const { addDoc, collection } = await import('firebase/firestore');
+                                    for(const d of destinations) await addDoc(collection(db, "destinations"), d);
+                                    for(const e of events) await addDoc(collection(db, "cultural_events"), e);
+                                    alert("Seeding successful!");
+                                } catch(e) { alert("Error seeding: " + e.message); }
+                            }
+                        }}
+                    >
+                        Seed Initial Data
+                    </Button>
+                    <Chip 
+                        label="System Live" 
+                        color="success" 
+                        variant="outlined" 
+                        icon={<Box sx={{ width: 8, height: 8, bgcolor: 'success.main', borderRadius: '50%', mr: 1 }} />}
+                        sx={{ fontWeight: 700 }}
+                    />
+                </Box>
             </Box>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard 
                         title="Active Users" 
                         value={stats.users} 
@@ -116,7 +151,7 @@ function Dashboard() {
                         trend="+12%"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard 
                         title="Registered Vendors" 
                         value={stats.vendors} 
@@ -125,7 +160,7 @@ function Dashboard() {
                         trend="+5%"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard 
                         title="Success Bookings" 
                         value={stats.bookings} 
@@ -134,7 +169,7 @@ function Dashboard() {
                         trend="+18%"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard 
                         title="Urgent SOS" 
                         value={stats.sos} 
@@ -146,7 +181,7 @@ function Dashboard() {
             </Grid>
 
             <Grid container spacing={3}>
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <Paper sx={{ p: 3, borderRadius: 4 }}>
                         <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
                             Sustainability Adoption Trends
@@ -170,7 +205,7 @@ function Dashboard() {
                         </Box>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <Paper sx={{ p: 3, borderRadius: 4, height: '100%' }}>
                         <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
                             Eco Score Distribution

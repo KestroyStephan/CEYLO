@@ -83,6 +83,21 @@ export default function DestinationDetailScreen({ route, navigation }) {
           <Text style={styles.reviewText}>Absolutely breathtaking! The climb is worth every step for the view from the top.</Text>
         </View>
 
+        <View style={styles.festivalSection}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Nearby Festivals</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('CulturalEvents')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
+            </View>
+            <Surface style={styles.festivalCard} elevation={1}>
+                <View style={styles.festInfo}>
+                    <Text style={styles.festTitle}>Vesak Festival 2026</Text>
+                    <Text style={styles.festDate}>May 01 - May 02</Text>
+                    <Chip size={10} style={styles.festChip}>Religious</Chip>
+                </View>
+                <MaterialCommunityIcons name="calendar-heart" size={32} color="#D32F2F" />
+            </Surface>
+        </View>
+
         <Text style={styles.sectionTitle}>Eco-Verified Vendors Nearby</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vendorScroll}>
           {[1,2,3].map(i => (
@@ -140,6 +155,23 @@ const styles = StyleSheet.create({
   vendorName: { fontFamily: 'Outfit-SemiBold', color: '#333', marginBottom: 8 },
   vendorFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   vendorPrice: { fontSize: 12, fontFamily: 'Outfit-Bold', color: '#00695C' },
+  festivalSection: { marginBottom: 30 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  seeAll: { fontSize: 12, color: '#00695C', fontFamily: 'Outfit-SemiBold' },
+  festivalCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 20, 
+    borderRadius: 20, 
+    backgroundColor: '#FFF', 
+    marginTop: 10,
+    borderLeftWidth: 5,
+    borderLeftColor: '#D32F2F'
+  },
+  festInfo: { flex: 1 },
+  festTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#333' },
+  festDate: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#666', marginVertical: 4 },
+  festChip: { height: 24, backgroundColor: '#FFEBEE', alignSelf: 'flex-start' },
   actionContainer: { position: 'absolute', bottom: 0, width: width, padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
   primaryBtn: { borderRadius: 15, height: 55, justifyContent: 'center' },
 });

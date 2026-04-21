@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, ActivityIndicator,
@@ -68,7 +68,7 @@ export default function VendorOrderManagementScreen({ navigation }) {
       await uploadBytes(storageRef, blob);
       const url = await getDownloadURL(storageRef);
       await updateDoc(doc(db, 'bookings', activeBookingId), { proofUrl: url });
-      Alert.alert('Uploaded Γ£ô', 'Proof of service saved successfully.');
+      Alert.alert('Uploaded ✓', 'Proof of service saved successfully.');
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -89,7 +89,7 @@ export default function VendorOrderManagementScreen({ navigation }) {
               onPress={() => idx === currentIdx + 1 && advanceStatus(order)}
             >
               <Text style={[styles.stepDotText, idx <= currentIdx && styles.stepDotTextActive]}>
-                {idx <= currentIdx ? 'Γ£ô' : idx + 1}
+                {idx <= currentIdx ? '✓' : idx + 1}
               </Text>
             </TouchableOpacity>
             {idx < STATUS_STEPS.length - 1 && (
@@ -130,7 +130,7 @@ export default function VendorOrderManagementScreen({ navigation }) {
 
       {orders.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>≡ƒôª</Text>
+          <Text style={styles.emptyIcon}>📦</Text>
           <Text style={styles.emptyText}>No active orders</Text>
         </View>
       ) : (
@@ -147,19 +147,19 @@ export default function VendorOrderManagementScreen({ navigation }) {
                 </View>
               </View>
               <Text style={styles.itemsSummary}>
-                {item.items?.map((i) => `${i.name} x${i.qty}`).join(' ┬╖ ') || 'ΓÇö'}
+                {item.items?.map((i) => `${i.name} x${i.qty}`).join(' · ') || '—'}
               </Text>
               <Text style={styles.orderTotal}>LKR {(item.totalPrice || 0).toLocaleString()}</Text>
               {renderStepper(item)}
               <View style={styles.actionsRow}>
                 <TouchableOpacity style={styles.proofBtn} onPress={() => openCamera(item.id)}>
-                  <Text style={styles.proofBtnText}>≡ƒô╖ Proof of Service</Text>
+                  <Text style={styles.proofBtnText}>📷 Proof of Service</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.chatBtn}
                   onPress={() => navigation.navigate('VendorChat', { bookingId: item.id, order: item })}
                 >
-                  <Text style={styles.chatBtnText}>≡ƒÆ¼ Chat</Text>
+                  <Text style={styles.chatBtnText}>💬 Chat</Text>
                 </TouchableOpacity>
               </View>
             </View>

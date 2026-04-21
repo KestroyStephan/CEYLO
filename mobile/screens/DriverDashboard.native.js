@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, FlatList, Dimensions, Alert, Animated, ScrollView, Platform, TouchableOpacity } from 'react-native';
-import { Text, Button, Card, Avatar, Switch, ActivityIndicator, Surface, IconButton, Divider, ProgressBar } from 'react-native-paper';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Text, Button, Card, Avatar, Switch, ActivityIndicator, Surface, IconButton, Divider, ProgressBar, Chip } from 'react-native-paper';
+import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
 import * as Location from 'expo-location';
 import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';

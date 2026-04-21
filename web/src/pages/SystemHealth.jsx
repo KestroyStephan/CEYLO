@@ -56,22 +56,22 @@ function SystemHealth() {
             </Box>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <HealthMetric label="Global Uptime" value="99.982%" status="operational" icon={<SpeedIcon />} />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <HealthMetric label="DB Latency" value="24ms" status="operational" icon={<StorageIcon />} />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <HealthMetric label="API Success" value="99.99%" status="operational" icon={<LanIcon />} />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <HealthMetric label="Inference Time" value="482ms" status="performance_degrade" icon={<CloudQueueIcon />} />
                 </Grid>
             </Grid>
 
             <Grid container spacing={3}>
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
                         <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee' }}>
                             <Typography variant="subtitle1" fontWeight={800}>Microservices Status</Typography>
@@ -98,7 +98,7 @@ function SystemHealth() {
                         </List>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <Paper sx={{ p: 3, borderRadius: 4, bgcolor: '#00695c', color: '#fff' }}>
                         <Typography variant="h6" fontWeight={800} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                             <SecurityIcon sx={{ mr: 1 }} /> Security Hardening

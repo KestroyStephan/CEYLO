@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, ActivityIndicator, ScrollView,
@@ -89,7 +89,7 @@ export default function BookingManagementScreen({ navigation }) {
   const NEXT_ACTION = {
     accepted: { label: 'Start Service', color: '#2563eb' },
     preparing: { label: 'Mark Ready', color: '#7c3aed' },
-    ready: { label: 'Complete Γ£ô', color: '#059669' },
+    ready: { label: 'Complete ✓', color: '#059669' },
   };
 
   const renderBooking = ({ item }) => {
@@ -97,7 +97,7 @@ export default function BookingManagementScreen({ navigation }) {
     const action = NEXT_ACTION[item.status];
     const dateStr = item.createdAt?.toDate?.()?.toLocaleDateString('en-GB', {
       day: 'numeric', month: 'short', year: 'numeric',
-    }) || 'ΓÇö';
+    }) || '—';
 
     return (
       <TouchableOpacity
@@ -129,7 +129,7 @@ export default function BookingManagementScreen({ navigation }) {
             <View style={styles.divider} />
 
             <Text style={styles.detailLabel}>SERVICE</Text>
-            <Text style={styles.detailValue}>{item.serviceName || 'ΓÇö'}</Text>
+            <Text style={styles.detailValue}>{item.serviceName || '—'}</Text>
 
             {item.items?.length > 0 && (
               <>
@@ -209,7 +209,7 @@ export default function BookingManagementScreen({ navigation }) {
           renderItem={renderBooking}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>≡ƒôï</Text>
+              <Text style={styles.emptyIcon}>📋</Text>
               <Text style={styles.emptyText}>No {activeTab.toLowerCase()} bookings</Text>
             </View>
           }

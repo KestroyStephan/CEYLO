@@ -86,7 +86,7 @@ function Destinations() {
 
             <Grid container spacing={3}>
                 {destinations.map((dest) => (
-                    <Grid item xs={12} sm={6} md={4} key={dest.id}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dest.id}>
                         <Card sx={{ borderRadius: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
                             <CardMedia
                                 component="img"

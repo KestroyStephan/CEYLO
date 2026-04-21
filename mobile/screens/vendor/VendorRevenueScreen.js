@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator,
   Dimensions, TouchableOpacity, FlatList,
@@ -37,7 +37,7 @@ function getLast30Days() {
   return { days, labels };
 }
 
-// Trust Score = (completionRate ├ù 0.4) + (responseScore ├ù 0.3) + (ratingScore ├ù 0.2) + (tenureScore ├ù 0.1)
+// Trust Score = (completionRate * 0.4) + (responseScore * 0.3) + (ratingScore * 0.2) + (tenureScore * 0.1)
 function calcTrustScore(completionRate, avgRating, totalOrders) {
   const ratingScore = (avgRating || 0) / 5;
   const tenureScore = Math.min(totalOrders / 100, 1);
@@ -164,7 +164,7 @@ export default function VendorRevenueScreen() {
     color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
   };
 
-  const medals = ['≡ƒÑç', '≡ƒÑê', '≡ƒÑë'];
+  const medals = ['🥇', '🥈', '🥉'];
   const trustColor = trustScore >= 80 ? '#059669' : trustScore >= 60 ? '#d97706' : '#dc2626';
 
   return (
@@ -202,7 +202,7 @@ export default function VendorRevenueScreen() {
 
       {/* Revenue Bar Chart */}
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Revenue (LKR) ΓÇö {range}</Text>
+        <Text style={styles.chartTitle}>Revenue (LKR) — {range}</Text>
         <BarChart
           data={{ labels, datasets: [{ data: chartData }] }}
           width={screenWidth - 64} height={180}
@@ -216,7 +216,7 @@ export default function VendorRevenueScreen() {
       {/* Rating Trend Line Chart */}
       {ratingData.some((v) => v > 0) && (
         <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Rating Trend Γ¡É ΓÇö {range}</Text>
+          <Text style={styles.chartTitle}>Rating Trend ⭐ — {range}</Text>
           <LineChart
             data={{ labels, datasets: [{ data: ratingData.map((v) => v || 0.01) }] }}
             width={screenWidth - 64} height={160}
@@ -239,14 +239,14 @@ export default function VendorRevenueScreen() {
           <Text style={styles.summaryLabel}>Completed</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{avgRating ? `Γ¡É ${avgRating}` : 'ΓÇö'}</Text>
+          <Text style={styles.summaryValue}>{avgRating ? `⭐ ${avgRating}` : '—'}</Text>
           <Text style={styles.summaryLabel}>Avg Rating</Text>
         </View>
       </View>
 
       {/* Top Services */}
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>≡ƒÅå Top Services</Text>
+        <Text style={styles.sectionTitle}>🏆 Top Services</Text>
         {topServices.length === 0 ? (
           <Text style={styles.noDataText}>No completed orders yet</Text>
         ) : (
@@ -266,12 +266,12 @@ export default function VendorRevenueScreen() {
       {/* Reviews */}
       {reviews.length > 0 && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Γ¡É Recent Reviews</Text>
+          <Text style={styles.sectionTitle}>⭐ Recent Reviews</Text>
           {reviews.map((r) => (
             <View key={r.id} style={styles.reviewCard}>
               <View style={styles.reviewHeader}>
                 <Text style={styles.reviewName}>{r.name || 'Customer'}</Text>
-                <Text style={styles.reviewRating}>{'Γ¡É'.repeat(Math.round(r.rating || 0))}</Text>
+                <Text style={styles.reviewRating}>{'⭐'.repeat(Math.round(r.rating || 0))}</Text>
               </View>
               <Text style={styles.reviewText}>{r.review}</Text>
             </View>

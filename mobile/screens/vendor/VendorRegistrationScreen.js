@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Image, Animated,
@@ -20,7 +20,7 @@ const BUSINESS_TYPES = [
 ];
 
 const STEPS = ['Business Info', 'Documents', 'First Service'];
-const STEP_ICONS = ['≡ƒÅó', '≡ƒôä', 'Γ¡É'];
+const STEP_ICONS = ['🏢', '📄', '⭐'];
 
 export default function VendorRegistrationScreen({ navigation }) {
   const [step, setStep] = useState(0); // 0, 1, 2
@@ -223,7 +223,7 @@ export default function VendorRegistrationScreen({ navigation }) {
           <View style={styles.stepItem}>
             <View style={[styles.stepCircle, idx <= step && styles.stepCircleActive, idx < step && styles.stepCircleDone]}>
               {idx < step
-                ? <Text style={styles.stepCheckmark}>Γ£ô</Text>
+                ? <Text style={styles.stepCheckmark}>✓</Text>
                 : <Text style={[styles.stepIcon, idx === step && styles.stepIconActive]}>{STEP_ICONS[idx]}</Text>}
             </View>
             <Text style={[styles.stepLabel, idx === step && styles.stepLabelActive]}>{label}</Text>
@@ -271,9 +271,8 @@ export default function VendorRegistrationScreen({ navigation }) {
           value={address} onChangeText={setAddress}
         />
         <TouchableOpacity style={styles.gpsBtn} onPress={autoFillGPS} disabled={gpsLoading}>
-          {gpsLoading
             ? <ActivityIndicator size="small" color="#059669" />
-            : <><Text style={styles.gpsBtnIcon}>≡ƒôì</Text><Text style={styles.gpsBtnText}>GPS</Text></>}
+            : <><Text style={styles.gpsBtnIcon}>📍</Text><Text style={styles.gpsBtnText}>GPS</Text></>}
         </TouchableOpacity>
       </View>
 
@@ -302,7 +301,7 @@ export default function VendorRegistrationScreen({ navigation }) {
           <Text style={styles.label}>{label}</Text>
           <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(setter)}>
             <Text style={styles.uploadBtnText}>
-              {state ? 'Γ£à Uploaded ΓÇö Tap to change' : '≡ƒôÄ Tap to upload'}
+              {state ? '✅ Uploaded — Tap to change' : '🔍 Tap to upload'}
             </Text>
           </TouchableOpacity>
           {state && <Image source={{ uri: state.uri }} style={styles.docPreview} />}
@@ -319,7 +318,7 @@ export default function VendorRegistrationScreen({ navigation }) {
               style={styles.removePhoto}
               onPress={() => setServicePhotos((prev) => prev.filter((_, j) => j !== i))}
             >
-              <Text style={styles.removePhotoText}>Γ£ò</Text>
+              <Text style={styles.removePhotoText}>✕</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -342,7 +341,7 @@ export default function VendorRegistrationScreen({ navigation }) {
 
       <View style={styles.btnRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setStep(0)}>
-          <Text style={styles.backBtnText}>ΓåÉ Back</Text>
+          <Text style={styles.backBtnText}>⬅ Back</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.nextBtn, { flex: 1, marginLeft: 10 }, loading && styles.disabled]}
@@ -350,7 +349,7 @@ export default function VendorRegistrationScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.nextBtnText}>Upload & Continue ΓåÆ</Text>}
+            : <Text style={styles.nextBtnText}>Upload & Continue ➡️</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -398,13 +397,13 @@ export default function VendorRegistrationScreen({ navigation }) {
         onPress={() => setEcoCertified(!ecoCertified)}
       >
         <Text style={styles.ecoToggleText}>
-          {ecoCertified ? '≡ƒî┐ Eco-Certified Γ£ô' : '≡ƒî┐ Mark as Eco-Certified'}
+          {ecoCertified ? '🌿 Eco-Certified ✓' : '🌿 Mark as Eco-Certified'}
         </Text>
       </TouchableOpacity>
 
       <View style={styles.btnRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}>
-          <Text style={styles.backBtnText}>ΓåÉ Back</Text>
+          <Text style={styles.backBtnText}>⬅ Back</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.submitBtn, loading && styles.disabled]}
@@ -412,7 +411,7 @@ export default function VendorRegistrationScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.nextBtnText}>Submit Application ≡ƒÜÇ</Text>}
+            : <Text style={styles.nextBtnText}>Submit Application 🚀</Text>}
         </TouchableOpacity>
       </View>
     </View>

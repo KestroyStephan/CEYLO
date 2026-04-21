@@ -1,4 +1,4 @@
-﻿/**
+/**
  * NotificationService.js
  * Handles expo-notifications: permission, token registration,
  * foreground/background handlers, and deep-link routing.
@@ -25,7 +25,7 @@ if (!isExpoGo) {
   });
 }
 
-// Deep-link routing map: notification.data.type ΓåÆ { screen, params }
+// Deep-link routing map: notification.data.type -> { screen, params }
 const ROUTE_MAP = {
   booking_confirmed: (data) => ({ screen: 'VendorTabs', params: { screen: 'VendorOrders' } }),
   booking_rejected: (data) => ({ screen: 'VendorTabs', params: { screen: 'VendorDashboard' } }),
@@ -98,7 +98,7 @@ class NotificationServiceClass {
       console.log('[Notifications] Foreground:', notification.request.content.title);
     });
 
-    // Tap on notification ΓåÆ navigate
+    // Tap on notification -> navigate
     this._responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data || {};
       this._route(data);

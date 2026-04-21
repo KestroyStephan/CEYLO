@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import { Typography, Box, Chip, Paper, IconButton, Tooltip, Stack } from '@mui/material';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Typography, Box, Chip, Paper, IconButton, Tooltip, Stack, Avatar } from '@mui/material';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -14,8 +14,21 @@ function Vendors() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "vendors"), (snapshot) => {
-            setRows(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        // Fetch all users and filter for service providers in JS for better matching
+        const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+            const allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const filteredVendors = allUsers.filter(user => {
+                const r = (user.role || '').toLowerCase();
+                return r.includes('vendor') || 
+                       r.includes('accommodation') || 
+                       r.includes('tour_provider') || 
+                       r.includes('driver') || 
+                       r.includes('guide');
+            });
+            setRows(filteredVendors);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching vendors: ", error);
             setLoading(false);
         });
         return () => unsubscribe();
@@ -23,16 +36,22 @@ function Vendors() {
 
     const handleUpdateStatus = async (id, status) => {
         try {
-            await updateDoc(doc(db, "vendors", id), { status });
+            // Update the document in the 'users' collection
+            await updateDoc(doc(db, "users", id), { 
+                status: status,
+                // If approving, we might want to ensure their role reflects an active vendor
+                role: status === 'approved' ? 'vendor' : undefined 
+            });
         } catch (error) {
             console.error("Error updating vendor status: ", error);
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure you want to remove this vendor?")) {
+        if (window.confirm("Are you sure you want to remove this partner?")) {
             try {
-                await deleteDoc(doc(db, "vendors", id));
+                // Delete the document from the 'users' collection
+                await deleteDoc(doc(db, "users", id));
             } catch (error) {
                 console.error("Error deleting vendor: ", error);
             }
@@ -40,16 +59,29 @@ function Vendors() {
     };
 
     const columns = [
-        { field: 'name', headerName: 'Vendor Name', width: 200, renderCell: (params) => (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <StoreIcon sx={{ mr: 1, color: '#00695c' }} />
-                <Typography fontWeight={600}>{params.value}</Typography>
+        { field: 'businessName', headerName: 'Business / Owner', width: 250, renderCell: (params) => (
+            <Box sx={{ display: 'flex', alignItems: 'center', py: 1 }}>
+                <Avatar sx={{ bgcolor: '#e0f2f1', color: '#00695c', mr: 2 }}>
+                    <StoreIcon />
+                </Avatar>
+                <Box>
+                    <Typography variant="body2" fontWeight={700}>{params.value || 'Unnamed Business'}</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                        Owner: {params.row.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#00695c', fontWeight: 600 }}>
+                        {params.row.contact}
+                    </Typography>
+                </Box>
             </Box>
         )},
         { field: 'email', headerName: 'Email Address', width: 220 },
-        { field: 'service', headerName: 'Category', width: 150, renderCell: (params) => (
-            <Chip label={params.value || 'General'} size="small" variant="outlined" />
-        )},
+        { field: 'category', headerName: 'Category', width: 150, 
+            valueGetter: (value, row) => row.category || row.service || row.role || 'Partner',
+            renderCell: (params) => (
+                <Chip label={(params.value).toUpperCase()} size="small" variant="outlined" />
+            )
+        },
         {
             field: 'status',
             headerName: 'Status',
@@ -75,7 +107,7 @@ function Vendors() {
             field: 'performance',
             headerName: 'Eco Score',
             width: 120,
-            valueGetter: (params) => params.row.ecoScore || 0,
+            valueGetter: (value, row) => row.ecoScore || 0,
             renderCell: (params) => (
                 <Typography color={params.value > 80 ? 'success.main' : 'warning.main'} fontWeight={700}>
                     {params.value}%
@@ -128,8 +160,12 @@ function Vendors() {
                     rows={rows}
                     columns={columns}
                     autoHeight
-                    pageSize={10}
-                    rowsPerPageOptions={[10]}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { pageSize: 10 },
+                        },
+                    }}
+                    pageSizeOptions={[10, 25, 50]}
                     disableSelectionOnClick
                     loading={loading}
                     sx={{

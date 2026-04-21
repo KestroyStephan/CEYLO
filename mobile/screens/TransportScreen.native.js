@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { Text, Surface, Button, Avatar, IconButton, Divider } from 'react-native-paper';
+import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
+import { Text, Surface, Button, Avatar, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, ActivityIndicator, Image, Modal, TextInput,
@@ -141,7 +141,7 @@ export default function VendorServiceListingScreen() {
 
       {services.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>≡ƒ¢ì∩╕Å</Text>
+          <Text style={styles.emptyIcon}>✍️</Text>
           <Text style={styles.emptyText}>Add your first service</Text>
           <Text style={styles.emptySubtext}>Long-press a card to delete. Tap to edit.</Text>
         </View>
@@ -167,7 +167,7 @@ export default function VendorServiceListingScreen() {
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceNameRow}>
                   <Text style={styles.serviceName}>{item.name}</Text>
-                  {item.ecoCertified && <Text style={styles.ecoBadge}>≡ƒî┐</Text>}
+                  {item.ecoCertified && <Text style={styles.ecoBadge}>🌿</Text>}
                 </View>
                 {!!item.description && (
                   <Text style={styles.serviceDesc} numberOfLines={2}>{item.description}</Text>
@@ -175,10 +175,10 @@ export default function VendorServiceListingScreen() {
                 <View style={styles.serviceMeta}>
                   <Text style={styles.servicePrice}>LKR {(item.price || 0).toLocaleString()}</Text>
                   {!!item.duration && (
-                    <Text style={styles.metaPill}>ΓÅ▒ {item.duration}m</Text>
+                    <Text style={styles.metaPill}>⏱️ {item.duration}m</Text>
                   )}
                   {!!item.maxCapacity && (
-                    <Text style={styles.metaPill}>≡ƒæÑ {item.maxCapacity}</Text>
+                    <Text style={styles.metaPill}>👥 {item.maxCapacity}</Text>
                   )}
                 </View>
               </View>
@@ -258,7 +258,7 @@ export default function VendorServiceListingScreen() {
               {/* Eco certified toggle */}
               <View style={styles.switchRow}>
                 <View>
-                  <Text style={styles.switchLabel}>≡ƒî┐ Eco-Certified</Text>
+                  <Text style={styles.switchLabel}>🌿 Eco-Certified</Text>
                   <Text style={styles.switchSubLabel}>Mark as environmentally responsible</Text>
                 </View>
                 <Switch

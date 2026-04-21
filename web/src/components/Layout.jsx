@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box, ListItemButton } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import StoreIcon from '@mui/icons-material/Store';
@@ -77,39 +77,41 @@ function Layout() {
             </Toolbar>
             <List sx={{ px: 2, flexGrow: 1 }}>
                 {menuItems.map((item) => (
-                    <ListItem
-                        key={item.text}
-                        component={NavLink}
-                        to={item.path}
-                        sx={{
-                            borderRadius: '12px',
-                            mb: 0.5,
-                            '&.active': {
-                                bgcolor: '#e0f2f1',
-                                color: '#00695c',
-                                '& .MuiListItemIcon-root': { color: '#00695c' }
-                            },
-                            '&:hover': {
-                                bgcolor: '#f5f5f5'
-                            }
-                        }}
-                    >
-                        <ListItemIcon sx={{ minWidth: 40, color: '#546e7a' }}>{item.icon}</ListItemIcon>
-                        <ListItemText 
-                            primary={item.text} 
-                            primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} 
-                        />
+                    <ListItem key={item.text} disablePadding>
+                        <ListItemButton
+                            component={NavLink}
+                            to={item.path}
+                            sx={{
+                                borderRadius: '12px',
+                                mb: 0.5,
+                                '&.active': {
+                                    bgcolor: '#e0f2f1',
+                                    color: '#00695c',
+                                    '& .MuiListItemIcon-root': { color: '#00695c' }
+                                },
+                                '&:hover': {
+                                    bgcolor: '#f5f5f5'
+                                }
+                            }}
+                        >
+                            <ListItemIcon sx={{ minWidth: 40, color: '#546e7a' }}>{item.icon}</ListItemIcon>
+                            <ListItemText 
+                                primary={item.text} 
+                                primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} 
+                            />
+                        </ListItemButton>
                     </ListItem>
                 ))}
             </List>
             <Box sx={{ p: 2, borderTop: '1px solid #eee' }}>
-                <ListItem 
-                    button 
-                    onClick={handleLogout}
-                    sx={{ borderRadius: '12px', color: '#d32f2f', '&:hover': { bgcolor: '#fff1f1' } }}
-                >
-                    <ListItemIcon sx={{ minWidth: 40, color: '#d32f2f' }}><LogoutIcon /></ListItemIcon>
-                    <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 600 }} />
+                <ListItem disablePadding>
+                    <ListItemButton 
+                        onClick={handleLogout}
+                        sx={{ borderRadius: '12px', color: '#d32f2f', '&:hover': { bgcolor: '#fff1f1' } }}
+                    >
+                        <ListItemIcon sx={{ minWidth: 40, color: '#d32f2f' }}><LogoutIcon /></ListItemIcon>
+                        <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 600 }} />
+                    </ListItemButton>
                 </ListItem>
             </Box>
         </Box>
@@ -143,11 +145,15 @@ function Layout() {
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                     >
                         <List sx={{ p: 1 }}>
-                            <ListItem button onClick={() => changeLanguage('en')} sx={{ borderRadius: 1 }}>
-                                <ListItemText primary="English (EN)" />
+                            <ListItem disablePadding>
+                                <ListItemButton onClick={() => changeLanguage('en')} sx={{ borderRadius: 1 }}>
+                                    <ListItemText primary="English (EN)" />
+                                </ListItemButton>
                             </ListItem>
-                            <ListItem button onClick={() => changeLanguage('si')} sx={{ borderRadius: 1 }}>
-                                <ListItemText primary="සිංහල (SI)" />
+                            <ListItem disablePadding>
+                                <ListItemButton onClick={() => changeLanguage('si')} sx={{ borderRadius: 1 }}>
+                                    <ListItemText primary="සිංහල (SI)" />
+                                </ListItemButton>
                             </ListItem>
                         </List>
                     </Popover>

@@ -3,6 +3,9 @@ import { View, StyleSheet, TouchableOpacity, Animated, Linking, ScrollView, Dime
 import { Text, Surface, Button, IconButton, List, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import { db, auth } from '../firebaseConfig';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +18,8 @@ const EMBASSIES = [
 
 export default function SOSScreen() {
   const [active, setActive] = useState(false);
+  const [activeDocId, setActiveDocId] = useState(null);
+  const [loading, setLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [search, setSearch] = useState('');
 
@@ -31,6 +36,56 @@ export default function SOSScreen() {
     }
   }, [active]);
 
+  const sendSOSAlert = async () => {
+    if (active && activeDocId) {
+      setLoading(true);
+      try {
+        const { doc, updateDoc } = await import('firebase/firestore');
+        const alertRef = doc(db, "sos_alerts", activeDocId);
+        await updateDoc(alertRef, { status: 'resolved', resolvedAt: serverTimestamp() });
+        setActive(false);
+        setActiveDocId(null);
+      } catch (error) {
+        console.error("Error resolving SOS:", error);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let location = null;
+      let { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+      if (locStatus === 'granted') {
+        location = await Location.getCurrentPositionAsync({});
+      }
+
+      const user = auth.currentUser;
+      const alertData = {
+        userId: user?.uid || 'anonymous',
+        userName: user?.displayName || 'Tourist',
+        phone: user?.phoneNumber || 'N/A',
+        status: 'active',
+        timestamp: serverTimestamp(),
+        location: location ? {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        } : null
+      };
+
+      const docRef = await addDoc(collection(db, "sos_alerts"), alertData);
+      setActive(true);
+      setActiveDocId(docRef.id);
+      alert("Emergency Alert Sent! Admin is being notified.");
+    } catch (error) {
+      console.error("Error sending SOS:", error);
+      alert("Failed to send alert. Please call emergency services directly.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCall = (num) => Linking.openURL(`tel:${num}`);
 
   return (
@@ -44,11 +99,18 @@ export default function SOSScreen() {
         <Animated.View style={[styles.pulseCircle, { transform: [{ scale: pulseAnim }], opacity: active ? 0.4 : 0 }]} />
         <TouchableOpacity 
           activeOpacity={0.8} 
-          style={styles.sosBtn}
-          onPress={() => setActive(!active)}
+          style={[styles.sosBtn, active && { backgroundColor: '#B71C1C' }]}
+          onPress={sendSOSAlert}
+          disabled={loading}
         >
-          <Text style={styles.sosText}>{active ? 'ALERTING' : 'SOS'}</Text>
-          <Text style={styles.tapText}>{active ? 'Tap to cancel' : 'Hold 2s for help'}</Text>
+          {loading ? (
+            <Text style={styles.sosText}>...</Text>
+          ) : (
+            <>
+              <Text style={styles.sosText}>{active ? 'ALERT' : 'SOS'}</Text>
+              <Text style={styles.tapText}>{active ? 'ON - Tap to off' : 'Tap for Help'}</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -64,9 +126,27 @@ export default function SOSScreen() {
           <Text style={styles.actionNum}>1990</Text>
         </Surface>
         <Surface style={styles.actionCard} elevation={2}>
+          <IconButton icon="fire" mode="contained" containerColor="#E65100" iconColor="#FFF" onPress={() => handleCall('110')} />
+          <Text style={styles.actionLabel}>Fire</Text>
+          <Text style={styles.actionNum}>110</Text>
+        </Surface>
+      </View>
+
+      <View style={[styles.actionGrid, { marginTop: 15 }]}>
+        <Surface style={styles.actionCard} elevation={2}>
           <IconButton icon="shield-account" mode="contained" containerColor="#FFB300" iconColor="#FFF" onPress={() => handleCall('0112421052')} />
           <Text style={styles.actionLabel}>Tourist Police</Text>
           <Text style={styles.actionNum}>Hotline</Text>
+        </Surface>
+        <Surface style={styles.actionCard} elevation={2}>
+          <IconButton icon="face-woman" mode="contained" containerColor="#C2185B" iconColor="#FFF" onPress={() => handleCall('1929')} />
+          <Text style={styles.actionLabel}>Women Aid</Text>
+          <Text style={styles.actionNum}>1929</Text>
+        </Surface>
+        <Surface style={styles.actionCard} elevation={2}>
+          <IconButton icon="hospital-box" mode="contained" containerColor="#1976D2" iconColor="#FFF" onPress={() => handleCall('0112691111')} />
+          <Text style={styles.actionLabel}>Gen. Hospital</Text>
+          <Text style={styles.actionNum}>Colombo</Text>
         </Surface>
       </View>
 
