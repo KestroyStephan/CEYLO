@@ -86,6 +86,7 @@ export default function RegisterScreen({ navigation }) {
               { value: 'tourist', label: 'Tourist', icon: 'map-marker' },
               { value: 'driver', label: 'Driver', icon: 'car' },
               { value: 'guide', label: 'Guide', icon: 'account-voice' },
+              { value: 'vendor_onboarding', label: 'Vendor', icon: 'store' },
             ]}
             style={styles.rolePicker}
             theme={{ colors: { secondaryContainer: '#E0F2F1', onSecondaryContainer: '#00695C' } }}

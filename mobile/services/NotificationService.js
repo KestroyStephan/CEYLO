@@ -73,7 +73,20 @@ class NotificationServiceClass {
 
   async _registerToken() {
     try {
-      const { data: token } = await Notifications.getExpoPushTokenAsync();
+      // For Web, we need a VAPID key. If not present, skip to avoid 400 error.
+      let tokenData;
+      if (Platform.OS === 'web') {
+        const vapidKey = Constants.expoConfig?.notification?.vapidPublicKey;
+        if (!vapidKey) {
+          console.log('[Notifications] Web registration skipped: No vapidPublicKey in app.json');
+          return;
+        }
+        tokenData = await Notifications.getExpoPushTokenAsync({ vapidKey });
+      } else {
+        tokenData = await Notifications.getExpoPushTokenAsync();
+      }
+
+      const token = tokenData.data;
       const uid = auth.currentUser?.uid;
       if (uid && token) {
         await updateDoc(doc(db, 'users', uid), { expoPushToken: token });

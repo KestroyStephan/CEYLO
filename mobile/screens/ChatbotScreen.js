@@ -6,17 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { db, auth } from '../firebaseConfig';
 import { doc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
 // API URLs (Using Waterfall logic)
 const MODELS = [
+  { name: 'Groq Llama 3', url: 'https://api.groq.com/openai/v1/chat/completions', type: 'groq', key: process.env.EXPO_PUBLIC_GROQ_API_KEY },
   { name: 'Gemini 1.5 Flash', url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`, type: 'gemini' },
   { name: 'OpenAI GPT-4o-mini', url: 'https://api.openai.com/v1/chat/completions', type: 'openai', key: process.env.EXPO_PUBLIC_OPENAI_API_KEY },
-  { name: 'Groq Llama 3', url: 'https://api.groq.com/openai/v1/chat/completions', type: 'groq', key: process.env.EXPO_PUBLIC_GROQ_API_KEY },
-  { name: 'GitHub Models', url: 'https://models.inference.ai.azure.com/chat/completions', type: 'github', key: process.env.EXPO_PUBLIC_GITHUB_TOKEN },
 ];
 
 const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge. 
@@ -44,7 +42,7 @@ CONTEXT:
 - Extract preferences silently while talking.`;
 
 export default function ChatbotScreen({ navigation }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState([
     { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
   ]);

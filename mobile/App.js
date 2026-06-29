@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import './i18n';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, LogBox, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
@@ -12,6 +12,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OfflineQueue } from './services/OfflineQueue';
 import { NotificationService } from './services/NotificationService';
+
+// Suppress common warnings that are unavoidable or web-specific
+LogBox.ignoreLogs([
+  'props.pointerEvents is deprecated',
+  'Animated: `useNativeDriver` is not supported'
+]);
 
 // Auth Screens
 import SplashScreen from './screens/auth/SplashScreen';
@@ -27,6 +33,7 @@ import GuideDashboard from './screens/GuideDashboard';
 import ChatbotScreen from './screens/ChatbotScreen';
 import MapScreen from './screens/MapScreen';
 import DestinationDetailScreen from './screens/DestinationDetailScreen';
+import HiddenGemsListScreen from './screens/HiddenGemsListScreen';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
 import TransportScreen from './screens/TransportScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
@@ -171,6 +178,7 @@ export default function App() {
                 {/* Common Screens */}
                 <Stack.Screen name="Chatbot" component={ChatbotScreen} />
                 <Stack.Screen name="MapScreen" component={MapScreen} />
+                <Stack.Screen name="HiddenGemsList" component={HiddenGemsListScreen} />
                 <Stack.Screen name="DestinationDetail" component={DestinationDetailScreen} />
                 <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} />
                 <Stack.Screen name="Transport" component={TransportScreen} />
@@ -179,7 +187,9 @@ export default function App() {
                 <Stack.Screen name="CulturalEvents" component={CulturalEventsScreen} />
                 
                 {/* Vendor & Utility Screens from Main */}
-                <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
+                {userRole !== 'vendor_onboarding' && (
+                  <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
+                )}
                 <Stack.Screen name="OfflineMapSettings" component={OfflineMapSettings} />
                 <Stack.Screen name="EventDetail" component={EventDetailScreen} />
               </Stack.Group>

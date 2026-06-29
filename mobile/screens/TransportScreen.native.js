@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
+import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, ScrollView } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../components/Map';
 import { Text, Surface, Button, Avatar, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -14,11 +14,13 @@ const VEHICLES = [
   { id: 'bike', name: 'Eco-Bike', icon: 'bicycle', price: '150', eco: '100', time: '3m' },
 ];
 
-export default function TransportScreen({ navigation }) {
+export default function TransportScreen({ route, navigation }) {
+  const { destination } = route.params || {};
   const [location, setLocation] = useState(null);
   const [selectedType, setSelectedType] = useState('tuk');
   const [step, setStep] = useState(1); // 1: Selector, 2: Searching, 3: Confirmed
   const sheetAnim = useRef(new Animated.Value(0)).current;
+  const mapRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -28,6 +30,19 @@ export default function TransportScreen({ navigation }) {
       setLocation(loc.coords);
     })();
   }, []);
+
+  useEffect(() => {
+    if (location && destination && destination.coords && mapRef.current) {
+      // Fit to coordinates
+      mapRef.current.fitToCoordinates([
+        location,
+        destination.coords
+      ], {
+        edgePadding: { top: 100, right: 50, bottom: 400, left: 50 },
+        animated: true,
+      });
+    }
+  }, [location, destination]);
 
   const handleBook = () => {
     setStep(2);
@@ -51,17 +66,30 @@ export default function TransportScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
-          latitude: 6.9271,
-          longitude: 79.8612,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+          latitude: destination ? (destination.coords?.latitude || 6.9271) : 6.9271,
+          longitude: destination ? (destination.coords?.longitude || 79.8612) : 79.8612,
+          latitudeDelta: 0.1,
+          longitudeDelta: 0.1,
         }}
         showsUserLocation
       >
         {location && <Marker coordinate={location} title="Pickup" pinColor="#00695C" />}
+        {destination && destination.coords && <Marker coordinate={destination.coords} title={destination.name} pinColor="#D32F2F" />}
+        
+        {location && destination && destination.coords && (
+           <MapViewDirections
+             origin={location}
+             destination={destination.coords}
+             apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
+             strokeWidth={4}
+             strokeColor="#00695C"
+             optimizeWaypoints={true}
+           />
+        )}
       </MapView>
 
       <IconButton icon="arrow-left" mode="contained" containerColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
@@ -74,7 +102,9 @@ export default function TransportScreen({ navigation }) {
             <Text style={styles.sheetTitle}>Where to?</Text>
             <TouchableOpacity style={styles.destBox}>
               <MaterialCommunityIcons name="map-marker-search" size={20} color="#00695C" />
-              <Text style={styles.destText}>Search destination...</Text>
+              <Text style={[styles.destText, destination && {color: '#333'}]}>
+                {destination ? destination.name : "Search destination..."}
+              </Text>
             </TouchableOpacity>
 
             <Text style={styles.sectionTitle}>Select Vehicle</Text>
@@ -120,7 +150,7 @@ export default function TransportScreen({ navigation }) {
                 <Text style={styles.statusLab}>Estimate</Text>
               </View>
             </View>
-            <Button mode="outlined" style={styles.cancelBtn} textColor="#FF5252">Cancel Trip</Button>
+            <Button mode="outlined" style={styles.cancelBtn} textColor="#FF5252" onPress={() => setStep(1)}>Cancel Trip</Button>
           </View>
         )}
       </Surface>

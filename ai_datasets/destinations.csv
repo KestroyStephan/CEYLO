@@ -1,0 +1,276 @@
+destination_id,name,category,province,lat,lon,hidden_gem,avg_rating,popularity_rank,seasonal_availability,carbon_footprint_index,wildlife_disturbance_risk,plastic_pollution_risk,community_benefit_score,carrying_capacity_adherence,eco_score
+DEST_0001,Sigiriya Rock Fortress,Heritage & Culture,North Central Province,7.957,80.7603,False,4.5,1,Year-Round,32,8,67,42,True,68.8
+DEST_0002,Temple of the Sacred Tooth Relic,Heritage & Culture,Central Province,7.2936,80.6413,False,4.6,2,Year-Round,18,6,60,86,False,72.5
+DEST_0003,Yala National Park,Wildlife,Southern Province,6.3683,81.5186,False,4.8,3,Year-Round,32,16,33,33,False,60.4
+DEST_0004,Ella Rock,Nature & Viewpoint,Uva Province,6.86,81.047,False,4.9,4,Year-Round,10,6,21,66,True,86.3
+DEST_0005,Nine Arches Bridge,Heritage & Culture,Uva Province,6.8767,81.0609,False,4.6,5,Year-Round,52,20,69,59,False,54.5
+DEST_0006,Galle Fort,Heritage & Culture,Southern Province,6.0286,80.2168,False,4.6,6,Year-Round,46,19,52,70,True,70.9
+DEST_0007,Mirissa Beach,Beach,Southern Province,5.9483,80.4578,False,4.9,7,Nov-April,34,15,40,62,True,74.9
+DEST_0008,Pinnawala Elephant Orphanage,Wildlife,Sabaragamuwa Province,7.2995,80.3861,False,4.5,8,Year-Round,59,10,30,43,False,57.4
+DEST_0009,Horton Plains National Park,Nature & Viewpoint,Central Province,6.8028,80.8066,False,4.7,9,Year-Round,58,19,67,74,True,66.5
+DEST_0010,Arugam Bay,Beach,Eastern Province,6.8436,81.8267,False,4.8,10,May-Oct,14,18,50,68,True,79.0
+DEST_0011,Dambulla Cave Temple,Heritage & Culture,North Central Province,7.8566,80.6485,False,4.7,11,Year-Round,35,7,32,68,True,78.7
+DEST_0012,Udawalawe National Park,Wildlife,Sabaragamuwa Province,6.4764,80.8988,False,4.8,12,Year-Round,6,23,64,57,True,75.7
+DEST_0013,Adam's Peak (Sri Pada),Nature & Viewpoint,Sabaragamuwa Province,6.8096,80.4994,False,4.9,13,Year-Round,41,15,76,81,True,71.5
+DEST_0014,Ruwanwelisaya,Heritage & Culture,North Central Province,8.3503,80.3965,False,4.9,14,Year-Round,57,17,56,62,True,66.3
+DEST_0015,Bambarakanda Falls,Waterfall,Uva Province,6.7724,80.8291,False,4.8,15,Year-Round,40,16,51,38,True,66.8
+DEST_0016,Trincomalee Koneswaram Temple,Heritage & Culture,Eastern Province,8.5816,81.2407,False,4.9,16,Year-Round,50,19,33,40,True,66.8
+DEST_0017,Unawatuna Beach,Beach,Southern Province,6.0116,80.2458,False,4.9,17,Nov-April,33,6,69,76,True,75.4
+DEST_0018,Minneriya National Park,Wildlife,North Central Province,8.0336,80.8354,False,4.7,18,Year-Round,49,1,35,38,False,59.9
+DEST_0019,Pigeon Island National Park,Nature & Viewpoint,Eastern Province,8.7183,81.2001,False,4.6,19,Year-Round,48,7,65,68,True,70.5
+DEST_0020,Jaffna Fort,Heritage & Culture,Northern Province,9.6615,80.0074,False,4.2,20,Year-Round,14,18,62,41,True,71.8
+DEST_0021,Kitulgala Sands,Beach,Sabaragamuwa Province,6.477203,80.552771,False,3.9,203,Year-Round,14,14,45,55,False,68.0
+DEST_0022,Polonnaruwa Cove,Beach,North Central Province,8.352923,80.99252,False,4.2,27,Year-Round,16,3,30,64,False,73.7
+DEST_0023,Puttalam Ancient Temple,Heritage & Culture,North Western Province,7.702255,80.187003,True,4.4,44,Year-Round,18,12,17,47,False,69.9
+DEST_0024,Hatton Hidden National Park,Wildlife,Central Province,7.407238,80.5737,True,4.8,132,Year-Round,20,40,39,63,False,63.8
+DEST_0025,Polonnaruwa Grand Safari,Wildlife,North Central Province,8.058128,80.095663,False,4.7,98,Year-Round,9,15,18,63,True,84.7
+DEST_0026,Hatton Bay,Beach,Central Province,7.460073,80.833958,False,4.2,269,Year-Round,56,11,34,47,True,68.1
+DEST_0027,Kurunegala Falls,Waterfall,North Western Province,7.517065,79.915164,False,4.3,69,Year-Round,11,10,14,61,False,75.3
+DEST_0028,Kegalle Secret National Park,Wildlife,Sabaragamuwa Province,6.74477,80.298778,True,4.2,122,Year-Round,39,16,38,88,True,78.9
+DEST_0029,Arugam Bay Ella,Waterfall,Eastern Province,7.914753,81.183737,False,4.9,195,Year-Round,33,1,16,90,True,87.2
+DEST_0030,Colombo Secret Estate,Nature & Viewpoint,Western Province,7.025875,80.192434,False,4.0,64,Year-Round,55,18,20,86,True,76.9
+DEST_0031,Kitulgala Secret Bird Sanctuary,Wildlife,Sabaragamuwa Province,7.0057,80.425368,True,4.3,300,Year-Round,53,40,58,47,True,59.5
+DEST_0032,Arugam Bay Central Sanctuary,Nature & Viewpoint,Eastern Province,8.088361,81.566342,True,4.3,241,Year-Round,58,11,71,72,False,57.0
+DEST_0033,Puttalam Beach,Beach,North Western Province,7.758902,79.77276,False,4.2,252,Year-Round,52,5,13,46,True,73.2
+DEST_0034,Unawatuna Cascade,Waterfall,Southern Province,6.348855,80.040754,True,4.5,90,Year-Round,52,7,48,76,True,73.6
+DEST_0035,Bandarawela Falls,Waterfall,Uva Province,6.845818,81.4093,True,4.5,163,Year-Round,42,5,43,47,True,71.4
+DEST_0036,Jaffna Ancient Fortress,Heritage & Culture,Northern Province,9.645677,80.521286,False,3.9,207,Year-Round,38,20,61,53,True,68.0
+DEST_0037,Matale Beach,Beach,Central Province,7.281876,80.529387,True,4.9,165,Year-Round,8,6,75,37,False,62.9
+DEST_0038,Kalpitiya Ancient Sanctuary,Nature & Viewpoint,North Western Province,7.639682,80.193886,True,4.2,54,Year-Round,31,16,48,50,True,71.8
+DEST_0039,Mullaitivu Central Rock,Nature & Viewpoint,Northern Province,9.043687,80.175796,False,4.8,150,Year-Round,43,3,64,34,True,65.9
+DEST_0040,Mannar Cascade,Waterfall,Northern Province,9.1335,79.871244,True,4.1,179,Year-Round,58,4,19,50,True,71.8
+DEST_0041,Haputale Royal Viharaya,Heritage & Culture,Uva Province,6.945132,81.374063,True,4.7,264,Year-Round,31,11,77,70,False,62.5
+DEST_0042,Hikkaduwa Falls,Waterfall,Southern Province,6.209993,80.151166,False,4.8,66,Year-Round,56,3,55,57,True,68.6
+DEST_0043,Mannar Hidden Ruins,Heritage & Culture,Northern Province,8.893035,80.191166,False,4.6,227,Year-Round,15,10,18,78,True,87.2
+DEST_0044,Mirissa Central National Park,Wildlife,Southern Province,5.974725,80.643091,False,4.4,134,Year-Round,48,12,60,80,True,72.6
+DEST_0045,Mount Lavinia Secret Viewpoint,Nature & Viewpoint,Western Province,6.640975,80.10418,False,3.9,166,Year-Round,22,1,24,35,True,77.7
+DEST_0046,Puttalam Ancient Ruins,Heritage & Culture,North Western Province,7.836232,80.364756,False,4.4,231,Year-Round,45,15,47,80,False,64.7
+DEST_0047,Arugam Bay Hidden Sanctuary,Nature & Viewpoint,Eastern Province,8.670888,81.749028,False,4.7,56,Year-Round,48,12,63,34,True,63.0
+DEST_0048,Haputale Cove,Beach,Uva Province,6.75565,81.268306,False,4.3,174,Year-Round,48,16,54,42,False,55.1
+DEST_0049,Mullaitivu Royal Bird Sanctuary,Wildlife,Northern Province,9.711905,80.379891,False,4.3,157,Year-Round,15,2,25,54,True,82.9
+DEST_0050,Jaffna Bay,Beach,Northern Province,9.081126,80.222065,True,4.6,111,Year-Round,24,17,66,41,True,68.9
+DEST_0051,Habarana Central Stupa,Heritage & Culture,North Central Province,8.112308,80.689743,False,3.9,100,Year-Round,34,10,61,48,False,60.0
+DEST_0052,Vavuniya Beach,Beach,Northern Province,8.95775,80.514872,True,4.1,89,Year-Round,42,16,27,53,True,72.8
+DEST_0053,Mannar Ancient Temple,Heritage & Culture,Northern Province,9.7789,79.897399,False,4.6,213,Year-Round,55,0,70,90,False,63.8
+DEST_0054,Matara Falls,Waterfall,Southern Province,6.290063,80.912353,False,4.2,65,Year-Round,8,17,58,62,False,68.3
+DEST_0055,Mount Lavinia Ancient Peak,Nature & Viewpoint,Western Province,7.160833,80.05262,False,3.9,176,Year-Round,11,15,14,82,True,88.5
+DEST_0056,Mullaitivu Sands,Beach,Northern Province,9.652454,80.510968,True,4.4,39,Year-Round,56,16,79,46,True,60.1
+DEST_0057,Negombo Hidden National Park,Wildlife,Western Province,6.996225,79.825588,False,4.6,136,Year-Round,42,7,80,83,False,62.7
+DEST_0058,Arugam Bay Ancient Bird Sanctuary,Wildlife,Eastern Province,8.658099,81.437645,False,3.9,80,Year-Round,17,29,25,58,False,67.8
+DEST_0059,Puttalam Ancient National Park,Wildlife,North Western Province,7.590868,80.382239,False,4.5,94,Year-Round,17,30,77,39,True,66.0
+DEST_0060,Habarana Sands,Beach,North Central Province,8.211615,80.119627,False,3.9,235,Year-Round,53,18,22,84,True,76.7
+DEST_0061,Ratnapura Secret Gap,Nature & Viewpoint,Sabaragamuwa Province,6.787842,80.409958,True,4.8,262,Year-Round,16,3,24,40,True,79.8
+DEST_0062,Negombo Central Temple,Heritage & Culture,Western Province,7.075261,80.114655,False,4.9,59,Year-Round,29,1,13,65,True,83.6
+DEST_0063,Mount Lavinia Secret Temple,Heritage & Culture,Western Province,7.232839,80.176232,False,4.2,177,Year-Round,45,4,23,48,False,64.1
+DEST_0064,Negombo Beach,Beach,Western Province,6.804542,79.902915,True,4.7,215,Year-Round,40,11,49,71,True,74.7
+DEST_0065,Mullaitivu Cascade,Waterfall,Northern Province,8.703639,80.044078,False,4.4,249,Year-Round,16,16,72,50,True,72.0
+DEST_0066,Batticaloa Ella,Waterfall,Eastern Province,8.283076,81.663424,False,4.4,274,Year-Round,51,11,20,40,True,70.0
+DEST_0067,Tangalle Cascade,Waterfall,Southern Province,6.283332,80.921885,False,3.9,36,Year-Round,15,2,30,82,True,87.8
+DEST_0068,Kitulgala Ella,Waterfall,Sabaragamuwa Province,6.327145,80.596478,False,4.9,210,Year-Round,47,3,64,47,True,67.5
+DEST_0069,Jaffna Falls,Waterfall,Northern Province,9.040399,80.307665,False,4.3,116,Year-Round,8,5,79,65,False,68.2
+DEST_0070,Arugam Bay Royal Viharaya,Heritage & Culture,Eastern Province,8.424579,81.608954,False,4.2,126,Year-Round,36,12,18,77,False,71.3
+DEST_0071,Matale Grand Stupa,Heritage & Culture,Central Province,6.90239,80.742901,False,4.7,119,Year-Round,30,19,47,82,True,78.1
+DEST_0072,Arugam Bay Grand Sanctuary,Nature & Viewpoint,Eastern Province,7.365247,81.460683,True,3.9,148,Year-Round,30,8,16,53,True,79.1
+DEST_0073,Batticaloa Falls,Waterfall,Eastern Province,8.600846,81.313292,False,3.8,127,Year-Round,39,3,70,85,True,76.2
+DEST_0074,Haputale Hidden Ruins,Heritage & Culture,Uva Province,6.945524,80.987174,False,4.1,213,Year-Round,27,17,47,45,True,71.8
+DEST_0075,Vavuniya Royal National Park,Wildlife,Northern Province,9.170544,80.31737,False,4.9,279,Year-Round,19,11,42,77,True,82.2
+DEST_0076,Kurunegala Hidden Stupa,Heritage & Culture,North Western Province,7.704581,79.861184,False,4.4,48,Year-Round,55,10,12,55,True,73.5
+DEST_0077,Ella Beach,Beach,Central Province,7.293677,80.696428,False,4.2,109,Year-Round,44,11,36,30,False,57.4
+DEST_0078,Negombo Bay,Beach,Western Province,6.809289,79.89764,False,4.8,122,Year-Round,32,17,36,71,True,77.4
+DEST_0079,Nuwara Eliya Ella,Waterfall,Central Province,7.402617,80.618328,False,4.8,210,Year-Round,45,5,54,89,True,77.5
+DEST_0080,Kegalle Central Safari,Wildlife,Sabaragamuwa Province,6.847964,80.487454,False,4.1,299,Year-Round,45,25,13,78,True,77.4
+DEST_0081,Hikkaduwa Sands,Beach,Southern Province,6.155473,80.177678,True,3.9,136,Nov-April,35,11,65,35,True,66.3
+DEST_0082,Kegalle Cascade,Waterfall,Sabaragamuwa Province,6.779392,80.420838,True,4.5,87,Year-Round,55,4,56,64,False,59.9
+DEST_0083,Arugam Bay Central Safari,Wildlife,Eastern Province,8.498653,81.140993,False,4.1,51,Year-Round,38,30,21,71,True,75.6
+DEST_0084,Mullaitivu Secret Gap,Nature & Viewpoint,Northern Province,8.870462,79.933413,True,4.1,73,Year-Round,7,0,51,79,True,86.4
+DEST_0085,Mirissa Ancient Kovil,Heritage & Culture,Southern Province,6.163508,80.719886,False,4.8,152,Year-Round,54,15,49,88,True,73.8
+DEST_0086,Bandarawela Secret Safari,Wildlife,Uva Province,6.768531,81.35227,False,4.1,227,Year-Round,17,34,52,65,True,74.2
+DEST_0087,Bandarawela Ancient Viharaya,Heritage & Culture,Uva Province,6.846077,81.334325,False,4.6,169,Year-Round,58,7,45,57,True,68.8
+DEST_0088,Mount Lavinia Secret Sanctuary,Nature & Viewpoint,Western Province,6.985723,80.173263,False,4.6,234,Year-Round,31,9,11,33,True,75.4
+DEST_0089,Matara Hidden Stupa,Heritage & Culture,Southern Province,6.24061,80.207035,False,4.0,79,Year-Round,38,20,78,55,False,55.8
+DEST_0090,Puttalam Secret Fortress,Heritage & Culture,North Western Province,7.555033,80.37392,True,4.8,106,Year-Round,53,20,48,90,True,73.5
+DEST_0091,Matale Royal National Park,Wildlife,Central Province,6.865387,80.67676,True,4.8,30,Year-Round,47,39,41,47,True,63.7
+DEST_0092,Ella Cove,Beach,Central Province,6.91448,80.643838,False,3.9,159,Year-Round,17,3,42,68,False,72.5
+DEST_0093,Batticaloa Ancient Peak,Nature & Viewpoint,Eastern Province,7.357208,81.56376,False,4.4,50,Year-Round,24,14,40,38,True,72.8
+DEST_0094,Anuradhapura Central Gap,Nature & Viewpoint,North Central Province,7.908152,80.304326,True,4.6,245,Year-Round,15,0,69,87,True,83.3
+DEST_0095,Kandy Royal Temple,Heritage & Culture,Central Province,6.991693,80.76676,True,4.2,250,Year-Round,24,2,28,89,False,77.2
+DEST_0096,Negombo Secret Ruins,Heritage & Culture,Western Province,7.161049,79.863155,False,4.8,146,Year-Round,39,15,71,32,True,63.0
+DEST_0097,Trincomalee Falls,Waterfall,Eastern Province,7.727266,81.269542,False,4.2,188,Year-Round,16,7,53,49,True,76.5
+DEST_0098,Negombo Hidden Peak,Nature & Viewpoint,Western Province,7.149776,80.124366,True,4.3,89,Year-Round,51,1,46,43,True,68.8
+DEST_0099,Arugam Bay Grand Temple,Heritage & Culture,Eastern Province,8.75579,81.755919,True,4.7,179,Year-Round,8,4,46,73,True,84.9
+DEST_0100,Kegalle Hidden Bird Sanctuary,Wildlife,Sabaragamuwa Province,7.086743,80.548567,False,4.0,91,Year-Round,53,24,27,39,True,65.7
+DEST_0101,Kalutara Grand Reserve,Wildlife,Western Province,6.845429,80.050907,True,4.1,183,Year-Round,27,19,49,48,True,71.7
+DEST_0102,Kegalle Central Viharaya,Heritage & Culture,Sabaragamuwa Province,6.854358,80.329278,False,4.0,296,Year-Round,20,9,68,36,True,70.2
+DEST_0103,Nilaveli Grand Estate,Nature & Viewpoint,Eastern Province,7.326858,81.598267,False,4.5,250,Year-Round,31,0,72,42,True,69.8
+DEST_0104,Haputale Ella,Waterfall,Uva Province,7.049486,81.261003,False,3.9,165,Year-Round,24,16,59,65,False,64.9
+DEST_0105,Arugam Bay Hidden Rock,Nature & Viewpoint,Eastern Province,7.779921,81.536367,True,4.6,28,Year-Round,24,5,25,44,True,78.0
+DEST_0106,Kalutara Cascade,Waterfall,Western Province,6.722934,79.933535,False,4.0,108,Year-Round,9,5,64,37,False,64.5
+DEST_0107,Trincomalee Beach,Beach,Eastern Province,7.225583,81.51318,False,4.9,31,May-Oct,27,6,15,32,True,76.2
+DEST_0108,Vavuniya Cascade,Waterfall,Northern Province,9.772672,79.915166,True,4.4,287,Year-Round,19,10,72,59,True,74.2
+DEST_0109,Jaffna Secret Peak,Nature & Viewpoint,Northern Province,9.303804,80.391854,True,3.8,66,Year-Round,16,3,23,31,True,78.2
+DEST_0110,Hatton Secret Bird Sanctuary,Wildlife,Central Province,7.277373,80.625335,False,4.6,60,Year-Round,60,29,76,77,True,63.2
+DEST_0111,Kegalle Ancient Peak,Nature & Viewpoint,Sabaragamuwa Province,6.917346,80.349769,False,4.3,118,Year-Round,37,17,43,67,True,74.3
+DEST_0112,Monaragala Falls,Waterfall,Uva Province,6.922965,81.12089,True,4.0,221,Year-Round,56,19,64,37,True,60.0
+DEST_0113,Tangalle Grand National Park,Wildlife,Southern Province,5.961757,80.289729,True,3.9,80,Year-Round,23,36,75,73,True,70.4
+DEST_0114,Arugam Bay Grand Reserve,Wildlife,Eastern Province,7.386549,81.522318,False,4.5,103,Year-Round,43,14,31,34,True,68.6
+DEST_0115,Bandarawela Ancient Bird Sanctuary,Wildlife,Uva Province,6.849255,81.135403,False,4.5,56,Year-Round,17,18,20,31,True,75.4
+DEST_0116,Habarana Ella,Waterfall,North Central Province,8.101337,80.767011,True,4.8,144,Year-Round,27,7,66,62,True,74.3
+DEST_0117,Nuwara Eliya Cascade,Waterfall,Central Province,7.008874,80.551758,False,4.3,261,Year-Round,50,16,35,74,True,73.8
+DEST_0118,Polonnaruwa Hidden Sanctuary,Nature & Viewpoint,North Central Province,7.874044,80.095387,False,4.2,115,Year-Round,39,5,28,63,True,77.7
+DEST_0119,Mirissa Central Rock,Nature & Viewpoint,Southern Province,6.302115,80.338162,False,4.5,116,Year-Round,13,0,35,49,False,71.3
+DEST_0120,Galle Secret Sanctuary,Nature & Viewpoint,Southern Province,5.979175,80.871777,False,4.9,34,Year-Round,37,8,37,46,True,72.8
+DEST_0121,Mullaitivu Ancient Sanctuary,Nature & Viewpoint,Northern Province,9.364841,80.154357,False,4.2,223,Year-Round,19,2,73,73,False,68.5
+DEST_0122,Hikkaduwa Ancient National Park,Wildlife,Southern Province,6.137635,80.696163,False,4.6,232,Year-Round,38,3,42,44,True,72.4
+DEST_0123,Monaragala Cascade,Waterfall,Uva Province,6.968717,81.196609,False,4.7,294,Year-Round,40,14,28,79,True,78.8
+DEST_0124,Unawatuna Secret Sanctuary,Nature & Viewpoint,Southern Province,6.277117,80.875553,True,4.6,216,Year-Round,7,12,73,31,True,71.1
+DEST_0125,Mullaitivu Ella,Waterfall,Northern Province,9.495249,79.872738,False,4.1,284,Year-Round,49,15,24,72,False,65.5
+DEST_0126,Kalutara Bay,Beach,Western Province,6.669861,79.918476,False,4.4,95,Year-Round,25,6,75,51,True,71.5
+DEST_0127,Kandy Ancient Stupa,Heritage & Culture,Central Province,7.277412,80.722009,False,4.3,250,Year-Round,39,19,76,58,True,66.7
+DEST_0128,Tangalle Grand Safari,Wildlife,Southern Province,6.398017,80.338674,True,4.1,102,Year-Round,40,21,11,58,True,75.8
+DEST_0129,Kandy Sands,Beach,Central Province,6.916753,80.711301,False,4.6,55,Year-Round,50,11,35,37,True,67.4
+DEST_0130,Kegalle Grand Rock,Nature & Viewpoint,Sabaragamuwa Province,6.442067,80.218332,True,4.4,37,Year-Round,52,1,35,35,True,68.5
+DEST_0131,Bandarawela Beach,Beach,Uva Province,6.99868,81.236129,False,4.2,124,Year-Round,29,6,62,79,True,78.0
+DEST_0132,Mannar Ancient Ruins,Heritage & Culture,Northern Province,8.944345,79.835054,False,4.2,172,Year-Round,23,1,75,45,False,61.8
+DEST_0133,Mullaitivu Falls,Waterfall,Northern Province,9.749097,80.372606,False,3.9,141,Year-Round,34,4,41,32,True,71.0
+DEST_0134,Kalpitiya Ancient Gap,Nature & Viewpoint,North Western Province,7.973318,80.223783,True,4.8,260,Year-Round,45,3,37,75,True,77.6
+DEST_0135,Mount Lavinia Ancient Safari,Wildlife,Western Province,6.571374,79.978137,False,4.3,154,Year-Round,47,0,23,37,True,72.2
+DEST_0136,Nilaveli Falls,Waterfall,Eastern Province,8.559608,81.253758,False,4.0,207,Year-Round,5,0,41,71,True,86.8
+DEST_0137,Ella Ancient Peak,Nature & Viewpoint,Central Province,6.957552,80.793911,False,4.2,187,Year-Round,33,0,58,63,True,75.7
+DEST_0138,Kalpitiya Secret National Park,Wildlife,North Western Province,8.072935,80.309078,False,4.7,104,Year-Round,51,24,23,44,True,67.8
+DEST_0139,Monaragala Secret Gap,Nature & Viewpoint,Uva Province,6.896148,81.451741,False,4.9,300,Year-Round,54,0,67,84,True,73.2
+DEST_0140,Mount Lavinia Central Ruins,Heritage & Culture,Western Province,6.924712,80.092739,False,4.8,205,Year-Round,26,5,71,78,True,77.5
+DEST_0141,Kalutara Secret Temple,Heritage & Culture,Western Province,7.108773,79.917605,False,4.7,93,Year-Round,37,19,42,56,True,71.8
+DEST_0142,Mullaitivu Bay,Beach,Northern Province,9.281402,80.457328,True,4.4,157,Year-Round,5,19,18,62,True,84.7
+DEST_0143,Polonnaruwa Hidden Peak,Nature & Viewpoint,North Central Province,7.950182,80.527626,False,3.8,260,Year-Round,58,1,54,54,False,58.0
+DEST_0144,Kegalle Grand Estate,Nature & Viewpoint,Sabaragamuwa Province,7.096431,80.498678,False,4.4,132,Year-Round,58,2,31,38,False,58.1
+DEST_0145,Anuradhapura Grand National Park,Wildlife,North Central Province,7.863656,80.213172,False,4.3,71,Year-Round,54,20,33,47,False,56.9
+DEST_0146,Mullaitivu Cove,Beach,Northern Province,9.343507,80.288046,False,4.1,150,Year-Round,57,6,60,71,False,59.8
+DEST_0147,Habarana Beach,Beach,North Central Province,8.142218,80.275191,True,4.6,182,Year-Round,41,5,35,71,True,77.7
+DEST_0148,Mannar Hidden Bird Sanctuary,Wildlife,Northern Province,9.780162,80.360343,False,4.3,69,Year-Round,15,15,55,86,True,82.2
+DEST_0149,Kurunegala Central Temple,Heritage & Culture,North Western Province,7.436145,79.878824,False,4.4,281,Year-Round,17,19,66,67,True,75.5
+DEST_0150,Matara Royal Kovil,Heritage & Culture,Southern Province,6.39696,80.989664,False,4.6,216,Year-Round,9,4,17,41,True,82.6
+DEST_0151,Kalpitiya Secret Reserve,Wildlife,North Western Province,7.860268,79.715552,False,4.6,91,Year-Round,14,10,40,85,False,75.5
+DEST_0152,Kalutara Ella,Waterfall,Western Province,6.502761,80.057788,False,4.6,191,Year-Round,21,3,66,74,True,79.1
+DEST_0153,Colombo Hidden Kovil,Heritage & Culture,Western Province,6.815912,80.073519,False,4.2,27,Year-Round,45,6,48,78,True,75.9
+DEST_0154,Puttalam Secret Ruins,Heritage & Culture,North Western Province,7.834733,80.258603,True,4.0,255,Year-Round,36,11,56,84,False,67.2
+DEST_0155,Tangalle Beach,Beach,Southern Province,6.001714,80.903914,False,4.7,273,Nov-April,49,13,71,65,False,57.5
+DEST_0156,Kurunegala Sands,Beach,North Western Province,7.863774,79.821649,True,4.5,261,Year-Round,37,3,46,77,True,78.7
+DEST_0157,Mannar Hidden National Park,Wildlife,Northern Province,8.923702,80.435434,False,4.6,237,Year-Round,9,20,41,86,True,84.8
+DEST_0158,Vavuniya Grand Gap,Nature & Viewpoint,Northern Province,9.30291,79.914192,False,4.7,137,Year-Round,29,20,25,50,False,65.0
+DEST_0159,Sigiriya Ella,Waterfall,North Central Province,7.929111,80.459092,False,4.6,239,Year-Round,52,13,70,67,True,67.3
+DEST_0160,Polonnaruwa Secret Viewpoint,Nature & Viewpoint,North Central Province,8.029705,80.568095,True,4.2,145,Year-Round,53,10,35,39,True,67.3
+DEST_0161,Kegalle Central Temple,Heritage & Culture,Sabaragamuwa Province,6.313043,80.217582,False,3.9,164,Year-Round,23,20,55,78,True,77.6
+DEST_0162,Nilaveli Ella,Waterfall,Eastern Province,7.869393,81.223462,False,4.1,254,Year-Round,34,4,23,59,False,69.0
+DEST_0163,Kalutara Royal Peak,Nature & Viewpoint,Western Province,6.55114,80.115708,True,4.4,157,Year-Round,43,3,21,34,False,62.3
+DEST_0164,Ella Secret Bird Sanctuary,Wildlife,Central Province,7.141328,80.763638,True,4.0,89,Year-Round,46,12,74,60,True,67.0
+DEST_0165,Kalutara Central Sanctuary,Nature & Viewpoint,Western Province,6.5334,80.109929,False,3.9,39,Year-Round,45,14,24,39,True,70.2
+DEST_0166,Kitulgala Grand Safari,Wildlife,Sabaragamuwa Province,6.403313,80.365401,False,4.4,218,Year-Round,46,4,12,41,True,74.1
+DEST_0167,Monaragala Royal Safari,Wildlife,Uva Province,6.90925,80.949977,True,4.9,161,Year-Round,23,9,41,81,True,82.5
+DEST_0168,Haputale Ancient Stupa,Heritage & Culture,Uva Province,6.783449,81.484605,True,4.3,59,Year-Round,49,14,49,65,True,70.6
+DEST_0169,Ratnapura Ancient Kovil,Heritage & Culture,Sabaragamuwa Province,6.955387,80.499209,False,4.3,132,Year-Round,58,19,22,35,True,65.4
+DEST_0170,Batticaloa Royal Viewpoint,Nature & Viewpoint,Eastern Province,8.193938,81.685756,False,3.8,47,Year-Round,21,13,34,31,True,73.2
+DEST_0171,Vavuniya Hidden Viharaya,Heritage & Culture,Northern Province,9.504011,80.203352,False,4.9,230,Year-Round,46,13,57,63,True,70.0
+DEST_0172,Kalutara Ancient Stupa,Heritage & Culture,Western Province,7.041368,80.085606,False,4.6,190,Year-Round,12,17,47,87,True,84.0
+DEST_0173,Unawatuna Hidden Peak,Nature & Viewpoint,Southern Province,6.016541,80.640236,False,3.8,124,Year-Round,29,14,10,62,True,80.8
+DEST_0174,Kurunegala Bay,Beach,North Western Province,7.909894,79.807912,False,3.9,104,Year-Round,48,10,16,59,True,75.4
+DEST_0175,Anuradhapura Hidden Reserve,Wildlife,North Central Province,8.226274,80.369545,False,4.1,148,Year-Round,46,19,75,75,True,68.5
+DEST_0176,Monaragala Secret Estate,Nature & Viewpoint,Uva Province,6.847895,81.344424,True,4.7,97,Year-Round,10,17,36,42,True,77.1
+DEST_0177,Nuwara Eliya Central National Park,Wildlife,Central Province,6.933624,80.789577,True,4.4,24,Year-Round,31,31,76,56,True,65.8
+DEST_0178,Mannar Royal Ruins,Heritage & Culture,Northern Province,9.49736,80.404234,False,4.6,164,Year-Round,46,20,76,64,True,65.9
+DEST_0179,Puttalam Hidden Temple,Heritage & Culture,North Western Province,8.019419,80.242742,False,4.2,24,Year-Round,44,13,10,34,False,61.7
+DEST_0180,Jaffna Sands,Beach,Northern Province,8.877559,80.581028,True,3.9,213,Year-Round,44,15,34,78,True,76.5
+DEST_0181,Mullaitivu Secret Rock,Nature & Viewpoint,Northern Province,9.543639,80.362331,False,3.9,50,Year-Round,28,5,14,78,True,85.5
+DEST_0182,Jaffna Hidden Estate,Nature & Viewpoint,Northern Province,9.41759,79.961679,False,4.0,88,Year-Round,38,14,76,76,True,71.5
+DEST_0183,Haputale Central National Park,Wildlife,Uva Province,6.724275,81.145944,False,4.8,288,Year-Round,47,20,31,40,True,67.6
+DEST_0184,Vavuniya Secret Bird Sanctuary,Wildlife,Northern Province,9.614098,80.441629,False,4.2,95,Year-Round,32,12,37,71,False,68.2
+DEST_0185,Haputale Central Estate,Nature & Viewpoint,Uva Province,6.934055,81.076206,False,4.1,39,Year-Round,9,10,11,89,True,91.9
+DEST_0186,Galle Cascade,Waterfall,Southern Province,6.122682,80.301521,True,4.8,148,Year-Round,35,15,10,74,True,81.5
+DEST_0187,Monaragala Ancient Estate,Nature & Viewpoint,Uva Province,6.734235,81.362914,False,3.9,215,Year-Round,12,19,24,61,True,81.8
+DEST_0188,Trincomalee Cascade,Waterfall,Eastern Province,8.595731,81.599446,False,4.4,241,Year-Round,51,7,22,62,True,74.9
+DEST_0189,Haputale Ancient Temple,Heritage & Culture,Uva Province,6.793352,81.299073,False,4.6,264,Year-Round,43,15,42,69,True,73.8
+DEST_0190,Mount Lavinia Hidden Stupa,Heritage & Culture,Western Province,7.182508,80.028979,False,3.9,175,Year-Round,15,6,15,37,True,80.2
+DEST_0191,Kitulgala Secret Viewpoint,Nature & Viewpoint,Sabaragamuwa Province,6.961629,80.504748,False,4.0,293,Year-Round,47,3,10,44,True,75.0
+DEST_0192,Nuwara Eliya Sands,Beach,Central Province,7.068889,80.87172,False,4.5,219,Year-Round,29,8,67,57,False,62.5
+DEST_0193,Habarana Central National Park,Wildlife,North Central Province,8.489723,80.544405,False,4.0,186,Year-Round,44,33,53,77,False,59.8
+DEST_0194,Haputale Royal Viewpoint,Nature & Viewpoint,Uva Province,6.973542,81.2883,False,4.5,272,Year-Round,47,10,48,32,True,65.4
+DEST_0195,Monaragala Ella,Waterfall,Uva Province,7.07749,81.195513,False,4.0,270,Year-Round,53,7,73,84,False,61.2
+DEST_0196,Arugam Bay Royal National Park,Wildlife,Eastern Province,8.316633,81.386954,False,4.5,244,Year-Round,41,25,13,44,True,71.6
+DEST_0197,Vavuniya Royal Bird Sanctuary,Wildlife,Northern Province,9.173023,80.339947,True,3.9,189,Year-Round,55,34,39,62,True,66.0
+DEST_0198,Ella Hidden Reserve,Wildlife,Central Province,7.054705,80.710458,False,4.6,284,Year-Round,29,1,26,83,True,85.2
+DEST_0199,Monaragala Grand Bird Sanctuary,Wildlife,Uva Province,7.097702,81.450299,False,4.8,32,Year-Round,31,11,78,85,False,65.3
+DEST_0200,Kurunegala Secret Safari,Wildlife,North Western Province,7.476856,80.108424,False,4.8,83,Year-Round,49,14,47,63,True,70.5
+DEST_0201,Hikkaduwa Bay,Beach,Southern Province,6.290035,80.185931,True,3.8,127,Nov-April,43,18,17,36,True,70.3
+DEST_0202,Nuwara Eliya Secret Fortress,Heritage & Culture,Central Province,7.338539,80.799006,False,4.8,235,Year-Round,28,19,45,85,True,79.5
+DEST_0203,Bandarawela Bay,Beach,Uva Province,7.048356,80.988068,True,4.4,76,Year-Round,19,20,22,36,False,65.2
+DEST_0204,Mannar Falls,Waterfall,Northern Province,9.171474,80.209272,False,4.1,233,Year-Round,46,1,80,47,False,55.7
+DEST_0205,Galle Royal Viharaya,Heritage & Culture,Southern Province,6.120848,80.405733,False,3.9,227,Year-Round,58,5,67,72,False,58.9
+DEST_0206,Mirissa Sands,Beach,Southern Province,5.914965,80.232429,True,4.3,108,Nov-April,43,9,58,36,False,56.0
+DEST_0207,Negombo Grand Temple,Heritage & Culture,Western Province,6.968578,80.135005,False,4.7,100,Year-Round,7,13,17,89,False,80.9
+DEST_0208,Kalutara Grand Safari,Wildlife,Western Province,6.832694,80.167059,True,4.3,168,Year-Round,31,0,63,71,True,77.0
+DEST_0209,Polonnaruwa Royal Fortress,Heritage & Culture,North Central Province,8.426511,80.769363,False,4.3,176,Year-Round,44,10,65,75,False,62.2
+DEST_0210,Negombo Grand Sanctuary,Nature & Viewpoint,Western Province,6.677887,79.979004,False,4.4,82,Year-Round,55,6,66,61,False,57.4
+DEST_0211,Mannar Bay,Beach,Northern Province,9.16547,80.430782,False,4.4,271,Year-Round,26,5,39,81,False,72.8
+DEST_0212,Kalpitiya Cascade,Waterfall,North Western Province,7.763813,80.114178,False,3.9,121,Year-Round,18,16,47,90,False,73.2
+DEST_0213,Kurunegala Hidden Viharaya,Heritage & Culture,North Western Province,7.92016,80.106711,False,4.7,257,Year-Round,47,12,35,44,False,59.4
+DEST_0214,Polonnaruwa Grand Kovil,Heritage & Culture,North Central Province,8.128784,80.252365,False,3.9,58,Year-Round,40,5,10,78,True,83.1
+DEST_0215,Trincomalee Ella,Waterfall,Eastern Province,7.29971,81.739097,True,3.9,300,Year-Round,30,5,23,31,True,74.2
+DEST_0216,Jaffna Central Safari,Wildlife,Northern Province,9.371543,79.93338,False,4.5,92,Year-Round,58,1,78,33,True,60.2
+DEST_0217,Kegalle Central Ruins,Heritage & Culture,Sabaragamuwa Province,7.095228,80.264071,False,4.8,292,Year-Round,27,15,56,49,True,71.7
+DEST_0218,Galle Bay,Beach,Southern Province,6.03832,80.550998,True,3.9,70,Nov-April,38,9,24,35,False,62.1
+DEST_0219,Batticaloa Cove,Beach,Eastern Province,8.096851,81.146077,True,3.9,34,May-Oct,17,14,26,79,False,74.9
+DEST_0220,Kegalle Bay,Beach,Sabaragamuwa Province,7.046396,80.331466,False,4.4,32,Year-Round,25,14,32,43,True,74.8
+DEST_0221,Negombo Royal Bird Sanctuary,Wildlife,Western Province,7.21234,80.062762,False,3.9,299,Year-Round,53,9,79,57,True,64.5
+DEST_0222,Vavuniya Grand Viewpoint,Nature & Viewpoint,Northern Province,9.716979,80.10639,False,4.8,173,Year-Round,42,2,24,83,False,72.1
+DEST_0223,Sigiriya Central Stupa,Heritage & Culture,North Central Province,8.029558,80.670023,True,4.0,284,Year-Round,58,16,57,53,True,64.3
+DEST_0224,Galle Ancient Ruins,Heritage & Culture,Southern Province,6.031189,80.024583,False,4.5,126,Year-Round,55,6,37,32,True,65.9
+DEST_0225,Trincomalee Secret Kovil,Heritage & Culture,Eastern Province,6.900563,81.417654,False,4.0,25,Year-Round,58,7,56,41,True,63.9
+DEST_0226,Mannar Ancient Safari,Wildlife,Northern Province,9.406706,80.38562,False,4.1,184,Year-Round,34,9,70,74,True,74.0
+DEST_0227,Kalutara Falls,Waterfall,Western Province,6.644107,80.00303,True,4.7,135,Year-Round,32,3,42,43,True,73.7
+DEST_0228,Vavuniya Grand Ruins,Heritage & Culture,Northern Province,8.839295,80.095178,False,3.8,162,Year-Round,26,20,46,39,True,70.4
+DEST_0229,Habarana Cascade,Waterfall,North Central Province,8.10458,80.711914,False,4.8,294,Year-Round,5,9,39,49,True,80.9
+DEST_0230,Kegalle Ancient Ruins,Heritage & Culture,Sabaragamuwa Province,6.613457,80.41767,False,4.2,33,Year-Round,19,19,15,87,False,76.6
+DEST_0231,Puttalam Secret Rock,Nature & Viewpoint,North Western Province,7.828937,79.979576,False,4.2,79,Year-Round,35,1,65,46,False,60.5
+DEST_0232,Tangalle Ancient Reserve,Wildlife,Southern Province,6.237362,80.337007,False,3.9,196,Year-Round,33,4,44,32,True,70.8
+DEST_0233,Batticaloa Royal Ruins,Heritage & Culture,Eastern Province,7.239537,81.252708,True,4.3,248,Year-Round,51,11,67,73,True,69.6
+DEST_0234,Vavuniya Secret Safari,Wildlife,Northern Province,9.304626,79.935669,False,4.7,124,Year-Round,46,13,75,88,True,72.2
+DEST_0235,Haputale Falls,Waterfall,Uva Province,7.008008,80.951865,False,4.8,214,Year-Round,33,6,33,47,False,65.0
+DEST_0236,Kandy Falls,Waterfall,Central Province,7.279189,80.829362,True,4.7,255,Year-Round,58,10,30,53,True,69.6
+DEST_0237,Habarana Falls,Waterfall,North Central Province,8.434819,80.240954,True,4.7,42,Year-Round,39,6,78,39,True,65.1
+DEST_0238,Monaragala Bay,Beach,Uva Province,6.785753,81.144073,True,4.8,115,Year-Round,58,13,34,84,True,74.6
+DEST_0239,Anuradhapura Central Fortress,Heritage & Culture,North Central Province,8.198884,80.879786,False,4.4,53,Year-Round,38,20,70,84,True,72.8
+DEST_0240,Polonnaruwa Secret Bird Sanctuary,Wildlife,North Central Province,8.46166,80.252207,False,4.2,155,Year-Round,15,7,54,75,True,81.8
+DEST_0241,Anuradhapura Ella,Waterfall,North Central Province,8.26718,80.509709,False,4.4,140,Year-Round,35,4,55,70,True,76.2
+DEST_0242,Jaffna Hidden Viharaya,Heritage & Culture,Northern Province,9.491724,79.937947,False,3.9,105,Year-Round,43,5,52,81,False,66.7
+DEST_0243,Monaragala Cove,Beach,Uva Province,6.802845,80.990842,False,4.7,61,Year-Round,23,17,63,88,True,79.0
+DEST_0244,Bandarawela Ella,Waterfall,Uva Province,6.768581,81.08973,False,4.6,159,Year-Round,15,1,58,87,True,84.8
+DEST_0245,Ratnapura Central Peak,Nature & Viewpoint,Sabaragamuwa Province,6.926459,80.358858,False,4.7,110,Year-Round,23,5,76,53,True,72.5
+DEST_0246,Puttalam Hidden Ruins,Heritage & Culture,North Western Province,7.914294,80.145041,False,4.8,197,Year-Round,33,20,31,71,False,67.3
+DEST_0247,Ratnapura Falls,Waterfall,Sabaragamuwa Province,6.999702,80.468222,False,4.0,221,Year-Round,60,3,53,68,False,60.1
+DEST_0248,Badulla Falls,Waterfall,Uva Province,6.707413,81.245827,False,4.8,259,Year-Round,34,6,42,53,True,74.6
+DEST_0249,Kegalle Cove,Beach,Sabaragamuwa Province,6.748757,80.386124,False,4.0,269,Year-Round,41,14,41,60,True,72.8
+DEST_0250,Ratnapura Royal Fortress,Heritage & Culture,Sabaragamuwa Province,6.731765,80.247205,False,4.7,204,Year-Round,42,10,79,37,False,53.0
+DEST_0251,Mirissa Grand Reserve,Wildlife,Southern Province,6.114388,80.253093,False,4.8,246,Year-Round,56,11,78,43,True,60.7
+DEST_0252,Colombo Hidden Fortress,Heritage & Culture,Western Province,6.744302,80.004468,False,3.9,84,Year-Round,27,17,71,67,False,62.6
+DEST_0253,Anuradhapura Cascade,Waterfall,North Central Province,8.293939,80.461413,True,4.8,189,Year-Round,17,14,19,84,False,76.9
+DEST_0254,Tangalle Sands,Beach,Southern Province,6.082662,80.9513,False,3.8,84,Nov-April,31,15,45,82,True,78.9
+DEST_0255,Anuradhapura Hidden Bird Sanctuary,Wildlife,North Central Province,8.033863,80.252729,False,4.7,184,Year-Round,10,15,18,75,True,86.8
+DEST_0256,Badulla Secret Estate,Nature & Viewpoint,Uva Province,7.022348,80.961967,False,4.3,136,Year-Round,19,16,16,38,False,67.2
+DEST_0257,Kalpitiya Ancient Stupa,Heritage & Culture,North Western Province,7.602746,80.04018,False,4.4,198,Year-Round,5,6,58,86,True,86.0
+DEST_0258,Mount Lavinia Grand Ruins,Heritage & Culture,Western Province,6.880056,79.932192,False,4.2,62,Year-Round,22,12,10,54,True,81.4
+DEST_0259,Kegalle Ella,Waterfall,Sabaragamuwa Province,6.604485,80.514034,False,4.7,234,Year-Round,39,14,59,63,True,71.2
+DEST_0260,Kurunegala Cove,Beach,North Western Province,7.494102,80.069143,True,4.7,31,Year-Round,13,14,79,82,False,68.5
+DEST_0261,Sigiriya Cascade,Waterfall,North Central Province,8.041742,80.574547,False,4.6,39,Year-Round,18,18,78,75,False,65.2
+DEST_0262,Trincomalee Royal National Park,Wildlife,Eastern Province,7.55329,81.380838,True,4.5,165,Year-Round,18,21,53,42,False,61.7
+DEST_0263,Monaragala Secret Viewpoint,Nature & Viewpoint,Uva Province,6.837739,81.40914,True,4.3,162,Year-Round,25,13,77,58,False,61.2
+DEST_0264,Nilaveli Central Bird Sanctuary,Wildlife,Eastern Province,8.721104,81.233414,True,4.7,107,Year-Round,50,34,50,73,False,57.8
+DEST_0265,Negombo Cove,Beach,Western Province,6.662403,80.108381,True,4.6,48,Year-Round,43,12,60,36,True,65.1
+DEST_0266,Kitulgala Secret Peak,Nature & Viewpoint,Sabaragamuwa Province,6.529953,80.391816,False,3.9,230,Year-Round,58,4,57,49,True,66.0
+DEST_0267,Kalutara Secret Kovil,Heritage & Culture,Western Province,6.86631,79.853849,False,4.6,169,Year-Round,57,9,37,32,True,64.8
+DEST_0268,Ratnapura Central National Park,Wildlife,Sabaragamuwa Province,6.76863,80.316243,False,4.8,187,Year-Round,38,8,76,35,True,64.5
+DEST_0269,Sigiriya Royal National Park,Wildlife,North Central Province,8.35588,80.025324,False,3.9,171,Year-Round,9,34,17,71,True,82.6
+DEST_0270,Kitulgala Grand National Park,Wildlife,Sabaragamuwa Province,6.360523,80.35987,False,4.0,271,Year-Round,47,11,38,79,False,66.2
+DEST_0271,Mount Lavinia Grand Viharaya,Heritage & Culture,Western Province,7.210206,79.950314,False,4.0,142,Year-Round,47,17,72,38,True,61.7
+DEST_0272,Mount Lavinia Secret Reserve,Wildlife,Western Province,6.984049,79.93028,True,4.9,172,Year-Round,49,0,40,84,True,78.5
+DEST_0273,Matara Royal Fortress,Heritage & Culture,Southern Province,6.106983,80.344501,False,3.9,201,Year-Round,60,16,47,80,True,70.8
+DEST_0274,Hatton Ancient Viharaya,Heritage & Culture,Central Province,7.449426,80.695693,False,4.1,274,Year-Round,33,7,49,35,True,70.0
+DEST_0275,Mullaitivu Hidden Gap,Nature & Viewpoint,Northern Province,8.950575,79.851229,False,4.4,201,Year-Round,35,4,75,73,True,73.8

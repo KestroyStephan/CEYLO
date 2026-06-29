@@ -38,9 +38,7 @@ function Vendors() {
         try {
             // Update the document in the 'users' collection
             await updateDoc(doc(db, "users", id), { 
-                status: status,
-                // If approving, we might want to ensure their role reflects an active vendor
-                role: status === 'approved' ? 'vendor' : undefined 
+                status: status
             });
         } catch (error) {
             console.error("Error updating vendor status: ", error);

@@ -1,0 +1,16 @@
+event_id,name,location,category,occurrence_month,impact_on_demand,eco_impact_score,expected_attendance,recommended_for_tourists
+EVT_001,Kandy Esala Perahera,"Kandy, Central Province",Cultural & Religious,August,High,60,89090,False
+EVT_002,Galle Literary Festival,"Galle, Southern Province",Arts & Literature,January,Medium,85,7026,True
+EVT_003,Sinhala & Tamil New Year,Islandwide,Cultural,April,Very High,70,61017,False
+EVT_004,Vesak Festival,"Colombo, Western Province",Religious,May,High,65,42763,True
+EVT_005,Nallur Festival,"Jaffna, Northern Province",Religious,August,Medium,75,2801,True
+EVT_006,Navam Perahera,"Colombo, Western Province",Cultural,February,Medium,65,7272,True
+EVT_007,Kataragama Esala Festival,"Kataragama, Uva Province",Religious,July,High,50,83549,True
+EVT_008,Poson Poya,"Anuradhapura, North Central Province",Religious,June,High,55,96548,True
+EVT_009,Hikkaduwa Beach Fest,"Hikkaduwa, Southern Province",Entertainment,July,Medium,40,6571,True
+EVT_010,Deepavali,Islandwide (esp. Northern & Eastern),Cultural & Religious,November,Medium,70,14129,False
+EVT_011,Christmas,"Negombo & Colombo, Western Province",Cultural & Religious,December,High,65,7098,False
+EVT_012,Thai Pongal,Northern & Eastern Province,Cultural,January,Medium,80,6341,True
+EVT_013,Arugam Bay Surfing Championship,"Arugam Bay, Eastern Province",Sports,September,High,75,83129,True
+EVT_014,Colombo Fashion Week,"Colombo, Western Province",Arts,March,Low,80,7733,True
+EVT_015,Madhu Church Festival,"Mannar, Northern Province",Religious,August,High,60,72058,False

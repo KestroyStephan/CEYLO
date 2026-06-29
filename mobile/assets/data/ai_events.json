@@ -1,0 +1,167 @@
+[
+  {
+    "event_id": "EVT_001",
+    "name": "Kandy Esala Perahera",
+    "location": "Kandy, Central Province",
+    "category": "Cultural & Religious",
+    "occurrence_month": "August",
+    "impact_on_demand": "High",
+    "eco_impact_score": "60",
+    "expected_attendance": "89090",
+    "recommended_for_tourists": "False"
+  },
+  {
+    "event_id": "EVT_002",
+    "name": "Galle Literary Festival",
+    "location": "Galle, Southern Province",
+    "category": "Arts & Literature",
+    "occurrence_month": "January",
+    "impact_on_demand": "Medium",
+    "eco_impact_score": "85",
+    "expected_attendance": "7026",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_003",
+    "name": "Sinhala & Tamil New Year",
+    "location": "Islandwide",
+    "category": "Cultural",
+    "occurrence_month": "April",
+    "impact_on_demand": "Very High",
+    "eco_impact_score": "70",
+    "expected_attendance": "61017",
+    "recommended_for_tourists": "False"
+  },
+  {
+    "event_id": "EVT_004",
+    "name": "Vesak Festival",
+    "location": "Colombo, Western Province",
+    "category": "Religious",
+    "occurrence_month": "May",
+    "impact_on_demand": "High",
+    "eco_impact_score": "65",
+    "expected_attendance": "42763",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_005",
+    "name": "Nallur Festival",
+    "location": "Jaffna, Northern Province",
+    "category": "Religious",
+    "occurrence_month": "August",
+    "impact_on_demand": "Medium",
+    "eco_impact_score": "75",
+    "expected_attendance": "2801",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_006",
+    "name": "Navam Perahera",
+    "location": "Colombo, Western Province",
+    "category": "Cultural",
+    "occurrence_month": "February",
+    "impact_on_demand": "Medium",
+    "eco_impact_score": "65",
+    "expected_attendance": "7272",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_007",
+    "name": "Kataragama Esala Festival",
+    "location": "Kataragama, Uva Province",
+    "category": "Religious",
+    "occurrence_month": "July",
+    "impact_on_demand": "High",
+    "eco_impact_score": "50",
+    "expected_attendance": "83549",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_008",
+    "name": "Poson Poya",
+    "location": "Anuradhapura, North Central Province",
+    "category": "Religious",
+    "occurrence_month": "June",
+    "impact_on_demand": "High",
+    "eco_impact_score": "55",
+    "expected_attendance": "96548",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_009",
+    "name": "Hikkaduwa Beach Fest",
+    "location": "Hikkaduwa, Southern Province",
+    "category": "Entertainment",
+    "occurrence_month": "July",
+    "impact_on_demand": "Medium",
+    "eco_impact_score": "40",
+    "expected_attendance": "6571",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_010",
+    "name": "Deepavali",
+    "location": "Islandwide (esp. Northern & Eastern)",
+    "category": "Cultural & Religious",
+    "occurrence_month": "November",
+    "impact_on_demand": "Medium",
+    "eco_impact_score": "70",
+    "expected_attendance": "14129",
+    "recommended_for_tourists": "False"
+  },
+  {
+    "event_id": "EVT_011",
+    "name": "Christmas",
+    "location": "Negombo & Colombo, Western Province",
+    "category": "Cultural & Religious",
+    "occurrence_month": "December",
+    "impact_on_demand": "High",
+    "eco_impact_score": "65",
+    "expected_attendance": "7098",
+    "recommended_for_tourists": "False"
+  },
+  {
+    "event_id": "EVT_012",
+    "name": "Thai Pongal",
+    "location": "Northern & Eastern Province",
+    "category": "Cultural",
+    "occurrence_month": "January",
+    "impact_on_demand": "Medium",
+    "eco_impact_score": "80",
+    "expected_attendance": "6341",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_013",
+    "name": "Arugam Bay Surfing Championship",
+    "location": "Arugam Bay, Eastern Province",
+    "category": "Sports",
+    "occurrence_month": "September",
+    "impact_on_demand": "High",
+    "eco_impact_score": "75",
+    "expected_attendance": "83129",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_014",
+    "name": "Colombo Fashion Week",
+    "location": "Colombo, Western Province",
+    "category": "Arts",
+    "occurrence_month": "March",
+    "impact_on_demand": "Low",
+    "eco_impact_score": "80",
+    "expected_attendance": "7733",
+    "recommended_for_tourists": "True"
+  },
+  {
+    "event_id": "EVT_015",
+    "name": "Madhu Church Festival",
+    "location": "Mannar, Northern Province",
+    "category": "Religious",
+    "occurrence_month": "August",
+    "impact_on_demand": "High",
+    "eco_impact_score": "60",
+    "expected_attendance": "72058",
+    "recommended_for_tourists": "False"
+  }
+]

@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'; // Using Expo's vec
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
 import ChatbotScreen from '../screens/ChatbotScreen';
-import SOSScreen from '../screens/SOSScreen';
+import MarketplaceScreen from '../screens/MarketplaceScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -17,12 +17,16 @@ export default function MainTabNavigator() {
                 tabBarActiveTintColor: '#00695C',
                 tabBarInactiveTintColor: 'gray',
                 tabBarStyle: {
-                    height: 60,
-                    paddingBottom: 10,
-                    paddingTop: 5,
+                    height: 65,
+                    paddingBottom: 12,
+                    paddingTop: 8,
                     backgroundColor: '#FFF',
                     borderTopWidth: 1,
                     borderTopColor: '#EEE',
+                },
+                tabBarLabelStyle: {
+                    fontFamily: 'Outfit-Medium',
+                    fontSize: 11,
                 }
             }}
         >
@@ -31,18 +35,18 @@ export default function MainTabNavigator() {
                 component={HomeScreen}
                 options={{
                     tabBarLabel: 'Home',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="home-variant" color={color} size={size} />
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <MaterialCommunityIcons name={focused ? "home" : "home-outline"} color={color} size={26} />
                     ),
                 }}
             />
             <Tab.Screen
-                name="MapTab"
+                name="ExploreTab"
                 component={MapScreen}
                 options={{
-                    tabBarLabel: 'Map',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="explore" color={color} size={size} />
+                    tabBarLabel: 'Explore',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <MaterialCommunityIcons name={focused ? "compass" : "compass-outline"} color={color} size={26} />
                     ),
                 }}
             />
@@ -50,22 +54,19 @@ export default function MainTabNavigator() {
                 name="AITab"
                 component={ChatbotScreen}
                 options={{
-                    tabBarLabel: 'AI',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="robot" color={color} size={size} />
+                    tabBarLabel: 'AI Guide',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <MaterialCommunityIcons name={focused ? "robot" : "robot-outline"} color={color} size={26} />
                     ),
-                    tabBarBadge: '!',
-                    tabBarBadgeStyle: { backgroundColor: '#00695C' }
                 }}
             />
             <Tab.Screen
-                name="SOSTab"
-                component={SOSScreen}
+                name="MarketTab"
+                component={MarketplaceScreen}
                 options={{
-                    tabBarLabel: 'SOS',
-                    tabBarActiveTintColor: '#D32F2F',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="alert-circle" color={color === '#00695C' ? '#D32F2F' : color} size={size} />
+                    tabBarLabel: 'Market',
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <MaterialCommunityIcons name={focused ? "shopping" : "shopping-outline"} color={color} size={24} />
                     ),
                 }}
             />
@@ -74,8 +75,8 @@ export default function MainTabNavigator() {
                 component={ProfileScreen}
                 options={{
                     tabBarLabel: 'Profile',
-                    tabBarIcon: ({ color, size }) => (
-                        <MaterialCommunityIcons name="account-circle" color={color} size={size} />
+                    tabBarIcon: ({ focused, color, size }) => (
+                        <MaterialCommunityIcons name={focused ? "account" : "account-outline"} color={color} size={26} />
                     ),
                 }}
             />

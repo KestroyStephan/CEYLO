@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Surface, IconButton, Button, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   imageOverlay: { position: 'absolute', bottom: 20, left: 20, right: 20 },
   dateChip: { alignSelf: 'flex-start', backgroundColor: '#00695C', marginBottom: 10 },
   dateChipText: { color: '#FFF', fontWeight: 'bold' },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#FFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+  title: { fontSize: 32, fontWeight: 'bold', color: '#FFF', textShadow: '1px 1px 3px rgba(0,0,0,0.5)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
   content: { padding: 20, borderTopLeftRadius: 30, borderTopRightRadius: 30, backgroundColor: '#FFF', marginTop: -30 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', flex: 1 },

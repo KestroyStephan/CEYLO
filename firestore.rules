@@ -6,6 +6,20 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+
+    // Check if the current user is an admin:
+    // Either their Firestore role field is 'admin' OR their email is the known admin email.
+    // The email check avoids the chicken-and-egg problem of needing to read a document
+    // that may not exist yet, and ensures the admin can always manage the portal.
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'admin@ceylo.com' ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
+      );
+    }
     
     // Helper to check role
     function hasRole(role) {
@@ -16,13 +30,9 @@ service cloud.firestore {
 
     // User Profiles
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || hasRole('admin'));
-      allow write: if isSignedIn() && (request.auth.uid == userId || hasRole('admin'));
-    }
-    
-    // Explicit rule for listing users collection
-    match /users {
-      allow list: if hasRole('admin');
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
     }
 
     // Bookings

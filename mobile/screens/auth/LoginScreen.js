@@ -23,7 +23,12 @@ export default function LoginScreen({ navigation }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      Alert.alert('Login Failed', error.message);
+      console.log('[Login] Error Code:', error.code);
+      let message = error.message;
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        message = 'Invalid email or password. Please try again.';
+      }
+      Alert.alert('Login Failed', message);
     } finally {
       setLoading(false);
     }

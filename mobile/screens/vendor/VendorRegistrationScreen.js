@@ -271,6 +271,7 @@ export default function VendorRegistrationScreen({ navigation }) {
           value={address} onChangeText={setAddress}
         />
         <TouchableOpacity style={styles.gpsBtn} onPress={autoFillGPS} disabled={gpsLoading}>
+          {gpsLoading
             ? <ActivityIndicator size="small" color="#059669" />
             : <><Text style={styles.gpsBtnIcon}>📍</Text><Text style={styles.gpsBtnText}>GPS</Text></>}
         </TouchableOpacity>
@@ -280,7 +281,7 @@ export default function VendorRegistrationScreen({ navigation }) {
         style={styles.nextBtn}
         onPress={() => validateStep1() && setStep(1)}
       >
-        <Text style={styles.nextBtnText}>Next: Documents ΓåÆ</Text>
+        <Text style={styles.nextBtnText}>Next: Documents →</Text>
       </TouchableOpacity>
     </View>
   );

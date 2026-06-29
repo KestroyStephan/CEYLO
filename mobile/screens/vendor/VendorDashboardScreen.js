@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   Alert, ActivityIndicator, Animated, Dimensions,
 } from 'react-native';
+import { Svg, Circle } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { auth, db } from '../../firebaseConfig';
@@ -40,15 +41,21 @@ function BookingCountdownRing({ seconds, total = 30 }) {
     }).start();
   }, []);
 
-  const AnimatedCircle = require('react-native-svg').Circle
-    ? Animated.createAnimatedComponent(require('react-native-svg').Circle)
-    : null;
-
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
   const offset = anim.interpolate({ inputRange: [0, 1], outputRange: [0, CIRC] });
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', width: SIZE, height: SIZE }}>
-      <Text style={{ position: 'absolute', fontSize: 10, fontWeight: '700', color: '#d97706' }}>
+      <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
+        <AnimatedCircle
+          cx={SIZE / 2} cy={SIZE / 2} r={RADIUS}
+          stroke="#d97706" strokeWidth={3} fill="none"
+          strokeDasharray={CIRC}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </Svg>
+      <Text style={{ fontSize: 10, fontWeight: '700', color: '#d97706' }}>
         {seconds}s
       </Text>
     </View>
