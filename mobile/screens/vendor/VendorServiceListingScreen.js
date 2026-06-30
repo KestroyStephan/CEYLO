@@ -1,354 +1,277 @@
+// CEYLO Design System
+// primary:#006A3B secondary:#006A6A tertiary:#735C00 error:#BA1A1A
+// bg:#F6FBF3 surface:#FFFFFF surfaceContainer:#EBEFE8
+// onSurface:#181D19 onSurfaceVariant:#3F4941
+// outline:#6F7A70 outlineVariant:#BECABE
+
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, ActivityIndicator, Image, Modal, TextInput,
-  Switch, ScrollView,
+  ScrollView, StatusBar, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
-import {
-  collection, onSnapshot, addDoc, deleteDoc,
-  doc, updateDoc, serverTimestamp,
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+
+const PRIMARY   = '#006A3B';
+const TERTIARY  = '#735C00';
+const BG        = '#F6FBF3';
+const SURFACE   = '#FFFFFF';
+const SURFACE_C = '#EBEFE8';
+const ON_SURF   = '#181D19';
+const ON_SURF_V = '#3F4941';
+const OUTLINE_V = '#BECABE';
+const ERROR     = '#BA1A1A';
+
+const EMPTY_FORM = { name:'', description:'', price:'', duration:'', maxCapacity:'', ecoCertified:false, photoAsset:null };
 
 export default function VendorServiceListingScreen() {
   const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingService, setEditingService] = useState(null); // null = new, obj = edit
-  const [form, setForm] = useState({
-    name: '', description: '', price: '', duration: '',
-    maxCapacity: '', ecoCertified: false, photoAsset: null,
-  });
-  const [saving, setSaving] = useState(false);
+  const [loading,  setLoading]  = useState(true);
+  const [modal,    setModal]    = useState(false);
+  const [editing,  setEditing]  = useState(null);
+  const [form,     setForm]     = useState(EMPTY_FORM);
+  const [saving,   setSaving]   = useState(false);
   const uid = auth.currentUser?.uid;
 
   useEffect(() => {
     if (!uid) return;
-    const unsub = onSnapshot(collection(db, 'vendors', uid, 'services'), (snap) => {
-      setServices(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsub = onSnapshot(collection(db,'vendors',uid,'services'), snap => {
+      setServices(snap.docs.map(d => ({ id:d.id, ...d.data() })));
+      setLoading(false);
+    }, err => {
+      console.log("VendorServiceListingScreen services listener error:", err.message);
       setLoading(false);
     });
     return () => unsub();
   }, [uid]);
 
-  const openNew = () => {
-    setEditingService(null);
-    setForm({ name: '', description: '', price: '', duration: '', maxCapacity: '', ecoCertified: false, photoAsset: null });
-    setModalVisible(true);
-  };
-
-  const openEdit = (service) => {
-    setEditingService(service);
-    setForm({
-      name: service.name || '',
-      description: service.description || '',
-      price: service.price?.toString() || '',
-      duration: service.duration?.toString() || '',
-      maxCapacity: service.maxCapacity?.toString() || '',
-      ecoCertified: service.ecoCertified || false,
-      photoAsset: null,
-    });
-    setModalVisible(true);
+  const openNew = () => { setEditing(null); setForm(EMPTY_FORM); setModal(true); };
+  const openEdit = (s) => {
+    setEditing(s);
+    setForm({ name:s.name||'', description:s.description||'', price:s.price?.toString()||'',
+      duration:s.duration?.toString()||'', maxCapacity:s.maxCapacity?.toString()||'',
+      ecoCertified:s.ecoCertified||false, photoAsset:null });
+    setModal(true);
   };
 
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true, aspect: [4, 3], quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.length > 0) {
-      setForm((f) => ({ ...f, photoAsset: result.assets[0] }));
-    }
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes:['images'], allowsEditing:true, aspect:[4,3], quality:0.8 });
+    if (!r.canceled && r.assets?.length > 0) setForm(f => ({ ...f, photoAsset:r.assets[0] }));
   };
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.price.trim()) {
-      Alert.alert('Required', 'Service name and price are required.');
-      return;
+      Alert.alert('Required', 'Service name and price are required.'); return;
     }
     setSaving(true);
     try {
-      let photoUrl = editingService?.photoUrl || null;
+      let photoUrl = editing?.photoUrl || null;
       if (form.photoAsset) {
-        const res = await fetch(form.photoAsset.uri);
-        const blob = await res.blob();
-        const storageRef = ref(storage, `services/${uid}/${Date.now()}.jpg`);
-        await uploadBytes(storageRef, blob);
-        photoUrl = await getDownloadURL(storageRef);
-      }
-      const data = {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        price: parseFloat(form.price) || 0,
-        duration: parseInt(form.duration, 10) || 60,
-        maxCapacity: parseInt(form.maxCapacity, 10) || 1,
-        ecoCertified: form.ecoCertified,
-        photoUrl,
-        available: editingService?.available ?? true,
-      };
-
-      if (editingService) {
-        await updateDoc(doc(db, 'vendors', uid, 'services', editingService.id), data);
-      } else {
-        await addDoc(collection(db, 'vendors', uid, 'services'), {
-          ...data, createdAt: serverTimestamp(),
+        const res = await fetch(form.photoAsset.uri); const blob = await res.blob();
+        const r   = ref(storage, `services/${uid}/${Date.now()}.jpg`);
+        await new Promise((resolve, reject) => {
+          uploadBytesResumable(r, blob).on('state_changed', null, reject, async () => {
+            photoUrl = await getDownloadURL(r); resolve();
+          });
         });
       }
-      setModalVisible(false);
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleAvailable = async (service) => {
-    try {
-      await updateDoc(doc(db, 'vendors', uid, 'services', service.id), {
-        available: !service.available,
-      });
+      const data = { name:form.name.trim(), description:form.description.trim(),
+        price:parseFloat(form.price)||0, duration:form.duration.trim(),
+        maxCapacity:parseInt(form.maxCapacity)||1, ecoCertified:form.ecoCertified,
+        photoUrl, isAvailable:true };
+      if (editing) {
+        await updateDoc(doc(db,'vendors',uid,'services',editing.id), data);
+      } else {
+        await addDoc(collection(db,'vendors',uid,'services'), { ...data, createdAt:serverTimestamp() });
+      }
+      setModal(false);
     } catch (e) { Alert.alert('Error', e.message); }
+    finally { setSaving(false); }
   };
 
-  const handleDelete = (service) => {
-    Alert.alert('Delete Service', `Remove "${service.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          try { await deleteDoc(doc(db, 'vendors', uid, 'services', service.id)); }
-          catch (e) { Alert.alert('Error', e.message); }
-        },
-      },
+  const handleDelete = (id) => {
+    Alert.alert('Delete Service','This action cannot be undone.',[
+      {text:'Cancel',style:'cancel'},
+      {text:'Delete',style:'destructive', onPress:()=>deleteDoc(doc(db,'vendors',uid,'services',id)).catch(e=>Alert.alert('Error',e.message))},
     ]);
   };
 
-  if (loading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color="#059669" /></View>;
-  }
+  const toggleAvailable = async (s) => {
+    await updateDoc(doc(db,'vendors',uid,'services',s.id), { isAvailable:!s.isAvailable }).catch(()=>{});
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex:1, backgroundColor:BG }}>
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Services</Text>
-        <Text style={styles.serviceCount}>{services.length} listed</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={openNew}>
+          <Ionicons name="add" size={22} color="#FFF" />
+        </TouchableOpacity>
       </View>
 
-      {services.length === 0 ? (
+      {loading ? (
+        <View style={styles.center}><ActivityIndicator size="large" color={PRIMARY} /></View>
+      ) : services.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>✍️</Text>
-          <Text style={styles.emptyText}>Add your first service</Text>
-          <Text style={styles.emptySubtext}>Long-press a card to delete. Tap to edit.</Text>
+          <Ionicons name="storefront-outline" size={52} color={OUTLINE_V} />
+          <Text style={styles.emptyTitle}>No Services Yet</Text>
+          <Text style={styles.emptySub}>Tap + to add your first service</Text>
+          <TouchableOpacity style={styles.emptyBtn} onPress={openNew}>
+            <Text style={styles.emptyBtnText}>Add Service</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={services}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ padding:16, paddingBottom:100 }}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.serviceCard}
-              onPress={() => openEdit(item)}
-              onLongPress={() => handleDelete(item)}
-              activeOpacity={0.88}
-            >
-              {item.photoUrl ? (
-                <Image source={{ uri: item.photoUrl }} style={styles.servicePhoto} />
-              ) : (
-                <View style={[styles.servicePhoto, styles.photoPlaceholder]}>
-                  <MaterialCommunityIcons name="image-outline" size={28} color="#d1d5db" />
-                </View>
-              )}
-              <View style={styles.serviceInfo}>
-                <View style={styles.serviceNameRow}>
-                  <Text style={styles.serviceName}>{item.name}</Text>
-                  {item.ecoCertified && <Text style={styles.ecoBadge}>🌿</Text>}
-                </View>
-                {!!item.description && (
-                  <Text style={styles.serviceDesc} numberOfLines={2}>{item.description}</Text>
-                )}
-                <View style={styles.serviceMeta}>
-                  <Text style={styles.servicePrice}>LKR {(item.price || 0).toLocaleString()}</Text>
-                  {!!item.duration && (
-                    <Text style={styles.metaPill}>⏱️ {item.duration}m</Text>
-                  )}
-                  {!!item.maxCapacity && (
-                    <Text style={styles.metaPill}>👥 {item.maxCapacity}</Text>
-                  )}
+            <View style={styles.serviceCard}>
+              <View style={styles.serviceCardTop}>
+                {item.photoUrl
+                  ? <Image source={{ uri:item.photoUrl }} style={styles.serviceThumb} />
+                  : <View style={[styles.serviceThumb, { backgroundColor:SURFACE_C, alignItems:'center', justifyContent:'center' }]}>
+                      <Ionicons name="image-outline" size={28} color={OUTLINE_V} />
+                    </View>}
+                <View style={{ flex:1, marginLeft:14 }}>
+                  <View style={styles.serviceNameRow}>
+                    <Text style={styles.serviceName} numberOfLines={1}>{item.name}</Text>
+                    {item.ecoCertified && (
+                      <View style={styles.ecoBadge}>
+                        <Ionicons name="leaf" size={10} color={PRIMARY} />
+                        <Text style={styles.ecoBadgeText}>Eco</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.servicePrice}>LKR {(item.price||0).toLocaleString()}</Text>
+                  <View style={styles.serviceMeta}>
+                    {item.duration ? <Text style={styles.metaChip}>{item.duration}</Text> : null}
+                    {item.maxCapacity ? <Text style={styles.metaChip}>Max {item.maxCapacity}</Text> : null}
+                  </View>
                 </View>
               </View>
-              <Switch
-                value={item.available}
-                onValueChange={() => toggleAvailable(item)}
-                trackColor={{ false: '#e5e7eb', true: '#d1fae5' }}
-                thumbColor={item.available ? '#059669' : '#9ca3af'}
-              />
-            </TouchableOpacity>
+              <View style={styles.serviceActions}>
+                <View style={styles.availRow}>
+                  <Text style={styles.availLabel}>{item.isAvailable ? 'Available' : 'Unavailable'}</Text>
+                  <TouchableOpacity onPress={() => toggleAvailable(item)} style={[styles.toggle, item.isAvailable && styles.toggleOn]}>
+                    <View style={[styles.toggleDot, item.isAvailable && styles.toggleDotOn]} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.serviceActBtns}>
+                  <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(item)}>
+                    <Ionicons name="pencil-outline" size={16} color={PRIMARY} />
+                    <Text style={styles.editBtnText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+                    <Ionicons name="trash-outline" size={16} color={ERROR} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
           )}
         />
       )}
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={openNew}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
-
-      {/* Add / Edit Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingService ? 'Edit Service' : 'New Service'}
-              </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <MaterialCommunityIcons name="close" size={22} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {[
-                { label: 'Service Name *', key: 'name', placeholder: 'e.g. Traditional Cooking Class', numeric: false },
-                { label: 'Price (LKR) *', key: 'price', placeholder: 'e.g. 2500', numeric: true },
-                { label: 'Duration (minutes)', key: 'duration', placeholder: 'e.g. 90', numeric: true },
-                { label: 'Max Capacity', key: 'maxCapacity', placeholder: 'e.g. 4', numeric: true },
-              ].map(({ label, key, placeholder, numeric }) => (
-                <View key={key}>
-                  <Text style={styles.inputLabel}>{label}</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={placeholder}
-                    placeholderTextColor="#9ca3af"
-                    keyboardType={numeric ? 'numeric' : 'default'}
-                    value={form[key]}
-                    onChangeText={(v) => setForm((f) => ({ ...f, [key]: v }))}
-                  />
-                </View>
-              ))}
-
-              <Text style={styles.inputLabel}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Describe your service..."
-                placeholderTextColor="#9ca3af"
-                multiline numberOfLines={3}
-                value={form.description}
-                onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
-              />
-
-              {/* Photo */}
-              <TouchableOpacity style={styles.photoPickerBtn} onPress={pickPhoto}>
-                <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#059669" />
-                <Text style={styles.photoPickerText}>
-                  {form.photoAsset ? 'Change Photo' : editingService?.photoUrl ? 'Replace Photo' : 'Add Photo'}
-                </Text>
-              </TouchableOpacity>
-              {(form.photoAsset || editingService?.photoUrl) && (
-                <Image
-                  source={{ uri: form.photoAsset?.uri || editingService?.photoUrl }}
-                  style={styles.photoPreview}
-                />
-              )}
-
-              {/* Eco certified toggle */}
-              <View style={styles.switchRow}>
-                <View>
-                  <Text style={styles.switchLabel}>🌿 Eco-Certified</Text>
-                  <Text style={styles.switchSubLabel}>Mark as environmentally responsible</Text>
-                </View>
-                <Switch
-                  value={form.ecoCertified}
-                  onValueChange={(v) => setForm((f) => ({ ...f, ecoCertified: v }))}
-                  trackColor={{ false: '#e5e7eb', true: '#d1fae5' }}
-                  thumbColor={form.ecoCertified ? '#059669' : '#9ca3af'}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-                onPress={handleSave} disabled={saving}
-              >
-                {saving
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.saveBtnText}>
-                      {editingService ? 'Save Changes' : 'Add Service'}
-                    </Text>}
-              </TouchableOpacity>
-            </ScrollView>
+      {/* Add/Edit Modal */}
+      <Modal visible={modal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModal(false)}>
+        <KeyboardAvoidingView style={{ flex:1, backgroundColor:BG }} behavior={Platform.OS==='ios'?'padding':undefined}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setModal(false)}>
+              <Ionicons name="close" size={22} color={ON_SURF} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>{editing ? 'Edit Service' : 'Add New Service'}</Text>
+            <View style={{ width:30 }} />
           </View>
-        </View>
+          <ScrollView contentContainerStyle={{ padding:20, paddingBottom:40 }}>
+            {[
+              { label:'Service Name *', key:'name', placeholder:'e.g. Guided Forest Walk' },
+              { label:'Price (LKR) *',  key:'price', placeholder:'2500', keyboardType:'numeric' },
+              { label:'Duration',       key:'duration', placeholder:'e.g. 2 hours' },
+              { label:'Max Capacity',   key:'maxCapacity', placeholder:'10', keyboardType:'numeric' },
+            ].map(f => (
+              <View key={f.key}>
+                <Text style={styles.fieldLabel}>{f.label}</Text>
+                <TextInput style={styles.input} value={form[f.key]} onChangeText={t => setForm(fm=>({...fm,[f.key]:t}))}
+                  placeholder={f.placeholder} placeholderTextColor="#AAB8AA" keyboardType={f.keyboardType||'default'} />
+              </View>
+            ))}
+            <Text style={styles.fieldLabel}>Description</Text>
+            <TextInput style={[styles.input,{height:90,textAlignVertical:'top'}]} value={form.description}
+              onChangeText={t=>setForm(f=>({...f,description:t}))} multiline placeholder="Describe the service..." placeholderTextColor="#AAB8AA" />
+
+            <Text style={styles.fieldLabel}>Service Photo</Text>
+            <TouchableOpacity style={styles.photoPickBtn} onPress={pickPhoto}>
+              {form.photoAsset
+                ? <Image source={{uri:form.photoAsset.uri}} style={styles.photoPreview} />
+                : <><Ionicons name="camera-outline" size={24} color={PRIMARY} /><Text style={styles.photoPickText}>Pick Photo</Text></>}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.ecoToggleCard} onPress={()=>setForm(f=>({...f,ecoCertified:!f.ecoCertified}))} activeOpacity={0.8}>
+              <View style={styles.ecoIconCircle}><Ionicons name="leaf" size={20} color={PRIMARY} /></View>
+              <Text style={styles.ecoToggleText}>Eco-Certified Service</Text>
+              <View style={[styles.toggle,form.ecoCertified&&styles.toggleOn]}>
+                <View style={[styles.toggleDot,form.ecoCertified&&styles.toggleDotOn]} />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.saveBtn, saving && { opacity:0.5 }]} onPress={handleSave} disabled={saving} activeOpacity={0.8}>
+              {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>{editing ? 'Save Changes' : 'Add Service'}</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0fdf4' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, paddingTop: 50, backgroundColor: '#fff',
-    borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-  },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#064e3b' },
-  serviceCount: { fontSize: 13, color: '#059669', fontWeight: '600' },
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 18, color: '#374151', fontWeight: '700', marginBottom: 4 },
-  emptySubtext: { fontSize: 13, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 32 },
-  serviceCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 12, marginBottom: 12,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
-  },
-  servicePhoto: { width: 76, height: 76, borderRadius: 12, resizeMode: 'cover' },
-  photoPlaceholder: { backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
-  serviceInfo: { flex: 1 },
-  serviceNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 },
-  serviceName: { fontSize: 15, fontWeight: '700', color: '#111827', flexShrink: 1 },
-  ecoBadge: { fontSize: 14 },
-  serviceDesc: { fontSize: 12, color: '#6b7280', marginBottom: 6 },
-  serviceMeta: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  servicePrice: { fontSize: 14, fontWeight: '800', color: '#059669' },
-  metaPill: { fontSize: 11, color: '#6b7280', fontWeight: '600' },
-  fab: {
-    position: 'absolute', bottom: 24, right: 24,
-    width: 58, height: 58, borderRadius: 29, backgroundColor: '#059669',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#059669', shadowOpacity: 0.4, shadowRadius: 10, elevation: 6,
-  },
-  fabText: { color: '#fff', fontSize: 30, fontWeight: '300', lineHeight: 34 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.42)', justifyContent: 'flex-end' },
-  modalSheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, maxHeight: '88%',
-  },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#064e3b' },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 10 },
-  input: {
-    borderWidth: 1, borderColor: '#d1fae5', borderRadius: 10,
-    padding: 12, fontSize: 15, color: '#111827', backgroundColor: '#f9fafb',
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  photoPickerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderWidth: 2, borderColor: '#059669', borderStyle: 'dashed',
-    borderRadius: 10, padding: 14, marginTop: 12,
-  },
-  photoPickerText: { color: '#059669', fontWeight: '600', fontSize: 14 },
-  photoPreview: { width: '100%', height: 150, borderRadius: 10, marginTop: 10, resizeMode: 'cover' },
-  switchRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 16, padding: 14, backgroundColor: '#f9fafb', borderRadius: 12,
-  },
-  switchLabel: { fontSize: 15, fontWeight: '700', color: '#374151' },
-  switchSubLabel: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  saveBtn: { backgroundColor: '#059669', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 20, marginBottom: 8 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  header:     { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingTop:56, paddingHorizontal:20, paddingBottom:16, backgroundColor:SURFACE, borderBottomWidth:1, borderBottomColor:SURFACE_C },
+  headerTitle:{ fontSize:24, fontWeight:'800', color:ON_SURF },
+  addBtn:     { width:40, height:40, borderRadius:20, backgroundColor:PRIMARY, alignItems:'center', justifyContent:'center' },
+  center:     { flex:1, justifyContent:'center', alignItems:'center' },
+  emptyState: { flex:1, alignItems:'center', justifyContent:'center', padding:40, gap:12 },
+  emptyTitle: { fontSize:18, fontWeight:'700', color:ON_SURF },
+  emptySub:   { fontSize:14, color:ON_SURF_V, textAlign:'center' },
+  emptyBtn:   { backgroundColor:PRIMARY, paddingHorizontal:28, paddingVertical:14, borderRadius:14 },
+  emptyBtnText:{ color:'#FFF', fontWeight:'700', fontSize:15 },
+  serviceCard:{ backgroundColor:SURFACE, borderRadius:20, padding:16, marginBottom:12, shadowColor:'#181D19', shadowOpacity:0.08, shadowRadius:12, elevation:3 },
+  serviceCardTop:{ flexDirection:'row', alignItems:'flex-start' },
+  serviceThumb:{ width:80, height:80, borderRadius:14 },
+  serviceNameRow:{ flexDirection:'row', alignItems:'center', gap:8, flex:1 },
+  serviceName:{ fontSize:16, fontWeight:'700', color:ON_SURF, flex:1 },
+  ecoBadge:   { flexDirection:'row', alignItems:'center', backgroundColor:'rgba(0,106,59,0.1)', borderRadius:9999, paddingHorizontal:6, paddingVertical:2, gap:3 },
+  ecoBadgeText:{ fontSize:10, fontWeight:'700', color:PRIMARY },
+  servicePrice:{ fontSize:15, fontWeight:'800', color:PRIMARY, marginTop:4 },
+  serviceMeta:{ flexDirection:'row', gap:6, marginTop:6 },
+  metaChip:   { fontSize:11, color:ON_SURF_V, backgroundColor:SURFACE_C, paddingHorizontal:8, paddingVertical:3, borderRadius:9999, fontWeight:'600' },
+  serviceActions:{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:12, paddingTop:12, borderTopWidth:1, borderTopColor:SURFACE_C },
+  availRow:   { flexDirection:'row', alignItems:'center', gap:10 },
+  availLabel: { fontSize:13, color:ON_SURF_V, fontWeight:'600' },
+  toggle:     { width:44, height:24, borderRadius:12, backgroundColor:OUTLINE_V, padding:2 },
+  toggleOn:   { backgroundColor:PRIMARY },
+  toggleDot:  { width:20, height:20, borderRadius:10, backgroundColor:'#FFF', alignSelf:'flex-start' },
+  toggleDotOn:{ alignSelf:'flex-end' },
+  serviceActBtns:{ flexDirection:'row', gap:8 },
+  editBtn:    { flexDirection:'row', alignItems:'center', gap:4, backgroundColor:'rgba(0,106,59,0.08)', paddingHorizontal:12, paddingVertical:7, borderRadius:9 },
+  editBtnText:{ fontSize:13, fontWeight:'600', color:PRIMARY },
+  deleteBtn:  { width:34, height:34, borderRadius:9, borderWidth:1.5, borderColor:'#FECACA', alignItems:'center', justifyContent:'center' },
+  modalHeader:{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', padding:20, backgroundColor:SURFACE, borderBottomWidth:1, borderBottomColor:SURFACE_C },
+  modalTitle: { fontSize:18, fontWeight:'800', color:ON_SURF },
+  fieldLabel: { fontSize:13, fontWeight:'600', color:ON_SURF_V, marginBottom:6, marginTop:14 },
+  input:      { borderWidth:1.5, borderColor:OUTLINE_V, borderRadius:12, paddingHorizontal:14, paddingVertical:12, fontSize:15, color:ON_SURF, backgroundColor:SURFACE },
+  photoPickBtn:{ height:80, borderRadius:14, borderWidth:2, borderColor:PRIMARY, borderStyle:'dashed', alignItems:'center', justifyContent:'center', flexDirection:'row', gap:10 },
+  photoPickText:{ fontSize:14, color:PRIMARY, fontWeight:'600' },
+  photoPreview:{ width:'100%', height:80, borderRadius:14 },
+  ecoToggleCard:{ flexDirection:'row', alignItems:'center', backgroundColor:SURFACE_C, borderRadius:14, padding:14, marginTop:16, gap:12 },
+  ecoIconCircle:{ width:38, height:38, borderRadius:19, backgroundColor:'rgba(0,106,59,0.12)', alignItems:'center', justifyContent:'center' },
+  ecoToggleText:{ flex:1, fontSize:15, fontWeight:'700', color:PRIMARY },
+  saveBtn:    { backgroundColor:PRIMARY, borderRadius:14, paddingVertical:16, alignItems:'center', marginTop:24 },
+  saveBtnText:{ color:'#FFF', fontSize:16, fontWeight:'700' },
 });

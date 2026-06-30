@@ -1,230 +1,200 @@
+// CEYLO Design System
+// primary:#006A3B secondary:#006A6A tertiary:#735C00 error:#BA1A1A
+// bg:#F6FBF3 surface:#FFFFFF surfaceContainer:#EBEFE8
+// onSurface:#181D19 onSurfaceVariant:#3F4941
+// outline:#6F7A70 outlineVariant:#BECABE
+
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity,
+  Alert, ActivityIndicator, ScrollView, StatusBar,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { auth, db, storage } from '../../firebaseConfig';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Ionicons } from '@expo/vector-icons';
+import { db } from '../../firebaseConfig';
+import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 
-const STATUS_STEPS = ['accepted', 'preparing', 'ready', 'delivered'];
-const STATUS_LABELS = { accepted: 'Accepted', preparing: 'Preparing', ready: 'Ready', delivered: 'Delivered' };
+const PRIMARY   = '#006A3B';
+const BG        = '#F6FBF3';
+const SURFACE   = '#FFFFFF';
+const SURFACE_C = '#EBEFE8';
+const ON_SURF   = '#181D19';
+const ON_SURF_V = '#3F4941';
+const OUTLINE_V = '#BECABE';
 
-export default function VendorOrderManagementScreen({ navigation }) {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [cameraVisible, setCameraVisible] = useState(false);
-  const [activeBookingId, setActiveBookingId] = useState(null);
-  const [cameraRef, setCameraRef] = useState(null);
-  const [permission, requestPermission] = useCameraPermissions();
-  const uid = auth.currentUser?.uid;
+const STEPS   = ['accepted','preparing','ready','completed'];
+const STEP_LABELS = { accepted:'Accepted', preparing:'Preparing', ready:'Ready', completed:'Completed' };
+const STEP_ICONS  = { accepted:'checkmark-circle-outline', preparing:'construct-outline', ready:'cube-outline', completed:'flag-outline' };
+
+export default function VendorOrderManagementScreen({ route, navigation }) {
+  const { orderId, order: initialOrder } = route.params;
+  const [order,    setOrder]    = useState(initialOrder);
+  const [loading,  setLoading]  = useState(!initialOrder);
+  const [advancing,setAdvancing]= useState(false);
 
   useEffect(() => {
-    if (!uid) return;
-    const q = query(
-      collection(db, 'bookings'),
-      where('vendorId', '==', uid),
-      where('status', 'in', ['accepted', 'preparing', 'ready'])
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    if (!orderId) return;
+    const unsub = onSnapshot(doc(db,'orders',orderId), snap => {
+      if (snap.exists()) setOrder({ id:snap.id, ...snap.data() });
       setLoading(false);
     });
     return () => unsub();
-  }, [uid]);
+  }, [orderId]);
 
-  const advanceStatus = async (order) => {
-    const idx = STATUS_STEPS.indexOf(order.status);
-    if (idx < STATUS_STEPS.length - 1) {
-      try {
-        await updateDoc(doc(db, 'bookings', order.id), { status: STATUS_STEPS[idx + 1] });
-      } catch (e) {
-        Alert.alert('Error', e.message);
-      }
+  const advanceStatus = async () => {
+    const idx = STEPS.indexOf(order?.status);
+    if (idx < 0 || idx >= STEPS.length-1) return;
+    const next = STEPS[idx+1];
+    if (next === 'completed') {
+      navigation.navigate('ProofOfService', { orderId });
+      return;
     }
+    setAdvancing(true);
+    try { await updateDoc(doc(db,'orders',orderId), { status:next }); }
+    catch (e) { Alert.alert('Error',e.message); }
+    finally { setAdvancing(false); }
   };
 
-  const openCamera = async (bookingId) => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        Alert.alert('Permission needed', 'Camera access is required for proof of service.');
-        return;
-      }
-    }
-    setActiveBookingId(bookingId);
-    setCameraVisible(true);
-  };
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={PRIMARY} /></View>;
+  if (!order)  return <View style={styles.center}><Text style={styles.noOrderText}>Order not found</Text></View>;
 
-  const captureProof = async () => {
-    if (!cameraRef) return;
-    try {
-      const photo = await cameraRef.takePictureAsync({ quality: 0.8 });
-      setCameraVisible(false);
-      const response = await fetch(photo.uri);
-      const blob = await response.blob();
-      const storageRef = ref(storage, `proofs/${activeBookingId}.jpg`);
-      await uploadBytes(storageRef, blob);
-      const url = await getDownloadURL(storageRef);
-      await updateDoc(doc(db, 'bookings', activeBookingId), { proofUrl: url });
-      Alert.alert('Uploaded ✓', 'Proof of service saved successfully.');
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    }
-  };
-
-  const renderStepper = (order) => {
-    const currentIdx = STATUS_STEPS.indexOf(order.status);
-    return (
-      <View style={styles.stepper}>
-        {STATUS_STEPS.map((step, idx) => (
-          <React.Fragment key={step}>
-            <TouchableOpacity
-              style={[
-                styles.stepDot,
-                idx <= currentIdx && styles.stepDotActive,
-                idx === currentIdx + 1 && styles.stepDotNext,
-              ]}
-              onPress={() => idx === currentIdx + 1 && advanceStatus(order)}
-            >
-              <Text style={[styles.stepDotText, idx <= currentIdx && styles.stepDotTextActive]}>
-                {idx <= currentIdx ? '✓' : idx + 1}
-              </Text>
-            </TouchableOpacity>
-            {idx < STATUS_STEPS.length - 1 && (
-              <View style={[styles.stepLine, idx < currentIdx && styles.stepLineActive]} />
-            )}
-          </React.Fragment>
-        ))}
-      </View>
-    );
-  };
-
-  if (cameraVisible) {
-    return (
-      <View style={styles.cameraContainer}>
-        <CameraView style={styles.camera} ref={(r) => setCameraRef(r)} facing="back" />
-        <View style={styles.cameraControls}>
-          <TouchableOpacity style={styles.captureBtn} onPress={captureProof}>
-            <View style={styles.captureInner} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelCameraBtn} onPress={() => setCameraVisible(false)}>
-            <Text style={styles.cancelCameraText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  if (loading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color="#059669" /></View>;
-  }
+  const currentIdx = STEPS.indexOf(order.status);
+  const isCompleted = order.status === 'completed';
+  const nextLabel = currentIdx < STEPS.length-1 ? `→ Mark as ${STEP_LABELS[STEPS[currentIdx+1]]}` : null;
 
   return (
-    <View style={styles.container}>
+    <View style={{flex:1,backgroundColor:BG}}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Active Orders</Text>
-        <Text style={styles.orderCount}>{orders.length} active</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={()=>navigation.goBack()}>
+          <Ionicons name="arrow-back" size={22} color={ON_SURF} />
+        </TouchableOpacity>
+        <View style={{flex:1,marginLeft:12}}>
+          <Text style={styles.headerTitle}>Order #{order.id?.slice(-8)}</Text>
+          <Text style={styles.headerSub}>{order.customerName||'Tourist'}</Text>
+        </View>
+        <Text style={styles.headerTotal}>LKR {(order.totalPrice||0).toLocaleString()}</Text>
       </View>
 
-      {orders.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📦</Text>
-          <Text style={styles.emptyText}>No active orders</Text>
+      <ScrollView contentContainerStyle={{padding:20,paddingBottom:120}} showsVerticalScrollIndicator={false}>
+        {/* Status Stepper */}
+        <View style={styles.stepperCard}>
+          <Text style={styles.stepperTitle}>Order Progress</Text>
+          <View style={styles.stepper}>
+            {STEPS.map((step,i)=>{
+              const done    = i <  currentIdx;
+              const current = i === currentIdx;
+              const future  = i >  currentIdx;
+              return (
+                <React.Fragment key={step}>
+                  <View style={styles.stepItem}>
+                    <View style={[styles.stepCircle,done&&styles.stepCircleDone,current&&styles.stepCircleCurrent,future&&styles.stepCircleFuture]}>
+                      {done
+                        ? <Ionicons name="checkmark" size={16} color="#FFF" />
+                        : current
+                          ? <View style={styles.stepPulse}/>
+                          : <Ionicons name={STEP_ICONS[step]} size={14} color={OUTLINE_V} />}
+                    </View>
+                    <Text style={[styles.stepLabel,done&&{color:PRIMARY},current&&{color:PRIMARY,fontWeight:'700'}]}>
+                      {STEP_LABELS[step]}
+                    </Text>
+                  </View>
+                  {i<STEPS.length-1&&<View style={[styles.stepConnector,done&&styles.stepConnectorDone]}/>}
+                </React.Fragment>
+              );
+            })}
+          </View>
         </View>
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
-          renderItem={({ item }) => (
-            <View style={styles.orderCard}>
-              <View style={styles.orderCardHead}>
-                <Text style={styles.customerName}>{item.customerName || 'Customer'}</Text>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>{STATUS_LABELS[item.status]}</Text>
-                </View>
-              </View>
-              <Text style={styles.itemsSummary}>
-                {item.items?.map((i) => `${i.name} x${i.qty}`).join(' · ') || '—'}
-              </Text>
-              <Text style={styles.orderTotal}>LKR {(item.totalPrice || 0).toLocaleString()}</Text>
-              {renderStepper(item)}
-              <View style={styles.actionsRow}>
-                <TouchableOpacity style={styles.proofBtn} onPress={() => openCamera(item.id)}>
-                  <Text style={styles.proofBtnText}>📷 Proof of Service</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.chatBtn}
-                  onPress={() => navigation.navigate('VendorChat', { bookingId: item.id, order: item })}
-                >
-                  <Text style={styles.chatBtnText}>💬 Chat</Text>
-                </TouchableOpacity>
-              </View>
+
+        {/* Order Items */}
+        <View style={styles.itemsCard}>
+          <Text style={styles.cardTitle}>Order Items</Text>
+          {order.items?.map((it,i)=>(
+            <View key={i} style={styles.itemRow}>
+              <Text style={styles.itemName}>{it.name}</Text>
+              <Text style={styles.itemQty}>×{it.qty||1}</Text>
+              <Text style={styles.itemPrice}>LKR {((it.price||0)*(it.qty||1)).toLocaleString()}</Text>
             </View>
-          )}
-        />
-      )}
+          ))}
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalAmount}>LKR {(order.totalPrice||0).toLocaleString()}</Text>
+          </View>
+        </View>
+
+        {order.notes&&(
+          <View style={styles.notesCard}>
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color={ON_SURF_V}/>
+            <View style={{flex:1,marginLeft:10}}>
+              <Text style={styles.notesLabel}>Customer Notes</Text>
+              <Text style={styles.notesText}>{order.notes}</Text>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Action Footer */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.chatFooterBtn} onPress={()=>navigation.navigate('VendorChat',{bookingId:orderId,order})}>
+          <Ionicons name="chatbubble-outline" size={20} color={PRIMARY}/>
+          <Text style={styles.chatFooterText}>Chat</Text>
+        </TouchableOpacity>
+        {!isCompleted&&nextLabel&&(
+          <TouchableOpacity style={[styles.advanceBtn,advancing&&{opacity:0.6}]} onPress={advanceStatus} disabled={advancing} activeOpacity={0.85}>
+            {advancing?<ActivityIndicator color="#FFF"/>:
+              <><Ionicons name="arrow-forward-circle" size={22} color="#FFF"/>
+              <Text style={styles.advanceBtnText}>{order.status==='ready'?'Complete & Upload Proof':nextLabel}</Text></>}
+          </TouchableOpacity>
+        )}
+        {isCompleted&&(
+          <View style={styles.completedBadge}>
+            <Ionicons name="checkmark-circle" size={22} color={PRIMARY}/>
+            <Text style={styles.completedText}>Order Completed</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0fdf4' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, paddingTop: 50, backgroundColor: '#fff',
-    borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-  },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#064e3b' },
-  orderCount: { fontSize: 13, color: '#059669', fontWeight: '600' },
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: '#9ca3af', fontWeight: '500' },
-  orderCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
-  },
-  orderCardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  customerName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  statusBadge: { backgroundColor: '#d1fae5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  statusBadgeText: { fontSize: 12, fontWeight: '700', color: '#059669' },
-  itemsSummary: { fontSize: 13, color: '#6b7280', marginBottom: 4 },
-  orderTotal: { fontSize: 15, fontWeight: '800', color: '#059669', marginBottom: 14 },
-  stepper: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  stepDot: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: '#e5e7eb',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  stepDotActive: { backgroundColor: '#059669' },
-  stepDotNext: { borderWidth: 2, borderColor: '#059669', backgroundColor: '#f0fdf4' },
-  stepDotText: { fontSize: 12, fontWeight: '700', color: '#9ca3af' },
-  stepDotTextActive: { color: '#fff' },
-  stepLine: { flex: 1, height: 3, backgroundColor: '#e5e7eb' },
-  stepLineActive: { backgroundColor: '#059669' },
-  actionsRow: { flexDirection: 'row', gap: 10 },
-  proofBtn: {
-    flex: 1, borderWidth: 1, borderColor: '#059669', borderRadius: 10,
-    padding: 10, alignItems: 'center',
-  },
-  proofBtnText: { color: '#059669', fontWeight: '600', fontSize: 13 },
-  chatBtn: {
-    borderWidth: 1, borderColor: '#d1fae5', borderRadius: 10,
-    padding: 10, paddingHorizontal: 16, alignItems: 'center', backgroundColor: '#f0fdf4',
-  },
-  chatBtnText: { color: '#059669', fontWeight: '600', fontSize: 13 },
-  cameraContainer: { flex: 1 },
-  camera: { flex: 1 },
-  cameraControls: { position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' },
-  captureBtn: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: '#fff',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
-  captureInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#059669' },
-  cancelCameraBtn: {
-    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20,
-  },
-  cancelCameraText: { color: '#fff', fontWeight: '600' },
+  center:       {flex:1,justifyContent:'center',alignItems:'center',backgroundColor:BG},
+  noOrderText:  {fontSize:16,color:ON_SURF_V},
+  header:       {flexDirection:'row',alignItems:'center',paddingTop:56,paddingHorizontal:20,paddingBottom:16,backgroundColor:SURFACE,borderBottomWidth:1,borderBottomColor:SURFACE_C},
+  backBtn:      {width:38,height:38,borderRadius:12,backgroundColor:SURFACE_C,alignItems:'center',justifyContent:'center'},
+  headerTitle:  {fontSize:18,fontWeight:'800',color:ON_SURF},
+  headerSub:    {fontSize:13,color:ON_SURF_V},
+  headerTotal:  {fontSize:18,fontWeight:'900',color:PRIMARY},
+  stepperCard:  {backgroundColor:SURFACE,borderRadius:20,padding:20,marginBottom:16,shadowColor:'#181D19',shadowOpacity:0.08,shadowRadius:12,elevation:3},
+  stepperTitle: {fontSize:16,fontWeight:'700',color:ON_SURF,marginBottom:20},
+  stepper:      {flexDirection:'row',alignItems:'flex-start'},
+  stepItem:     {alignItems:'center',flex:1},
+  stepCircle:   {width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center',marginBottom:8},
+  stepCircleDone:{backgroundColor:PRIMARY},
+  stepCircleCurrent:{backgroundColor:'rgba(0,106,59,0.12)',borderWidth:2,borderColor:PRIMARY},
+  stepCircleFuture:{backgroundColor:SURFACE_C},
+  stepPulse:    {width:12,height:12,borderRadius:6,backgroundColor:PRIMARY},
+  stepLabel:    {fontSize:10,color:OUTLINE_V,fontWeight:'600',textAlign:'center'},
+  stepConnector:{flex:1,height:2,backgroundColor:SURFACE_C,marginTop:18,marginHorizontal:-8},
+  stepConnectorDone:{backgroundColor:PRIMARY},
+  itemsCard:    {backgroundColor:SURFACE,borderRadius:20,padding:20,marginBottom:16,shadowColor:'#181D19',shadowOpacity:0.07,shadowRadius:10,elevation:2},
+  cardTitle:    {fontSize:16,fontWeight:'700',color:ON_SURF,marginBottom:14},
+  itemRow:      {flexDirection:'row',alignItems:'center',marginBottom:10,gap:10},
+  itemName:     {flex:1,fontSize:14,color:ON_SURF,fontWeight:'600'},
+  itemQty:      {fontSize:13,color:ON_SURF_V},
+  itemPrice:    {fontSize:14,fontWeight:'700',color:PRIMARY},
+  totalRow:     {flexDirection:'row',justifyContent:'space-between',borderTopWidth:1,borderTopColor:SURFACE_C,paddingTop:12,marginTop:4},
+  totalLabel:   {fontSize:14,fontWeight:'700',color:ON_SURF_V},
+  totalAmount:  {fontSize:18,fontWeight:'900',color:PRIMARY},
+  notesCard:    {flexDirection:'row',backgroundColor:SURFACE,borderRadius:16,padding:16,marginBottom:16,gap:10,shadowColor:'#181D19',shadowOpacity:0.06,shadowRadius:8,elevation:2},
+  notesLabel:   {fontSize:12,fontWeight:'700',color:ON_SURF_V,marginBottom:4},
+  notesText:    {fontSize:14,color:ON_SURF,lineHeight:20},
+  footer:       {position:'absolute',bottom:0,left:0,right:0,flexDirection:'row',gap:10,padding:16,paddingBottom:32,backgroundColor:'rgba(246,251,243,0.95)',borderTopWidth:0.5,borderTopColor:OUTLINE_V},
+  chatFooterBtn:{width:52,height:52,borderRadius:16,backgroundColor:SURFACE,borderWidth:1.5,borderColor:PRIMARY,alignItems:'center',justifyContent:'center'},
+  chatFooterText:{fontSize:10,color:PRIMARY,fontWeight:'700',marginTop:2},
+  advanceBtn:   {flex:1,flexDirection:'row',alignItems:'center',justifyContent:'center',backgroundColor:PRIMARY,borderRadius:16,paddingVertical:14,gap:8},
+  advanceBtnText:{fontSize:15,fontWeight:'800',color:'#FFF'},
+  completedBadge:{flex:1,flexDirection:'row',alignItems:'center',justifyContent:'center',backgroundColor:'rgba(0,106,59,0.1)',borderRadius:16,paddingVertical:14,gap:8},
+  completedText: {fontSize:15,fontWeight:'700',color:PRIMARY},
 });

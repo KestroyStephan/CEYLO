@@ -1,13 +1,23 @@
 import React from 'react';
-import { View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { Text, Button, Surface } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
+import { auth } from '../../firebaseConfig';
+import { signInAnonymously } from 'firebase/auth';
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen({ navigation }) {
   const { t } = useTranslation();
+
+  const handleContinueGuest = async () => {
+    try {
+      await signInAnonymously(auth);
+    } catch (e) {
+      Alert.alert('Error', 'Failed to continue as guest: ' + e.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -48,7 +58,7 @@ export default function WelcomeScreen({ navigation }) {
               </Button>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate('Main')}
+                onPress={handleContinueGuest}
                 style={styles.guestButton}
               >
                 <Text style={styles.guestText}>{t('continue_guest')}</Text>

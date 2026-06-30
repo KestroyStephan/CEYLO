@@ -1,156 +1,163 @@
+// CEYLO Design System
+// primary:#006A3B secondary:#006A6A tertiary:#735C00 error:#BA1A1A
+// bg:#F6FBF3 surface:#FFFFFF surfaceContainer:#EBEFE8
+// onSurface:#181D19 onSurfaceVariant:#3F4941
+// outline:#6F7A70 outlineVariant:#BECABE
+
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
-  ScrollView, Modal, Animated,
+  ScrollView, Modal, Animated, StatusBar, Dimensions,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { db } from '../../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 
-const REJECT_REASONS = ['Too busy', 'Item unavailable', 'Item out of stock', 'Other'];
+const { width } = Dimensions.get('window');
+const PRIMARY   = '#006A3B';
+const ERROR     = '#BA1A1A';
+const BG        = '#F6FBF3';
+const SURFACE   = '#FFFFFF';
+const SURFACE_C = '#EBEFE8';
+const ON_SURF   = '#181D19';
+const ON_SURF_V = '#3F4941';
+const OUTLINE_V = '#BECABE';
 const TIMER_SECONDS = 20;
+
+const REJECT_REASONS = ['Too Busy','Item Unavailable','Out of Stock','Other'];
 
 export default function VendorIncomingOrderScreen({ route, navigation }) {
   const { order } = route.params;
-  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState(REJECT_REASONS[0]);
-  const [submitting, setSubmitting] = useState(false);
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const timerRef = useRef(null);
+  const [timeLeft,         setTimeLeft]         = useState(TIMER_SECONDS);
+  const [showRejectModal,  setShowRejectModal]  = useState(false);
+  const [selectedReason,   setSelectedReason]   = useState(REJECT_REASONS[0]);
+  const [submitting,       setSubmitting]       = useState(false);
+  const progressAnim = useRef(new Animated.Value(1)).current;
+  const timerRef    = useRef(null);
   const autoRejected = useRef(false);
 
   useEffect(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Animated.timing(progressAnim, { toValue:0, duration:TIMER_SECONDS*1000, useNativeDriver:false }).start();
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          if (!autoRejected.current) {
-            autoRejected.current = true;
-            handleReject('No response', true);
-          }
+          if (!autoRejected.current) { autoRejected.current=true; handleReject('No response',true); }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: TIMER_SECONDS * 1000,
-      useNativeDriver: false,
-    }).start();
-
     return () => clearInterval(timerRef.current);
   }, []);
+
+  const barColor = progressAnim.interpolate({
+    inputRange:[0,0.3,1], outputRange:[ERROR,'#D97706',PRIMARY],
+  });
 
   const handleAccept = async () => {
     clearInterval(timerRef.current);
     setSubmitting(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      await updateDoc(doc(db, 'bookings', order.id), { status: 'accepted' });
-      navigation.goBack();
-    } catch (e) {
-      Alert.alert('Error', e.message);
-      setSubmitting(false);
-    }
+      await updateDoc(doc(db,'orders',order.id), { status:'accepted' });
+      navigation.replace('VendorOrderManagement',{ orderId:order.id, order });
+    } catch (e) { Alert.alert('Error',e.message); setSubmitting(false); }
   };
 
-  const handleReject = async (reason, auto = false) => {
+  const handleReject = async (reason, auto=false) => {
     clearInterval(timerRef.current);
     if (!auto) setShowRejectModal(false);
     setSubmitting(true);
     try {
-      await updateDoc(doc(db, 'bookings', order.id), {
-        status: 'rejected',
-        rejectionReason: reason,
-      });
+      await updateDoc(doc(db,'orders',order.id), { status:'rejected', rejectionReason:reason });
       navigation.goBack();
-    } catch (e) {
-      Alert.alert('Error', e.message);
-      setSubmitting(false);
-    }
+    } catch (e) { if(!auto)Alert.alert('Error',e.message); setSubmitting(false); }
   };
 
-  const barWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>New Order</Text>
-        <View style={styles.timerBadge}>
-          <Text style={styles.timerText}>{timeLeft}s</Text>
+    <View style={styles.overlay}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.card}>
+        {/* Timer Bar */}
+        <View style={styles.timerRow}>
+          <Text style={styles.timerLabel}>New Order!</Text>
+          <View style={styles.timerBadge}>
+            <Text style={[styles.timerText,{color:timeLeft<=5?ERROR:'#D97706'}]}>{timeLeft}s</Text>
+          </View>
         </View>
-      </View>
-
-      {/* Timer progress bar */}
-      <View style={styles.progressTrack}>
-        <Animated.View style={[styles.progressBar, { width: barWidth }]} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>CUSTOMER</Text>
-          <Text style={styles.customerName}>{order.customerName || 'Unknown'}</Text>
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressFill,{width:progressAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']}),backgroundColor:barColor}]} />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>ORDER ITEMS</Text>
-          {(order.items || []).map((item, idx) => (
-            <View key={idx} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <View style={styles.itemRight}>
-                <Text style={styles.itemQty}>x{item.qty}</Text>
-                <Text style={styles.itemPrice}>LKR {((item.price || 0) * (item.qty || 1)).toLocaleString()}</Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom:8}}>
+          {/* Customer */}
+          <View style={styles.customerRow}>
+            <View style={styles.customerAvatar}>
+              <Text style={styles.customerAvatarText}>{(order.customerName||'T')[0].toUpperCase()}</Text>
+            </View>
+            <View>
+              <Text style={styles.customerName}>{order.customerName||'Tourist'}</Text>
+              <Text style={styles.orderIdText}>#{order.id?.slice(-8)}</Text>
+            </View>
+          </View>
+
+          {/* Items */}
+          <View style={styles.itemsSection}>
+            <Text style={styles.itemsSectionTitle}>Order Details</Text>
+            {order.items?.map((it,i)=>(
+              <View key={i} style={styles.itemRow}>
+                <View style={styles.itemQtyBadge}><Text style={styles.itemQtyText}>×{it.qty||1}</Text></View>
+                <Text style={styles.itemName}>{it.name}</Text>
+                <Text style={styles.itemPrice}>LKR {((it.price||0)*(it.qty||1)).toLocaleString()}</Text>
               </View>
+            ))}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalAmount}>LKR {(order.totalPrice||0).toLocaleString()}</Text>
             </View>
-          ))}
-          <View style={styles.divider} />
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalAmount}>LKR {(order.totalPrice || 0).toLocaleString()}</Text>
           </View>
-        </View>
-      </ScrollView>
 
-      <View style={styles.actionArea}>
-        <TouchableOpacity
-          style={[styles.acceptBtn, submitting && styles.btnDisabled]}
-          onPress={handleAccept}
-          disabled={submitting}
-        >
-          <Text style={styles.acceptBtnText}>✓  ACCEPT</Text>
+          {order.notes&&(
+            <View style={styles.notesBox}>
+              <Ionicons name="chatbubble-outline" size={14} color={ON_SURF_V}/>
+              <Text style={styles.notesText}>{order.notes}</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Actions */}
+        <TouchableOpacity style={[styles.acceptBtn,submitting&&{opacity:0.6}]} onPress={handleAccept} disabled={submitting} activeOpacity={0.85}>
+          <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+          <Text style={styles.acceptBtnText}>ACCEPT ORDER</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.rejectBtn, submitting && styles.btnDisabled]}
-          onPress={() => setShowRejectModal(true)}
-          disabled={submitting}
-        >
-          <Text style={styles.rejectBtnText}>✕  REJECT</Text>
+        <TouchableOpacity style={[styles.rejectBtn,submitting&&{opacity:0.4}]} onPress={()=>setShowRejectModal(true)} disabled={submitting} activeOpacity={0.85}>
+          <Text style={styles.rejectBtnText}>Reject</Text>
         </TouchableOpacity>
       </View>
 
-      <Modal visible={showRejectModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Reason for Rejection</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker selectedValue={rejectReason} onValueChange={(v) => setRejectReason(v)}>
-                {REJECT_REASONS.map((r) => (
-                  <Picker.Item key={r} label={r} value={r} />
-                ))}
-              </Picker>
-            </View>
-            <TouchableOpacity style={styles.confirmBtn} onPress={() => handleReject(rejectReason)}>
-              <Text style={styles.confirmBtnText}>Confirm Rejection</Text>
+      {/* Reject Modal */}
+      <Modal visible={showRejectModal} transparent animationType="slide" onRequestClose={()=>setShowRejectModal(false)}>
+        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={()=>setShowRejectModal(false)} />
+        <View style={styles.bottomSheet}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Select a Reason</Text>
+          {REJECT_REASONS.map(r=>(
+            <TouchableOpacity key={r} style={[styles.reasonRow,selectedReason===r&&styles.reasonRowActive]} onPress={()=>setSelectedReason(r)}>
+              <View style={[styles.reasonRadio,selectedReason===r&&styles.reasonRadioActive]}>
+                {selectedReason===r&&<View style={styles.reasonRadioDot}/>}
+              </View>
+              <Text style={[styles.reasonText,selectedReason===r&&{color:PRIMARY,fontWeight:'700'}]}>{r}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowRejectModal(false)}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          ))}
+          <TouchableOpacity style={styles.confirmRejectBtn} onPress={()=>handleReject(selectedReason)} activeOpacity={0.85}>
+            <Text style={styles.confirmRejectText}>Confirm Rejection</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelSheetBtn} onPress={()=>setShowRejectModal(false)}>
+            <Text style={styles.cancelSheetText}>Cancel</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
     </View>
@@ -158,53 +165,47 @@ export default function VendorIncomingOrderScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0fdf4' },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 50, paddingBottom: 12, backgroundColor: '#fff',
-  },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#064e3b' },
-  timerBadge: {
-    backgroundColor: '#fef2f2', borderRadius: 20, paddingHorizontal: 14,
-    paddingVertical: 6, borderWidth: 1, borderColor: '#fca5a5',
-  },
-  timerText: { fontSize: 16, fontWeight: '700', color: '#dc2626' },
-  progressTrack: { height: 6, backgroundColor: '#fee2e2' },
-  progressBar: { height: 6, backgroundColor: '#dc2626' },
-  content: { padding: 20 },
-  card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
-  },
-  cardLabel: { fontSize: 11, fontWeight: '700', color: '#9ca3af', marginBottom: 8, letterSpacing: 1 },
-  customerName: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, alignItems: 'center' },
-  itemName: { fontSize: 15, color: '#374151', flex: 1 },
-  itemRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  itemQty: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  itemPrice: { fontSize: 14, color: '#059669', fontWeight: '700' },
-  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: '#374151' },
-  totalAmount: { fontSize: 20, fontWeight: '900', color: '#059669' },
-  actionArea: {
-    padding: 20, gap: 12, backgroundColor: '#fff',
-    borderTopWidth: 1, borderTopColor: '#f3f4f6',
-  },
-  acceptBtn: {
-    backgroundColor: '#059669', borderRadius: 14, padding: 18, alignItems: 'center',
-    shadowColor: '#059669', shadowOpacity: 0.3, elevation: 4,
-  },
-  acceptBtnText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 1 },
-  rejectBtn: { borderWidth: 2, borderColor: '#dc2626', borderRadius: 14, padding: 16, alignItems: 'center' },
-  rejectBtnText: { color: '#dc2626', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
-  btnDisabled: { opacity: 0.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#064e3b', marginBottom: 16 },
-  pickerWrapper: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
-  confirmBtn: { backgroundColor: '#dc2626', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 10 },
-  confirmBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  cancelBtn: { alignItems: 'center', padding: 12 },
-  cancelBtnText: { color: '#6b7280', fontSize: 15 },
+  overlay:      {flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'flex-end'},
+  card:         {backgroundColor:SURFACE,borderTopLeftRadius:28,borderTopRightRadius:28,padding:20,paddingBottom:40,maxHeight:'90%'},
+  timerRow:     {flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:12},
+  timerLabel:   {fontSize:20,fontWeight:'900',color:ON_SURF},
+  timerBadge:   {backgroundColor:SURFACE_C,borderRadius:9999,paddingHorizontal:14,paddingVertical:6},
+  timerText:    {fontSize:18,fontWeight:'900'},
+  progressTrack:{height:6,backgroundColor:SURFACE_C,borderRadius:3,marginBottom:20,overflow:'hidden'},
+  progressFill: {height:6,borderRadius:3},
+  customerRow:  {flexDirection:'row',alignItems:'center',gap:12,marginBottom:16},
+  customerAvatar:{width:50,height:50,borderRadius:25,backgroundColor:SURFACE_C,alignItems:'center',justifyContent:'center'},
+  customerAvatarText:{fontSize:22,fontWeight:'800',color:PRIMARY},
+  customerName: {fontSize:18,fontWeight:'800',color:ON_SURF},
+  orderIdText:  {fontSize:12,color:ON_SURF_V,marginTop:2},
+  itemsSection: {backgroundColor:SURFACE_C,borderRadius:16,padding:14,marginBottom:12},
+  itemsSectionTitle:{fontSize:13,fontWeight:'700',color:ON_SURF_V,marginBottom:10,textTransform:'uppercase',letterSpacing:1},
+  itemRow:      {flexDirection:'row',alignItems:'center',marginBottom:10,gap:10},
+  itemQtyBadge: {backgroundColor:PRIMARY,borderRadius:9999,paddingHorizontal:8,paddingVertical:3},
+  itemQtyText:  {fontSize:12,fontWeight:'800',color:'#FFF'},
+  itemName:     {flex:1,fontSize:14,color:ON_SURF,fontWeight:'600'},
+  itemPrice:    {fontSize:14,fontWeight:'700',color:PRIMARY},
+  totalRow:     {flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:OUTLINE_V,paddingTop:10,marginTop:4},
+  totalLabel:   {fontSize:14,fontWeight:'700',color:ON_SURF_V},
+  totalAmount:  {fontSize:20,fontWeight:'900',color:PRIMARY},
+  notesBox:     {flexDirection:'row',gap:8,alignItems:'flex-start',backgroundColor:'#FFF7ED',borderRadius:12,padding:12,marginBottom:12},
+  notesText:    {flex:1,fontSize:13,color:ON_SURF,lineHeight:20},
+  acceptBtn:    {flexDirection:'row',alignItems:'center',justifyContent:'center',backgroundColor:PRIMARY,borderRadius:16,paddingVertical:18,gap:10,marginTop:12},
+  acceptBtnText:{fontSize:18,fontWeight:'900',color:'#FFF',letterSpacing:1},
+  rejectBtn:    {alignItems:'center',paddingVertical:14,marginTop:8},
+  rejectBtnText:{fontSize:15,fontWeight:'700',color:ERROR},
+  modalBackdrop:{flex:1},
+  bottomSheet:  {backgroundColor:SURFACE,borderTopLeftRadius:28,borderTopRightRadius:28,padding:24,paddingBottom:40},
+  sheetHandle:  {width:40,height:4,borderRadius:2,backgroundColor:OUTLINE_V,alignSelf:'center',marginBottom:20},
+  sheetTitle:   {fontSize:20,fontWeight:'800',color:ON_SURF,marginBottom:16},
+  reasonRow:    {flexDirection:'row',alignItems:'center',padding:14,borderRadius:14,borderWidth:1.5,borderColor:OUTLINE_V,marginBottom:8,gap:12},
+  reasonRowActive:{borderColor:PRIMARY,backgroundColor:'rgba(0,106,59,0.05)'},
+  reasonRadio:  {width:22,height:22,borderRadius:11,borderWidth:2,borderColor:OUTLINE_V,alignItems:'center',justifyContent:'center'},
+  reasonRadioActive:{borderColor:PRIMARY},
+  reasonRadioDot:{width:10,height:10,borderRadius:5,backgroundColor:PRIMARY},
+  reasonText:   {fontSize:15,color:ON_SURF_V},
+  confirmRejectBtn:{backgroundColor:ERROR,borderRadius:14,paddingVertical:16,alignItems:'center',marginTop:8},
+  confirmRejectText:{color:'#FFF',fontSize:16,fontWeight:'800'},
+  cancelSheetBtn:{alignItems:'center',paddingVertical:14},
+  cancelSheetText:{fontSize:15,fontWeight:'600',color:ON_SURF_V},
 });

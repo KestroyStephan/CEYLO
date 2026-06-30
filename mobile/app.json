@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
@@ -29,7 +29,7 @@
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
       }
     },
@@ -47,15 +47,13 @@
             ]
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
         "projectId": "eb3f0379-5016-4e76-9265-0c220b522aa0"
       }
-    },
-    "experiments": {
-      "newArchEnabled": false
     }
   }
 }

@@ -1,74 +1,150 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if user is signed in
+
     function isSignedIn() {
       return request.auth != null;
     }
-
-    // Check if the current user is an admin:
-    // Either their Firestore role field is 'admin' OR their email is the known admin email.
-    // The email check avoids the chicken-and-egg problem of needing to read a document
-    // that may not exist yet, and ensures the admin can always manage the portal.
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'admin@ceylo.com' ||
-        (
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-        )
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
-    
-    // Helper to check role
     function hasRole(role) {
-      return isSignedIn() 
+      return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
 
-    // User Profiles
-    match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin();
+    // Users collection - vendor role update allowed
+    match /users/{uid} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == uid || 
+         isAdmin());
+      allow write: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && 
+        (request.auth.uid == uid || 
+         isAdmin());
     }
 
-    // Bookings
+    // Bookings (legacy, read by drivers)
     match /bookings/{bookingId} {
       allow create: if hasRole('tourist');
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId 
-                || (hasRole('driver') && (resource.data.status == 'pending' || resource.data.driverId == request.auth.uid)));
-      allow update: if hasRole('driver') || request.auth.uid == resource.data.userId;
+      allow read:   if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.driverId ||
+        request.auth.uid == resource.data.vendorId ||
+        isAdmin()
+      );
+      allow update: if isSignedIn() && (
+        hasRole('driver') || hasRole('tourist') ||
+        isAdmin()
+      );
     }
 
-    // Vendors
-    match /vendors/{vendorId} {
+    // Vendors collection
+    match /vendors/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && 
+        (request.auth.uid == uid || 
+         isAdmin());
+      allow delete: if request.auth != null && 
+        isAdmin();
+    }
+
+    // Vendor subcollections
+    match /vendors/{uid}/services/{serviceId} {
       allow read: if true;
-      allow write: if hasRole('vendor') && request.auth.uid == vendorId;
+      allow write: if request.auth != null && 
+        (request.auth.uid == uid || 
+         isAdmin());
+    }
+
+    match /vendors/{uid}/products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        (request.auth.uid == uid || 
+         isAdmin());
+    }
+
+    match /vendors/{uid}/orders/{orderId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == uid || 
+         isAdmin());
+      allow write: if request.auth != null;
+    }
+
+    // Orders (global collection)
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read:   if request.auth != null && (
+        request.auth.uid == resource.data.vendorId ||
+        request.auth.uid == resource.data.touristId ||
+        isAdmin()
+      );
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.vendorId ||
+        request.auth.uid == resource.data.touristId ||
+        isAdmin()
+      );
+      allow list: if request.auth != null;
+    }
+
+    // Chats
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null;
+
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
     }
 
     // SOS Alerts
     match /sos_alerts/{alertId} {
-      allow create: if true; // Allow emergency alerts even if not signed in
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.userId || 
-        hasRole('admin') || 
-        hasRole('guide') || 
-        hasRole('driver')
+      allow create: if true;
+      allow read:   if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        hasRole('admin') || hasRole('guide') || hasRole('driver')
       );
     }
 
-    // Destinations & Events
-    match /destinations/{id} { 
-      allow read: if true; 
-      allow write: if true;
+    // Destinations & Events (public read, admin write)
+    match /destinations/{id} {
+      allow read:  if true;
+      allow write: if isAdmin();
     }
-    match /cultural_events/{id} { 
-      allow read: if true; 
-      allow write: if true;
+    match /cultural_events/{id} {
+      allow read:  if true;
+      allow write: if isAdmin() || isSignedIn();
+    }
+
+    // Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Itineraries
+    match /itineraries/{itineraryId} {
+      allow read, write: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+    }
+
+    // Tours
+    match /tours/{tourId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'guide'];
+    }
+
+    // EmergencyLogs
+    match /EmergencyLogs/{logId} {
+      allow read: if request.auth != null;
+      allow create: if true;
     }
   }
 }
-

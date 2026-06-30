@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc } from "firebase/firestore";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBzhHU5-0OmW-d71uHL2rujPO-RhS3xGsE",
+    apiKey: "YOUR_FIREBASE_API_KEY",
     authDomain: "ceylo-app.firebaseapp.com",
     projectId: "ceylo-app",
     storageBucket: "ceylo-app.firebasestorage.app",

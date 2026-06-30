@@ -8,7 +8,7 @@ import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OfflineQueue } from './services/OfflineQueue';
 import { NotificationService } from './services/NotificationService';
@@ -86,6 +86,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let unsubUser = null;
+
     const checkSession = async (currentUser) => {
       if (currentUser) {
         try {
@@ -107,31 +109,49 @@ export default function App() {
             await AsyncStorage.setItem('lastLoginDate', new Date().toISOString());
           }
 
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setUserRole(data.role);
-            setUserData(data);
-          } else {
+          // Real-time listener for user role updates
+          unsubUser = onSnapshot(doc(db, 'users', currentUser.uid), (snap) => {
+            if (snap.exists()) {
+              const data = snap.data();
+              setUserRole(data.role);
+              setUserData(data);
+            } else {
+              setUserRole('tourist');
+            }
+            setLoading(false);
+          }, (error) => {
+            console.log('User document listener error:', error.message);
             setUserRole('tourist');
-          }
+            setLoading(false);
+          });
 
         } catch (error) {
-          console.log('Session check note:', error.message);
+          console.log('Session check error:', error.message);
           setUserRole('tourist');
+          setLoading(false);
         }
       } else {
         setUserRole(null);
         setUserData(null);
+        setLoading(false);
       }
       setUser(currentUser);
-      setLoading(false);
     };
 
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      if (unsubUser) {
+        unsubUser();
+        unsubUser = null;
+      }
       checkSession(authUser);
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribe();
+      if (unsubUser) {
+        unsubUser();
+      }
+    };
   }, []);
 
   if (loading) {
@@ -165,11 +185,11 @@ export default function App() {
                   <Stack.Screen name="DriverDashboard" component={DriverDashboard} />
                 ) : userRole === 'guide' ? (
                   <Stack.Screen name="GuideDashboard" component={GuideDashboard} />
-                ) : userRole === 'vendor' ? (
+                ) : (userRole === 'vendor' || userRole === 'vendor_active') ? (
                   <Stack.Screen name="VendorPortal" component={VendorNavigator} />
                 ) : userRole === 'vendor_onboarding' ? (
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
-                ) : userRole === 'vendor_pending' ? (
+                ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected') ? (
                   <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
                 ) : (
                   <Stack.Screen name="Main" component={MainTabNavigator} />

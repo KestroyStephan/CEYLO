@@ -14,16 +14,14 @@ import { auth, db } from '../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 
 // Configure foreground notification behavior
-if (!isExpoGo) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
-}
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 // Deep-link routing map: notification.data.type -> { screen, params }
 const ROUTE_MAP = {
@@ -44,30 +42,38 @@ class NotificationServiceClass {
 
   async init(navigation) {
     this._navigation = navigation;
+    
+    // Always request permission and set up handlers so local notifications work in Expo Go
+    await this._requestPermission();
+    this._setupHandlers();
+
     if (isExpoGo) {
-      console.log('[Notifications] Running in Expo Go, skipping setup.');
+      console.log('[Notifications] Running in Expo Go — push tokens disabled, local notifications still active.');
       return;
     }
-    await this._requestPermission();
+    
     await this._registerToken();
-    this._setupHandlers();
   }
 
   async _requestPermission() {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    if (existingStatus === 'granted') return;
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      if (existingStatus === 'granted') return;
 
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('[Notifications] Permission not granted');
-    }
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('[Notifications] Permission not granted');
+      }
 
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-      });
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+        });
+      }
+    } catch (e) {
+      console.log('[Notifications] Permission request error:', e.message);
     }
   }
 
@@ -132,14 +138,12 @@ class NotificationServiceClass {
 
   /** Call on logout to clean up listeners */
   cleanup() {
-    if (isExpoGo) return;
     this._foregroundSubscription?.remove();
     this._responseSubscription?.remove();
   }
 
   /** Send a local test notification (dev use) */
   async sendLocal(title, body, data = {}) {
-    if (isExpoGo) return;
     await Notifications.scheduleNotificationAsync({
       content: { title, body, data },
       trigger: null,

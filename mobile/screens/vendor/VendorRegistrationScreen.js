@@ -1,541 +1,484 @@
+// CEYLO Design System
+// primary:#006A3B secondary:#006A6A tertiary:#735C00 error:#BA1A1A
+// bg:#F6FBF3 surface:#FFFFFF surfaceContainer:#EBEFE8
+// onSurface:#181D19 onSurfaceVariant:#3F4941
+// outline:#6F7A70 outlineVariant:#BECABE
+
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Image, Animated,
-  Dimensions,
+  Dimensions, KeyboardAvoidingView, Platform, StatusBar,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
-import { doc, setDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { signOut } from 'firebase/auth';
+import { doc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const { width } = Dimensions.get('window');
+const PRIMARY   = '#006A3B';
+const SECONDARY = '#006A6A';
+const BG        = '#F6FBF3';
+const SURFACE   = '#FFFFFF';
+const SURFACE_C = '#EBEFE8';
+const ON_SURF   = '#181D19';
+const ON_SURF_V = '#3F4941';
+const OUTLINE_V = '#BECABE';
+const ERROR     = '#BA1A1A';
 
-const BUSINESS_TYPES = [
-  'Homestay', 'Tour Guide', 'Transport', 'Food & Beverage',
-  'Artisan', 'Equipment Rental',
-];
+const BUSINESS_TYPES = ['Homestay','Tour Guide','Transport','Food & Beverage','Artisan','Equipment Rental'];
+const STEPS = ['Business Info','Documents','First Service'];
 
-const STEPS = ['Business Info', 'Documents', 'First Service'];
-const STEP_ICONS = ['🏢', '📄', '⭐'];
+const uploadFile = async (uri, storagePath, onProgress) => {
+  const res  = await fetch(uri);
+  const blob = await res.blob();
+  const r    = ref(storage, storagePath);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(r, blob);
+    task.on('state_changed',
+      snap => onProgress && onProgress(snap.bytesTransferred / snap.totalBytes),
+      reject,
+      async () => resolve(await getDownloadURL(task.snapshot.ref))
+    );
+  });
+};
 
 export default function VendorRegistrationScreen({ navigation }) {
-  const [step, setStep] = useState(0); // 0, 1, 2
-
-  // Step 1 fields
-  const [businessName, setBusinessName] = useState('');
-  const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0]);
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [step, setStep]             = useState(0);
+  const [businessName, setBN]       = useState('');
+  const [businessType, setBT]       = useState('');
+  const [phone, setPhone]           = useState('');
+  const [address, setAddress]       = useState('');
   const [gpsLoading, setGpsLoading] = useState(false);
 
-  // Step 2 fields
-  const [nicFront, setNicFront] = useState(null);
-  const [nicBack, setNicBack] = useState(null);
-  const [businessCert, setBusinessCert] = useState(null);
-  const [servicePhotos, setServicePhotos] = useState([]); // max 3
-  const [uploadProgress, setUploadProgress] = useState(0); // 0ΓÇô1
+  const [nicFront,     setNicFront]     = useState(null);
+  const [nicBack,      setNicBack]      = useState(null);
+  const [bizCert,      setBizCert]      = useState(null);
+  const [svcPhotos,    setSvcPhotos]    = useState([]);
+  const [uploading,    setUploading]    = useState(false);
+  const [uploadPct,    setUploadPct]    = useState(0);
   const [uploadedUrls, setUploadedUrls] = useState({});
 
-  // Step 3 fields
-  const [serviceName, setServiceName] = useState('');
-  const [serviceDesc, setServiceDesc] = useState('');
-  const [servicePrice, setServicePrice] = useState('');
-  const [serviceDuration, setServiceDuration] = useState('');
-  const [serviceCapacity, setServiceCapacity] = useState('');
-  const [ecoCertified, setEcoCertified] = useState(false);
+  const [svcName,  setSvcName]  = useState('');
+  const [svcDesc,  setSvcDesc]  = useState('');
+  const [svcPrice, setSvcPrice] = useState('');
+  const [svcDur,   setSvcDur]   = useState('');
+  const [svcCap,   setSvcCap]   = useState('');
+  const [ecoOn,    setEcoOn]    = useState(false);
+  const [loading,  setLoading]  = useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const uid = auth.currentUser?.uid;
 
-  // ΓöÇΓöÇ GPS Auto-fill ΓöÇΓöÇ
+  const handleClose = () => {
+    Alert.alert(
+      "Exit Registration",
+      "Are you sure you want to cancel registration and sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Exit", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await signOut(auth);
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          } 
+        }
+      ]
+    );
+  };
+
   const autoFillGPS = async () => {
     setGpsLoading(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location access is needed for GPS auto-fill.');
-        return;
-      }
+      if (status !== 'granted') { Alert.alert('Permission needed','Location access required'); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const geo = await Location.reverseGeocodeAsync({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      });
+      const geo = await Location.reverseGeocodeAsync({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
       if (geo?.length > 0) {
         const g = geo[0];
-        const formatted = [g.name, g.street, g.city, g.region].filter(Boolean).join(', ');
-        setAddress(formatted);
+        setAddress([g.name, g.street, g.city, g.region].filter(Boolean).join(', '));
       }
-    } catch (e) {
-      Alert.alert('GPS Error', e.message);
-    } finally {
-      setGpsLoading(false);
-    }
+    } catch (e) { Alert.alert('GPS Error', e.message); }
+    finally { setGpsLoading(false); }
   };
 
-  // ΓöÇΓöÇ Image Picker ΓöÇΓöÇ
-  const pickImage = async (setter, aspect = [3, 2]) => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission required'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true, aspect, quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.length > 0) setter(result.assets[0]);
-  };
-
-  const addServicePhoto = async () => {
-    if (servicePhotos.length >= 3) { Alert.alert('Max 3 photos'); return; }
+  const pickImage = async (setter) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true, aspect: [4, 3], quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.length > 0) {
-      setServicePhotos((prev) => [...prev, result.assets[0]]);
-    }
+    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true });
+    if (!r.canceled && r.assets?.length > 0) setter(r.assets[0]);
   };
 
-  // ΓöÇΓöÇ Upload single image ΓöÇΓöÇ
-  const uploadImage = async (asset, path) => {
-    const res = await fetch(asset.uri);
-    const blob = await res.blob();
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, blob);
-    return await getDownloadURL(storageRef);
-  };
-
-  // ΓöÇΓöÇ Animate progress bar ΓöÇΓöÇ
-  const animateProgress = (value) => {
-    Animated.timing(progressAnim, {
-      toValue: value, duration: 300, useNativeDriver: false,
-    }).start();
-    setUploadProgress(value);
-  };
-
-  // ΓöÇΓöÇ Step validation ΓöÇΓöÇ
-  const validateStep1 = () => {
-    if (!businessName.trim()) { Alert.alert('Required', 'Please enter your business name.'); return false; }
-    if (!phone.trim()) { Alert.alert('Required', 'Please enter your phone number.'); return false; }
-    if (!address.trim()) { Alert.alert('Required', 'Please enter your address.'); return false; }
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (!nicFront) { Alert.alert('Required', 'Please upload NIC front photo.'); return false; }
-    if (!nicBack) { Alert.alert('Required', 'Please upload NIC back photo.'); return false; }
-    if (!businessCert) { Alert.alert('Required', 'Please upload your business certificate.'); return false; }
-    return true;
-  };
-
-  // ΓöÇΓöÇ Step 2 ΓåÆ upload all documents ΓöÇΓöÇ
-  const handleStep2Upload = async () => {
-    if (!validateStep2()) return;
-    setLoading(true);
-    animateProgress(0);
-    const uid = auth.currentUser.uid;
-    const urls = {};
-
-    try {
-      const tasks = [
-        { asset: nicFront, path: `vendors/${uid}/docs/nic_front.jpg`, key: 'nicFront' },
-        { asset: nicBack, path: `vendors/${uid}/docs/nic_back.jpg`, key: 'nicBack' },
-        { asset: businessCert, path: `vendors/${uid}/docs/business_cert.jpg`, key: 'businessCert' },
-        ...servicePhotos.map((p, i) => ({
-          asset: p, path: `vendors/${uid}/docs/service_${i}.jpg`, key: `servicePhoto_${i}`,
-        })),
-      ];
-
-      for (let i = 0; i < tasks.length; i++) {
-        urls[tasks[i].key] = await uploadImage(tasks[i].asset, tasks[i].path);
-        animateProgress((i + 1) / tasks.length);
-      }
-
-      setUploadedUrls(urls);
-      setStep(2);
-    } catch (e) {
-      Alert.alert('Upload Error', e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ΓöÇΓöÇ Final submission ΓöÇΓöÇ
-  const handleFinalSubmit = async () => {
-    if (!serviceName.trim() || !servicePrice.trim()) {
-      Alert.alert('Required', 'Please enter service name and price.');
+  const uploadAllDocs = async () => {
+    if (!nicFront || !nicBack || !bizCert) {
+      Alert.alert('Required', 'Please upload NIC Front, Back, and Business Certificate.');
       return;
     }
-    setLoading(true);
-    const uid = auth.currentUser.uid;
+    setUploading(true);
+    setUploadPct(0);
     try {
-      // Create vendor document
-      await setDoc(doc(db, 'vendors', uid), {
-        businessName: businessName.trim(),
-        businessType,
-        phone: phone.trim(),
-        address: address.trim(),
-        docUrls: uploadedUrls,
+      const total = 3 + svcPhotos.length;
+      let done = 0;
+      const prog = () => { done++; setUploadPct(Math.round((done/total)*100)); };
+      const nf  = await uploadFile(nicFront.uri,  `vendors/${uid}/nic_front.jpg`,   prog);
+      const nb  = await uploadFile(nicBack.uri,   `vendors/${uid}/nic_back.jpg`,    prog);
+      const bc  = await uploadFile(bizCert.uri,   `vendors/${uid}/biz_cert.jpg`,    prog);
+      const sp  = [];
+      for (let i = 0; i < svcPhotos.length; i++) {
+        const u = await uploadFile(svcPhotos[i].uri, `vendors/${uid}/svc_${i}.jpg`, prog);
+        sp.push(u);
+      }
+      setUploadedUrls({ nicFront: nf, nicBack: nb, bizCert: bc, svcPhotos: sp });
+      setStep(2);
+    } catch (e) { Alert.alert('Upload Error', e.message); }
+    finally { setUploading(false); }
+  };
+
+  const handleSubmit = async () => {
+    if (!svcName.trim() || !svcPrice.trim()) {
+      Alert.alert('Required', 'Service name and price are required.'); return;
+    }
+    setLoading(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const vendorData = {
+        uid: user.uid,
+        businessName: businessName,
+        businessType: businessType,
+        email: user.email,
+        phone: phone,
+        address: address,
+        onlineStatus: 'closed',
         status: 'pending_verification',
-        busy: false,
-        onlineStatus: 'offline',
+        nicFrontUrl: uploadedUrls.nicFront || '',
+        nicBackUrl: uploadedUrls.nicBack || '',
+        businessCertUrl: uploadedUrls.bizCert || '',
+        servicePhotoUrls: uploadedUrls.svcPhotos || [],
+        rejectionReason: '',
+        createdAt: serverTimestamp(),
+      };
+
+      await setDoc(doc(db, 'vendors', user.uid), vendorData);
+
+      await addDoc(collection(db, 'vendors', user.uid, 'services'), {
+        name: svcName,
+        description: svcDesc,
+        price: parseFloat(svcPrice) || 0,
+        duration: svcDur,
+        maxCapacity: parseInt(svcCap) || 1,
+        ecoCertified: ecoOn,
+        isAvailable: true,
         createdAt: serverTimestamp(),
       });
 
-      // Create first service
-      await addDoc(collection(db, 'vendors', uid, 'services'), {
-        name: serviceName.trim(),
-        description: serviceDesc.trim(),
-        price: parseFloat(servicePrice) || 0,
-        duration: parseInt(serviceDuration, 10) || 60,
-        maxCapacity: parseInt(serviceCapacity, 10) || 1,
-        ecoCertified,
-        available: true,
-        photoUrl: uploadedUrls.servicePhoto_0 || null,
-        createdAt: serverTimestamp(),
-      });
-
-      // Update user role
-      await updateDoc(doc(db, 'users', uid), { role: 'vendor_pending' });
-
-      navigation.replace('VendorPending');
-    } catch (e) {
-      Alert.alert('Submission Error', e.message);
-    } finally {
       setLoading(false);
+
+      Alert.alert(
+        'Application Submitted!',
+        'Our team will review your documents within 1-2 business days.',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              try {
+                setLoading(true);
+                await updateDoc(doc(db, 'users', user.uid), {
+                  role: 'vendor_pending',
+                  status: 'pending_verification',
+                });
+              } catch (error) {
+                Alert.alert('Finalization Failed', error.message);
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (e) {
+      setLoading(false);
+      console.error('Vendor submission error:', e);
+      Alert.alert(
+        'Submission Failed',
+        'Error: ' + e.message + '\n\nPlease check your connection and try again.'
+      );
     }
   };
 
-  const progressBarWidth = progressAnim.interpolate({
-    inputRange: [0, 1], outputRange: ['0%', '100%'],
-  });
+  const step1Valid = businessName.trim() && businessType && phone.trim();
+  const step2Valid = !!(nicFront && nicBack && bizCert);
 
-  // ΓöÇΓöÇ Step progress indicator ΓöÇΓöÇ
-  const renderStepBar = () => (
-    <View style={styles.stepBar}>
-      {STEPS.map((label, idx) => (
-        <React.Fragment key={label}>
-          <View style={styles.stepItem}>
-            <View style={[styles.stepCircle, idx <= step && styles.stepCircleActive, idx < step && styles.stepCircleDone]}>
-              {idx < step
-                ? <Text style={styles.stepCheckmark}>✓</Text>
-                : <Text style={[styles.stepIcon, idx === step && styles.stepIconActive]}>{STEP_ICONS[idx]}</Text>}
-            </View>
-            <Text style={[styles.stepLabel, idx === step && styles.stepLabelActive]}>{label}</Text>
-          </View>
-          {idx < STEPS.length - 1 && (
-            <View style={[styles.stepConnector, idx < step && styles.stepConnectorActive]} />
-          )}
-        </React.Fragment>
-      ))}
-    </View>
-  );
-
-  // ΓöÇΓöÇ STEP 1 ΓöÇΓöÇ
-  const renderStep1 = () => (
-    <View style={styles.card}>
-      <Text style={styles.stepTitle}>Business Information</Text>
-      <Text style={styles.stepSubtitle}>Tell us about your business</Text>
-
-      <Text style={styles.label}>Business Name *</Text>
-      <TextInput
-        style={styles.input} placeholder="e.g. Kandy Eco Homestay"
-        placeholderTextColor="#9ca3af" value={businessName} onChangeText={setBusinessName}
-      />
-
-      <Text style={styles.label}>Business Type *</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker selectedValue={businessType} onValueChange={setBusinessType} style={styles.picker}>
-          {BUSINESS_TYPES.map((t) => <Picker.Item key={t} label={t} value={t} />)}
-        </Picker>
+  const DocPicker = ({ label, asset, onPick }) => (
+    <TouchableOpacity style={styles.docRow} onPress={onPick} activeOpacity={0.7}>
+      <View style={[styles.docIcon, asset && { backgroundColor: '#E8F5E9' }]}>
+        <Ionicons name={asset ? 'checkmark-circle' : 'cloud-upload-outline'} size={22}
+          color={asset ? PRIMARY : ON_SURF_V} />
       </View>
-
-      <Text style={styles.label}>Phone Number *</Text>
-      <TextInput
-        style={styles.input} placeholder="+94 77 123 4567"
-        placeholderTextColor="#9ca3af" keyboardType="phone-pad"
-        value={phone} onChangeText={setPhone}
-      />
-
-      <Text style={styles.label}>Business Address *</Text>
-      <View style={styles.addressRow}>
-        <TextInput
-          style={[styles.input, { flex: 1, marginRight: 8 }]}
-          placeholder="Street, City, Province"
-          placeholderTextColor="#9ca3af" multiline numberOfLines={2}
-          value={address} onChangeText={setAddress}
-        />
-        <TouchableOpacity style={styles.gpsBtn} onPress={autoFillGPS} disabled={gpsLoading}>
-          {gpsLoading
-            ? <ActivityIndicator size="small" color="#059669" />
-            : <><Text style={styles.gpsBtnIcon}>📍</Text><Text style={styles.gpsBtnText}>GPS</Text></>}
-        </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.docLabel}>{label}</Text>
+        <Text style={styles.docSub}>{asset ? 'Uploaded ✓' : 'Tap to upload'}</Text>
       </View>
-
-      <TouchableOpacity
-        style={styles.nextBtn}
-        onPress={() => validateStep1() && setStep(1)}
-      >
-        <Text style={styles.nextBtnText}>Next: Documents →</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  // ΓöÇΓöÇ STEP 2 ΓöÇΓöÇ
-  const renderStep2 = () => (
-    <View style={styles.card}>
-      <Text style={styles.stepTitle}>Document Upload</Text>
-      <Text style={styles.stepSubtitle}>Upload required verification documents</Text>
-
-      {/* Upload items */}
-      {[
-        { label: 'NIC ΓÇö Front *', state: nicFront, setter: setNicFront },
-        { label: 'NIC ΓÇö Back *', state: nicBack, setter: setNicBack },
-        { label: 'Business Certificate *', state: businessCert, setter: setBusinessCert },
-      ].map(({ label, state, setter }) => (
-        <View key={label}>
-          <Text style={styles.label}>{label}</Text>
-          <TouchableOpacity style={styles.uploadBtn} onPress={() => pickImage(setter)}>
-            <Text style={styles.uploadBtnText}>
-              {state ? '✅ Uploaded — Tap to change' : '🔍 Tap to upload'}
-            </Text>
-          </TouchableOpacity>
-          {state && <Image source={{ uri: state.uri }} style={styles.docPreview} />}
-        </View>
-      ))}
-
-      {/* Service photos */}
-      <Text style={styles.label}>Service Photos (optional, max 3)</Text>
-      <View style={styles.photoRow}>
-        {servicePhotos.map((p, i) => (
-          <View key={i} style={styles.servicePhotoThumb}>
-            <Image source={{ uri: p.uri }} style={styles.servicePhotoImg} />
-            <TouchableOpacity
-              style={styles.removePhoto}
-              onPress={() => setServicePhotos((prev) => prev.filter((_, j) => j !== i))}
-            >
-              <Text style={styles.removePhotoText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-        {servicePhotos.length < 3 && (
-          <TouchableOpacity style={styles.addPhotoBtn} onPress={addServicePhoto}>
-            <Text style={styles.addPhotoBtnText}>+ Add</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Progress bar */}
-      {loading && (
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressLabel}>Uploading... {Math.round(uploadProgress * 100)}%</Text>
-          <View style={styles.progressTrack}>
-            <Animated.View style={[styles.progressBar, { width: progressBarWidth }]} />
-          </View>
-        </View>
-      )}
-
-      <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => setStep(0)}>
-          <Text style={styles.backBtnText}>⬅ Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.nextBtn, { flex: 1, marginLeft: 10 }, loading && styles.disabled]}
-          onPress={handleStep2Upload} disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.nextBtnText}>Upload & Continue ➡️</Text>}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  // ΓöÇΓöÇ STEP 3 ΓöÇΓöÇ
-  const renderStep3 = () => (
-    <View style={styles.card}>
-      <Text style={styles.stepTitle}>Your First Service</Text>
-      <Text style={styles.stepSubtitle}>Add a service to attract your first booking</Text>
-
-      <Text style={styles.label}>Service Name *</Text>
-      <TextInput style={styles.input} placeholder="e.g. Traditional Cooking Class"
-        placeholderTextColor="#9ca3af" value={serviceName} onChangeText={setServiceName} />
-
-      <Text style={styles.label}>Description</Text>
-      <TextInput style={[styles.input, styles.textArea]}
-        placeholder="What makes your service special..."
-        placeholderTextColor="#9ca3af" multiline numberOfLines={3}
-        value={serviceDesc} onChangeText={setServiceDesc} />
-
-      <View style={styles.rowFields}>
-        <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={styles.label}>Price (LKR) *</Text>
-          <TextInput style={styles.input} placeholder="e.g. 2500"
-            placeholderTextColor="#9ca3af" keyboardType="numeric"
-            value={servicePrice} onChangeText={setServicePrice} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Duration (min)</Text>
-          <TextInput style={styles.input} placeholder="e.g. 90"
-            placeholderTextColor="#9ca3af" keyboardType="numeric"
-            value={serviceDuration} onChangeText={setServiceDuration} />
-        </View>
-      </View>
-
-      <Text style={styles.label}>Max Capacity (guests)</Text>
-      <TextInput style={styles.input} placeholder="e.g. 4"
-        placeholderTextColor="#9ca3af" keyboardType="numeric"
-        value={serviceCapacity} onChangeText={setServiceCapacity} />
-
-      {/* Eco certified toggle */}
-      <TouchableOpacity
-        style={[styles.ecoToggle, ecoCertified && styles.ecoToggleActive]}
-        onPress={() => setEcoCertified(!ecoCertified)}
-      >
-        <Text style={styles.ecoToggleText}>
-          {ecoCertified ? '🌿 Eco-Certified ✓' : '🌿 Mark as Eco-Certified'}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}>
-          <Text style={styles.backBtnText}>⬅ Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.submitBtn, loading && styles.disabled]}
-          onPress={handleFinalSubmit} disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.nextBtnText}>Submit Application 🚀</Text>}
-        </TouchableOpacity>
-      </View>
-    </View>
+      {asset && <Image source={{ uri: asset.uri }} style={styles.docThumb} />}
+    </TouchableOpacity>
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <LinearGradient colors={['#064e3b', '#059669']} style={styles.header}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={[PRIMARY, '#004D2C']} style={styles.header}>
+        <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.8}>
+          <Ionicons name="close-outline" size={26} color="#FFF" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Vendor Registration</Text>
-        <Text style={styles.headerSubtitle}>Join CEYLO as a verified eco-vendor</Text>
+        <Text style={styles.headerSub}>Step {step + 1} of 3 — {STEPS[step]}</Text>
       </LinearGradient>
 
-      {renderStepBar()}
+      {/* Progress Bar */}
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${((step + 1) / 3) * 100}%` }]} />
+      </View>
 
-      {step === 0 && renderStep1()}
-      {step === 1 && renderStep2()}
-      {step === 2 && renderStep3()}
+      {/* Step pills */}
+      <View style={styles.stepPills}>
+        {STEPS.map((s, i) => (
+          <View key={i} style={styles.stepPillRow}>
+            <View style={[styles.stepCircle, i <= step && styles.stepCircleActive]}>
+              {i < step
+                ? <Ionicons name="checkmark" size={14} color="#FFF" />
+                : <Text style={[styles.stepNum, i <= step && { color: '#FFF' }]}>{i + 1}</Text>}
+            </View>
+            <Text style={[styles.stepLabel, i === step && { color: PRIMARY, fontWeight: '700' }]}>{s}</Text>
+            {i < STEPS.length - 1 && <View style={[styles.stepLine, i < step && { backgroundColor: PRIMARY }]} />}
+          </View>
+        ))}
+      </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+      <ScrollView style={{ flex: 1, backgroundColor: BG }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        {/* ─── STEP 1 ─── */}
+        {step === 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Business Details</Text>
+
+            <Text style={styles.fieldLabel}>Business Name *</Text>
+            <TextInput style={styles.input} value={businessName} onChangeText={setBN}
+              placeholder="e.g. Saman's Homestay" placeholderTextColor="#AAB8AA" />
+
+            <Text style={styles.fieldLabel}>Business Type *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {BUSINESS_TYPES.map(bt => (
+                <TouchableOpacity key={bt} onPress={() => setBT(bt)}
+                  style={[styles.typeChip, businessType === bt && styles.typeChipActive]}>
+                  <Text style={[styles.typeChipText, businessType === bt && { color: '#FFF' }]}>{bt}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.fieldLabel}>Phone Number *</Text>
+            <TextInput style={styles.input} value={phone} onChangeText={setPhone}
+              keyboardType="phone-pad" placeholder="+94 71 234 5678" placeholderTextColor="#AAB8AA" />
+
+            <Text style={styles.fieldLabel}>Business Address</Text>
+            <View style={styles.addressRow}>
+              <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} value={address} onChangeText={setAddress}
+                placeholder="Enter address or use GPS" placeholderTextColor="#AAB8AA" />
+              <TouchableOpacity style={styles.gpsBtn} onPress={autoFillGPS} disabled={gpsLoading}>
+                {gpsLoading
+                  ? <ActivityIndicator size="small" color={PRIMARY} />
+                  : <Ionicons name="location-outline" size={20} color={PRIMARY} />}
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.nextBtn, !step1Valid && styles.nextBtnDisabled]}
+              onPress={() => step1Valid && setStep(1)} activeOpacity={0.8}>
+              <Text style={styles.nextBtnText}>Next — Upload Documents</Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ─── STEP 2 ─── */}
+        {step === 1 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Verification Documents</Text>
+            <Text style={styles.cardSub}>Upload clear photos of your documents</Text>
+
+            <DocPicker label="NIC Front *" asset={nicFront} onPick={() => pickImage(setNicFront)} />
+            <DocPicker label="NIC Back *"  asset={nicBack}  onPick={() => pickImage(setNicBack)} />
+            <DocPicker label="Business Certificate *" asset={bizCert} onPick={() => pickImage(setBizCert)} />
+
+            <Text style={styles.fieldLabel}>Service Photos (up to 3)</Text>
+            <View style={styles.photoGrid}>
+              {svcPhotos.map((p, i) => (
+                <View key={i} style={styles.photoThumbWrap}>
+                  <Image source={{ uri: p.uri }} style={styles.photoThumb} />
+                  <TouchableOpacity style={styles.photoDeleteBtn}
+                    onPress={() => setSvcPhotos(prev => prev.filter((_, j) => j !== i))}>
+                    <Ionicons name="close-circle" size={20} color={ERROR} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {svcPhotos.length < 3 && (
+                <TouchableOpacity style={styles.photoAdd}
+                  onPress={() => pickImage(asset => setSvcPhotos(p => [...p, asset]))}>
+                  <Ionicons name="camera-outline" size={28} color={PRIMARY} />
+                  <Text style={styles.photoAddText}>Add Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {uploading && (
+              <View style={styles.progressWrap}>
+                <View style={styles.progressTrackSm}>
+                  <View style={[styles.progressFillSm, { width: `${uploadPct}%` }]} />
+                </View>
+                <Text style={styles.progressPct}>{uploadPct}% uploaded</Text>
+              </View>
+            )}
+
+            <View style={styles.rowBtns}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => setStep(0)}>
+                <Text style={styles.backBtnText}>← Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.nextBtn, { flex: 1 }, (!step2Valid || uploading) && styles.nextBtnDisabled]}
+                onPress={uploadAllDocs} disabled={!step2Valid || uploading} activeOpacity={0.8}>
+                {uploading ? <ActivityIndicator color="#FFF" /> : (
+                  <><Text style={styles.nextBtnText}>Upload & Continue</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#FFF" /></>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ─── STEP 3 ─── */}
+        {step === 2 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Your First Service</Text>
+            <Text style={styles.cardSub}>Tell tourists what you offer</Text>
+
+            <Text style={styles.fieldLabel}>Service Name *</Text>
+            <TextInput style={styles.input} value={svcName} onChangeText={setSvcName}
+              placeholder="e.g. Guided Sigiriya Hike" placeholderTextColor="#AAB8AA" />
+
+            <Text style={styles.fieldLabel}>Description</Text>
+            <TextInput style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
+              value={svcDesc} onChangeText={setSvcDesc} multiline
+              placeholder="Describe what tourists will experience..." placeholderTextColor="#AAB8AA" />
+
+            <View style={styles.rowFields}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Price (LKR) *</Text>
+                <TextInput style={styles.input} value={svcPrice} onChangeText={setSvcPrice}
+                  keyboardType="numeric" placeholder="2500" placeholderTextColor="#AAB8AA" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Max Capacity</Text>
+                <TextInput style={styles.input} value={svcCap} onChangeText={setSvcCap}
+                  keyboardType="numeric" placeholder="10" placeholderTextColor="#AAB8AA" />
+              </View>
+            </View>
+
+            <Text style={styles.fieldLabel}>Duration</Text>
+            <TextInput style={styles.input} value={svcDur} onChangeText={setSvcDur}
+              placeholder="e.g. 3 hours" placeholderTextColor="#AAB8AA" />
+
+            <TouchableOpacity style={styles.ecoToggleCard} onPress={() => setEcoOn(!ecoOn)} activeOpacity={0.8}>
+              <View style={styles.ecoIconCircle}>
+                <Ionicons name="leaf" size={22} color={PRIMARY} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ecoTitle}>Eco-Certified Service</Text>
+                <Text style={styles.ecoSub}>Sustainable practices and materials</Text>
+              </View>
+              <View style={[styles.toggle, ecoOn && styles.toggleOn]}>
+                <View style={[styles.toggleDot, ecoOn && styles.toggleDotOn]} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.rowBtns}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}>
+                <Text style={styles.backBtnText}>← Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.nextBtn, { flex: 1 }, loading && styles.nextBtnDisabled]}
+                onPress={handleSubmit} disabled={loading} activeOpacity={0.8}>
+                {loading ? <ActivityIndicator color="#FFF" /> : (
+                  <Text style={styles.nextBtnText}>Submit Application 🎉</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0fdf4' },
-  content: { paddingBottom: 40 },
-  header: { padding: 32, paddingTop: 56, paddingBottom: 32 },
-  headerTitle: { fontSize: 26, fontWeight: '900', color: '#fff' },
-  headerSubtitle: { fontSize: 14, color: '#a7f3d0', marginTop: 4 },
-
-  stepBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    padding: 20, paddingBottom: 8,
-  },
-  stepItem: { alignItems: 'center', width: 70 },
-  stepCircle: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center',
-    marginBottom: 6,
-  },
-  stepCircleActive: { backgroundColor: '#d1fae5', borderWidth: 2, borderColor: '#059669' },
-  stepCircleDone: { backgroundColor: '#059669' },
-  stepIcon: { fontSize: 18 },
-  stepIconActive: {},
-  stepCheckmark: { fontSize: 20, color: '#fff', fontWeight: '800' },
-  stepLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '600', textAlign: 'center' },
-  stepLabelActive: { color: '#059669' },
-  stepConnector: { flex: 1, height: 2, backgroundColor: '#e5e7eb', marginBottom: 22 },
-  stepConnectorActive: { backgroundColor: '#059669' },
-
-  card: {
-    margin: 20, marginTop: 8, backgroundColor: '#fff', borderRadius: 20, padding: 22,
-    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10, elevation: 4,
-  },
-  stepTitle: { fontSize: 20, fontWeight: '800', color: '#064e3b', marginBottom: 4 },
-  stepSubtitle: { fontSize: 13, color: '#6b7280', marginBottom: 18 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 12 },
-  input: {
-    borderWidth: 1, borderColor: '#d1fae5', borderRadius: 10,
-    padding: 12, fontSize: 15, color: '#111827', backgroundColor: '#f9fafb',
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  pickerWrapper: {
-    borderWidth: 1, borderColor: '#d1fae5', borderRadius: 10, overflow: 'hidden', backgroundColor: '#f9fafb',
-  },
-  picker: { height: 50, color: '#111827' },
-  addressRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  gpsBtn: {
-    backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#059669',
-    borderRadius: 10, padding: 10, alignItems: 'center', justifyContent: 'center',
-    width: 60, minHeight: 48,
-  },
-  gpsBtnIcon: { fontSize: 18 },
-  gpsBtnText: { fontSize: 10, color: '#059669', fontWeight: '700' },
-
-  uploadBtn: {
-    borderWidth: 2, borderColor: '#059669', borderStyle: 'dashed',
-    borderRadius: 10, padding: 14, alignItems: 'center',
-  },
-  uploadBtnText: { color: '#059669', fontWeight: '600', fontSize: 14 },
-  docPreview: { width: '100%', height: 120, borderRadius: 10, marginTop: 8, resizeMode: 'cover' },
-  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  servicePhotoThumb: { width: 80, height: 80, borderRadius: 10, position: 'relative' },
-  servicePhotoImg: { width: 80, height: 80, borderRadius: 10, resizeMode: 'cover' },
-  removePhoto: {
-    position: 'absolute', top: -6, right: -6,
-    backgroundColor: '#dc2626', borderRadius: 10, width: 20, height: 20,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  removePhotoText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  addPhotoBtn: {
-    width: 80, height: 80, borderRadius: 10, borderWidth: 2,
-    borderColor: '#059669', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center',
-  },
-  addPhotoBtnText: { color: '#059669', fontWeight: '700', fontSize: 13 },
-
-  progressContainer: { marginTop: 16 },
-  progressLabel: { fontSize: 13, color: '#059669', fontWeight: '600', marginBottom: 6 },
-  progressTrack: { height: 8, backgroundColor: '#e5e7eb', borderRadius: 4, overflow: 'hidden' },
-  progressBar: { height: 8, backgroundColor: '#059669', borderRadius: 4 },
-
-  rowFields: { flexDirection: 'row' },
-  ecoToggle: {
-    borderWidth: 1.5, borderColor: '#d1d5db', borderRadius: 12,
-    padding: 14, alignItems: 'center', marginTop: 12, backgroundColor: '#f9fafb',
-  },
-  ecoToggleActive: { borderColor: '#059669', backgroundColor: '#f0fdf4' },
-  ecoToggleText: { fontWeight: '700', color: '#374151', fontSize: 14 },
-
-  btnRow: { flexDirection: 'row', marginTop: 20 },
-  backBtn: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12,
-    paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center',
-  },
-  backBtnText: { color: '#6b7280', fontWeight: '600', fontSize: 14 },
-  nextBtn: {
-    backgroundColor: '#059669', borderRadius: 12, padding: 16, alignItems: 'center',
-    shadowColor: '#059669', shadowOpacity: 0.3, elevation: 4, flex: 1,
-  },
-  submitBtn: {
-    backgroundColor: '#059669', borderRadius: 12, padding: 16, alignItems: 'center',
-    shadowColor: '#059669', shadowOpacity: 0.3, elevation: 4, flex: 1, marginLeft: 10,
-  },
-  nextBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  disabled: { opacity: 0.6 },
+  header:      { paddingTop: 56, paddingBottom: 20, paddingHorizontal: 24, alignItems: 'center', position: 'relative' },
+  closeBtn:    { position: 'absolute', top: Platform.OS === 'ios' ? 44 : 24, right: 20, padding: 8, zIndex: 10 },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#FFF' },
+  headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4 },
+  progressTrack: { height: 4, backgroundColor: '#BECABE', marginHorizontal: 0 },
+  progressFill:  { height: 4, backgroundColor: '#006A3B', borderRadius: 2 },
+  stepPills:   { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#EBEFE8' },
+  stepPillRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  stepCircle:  { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EBEFE8', alignItems: 'center', justifyContent: 'center', marginRight: 6 },
+  stepCircleActive: { backgroundColor: '#006A3B' },
+  stepNum:     { fontSize: 11, fontWeight: '700', color: '#6F7A70' },
+  stepLabel:   { fontSize: 11, color: '#3F4941', flex: 1 },
+  stepLine:    { flex: 1, height: 2, backgroundColor: '#BECABE', marginHorizontal: 6 },
+  card:        { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: '#181D19', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
+  cardTitle:   { fontSize: 20, fontWeight: '800', color: '#181D19', marginBottom: 4 },
+  cardSub:     { fontSize: 13, color: '#3F4941', marginBottom: 16 },
+  fieldLabel:  { fontSize: 13, fontWeight: '600', color: '#3F4941', marginBottom: 6, marginTop: 12 },
+  input:       { borderWidth: 1.5, borderColor: '#BECABE', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#181D19', backgroundColor: '#F6FBF3', marginBottom: 4 },
+  addressRow:  { flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 4 },
+  gpsBtn:      { width: 48, height: 50, borderRadius: 12, borderWidth: 1.5, borderColor: '#006A3B', alignItems: 'center', justifyContent: 'center' },
+  typeChip:    { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 9999, borderWidth: 1.5, borderColor: '#006A3B', marginRight: 8, backgroundColor: '#FFF' },
+  typeChipActive: { backgroundColor: '#006A3B' },
+  typeChipText:   { fontSize: 13, fontWeight: '600', color: '#006A3B' },
+  nextBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#006A3B', borderRadius: 14, paddingVertical: 14, gap: 8, marginTop: 20 },
+  nextBtnDisabled: { opacity: 0.45 },
+  nextBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  backBtn:     { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, borderWidth: 1.5, borderColor: '#BECABE', alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 20 },
+  backBtnText: { color: '#3F4941', fontWeight: '600', fontSize: 15 },
+  rowBtns:     { flexDirection: 'row', alignItems: 'flex-end' },
+  rowFields:   { flexDirection: 'row', gap: 12 },
+  docRow:      { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1.5, borderColor: '#BECABE', backgroundColor: '#F6FBF3', marginTop: 10, gap: 12 },
+  docIcon:     { width: 42, height: 42, borderRadius: 10, backgroundColor: '#EBEFE8', alignItems: 'center', justifyContent: 'center' },
+  docLabel:    { fontSize: 14, fontWeight: '700', color: '#181D19' },
+  docSub:      { fontSize: 12, color: '#6F7A70', marginTop: 2 },
+  docThumb:    { width: 48, height: 48, borderRadius: 8 },
+  photoGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8, marginBottom: 8 },
+  photoThumbWrap: { width: 80, height: 80, position: 'relative' },
+  photoThumb:  { width: 80, height: 80, borderRadius: 12 },
+  photoDeleteBtn: { position: 'absolute', top: -6, right: -6 },
+  photoAdd:    { width: 80, height: 80, borderRadius: 12, borderWidth: 2, borderColor: '#006A3B', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  photoAddText:{ fontSize: 11, color: '#006A3B', marginTop: 4 },
+  progressWrap: { marginTop: 12 },
+  progressTrackSm: { height: 6, backgroundColor: '#EBEFE8', borderRadius: 3 },
+  progressFillSm:  { height: 6, backgroundColor: '#006A3B', borderRadius: 3 },
+  progressPct: { fontSize: 12, color: '#3F4941', marginTop: 4, textAlign: 'right' },
+  ecoToggleCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EBEFE8', borderRadius: 16, padding: 14, marginTop: 16, gap: 12 },
+  ecoIconCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,106,59,0.12)', alignItems: 'center', justifyContent: 'center' },
+  ecoTitle: { fontSize: 15, fontWeight: '700', color: '#006A3B' },
+  ecoSub:   { fontSize: 12, color: '#3F4941', marginTop: 2 },
+  toggle:    { width: 46, height: 26, borderRadius: 13, backgroundColor: '#BECABE', padding: 3, justifyContent: 'center' },
+  toggleOn:  { backgroundColor: '#006A3B' },
+  toggleDot: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF', alignSelf: 'flex-start' },
+  toggleDotOn: { alignSelf: 'flex-end' },
 });
