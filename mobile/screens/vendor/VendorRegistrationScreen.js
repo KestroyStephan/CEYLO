@@ -354,9 +354,13 @@ export default function VendorRegistrationScreen({ navigation }) {
               <TouchableOpacity
                 style={[styles.nextBtn, { flex: 1 }, (!step2Valid || uploading) && styles.nextBtnDisabled]}
                 onPress={uploadAllDocs} disabled={!step2Valid || uploading} activeOpacity={0.8}>
-                {uploading ? <ActivityIndicator color="#FFF" /> : (
-                  <><Text style={styles.nextBtnText}>Upload & Continue</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#FFF" /></>
+                {uploading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={styles.nextBtnText}>Upload & Continue</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                  </View>
                 )}
               </TouchableOpacity>
             </View>

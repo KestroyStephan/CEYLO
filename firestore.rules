@@ -36,7 +36,8 @@ service cloud.firestore {
         request.auth.uid == resource.data.userId ||
         request.auth.uid == resource.data.driverId ||
         request.auth.uid == resource.data.vendorId ||
-        isAdmin()
+        isAdmin() ||
+        (hasRole('driver') && resource.data.status == 'pending')
       );
       allow update: if isSignedIn() && (
         hasRole('driver') || hasRole('tourist') ||
@@ -68,6 +69,15 @@ service cloud.firestore {
       allow write: if request.auth != null && 
         (request.auth.uid == uid || 
          isAdmin());
+    }
+
+    match /{path=**}/products/{productId} {
+      allow read: if true;
+    }
+
+    // Explicit collection group rule for cross-vendor marketplace queries
+    match /{path=**}/services/{serviceId} {
+      allow read: if true;
     }
 
     match /vendors/{uid}/orders/{orderId} {

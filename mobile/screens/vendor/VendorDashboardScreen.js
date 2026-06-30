@@ -18,8 +18,6 @@ import {
   orderBy, getDocs, Timestamp, getDoc,
 } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Menu, Divider } from 'react-native-paper';
-import { signOut } from 'firebase/auth';
 
 const { width } = Dimensions.get('window');
 const PRIMARY   = '#006A3B';
@@ -59,32 +57,8 @@ export default function VendorDashboardScreen({ navigation }) {
   const [stats,           setStats]           = useState({ orders: 0, revenue: 0, rating: 0 });
   const [pendingOrders,   setPendingOrders]   = useState([]);
   const [loading,         setLoading]         = useState(true);
-  const [menuVisible,     setMenuVisible]     = useState(false);
   const prevIds = useRef(new Set());
   const uid = auth.currentUser?.uid;
-
-  const handleLogout = async () => {
-    setMenuVisible(false);
-    
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut(auth);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to logout: ' + error.message);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   // Vendor doc listener
   useEffect(() => {
@@ -171,60 +145,55 @@ export default function VendorDashboardScreen({ navigation }) {
         {/* Header */}
         <LinearGradient colors={[PRIMARY, '#004D2C']} style={styles.headerGrad}>
           <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.headerIconBtn}>
-              <Ionicons name="menu" size={24} color="#FFF" />
-            </TouchableOpacity>
+            <View style={{ width: 40 }} />
             <Text style={styles.headerLogo}>Ceylo</Text>
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <TouchableOpacity 
-                  onPress={() => setMenuVisible(true)}
-                  style={styles.avatarCircle}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.avatarLetter}>
-                    {vendorData?.businessName?.[0]?.toUpperCase() || 'V'}
-                  </Text>
-                </TouchableOpacity>
-              }
-              contentStyle={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 12,
-                marginTop: 40,
-              }}
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('VendorProfile')}
+              style={styles.avatarCircle}
+              activeOpacity={0.8}
             >
-              <Menu.Item
-                onPress={handleLogout}
-                title="Logout"
-                leadingIcon="logout"
-                titleStyle={{ color: '#BA1A1A' }}
-              />
-            </Menu>
+              <Text style={styles.avatarLetter}>
+                {vendorData?.businessName?.[0]?.toUpperCase() || 'V'}
+              </Text>
+            </TouchableOpacity>
           </View>
           <Text style={styles.welcomeLabel}>WELCOME BACK,</Text>
           <Text style={styles.businessName}>{vendorData?.businessName || 'Vendor'}</Text>
           <Text style={styles.dashboardTitle}>Vendor Dashboard</Text>
         </LinearGradient>
 
-        {/* Accepting Orders Toggle */}
-        <View style={styles.toggleCard}>
-          <View style={styles.toggleLeft}>
-            <Ionicons name={isAccepting ? 'checkmark-circle' : 'pause-circle'} size={28}
-              color={isAccepting ? PRIMARY : '#6F7A70'} />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.toggleTitle}>
-                {isAccepting ? 'Accepting Orders' : 'Not Accepting Orders'}
-              </Text>
-              <Text style={styles.toggleSub}>
-                {isAccepting ? 'Tourists can book your services' : 'You won\'t receive new bookings'}
-              </Text>
+        {/* Wrap Accepting Orders card and Add Product card in a row */}
+        <View style={styles.topCardsRow}>
+          {/* Existing Accepting Orders card */}
+          <View style={styles.acceptingOrdersCard}>
+            <View style={styles.toggleLeft}>
+              <Ionicons name={isAccepting ? 'checkmark-circle' : 'pause-circle'} size={24}
+                color={isAccepting ? PRIMARY : '#6F7A70'} />
+              <View style={{ marginLeft: 10, flex: 1 }}>
+                <Text style={styles.toggleTitle}>
+                  {isAccepting ? 'Accepting' : 'Paused'}
+                </Text>
+                <Text style={styles.toggleSub} numberOfLines={2}>
+                  {isAccepting ? 'Receiving orders' : 'Orders paused'}
+                </Text>
+              </View>
             </View>
+            <TouchableOpacity onPress={toggleAccepting} activeOpacity={0.8}
+              style={[styles.toggleSwitch, isAccepting && styles.toggleSwitchOn]}>
+              <View style={[styles.toggleKnob, isAccepting && styles.toggleKnobOn]} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={toggleAccepting} activeOpacity={0.8}
-            style={[styles.toggleSwitch, isAccepting && styles.toggleSwitchOn]}>
-            <View style={[styles.toggleKnob, isAccepting && styles.toggleKnobOn]} />
+
+          {/* NEW: Add Product card-button */}
+          <TouchableOpacity
+            style={styles.addProductCard}
+            onPress={() => navigation.navigate('AddNewProduct')} 
+            activeOpacity={0.8}
+          >
+            <View style={styles.addProductIconCircle}>
+              <Ionicons name="add" size={22} color="#FFFFFF" />
+            </View>
+            <Text style={styles.addProductText}>Add Product</Text>
           </TouchableOpacity>
         </View>
 
@@ -297,16 +266,9 @@ export default function VendorDashboardScreen({ navigation }) {
         </LinearGradient>
       </ScrollView>
 
-      {/* FAB — Emergency (bottom: 100) */}
-      <TouchableOpacity style={styles.fabEmergency}>
-        <Ionicons name="alert-circle" size={26} color="#FFF" />
-      </TouchableOpacity>
 
-      {/* FAB — Add Product (bottom: 168) */}
-      <TouchableOpacity style={styles.fabAddProduct}
-        onPress={() => navigation.navigate('AddNewProduct')} activeOpacity={0.85}>
-        <Ionicons name="add" size={28} color="#FFF" />
-      </TouchableOpacity>
+
+
     </View>
   );
 }
@@ -322,11 +284,56 @@ const styles = StyleSheet.create({
   welcomeLabel:  { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 2 },
   businessName:  { fontSize: 22, fontWeight: '900', color: '#FFF', marginTop: 4 },
   dashboardTitle:{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  toggleCard:    { flexDirection: 'row', alignItems: 'center', backgroundColor: SURFACE, marginHorizontal: 16, marginTop: 16, borderRadius: 18, padding: 16,
-    shadowColor: '#181D19', shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  topCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  acceptingOrdersCard: {
+    flex: 1.4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: SURFACE,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#181D19',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  addProductCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#181D19',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,106,59,0.12)',
+  },
+  addProductIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#006A3B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  addProductText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#006A3B',
+    textAlign: 'center',
+  },
   toggleLeft:    { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  toggleTitle:   { fontSize: 15, fontWeight: '700', color: ON_SURF },
-  toggleSub:     { fontSize: 12, color: ON_SURF_V, marginTop: 2 },
+  toggleTitle:   { fontSize: 14, fontWeight: '700', color: ON_SURF },
+  toggleSub:     { fontSize: 11, color: ON_SURF_V, marginTop: 1 },
   toggleSwitch:  { width: 50, height: 28, borderRadius: 14, backgroundColor: OUTLINE_V, padding: 3 },
   toggleSwitchOn:{ backgroundColor: PRIMARY },
   toggleKnob:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFF', alignSelf: 'flex-start' },
@@ -364,10 +371,6 @@ const styles = StyleSheet.create({
   ecoBanner:     { marginHorizontal: 16, borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', marginTop: 20, overflow: 'hidden' },
   ecoTitle:      { fontSize: 16, fontWeight: '800', color: '#FFF' },
   ecoSub:        { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 4, lineHeight: 18 },
-  fabEmergency:  { position: 'absolute', bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28,
-    backgroundColor: ERROR, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, elevation: 8 },
-  fabAddProduct: { position: 'absolute', bottom: 168, right: 20, width: 56, height: 56, borderRadius: 28,
-    backgroundColor: PRIMARY, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, elevation: 8 },
+
+
 });

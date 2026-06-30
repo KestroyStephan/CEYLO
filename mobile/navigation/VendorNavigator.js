@@ -23,6 +23,7 @@ import ProofOfServiceScreen     from '../screens/vendor/ProofOfServiceScreen';
 import AddNewProductScreen      from '../screens/vendor/AddNewProductScreen';
 import VendorRegistrationScreen from '../screens/vendor/VendorRegistrationScreen';
 import VendorPendingScreen      from '../screens/vendor/VendorPendingScreen';
+import VendorProfileScreen      from '../screens/vendor/VendorProfileScreen';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -54,6 +55,7 @@ function VendorTabs() {
             VendorOrders:   focused ? 'receipt'      : 'receipt-outline',
             VendorServices: focused ? 'storefront'   : 'storefront-outline',
             VendorRevenue:  focused ? 'bar-chart'    : 'bar-chart-outline',
+            VendorProfile:  focused ? 'person'       : 'person-outline',
           };
           return <Ionicons name={icons[route.name] || 'ellipse'} size={22} color={color} />;
         },
@@ -63,6 +65,7 @@ function VendorTabs() {
       <Tab.Screen name="VendorOrders"   component={BookingManagementScreen}   options={{ tabBarLabel: 'Orders' }} />
       <Tab.Screen name="VendorServices" component={VendorServiceListingScreen} options={{ tabBarLabel: 'Services' }} />
       <Tab.Screen name="VendorRevenue"  component={VendorRevenueScreen}       options={{ tabBarLabel: 'Revenue' }} />
+      <Tab.Screen name="VendorProfile"  component={VendorProfileScreen}      options={{ tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );
 }
