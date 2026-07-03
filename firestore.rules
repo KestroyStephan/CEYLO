@@ -17,6 +17,9 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
     // Users collection - vendor role update allowed
     match /users/{uid} {
@@ -37,10 +40,10 @@ service cloud.firestore {
         request.auth.uid == resource.data.driverId ||
         request.auth.uid == resource.data.vendorId ||
         isAdmin() ||
-        (hasRole('driver') && resource.data.status == 'pending')
+        ((hasRole('driver') || hasRole('driver_active')) && resource.data.status == 'pending')
       );
       allow update: if isSignedIn() && (
-        hasRole('driver') || hasRole('tourist') ||
+        hasRole('driver') || hasRole('driver_active') || hasRole('tourist') ||
         isAdmin()
       );
     }
@@ -85,6 +88,13 @@ service cloud.firestore {
         (request.auth.uid == uid || 
          isAdmin());
       allow write: if request.auth != null;
+    }
+
+    match /drivers/{driverId} {
+      allow read: if true;
+      allow create: if isOwner(driverId);
+      allow update: if isOwner(driverId) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     // Orders (global collection)

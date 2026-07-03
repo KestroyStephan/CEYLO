@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Text, TextInput, Button, Surface, ActivityIndicator, IconButton, SegmentedButtons } from 'react-native-paper';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -34,24 +34,49 @@ export default function RegisterScreen({ navigation }) {
       
       await updateProfile(user, { displayName: name });
 
-      const userData = {
-        uid: user.uid,
-        name,
-        email,
-        phone,
-        role,
-        createdAt: new Date().toISOString(),
-        isOnboarded: false,
-      };
-
       if (role === 'driver') {
-        userData.vehicleType = vehicleType;
-        userData.licensePlate = licensePlate;
-      } else if (role === 'guide') {
-        userData.guideLicense = guideLicense;
-      }
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          name: name,
+          email: user.email,
+          phone: phone,
+          role: 'driver_pending',
+          status: 'pending_verification',
+          isOnboarded: true,
+          onboardingCompleted: true,
+          createdAt: new Date().toISOString(),
+        });
 
-      await setDoc(doc(db, 'users', user.uid), userData);
+        await setDoc(doc(db, 'drivers', user.uid), {
+          uid: user.uid,
+          name: name,
+          email: user.email,
+          phone: phone,
+          vehicleType: vehicleType,      // Tuk | Car | Van | Bike
+          licensePlate: licensePlate,
+          licenseNumber: '',
+          status: 'pending_verification',
+          isOnline: false,
+          rejectionReason: '',
+          createdAt: serverTimestamp(),
+        });
+      } else {
+        const userData = {
+          uid: user.uid,
+          name,
+          email,
+          phone,
+          role,
+          createdAt: new Date().toISOString(),
+          isOnboarded: false,
+        };
+
+        if (role === 'guide') {
+          userData.guideLicense = guideLicense;
+        }
+
+        await setDoc(doc(db, 'users', user.uid), userData);
+      }
       // Navigation happens via App.js
     } catch (error) {
       Alert.alert('Registration Failed', error.message);
