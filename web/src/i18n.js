@@ -12,7 +12,7 @@ i18n
           "dashboard": "Dashboard",
           "sos_monitor": "SOS Monitor",
           "destinations": "Destinations",
-          "cultural_events": "Cultural Events",
+          "cultural_events": "CMS Content",
           "vendors": "Vendors",
           "users": "Users",
           "analytics": "Analytics",

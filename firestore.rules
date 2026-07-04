@@ -34,7 +34,7 @@ service cloud.firestore {
 
     // Bookings (legacy, read by drivers)
     match /bookings/{bookingId} {
-      allow create: if hasRole('tourist');
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow read:   if isSignedIn() && (
         request.auth.uid == resource.data.userId ||
         request.auth.uid == resource.data.driverId ||

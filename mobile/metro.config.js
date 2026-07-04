@@ -29,4 +29,15 @@ config.transformer.minifierConfig = {
   mangle: { keep_classnames: true, keep_fnames: true },
 };
 
+// Map react-native-maps to a stub on the web platform
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'react-native-maps' && platform === 'web') {
+    return {
+      filePath: path.resolve(__dirname, 'stubs/react-native-maps.web.js'),
+      type: 'sourceFile',
+    };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;

@@ -27,9 +27,20 @@ class ErrorBoundary extends React.Component {
           <Typography variant="h4" fontWeight={900} color="#37474f" gutterBottom>
             System Disconnected
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4, textAlign: 'center', maxWidth: 500 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2, textAlign: 'center', maxWidth: 500 }}>
             The Command Center encountered an unexpected error. Don't worry, background monitoring is still active. 
           </Typography>
+          {this.state.error && (
+            <Box sx={{ 
+              p: 2, bgcolor: '#ffeacc', color: '#c43e00', borderRadius: 2, 
+              mb: 4, textAlign: 'left', maxWidth: 600, width: '100%',
+              fontFamily: 'monospace', fontSize: '0.8rem', overflowX: 'auto',
+              border: '1px solid #ffcc80'
+            }}>
+              <Typography variant="subtitle2" fontWeight={800}>Error: {this.state.error.message}</Typography>
+              <pre style={{ margin: 0, marginTop: 8, whiteSpace: 'pre-wrap' }}>{this.state.error.stack}</pre>
+            </Box>
+          )}
           <Button 
             variant="contained" 
             color="primary" 

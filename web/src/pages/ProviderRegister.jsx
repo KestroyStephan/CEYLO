@@ -5,7 +5,7 @@ import {
     Alert, Card, CardContent, Stepper, Step, StepLabel, Grid
 } from '@mui/material';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { useNavigate } from 'react-router-dom';
 
@@ -79,8 +79,20 @@ export default function ProviderRegister() {
 
             await setDoc(doc(db, "users", user.uid), userData);
 
-            // Should also create a specific collection entry? e.g. 'accommodations'
-            // For now, keeping everything in 'users' with role is simpler for MVP
+            if (role === 'vendor' || role === 'accommodation' || role === 'tour_provider') {
+                await setDoc(doc(db, "vendors", user.uid), {
+                    id: user.uid,
+                    businessName: formData.businessName,
+                    email: formData.email,
+                    phone: formData.contact,
+                    location: formData.location,
+                    description: formData.description,
+                    businessType: role === 'accommodation' ? 'Accommodation' : (role === 'tour_provider' ? 'Tour Agency' : 'Local Shop'),
+                    licenseNumber: formData.licenseNumber,
+                    status: 'pending_verification',
+                    createdAt: serverTimestamp(),
+                });
+            }
 
             alert("Registration successful! Redirecting to dashboard...");
             navigate('/');

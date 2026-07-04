@@ -1,15 +1,37 @@
-import React from 'react';
-import { View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity, Alert } from 'react-native';
-import { Text, Button, Surface } from 'react-native-paper';
+import React, { useEffect, useRef } from 'react';
+import {
+  View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity,
+  Alert, Animated, StatusBar
+} from 'react-native';
+import { Text } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { auth } from '../../firebaseConfig';
 import { signInAnonymously } from 'firebase/auth';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
+const FEATURE_BADGES = [
+  { icon: 'leaf', label: 'Eco-Certified\nGuides' },
+  { icon: 'map-marker-path', label: 'Smart Route\nPlanning' },
+  { icon: 'star-circle', label: 'Heritage\nSpots' },
+];
+
 export default function WelcomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   const handleContinueGuest = async () => {
     try {
@@ -21,120 +43,145 @@ export default function WelcomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Background Image - Placeholder for Sri Lanka Eco Scene */}
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
       <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1546708973-b339540b5162?q=80&w=1000&auto=format&fit=crop' }}
-        style={styles.backgroundImage}
+        source={{ uri: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?q=80&w=1000&auto=format&fit=crop' }}
+        style={styles.bg}
+        resizeMode="cover"
       >
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
-          style={styles.gradient}
+          colors={['rgba(0,0,0,0.08)', 'rgba(0,40,20,0.6)', 'rgba(0,30,15,0.92)']}
+          style={StyleSheet.absoluteFillObject}
+        />
+
+        <Animated.View
+          style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 30, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
         >
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <Text style={styles.title}>CEYLO</Text>
-              <Text style={styles.tagline}>{t('welcome')}</Text>
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Button
-                mode="contained"
-                onPress={() => navigation.navigate('Login')}
-                style={styles.button}
-                contentStyle={styles.buttonContent}
-                labelStyle={styles.buttonLabel}
-              >
-                {t('login')}
-              </Button>
-
-              <Button
-                mode="outlined"
-                onPress={() => navigation.navigate('Register')}
-                style={[styles.button, styles.outlinedButton]}
-                contentStyle={styles.buttonContent}
-                labelStyle={[styles.buttonLabel, { color: '#FFF' }]}
-              >
-                {t('register')}
-              </Button>
-
-              <TouchableOpacity
-                onPress={handleContinueGuest}
-                style={styles.guestButton}
-              >
-                <Text style={styles.guestText}>{t('continue_guest')}</Text>
-              </TouchableOpacity>
+          {/* Top logo */}
+          <View style={styles.topBrand}>
+            <View style={styles.logoCircle}>
+              <MaterialCommunityIcons name="leaf" size={24} color="#006A3B" />
             </View>
           </View>
-        </LinearGradient>
+
+          {/* Feature badges */}
+          <View style={styles.badgeRow}>
+            {FEATURE_BADGES.map((b, i) => (
+              <View key={i} style={styles.badge}>
+                <MaterialCommunityIcons name={b.icon} size={18} color="#A8DFC0" />
+                <Text style={styles.badgeText}>{b.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Main hero text */}
+          <View style={styles.heroSection}>
+            <Text style={styles.eyebrowText}>SRI LANKA'S PREMIER</Text>
+            <Text style={styles.heroTitle}>Ceylo</Text>
+            <Text style={styles.heroTagline}>Eco-Luxury Discovery</Text>
+            <Text style={styles.heroBody}>
+              Discover authentic Sri Lankan heritage through the eyes of expert local guides — sustainably, responsibly, unforgettably.
+            </Text>
+          </View>
+
+          {/* CTA Buttons */}
+          <View style={styles.btnGroup}>
+            <TouchableOpacity
+              style={styles.loginBtn}
+              onPress={() => navigation.navigate('Login')}
+              activeOpacity={0.87}
+            >
+              <Text style={styles.loginBtnText}>Login</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.registerBtn}
+              onPress={() => navigation.navigate('RolePicker')}
+              activeOpacity={0.87}
+            >
+              <Text style={styles.registerBtnText}>Create Account</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleContinueGuest} style={styles.guestBtn}>
+              <Text style={styles.guestBtnText}>Continue as Guest</Text>
+            </TouchableOpacity>
+          </View>
+
+
+        </Animated.View>
       </ImageBackground>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: width,
-    height: height,
-  },
-  gradient: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 30,
-    paddingBottom: 60,
-  },
+  container: { flex: 1 },
+  bg: { flex: 1, width, height },
+
   content: {
-    alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 28,
+    justifyContent: 'space-between',
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
+
+  topBrand: { alignItems: 'flex-start' },
+  logoCircle: {
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: '#FFF',
+    justifyContent: 'center', alignItems: 'center',
   },
-  title: {
-    fontSize: 42,
-    fontFamily: 'Outfit-Bold',
-    color: '#FFF',
-    letterSpacing: 6,
+
+  badgeRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  badge: {
+    flex: 1, alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14, paddingVertical: 10,
   },
-  tagline: {
-    fontSize: 18,
-    fontFamily: 'Outfit-Medium',
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-    marginTop: 5,
+  badgeText: {
+    fontSize: 10, fontFamily: 'Outfit-Medium',
+    color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 14,
   },
-  buttonContainer: {
-    width: '100%',
-    gap: 15,
+
+  heroSection: { alignItems: 'flex-start' },
+  eyebrowText: {
+    fontSize: 11, fontFamily: 'Outfit-Medium',
+    color: '#A8DFC0', letterSpacing: 2.5, marginBottom: 8,
   },
-  button: {
-    borderRadius: 15,
-    backgroundColor: '#00695C',
+  heroTitle: {
+    fontSize: 60, fontFamily: 'Outfit-Bold',
+    color: '#FFF', letterSpacing: -1, lineHeight: 64,
   },
-  outlinedButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#FFF',
+  heroTagline: {
+    fontSize: 18, fontFamily: 'Outfit-Medium',
+    color: 'rgba(255,255,255,0.85)', marginBottom: 14,
   },
-  buttonContent: {
-    height: 55,
+  heroBody: {
+    fontSize: 14, fontFamily: 'Outfit-Regular',
+    color: 'rgba(255,255,255,0.7)', lineHeight: 22,
   },
-  buttonLabel: {
-    fontSize: 16,
-    fontFamily: 'Outfit-SemiBold',
-    letterSpacing: 1,
+
+  btnGroup: { gap: 12 },
+  loginBtn: {
+    backgroundColor: '#006A3B',
+    borderRadius: 18, height: 56,
+    justifyContent: 'center', alignItems: 'center',
   },
-  guestButton: {
-    marginTop: 15,
-    alignItems: 'center',
+  loginBtnText: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#FFF' },
+  registerBtn: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 18, height: 56,
+    justifyContent: 'center', alignItems: 'center',
   },
-  guestText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'Outfit-Regular',
-    fontSize: 14,
+  registerBtnText: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#FFF' },
+  guestBtn: { alignItems: 'center', paddingVertical: 4 },
+  guestBtnText: {
+    fontSize: 13, fontFamily: 'Outfit-Regular',
+    color: 'rgba(255,255,255,0.55)',
     textDecorationLine: 'underline',
   },
+
+
 });

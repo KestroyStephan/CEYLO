@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
 import { Text, Surface, IconButton, Button, Avatar, Chip, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -44,6 +44,50 @@ export default function ItineraryDetailScreen({ route, navigation }) {
   const cost = data ? data.cost || 'LKR 5.2k' : 'LKR 5.2k';
   const title = data ? data.title || 'Your Eco Itinerary' : 'Your Eco Itinerary';
 
+  const carbonSaved = ((ecoAvg / 100) * 24.8).toFixed(1);
+
+  const handleSwapAlternative = (targetItem) => {
+    // A list of interesting Sri Lankan hidden gems to recommend as alternatives
+    const alternativeGems = [
+      { title: "Dunhinda Waterfall Hike", eco: 96, fee: "LKR 500", transport: "walk" },
+      { title: "Secret Beach Mirissa exploration", eco: 94, fee: "Free", transport: "walk" },
+      { title: "Nanu Oya Tea Plantation trek", eco: 95, fee: "Free", transport: "walk" },
+      { title: "Pidurangala Rock Sunrise climb", eco: 93, fee: "LKR 1,000", transport: "walk" },
+      { title: "Gal Viharaya ancient ruins", eco: 91, fee: "LKR 3,000", transport: "walk" },
+    ];
+
+    const randomGem = alternativeGems[Math.floor(Math.random() * alternativeGems.length)];
+
+    Alert.alert(
+      "Ceylo Smart Recommendation",
+      `Would you like to replace "${targetItem.title || targetItem.activity}" with the nearby hidden gem:\n\n✨ ${randomGem.title}\n🌿 Eco Score: ${randomGem.eco}%\n🎟️ Fee: ${randomGem.fee}?`,
+      [
+        { text: "Keep Original", style: "cancel" },
+        {
+          text: "Swap It!",
+          onPress: () => {
+            const updatedPlan = plan.map(item => {
+              const matchesId = item.id && item.id === targetItem.id;
+              const matchesActivity = item.day === targetItem.day && (item.title === targetItem.title || item.activity === targetItem.activity);
+              if (matchesId || matchesActivity) {
+                return {
+                  ...item,
+                  title: randomGem.title,
+                  activity: randomGem.title,
+                  eco: randomGem.eco,
+                  fee: randomGem.fee,
+                  transport: randomGem.transport
+                };
+              }
+              return item;
+            });
+            setPlan(updatedPlan);
+          }
+        }
+      ]
+    );
+  };
+
   const exportToPDF = async () => {
     const html = `
       <html>
@@ -66,6 +110,15 @@ export default function ItineraryDetailScreen({ route, navigation }) {
     await Sharing.shareAsync(uri);
   };
 
+  const getTransportIcon = (mode) => {
+    switch(mode) {
+      case 'walk': return 'walk';
+      case 'train': return 'train';
+      case 'bus': return 'bus';
+      default: return 'car';
+    }
+  };
+
   const renderItem = ({ item, drag, isActive }) => (
     <ScaleDecorator>
       <TouchableOpacity
@@ -76,14 +129,28 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         <Surface style={styles.card} elevation={1}>
           <View style={styles.timeLine}>
             <Text style={styles.timeText}>{item.time || 'Day ' + item.day}</Text>
-            <View style={styles.dot} />
-            <View style={styles.line} />
+            <View style={[styles.dot, { backgroundColor: (item.eco || 80) >= 90 ? '#4CAF50' : '#FF9800' }]} />
+            <View style={styles.line}>
+              {/* Transport mode visual arc indicator */}
+              <View style={styles.transportBadge}>
+                <MaterialCommunityIcons name={getTransportIcon(item.transport)} size={11} color="#00695C" />
+              </View>
+            </View>
           </View>
           
           <View style={styles.details}>
             <View style={styles.cardHeader}>
               <Text style={styles.itemTitle}>{item.title || item.activity}</Text>
-              <MaterialCommunityIcons name="drag-vertical" size={20} color="#999" />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <IconButton 
+                  icon="sparkles" 
+                  iconColor="#FF7043" 
+                  size={16} 
+                  style={{ margin: 0 }}
+                  onPress={() => handleSwapAlternative(item)} 
+                />
+                <MaterialCommunityIcons name="drag-vertical" size={20} color="#999" />
+              </View>
             </View>
             
             <View style={styles.chipRow}>
@@ -122,6 +189,20 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           <View style={styles.summaryItem}>
             <Text style={styles.summaryVal}>{cost}</Text>
             <Text style={styles.summaryLab}>Est. Cost</Text>
+          </View>
+        </View>
+
+        {/* Sustainability Index Progress Bar */}
+        <View style={styles.ecoProgressContainer}>
+          <View style={styles.ecoProgressInfo}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <MaterialCommunityIcons name="leaf" size={14} color="#4CAF50" />
+              <Text style={styles.ecoProgressText}>Eco-Impact Index: Excellent</Text>
+            </View>
+            <Text style={styles.carbonSavedText}>🌿 {carbonSaved}kg CO₂ saved</Text>
+          </View>
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${ecoAvg}%` }]} />
           </View>
         </View>
       </Surface>
@@ -179,4 +260,11 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 0, width: '100%', padding: 20, backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, gap: 10 },
   startBtn: { borderRadius: 15, height: 55, justifyContent: 'center' },
   exportBtn: { borderRadius: 15, height: 50, justifyContent: 'center', borderColor: '#00695C' },
+  ecoProgressContainer: { paddingHorizontal: 20, marginTop: 15, marginBottom: 5 },
+  ecoProgressInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' },
+  ecoProgressText: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#004D40' },
+  carbonSavedText: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#4CAF50' },
+  progressBarBg: { height: 6, backgroundColor: '#E0F2F1', borderRadius: 3, overflow: 'hidden' },
+  progressBarFill: { height: '100%', backgroundColor: '#4CAF50', borderRadius: 3 },
+  transportBadge: { position: 'absolute', top: '25%', left: -6, backgroundColor: '#E0F2F1', borderRadius: 8, width: 15, height: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#00695C' },
 });

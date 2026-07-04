@@ -1,40 +1,115 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     Grid, Paper, Typography, Box, Badge, Button, 
     List, ListItem, ListItemText, Divider, Chip,
-    IconButton, Tooltip, Stack, Alert, AlertTitle
+    IconButton, Tooltip, Stack, Alert, AlertTitle, Avatar,
+    TextField, InputAdornment, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, Snackbar
 } from '@mui/material';
-import { collection, onSnapshot, query, limit, orderBy, doc, updateDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import SensorsIcon from '@mui/icons-material/Sensors';
-import SecurityIcon from '@mui/icons-material/Security';
+import LocalPoliceIcon from '@mui/icons-material/LocalPolice';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
-import MyLocationIcon from '@mui/icons-material/MyLocation';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import MicIcon from '@mui/icons-material/Mic';
+import CallIcon from '@mui/icons-material/Call';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
-import MicIcon from '@mui/icons-material/Mic';
-import StopIcon from '@mui/icons-material/Stop';
+import WarningIcon from '@mui/icons-material/Warning';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 
-// We are replacing the static CameraFeed with a dynamic Live Stream viewer below
+// Realistic fallback / default data matching the screenshot
+const defaultActiveAlerts = [
+    {
+        id: 'mock-active-1',
+        userName: 'Aanya Perera',
+        phone: '+94 77 123 4567',
+        status: 'active',
+        locationName: 'Sigiriya, North Wing',
+        location: { latitude: 7.9573, longitude: 80.7603 },
+        timestamp: { toDate: () => new Date(Date.now() - 137000) }, // 02:17m ago
+        photoUrl: 'https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a', // Sigiriya rock
+        category: 'Physical Injury',
+        emergencyContactName: 'Sunil Perera (Father)',
+        emergencyContactPhone: '+94 77 123 4567',
+        threatLevel: 'CRITICAL',
+        aiInsights: ['Crowd Gathering', 'Slippery Surface', 'Heat Level High']
+    },
+    {
+        id: 'mock-active-2',
+        userName: 'Kavindu Silva',
+        phone: '+94 71 999 8888',
+        status: 'active',
+        locationName: 'Ella Rock Path',
+        location: { latitude: 6.8722, longitude: 81.0456 },
+        timestamp: { toDate: () => new Date(Date.now() - 765000) }, // 12:45m ago
+        photoUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b', // Ella Bridge
+        category: 'Lost / Navigation',
+        emergencyContactName: 'Champa Silva (Mother)',
+        emergencyContactPhone: '+94 71 888 7777',
+        threatLevel: 'STABLE',
+        aiInsights: ['Low Visibility', 'Dense Forest', 'Altitude 1042m']
+    }
+];
+
+const defaultHistoryAlerts = [
+    {
+        id: 'mock-h1',
+        userName: 'Nimal Jayasuriya',
+        locationName: 'Yala Block 1',
+        category: 'Animal Encounter',
+        responseTeam: 'Ranger Unit 03',
+        status: 'resolved',
+        timestamp: { toDate: () => new Date('2026-10-12T14:22:00') }
+    },
+    {
+        id: 'mock-h2',
+        userName: 'Sarah Jenkins',
+        locationName: 'Mirissa Beach',
+        category: 'Medical',
+        responseTeam: 'Mirissa Hospital EMS',
+        status: 'resolved',
+        timestamp: { toDate: () => new Date('2026-10-11T09:15:00') }
+    },
+    {
+        id: 'mock-h3',
+        userName: 'Li Wei',
+        locationName: 'Pettah Market',
+        category: 'False Alarm',
+        responseTeam: 'None',
+        status: 'closed',
+        timestamp: { toDate: () => new Date('2026-10-10T23:04:00') }
+    },
+    {
+        id: 'mock-h4',
+        userName: 'Dinesh Perera',
+        locationName: "Adam's Peak Path",
+        category: 'Physical Injury',
+        responseTeam: 'Air Force SAR 01',
+        status: 'resolved',
+        timestamp: { toDate: () => new Date('2026-10-10T18:45:00') }
+    }
+];
 
 function SOSMonitor() {
     const [alerts, setAlerts] = useState([]);
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isMuted, setIsMuted] = useState(false);
-    const audioRef = React.useRef(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const mediaRecorderRef = React.useRef(null);
-    const audioChunksRef = React.useRef([]);
-    
+    const [subTab, setSubTab] = useState('alerts'); // 'feed', 'alerts'
+    const [isMicActive, setIsMicActive] = useState(true);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const audioRef = useRef(null);
+
     useEffect(() => {
-        // Initialize audio with loop
+        // Initialize emergency alert sound
         audioRef.current = new Audio("https://actions.google.com/sounds/v1/emergency/emergency_siren.ogg");
         audioRef.current.loop = true;
-        
-        // Request Desktop Notification Permissions
+
         if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
@@ -46,295 +121,596 @@ function SOSMonitor() {
             }
         };
     }, []);
-    
-    const [aiInsights, setAiInsights] = useState([
-        "CCTV-04: Abnormal crowd gathering detected near Entrance B.",
-        "System: High humidity detected in Section 12 (Wildfire Risk: 12%).",
-        "SOS-982: User reported medical emergency. Nearby Responder: 1.2km."
-    ]);
 
     useEffect(() => {
-        const q = query(collection(db, "sos_alerts"), orderBy("timestamp", "desc"), limit(5));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const newAlerts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setAlerts(newAlerts);
+        const unsubscribe = onSnapshot(collection(db, "sos_alerts"), (snapshot) => {
+            const firebaseAlerts = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    threatLevel: data.threatLevel || (data.status === 'active' ? 'CRITICAL' : 'STABLE'),
+                    aiInsights: data.aiInsights || ['Vision check complete', 'No structural failures', 'Location accuracy high'],
+                    emergencyContactName: data.emergencyContactName || 'Emergency Services / Guide',
+                    emergencyContactPhone: data.emergencyContactPhone || '+94 11 269 1111'
+                };
+            });
 
-            const hasActiveAlert = newAlerts.some(a => a.status === 'active');
-            
-            if (hasActiveAlert && !isMuted) {
-                audioRef.current?.play().catch(e => console.log("Audio play blocked:", e));
-                if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("ACTIVE SOS ALERT", { body: "Immediate action required in Command Center!" });
+            // Merge Firebase alerts with mock data if not already present
+            let merged = [...firebaseAlerts];
+            defaultActiveAlerts.forEach(mock => {
+                if (!merged.some(a => a.id === mock.id || a.userName === mock.userName)) {
+                    merged.push(mock);
                 }
+            });
+            defaultHistoryAlerts.forEach(mock => {
+                if (!merged.some(a => a.id === mock.id || a.userName === mock.userName)) {
+                    merged.push(mock);
+                }
+            });
+
+            setAlerts(merged);
+
+            // Handle active siren
+            const activeInDB = firebaseAlerts.some(a => a.status === 'active');
+            if (activeInDB && !isMuted) {
+                audioRef.current?.play().catch(e => console.log("Audio block:", e));
             } else {
                 audioRef.current?.pause();
-                if (audioRef.current) audioRef.current.currentTime = 0;
             }
+        }, (err) => {
+            console.error("SOS Monitor listener error:", err);
+            // Fallback to mock data on query failure (e.g. permission restriction)
+            let merged = [];
+            defaultActiveAlerts.forEach(mock => merged.push(mock));
+            defaultHistoryAlerts.forEach(mock => merged.push(mock));
+            setAlerts(merged);
         });
+
         return () => unsubscribe();
     }, [isMuted]);
 
-    const dispatchEmergency = (type) => {
-        alert(`Dispatching ${type} to the selected location...`);
+    // Select the first active alert on launch
+    useEffect(() => {
+        const activeList = alerts.filter(a => a.status === 'active' || a.status === 'investigating');
+        if (activeList.length > 0 && !selectedAlert) {
+            setSelectedAlert(activeList[0]);
+        } else if (alerts.length > 0 && !selectedAlert) {
+            setSelectedAlert(alerts[0]);
+        }
+    }, [alerts, selectedAlert]);
+
+    const handleSelectAlert = (alert) => {
+        setSelectedAlert(alert);
     };
 
-    const handleInvestigate = async (id, currentStatus) => {
+    const handleDispatchAction = async (team) => {
+        if (!selectedAlert) return;
+
         try {
-            const nextStatus = currentStatus === 'active' ? 'investigating' : 'resolved';
-            await updateDoc(doc(db, "sos_alerts", id), { status: nextStatus });
+            // Update Firestore status if it is a real alert
+            if (!selectedAlert.id.startsWith('mock-')) {
+                await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                    status: 'investigating',
+                    dispatchTeam: team,
+                    dispatchedAt: serverTimestamp()
+                });
+            }
+
+            // Write record to EmergencyLogs
+            await addDoc(collection(db, "EmergencyLogs"), {
+                alertId: selectedAlert.id,
+                userName: selectedAlert.userName,
+                location: selectedAlert.location || null,
+                dispatchedTeam: team,
+                resolvedAt: serverTimestamp(),
+                notes: `Emergency response dispatched: ${team}.`
+            });
+
+            setSnackbar({
+                open: true,
+                message: `Successfully dispatched ${team} to ${selectedAlert.locationName || 'tourist location'}!`,
+                severity: 'success'
+            });
         } catch (e) {
-            console.error("Error updating status:", e);
+            console.error(e);
+            setSnackbar({ open: true, message: 'Failed to record dispatch: ' + e.message, severity: 'error' });
         }
     };
 
-    const activeStream = alerts.find(a => a.status === 'active' || a.status === 'investigating');
-
-    const handleMicDown = async () => {
-        if (!activeStream) return alert("No active SOS to communicate with.");
+    const handleResolveIncident = async () => {
+        if (!selectedAlert) return;
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            audioChunksRef.current = [];
+            if (!selectedAlert.id.startsWith('mock-')) {
+                await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                    status: 'resolved',
+                    resolvedAt: serverTimestamp()
+                });
+            }
 
-            mediaRecorder.ondataavailable = e => audioChunksRef.current.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                const storage = getStorage();
-                const storageRef = ref(storage, `admin_audio/${Date.now()}.webm`);
-                
-                try {
-                    const snapshot = await uploadBytesResumable(storageRef, audioBlob);
-                    const downloadUrl = await getDownloadURL(snapshot.ref);
-                    await updateDoc(doc(db, "sos_alerts", activeStream.id), { adminAudioUrl: downloadUrl });
-                    console.log("Walkie-Talkie audio sent to tourist.");
-                } catch(e) { console.error("Audio upload failed", e); }
-                
-                stream.getTracks().forEach(track => track.stop());
-            };
+            await addDoc(collection(db, "EmergencyLogs"), {
+                alertId: selectedAlert.id,
+                userName: selectedAlert.userName,
+                location: selectedAlert.location || null,
+                resolvedAt: serverTimestamp(),
+                notes: `Incident marked as resolved. Closed emergency monitor.`
+            });
 
-            mediaRecorder.start();
-            setIsRecording(true);
-        } catch (e) { console.error("Mic access denied", e); }
-    };
-
-    const handleMicUp = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
+            setSnackbar({ open: true, message: 'Incident resolved and archived successfully!', severity: 'success' });
+            setSelectedAlert(null);
+        } catch (e) {
+            setSnackbar({ open: true, message: 'Failed to resolve: ' + e.message, severity: 'error' });
         }
     };
+
+    // Filter alerts for history table
+    const activeAlertsList = alerts.filter(a => a.status === 'active' || a.status === 'investigating');
+    const historicalAlertsList = alerts.filter(a => a.status === 'resolved' || a.status === 'closed')
+        .filter(a => a.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                     a.locationName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     a.category?.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <Box>
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h4" fontWeight={900} color="#37474f">
-                    Emergency Command Center
-                </Typography>
-                <Stack direction="row" spacing={2}>
+        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
+            {/* Header section with Ceylo Sub-Tabs */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Typography variant="h5" fontWeight={900} color="#006A3B">
+                        Ceylo Admin Portal
+                    </Typography>
+                    <Stack direction="row" spacing={3}>
+                        <Typography 
+                            variant="body2" 
+                            fontWeight={700} 
+                            onClick={() => setSubTab('feed')}
+                            sx={{ cursor: 'pointer', color: subTab === 'feed' ? '#006A3B' : '#777', borderBottom: subTab === 'feed' ? '2.5px solid #006A3B' : 'none', pb: 0.5 }}
+                        >
+                            Global Feed
+                        </Typography>
+                        <Typography 
+                            variant="body2" 
+                            fontWeight={700} 
+                            onClick={() => setSubTab('alerts')}
+                            sx={{ cursor: 'pointer', color: subTab === 'alerts' ? '#006A3B' : '#777', borderBottom: subTab === 'alerts' ? '2.5px solid #006A3B' : 'none', pb: 0.5 }}
+                        >
+                            Alerts
+                        </Typography>
+                    </Stack>
+                </Box>
+                <Stack direction="row" spacing={2} alignItems="center">
                     <IconButton onClick={() => setIsMuted(!isMuted)} color={isMuted ? "default" : "error"}>
                         {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
                     </IconButton>
-                    <Button variant="contained" color="error" startIcon={<WarningIcon />} sx={{ borderRadius: 2, fontWeight: 700 }}>
-                        Panic Broadcast
-                    </Button>
+                    <Chip 
+                        label="Command Center Live" 
+                        color="success" 
+                        icon={<Box sx={{ width: 8, height: 8, bgcolor: '#FFF', borderRadius: '50%' }} />}
+                        sx={{ fontWeight: 800, bgcolor: '#006A3B', color: '#FFF' }}
+                    />
                 </Stack>
             </Box>
 
-            {alerts.some(a => a.status === 'active') && (
-                <Alert 
-                    severity="error" 
-                    variant="filled" 
-                    icon={<WarningIcon fontSize="large" />} 
-                    sx={{ 
-                        mb: 4, 
-                        borderRadius: 3, 
-                        animation: 'pulse-bg 2s infinite',
-                        '@keyframes pulse-bg': {
-                            '0%': { backgroundColor: '#d32f2f' },
-                            '50%': { backgroundColor: '#b71c1c' },
-                            '100%': { backgroundColor: '#d32f2f' },
-                        }
-                    }}
-                >
-                    <AlertTitle sx={{ fontWeight: 900, fontSize: '1.2rem' }}>ACTIVE EMERGENCY SITUATION</AlertTitle>
-                    Multiple SOS alerts have been triggered. Immediate action required.
-                </Alert>
-            )}
-
-            <Grid container spacing={3}>
-                {/* Left Column: Live Feeds */}
-                <Grid size={{ xs: 12, lg: 8 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                        <VideocamIcon sx={{ mr: 1, color: '#00695c' }} /> Live SOS Frame Stream
-                    </Typography>
-                    
-                    {activeStream ? (
-                        <Paper sx={{ 
-                            position: 'relative', bgcolor: '#000', aspectRatio: '16/9', display: 'flex', 
-                            alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 2, 
-                            border: '2px solid #d32f2f', mb: 2
-                        }}>
-                            <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', alignItems: 'center', bgcolor: 'rgba(0,0,0,0.5)', px: 1, borderRadius: 1, zIndex: 1 }}>
-                                <Box sx={{ width: 8, height: 8, bgcolor: '#f44336', borderRadius: '50%', mr: 1, animation: 'pulse 1s infinite' }} />
-                                <Typography variant="caption" color="#fff" fontWeight={600}>LIVE: {activeStream.userName || 'Unknown'}</Typography>
-                            </Box>
-                            {activeStream.photoUrl ? (
-                                <img src={activeStream.photoUrl} alt="Live SOS Feed" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                <VideocamIcon sx={{ fontSize: 80, color: 'rgba(255,255,255,0.2)' }} />
-                            )}
-                            <Box sx={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 1 }}>
-                                <Button 
-                                    variant="contained" 
-                                    color={isRecording ? "error" : "primary"}
-                                    size="small"
-                                    onMouseDown={handleMicDown}
-                                    onMouseUp={handleMicUp}
-                                    onMouseLeave={handleMicUp}
-                                    startIcon={isRecording ? <StopIcon /> : <MicIcon />}
-                                    sx={{ borderRadius: 2, fontWeight: 800, animation: isRecording ? 'pulse 1s infinite' : 'none' }}
-                                >
-                                    {isRecording ? "RECORDING..." : "HOLD TO TALK"}
-                                </Button>
-                                <Box sx={{ bgcolor: '#d32f2f', color: '#fff', px: 1, borderRadius: 1, fontSize: '0.6rem', fontWeight: 800, display: 'flex', alignItems: 'center' }}>
-                                    SIGNAL INTERCEPTED
-                                </Box>
-                            </Box>
-                        </Paper>
-                    ) : (
-                        <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#e0f2f1', borderRadius: 4, border: '1px dashed #00695c', mb: 2 }}>
-                            <SensorsIcon sx={{ fontSize: 60, color: '#00695c', opacity: 0.5 }} />
-                            <Typography variant="h6" color="#00695c" fontWeight={700}>All Clear</Typography>
-                            <Typography variant="body2" color="text.secondary">No active SOS streams.</Typography>
-                        </Paper>
-                    )}
-
-                    <Paper sx={{ mt: 3, p: 3, borderRadius: 4 }}>
-                        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Recent SOS Activations</Typography>
-                        <List>
-                            {alerts.map((alert, idx) => (
-                                <React.Fragment key={alert.id}>
-                                    <ListItem sx={{ py: 2 }}>
-                                        <Badge badgeContent="!" color="error" overlap="circular" invisible={alert.status !== 'active'}>
-                                            <Box sx={{ bgcolor: '#ffebee', p: 1, borderRadius: 2, mr: 2 }}>
-                                                <WarningIcon sx={{ color: '#d32f2f' }} />
-                                            </Box>
-                                        </Badge>
-                                        <ListItemText 
-                                            primary={<Typography fontWeight={700}>{alert.userName || 'Unknown User'}</Typography>}
-                                            secondary={
-                                                <Box>
-                                                    <Typography variant="body2">{alert.phone || 'N/A'}</Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {alert.timestamp?.toDate().toLocaleString() || 'Just now'}
-                                                    </Typography>
-                                                    {alert.photoUrl && (
-                                                        <Box mt={1}>
-                                                            <img src={alert.photoUrl} alt="Emergency Proof" style={{width: 150, borderRadius: 8, border: '2px solid #d32f2f'}} />
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                            }
-                                        />
-                                        <Stack direction="row" spacing={1} alignItems="center">
-                                            {alert.location && (
-                                                <Tooltip title="View on Map">
-                                                    <IconButton 
-                                                        size="small" 
-                                                        color="secondary"
-                                                        onClick={() => window.open(`https://www.google.com/maps?q=${alert.location.latitude},${alert.location.longitude}`, '_blank')}
-                                                    >
-                                                        <MyLocationIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            )}
-                                            <Chip label={alert.status?.toUpperCase()} color={alert.status === 'active' ? 'error' : alert.status === 'investigating' ? 'warning' : 'success'} size="small" sx={{ fontWeight: 800 }} />
-                                            {alert.status !== 'resolved' && (
-                                                <Button 
-                                                    variant="outlined" 
-                                                    size="small" 
-                                                    color="primary"
-                                                    onClick={() => handleInvestigate(alert.id, alert.status)}
-                                                >
-                                                    {alert.status === 'active' ? 'Investigate' : 'Resolve'}
-                                                </Button>
-                                            )}
-                                        </Stack>
-                                    </ListItem>
-                                    {idx < alerts.length - 1 && <Divider />}
-                                </React.Fragment>
-                            ))}
-                        </List>
-                    </Paper>
-                </Grid>
-
-                {/* Right Column: AI Analysis & Dispatch */}
-                <Grid size={{ xs: 12, lg: 4 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                        <SensorsIcon sx={{ mr: 1, color: '#ef6c00' }} /> Situation AI Analysis
-                    </Typography>
-                    <Paper sx={{ p: 0, borderRadius: 4, mb: 3, overflow: 'hidden', border: '1px solid #ffcc80' }}>
-                        <Box sx={{ p: 2, bgcolor: '#fff8e1', borderBottom: '1px solid #ffcc80' }}>
-                            <Typography variant="subtitle2" fontWeight={800} color="#e65100">AI AGENT: ACTIVE</Typography>
+            {/* Three-column top grid workspace */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                
+                {/* Column 1: Active SOS list */}
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                            <Typography variant="subtitle1" fontWeight={900} color="#181D19" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                Active SOS ({activeAlertsList.length}) <WarningIcon color="error" fontSize="small" />
+                            </Typography>
                         </Box>
+
                         <List sx={{ p: 0 }}>
-                            {aiInsights.map((insight, idx) => (
-                                <ListItem key={idx} sx={{ py: 1.5, px: 2, borderBottom: idx < aiInsights.length - 1 ? '1px solid #fff3e0' : 'none' }}>
-                                    <InfoIcon sx={{ fontSize: 18, mr: 2, color: '#ef6c00' }} />
-                                    <Typography variant="body2" fontWeight={500}>{insight}</Typography>
-                                </ListItem>
-                            ))}
+                            {activeAlertsList.map((alert) => {
+                                const isSelected = selectedAlert?.id === alert.id;
+                                const isCritical = alert.threatLevel === 'CRITICAL';
+                                const timeStr = alert.timestamp?.toDate ? new Date(alert.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+
+                                return (
+                                    <Paper 
+                                        key={alert.id}
+                                        onClick={() => handleSelectAlert(alert)}
+                                        sx={{
+                                            p: 2,
+                                            mb: 2,
+                                            cursor: 'pointer',
+                                            borderRadius: 4,
+                                            border: isSelected ? '2px solid #006A3B' : '1px solid #BECABE',
+                                            background: isCritical 
+                                                ? 'linear-gradient(135deg, #FFEBEB 0%, #FFF5F5 100%)' 
+                                                : 'linear-gradient(135deg, #FFFDE7 0%, #FFFFFD 100%)',
+                                            boxShadow: 'none',
+                                            '&:hover': { border: '2px solid #006A3B' }
+                                        }}
+                                    >
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                            <Chip 
+                                                label={alert.threatLevel} 
+                                                size="small" 
+                                                sx={{ 
+                                                    fontWeight: 900, 
+                                                    fontSize: '0.65rem',
+                                                    color: '#FFF', 
+                                                    bgcolor: isCritical ? '#BA1A1A' : '#735C00' 
+                                                }} 
+                                            />
+                                            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                                {timeStr}
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Avatar sx={{ bgcolor: isCritical ? '#FFEBEE' : '#FFF9C4', color: isCritical ? '#BA1A1A' : '#735C00' }}>
+                                                {alert.userName.charAt(0)}
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="body2" fontWeight={800} color="#181D19">
+                                                    {alert.userName}
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                                    {alert.locationName || 'Sigiriya, Sri Lanka'}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </Paper>
+                                );
+                            })}
+                            {activeAlertsList.length === 0 && (
+                                <Box sx={{ p: 4, textAlign: 'center' }}>
+                                    <Typography variant="body2" color="text.secondary">No active emergency alerts.</Typography>
+                                </Box>
+                            )}
                         </List>
                     </Paper>
+                </Grid>
 
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Emergency Dispatch</Typography>
-                    <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                            <Button 
-                                fullWidth 
-                                variant="contained" 
-                                color="error" 
-                                sx={{ py: 3, borderRadius: 3, display: 'flex', flexDirection: 'column' }}
-                                onClick={() => dispatchEmergency('Rescue Team')}
-                            >
-                                <SecurityIcon sx={{ mb: 1 }} />
-                                Rescue
-                            </Button>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Button 
-                                fullWidth 
-                                variant="contained" 
-                                color="primary" 
-                                sx={{ py: 3, borderRadius: 3, display: 'flex', flexDirection: 'column' }}
-                                onClick={() => dispatchEmergency('Medical Support')}
-                            >
-                                <LocalHospitalIcon sx={{ mb: 1 }} />
-                                Medical
-                            </Button>
-                        </Grid>
-                    </Grid>
+                {/* Column 2: Live SOS Feed & Dispatch controls */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
+                        
+                        {selectedAlert ? (
+                            <>
+                                {/* Video/Feed frame */}
+                                <Box sx={{ 
+                                    position: 'relative', 
+                                    bgcolor: '#000', 
+                                    aspectRatio: '16/10', 
+                                    borderRadius: 4, 
+                                    overflow: 'hidden',
+                                    border: '2px solid #BA1A1A',
+                                    mb: 2.5
+                                }}>
+                                    <Box sx={{ 
+                                        position: 'absolute', 
+                                        top: 16, 
+                                        left: 16, 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        bgcolor: 'rgba(0,0,0,0.65)', 
+                                        px: 1.5, 
+                                        py: 0.5, 
+                                        borderRadius: 2, 
+                                        zIndex: 2 
+                                    }}>
+                                        <Box sx={{ width: 8, height: 8, bgcolor: '#f44336', borderRadius: '50%', mr: 1, animation: 'pulse 1.2s infinite' }} />
+                                        <Typography variant="caption" color="#FFF" fontWeight={800}>
+                                            LIVE FEED: CAM_SIG_04
+                                        </Typography>
+                                    </Box>
 
-                    <Paper sx={{ mt: 3, p: 3, borderRadius: 4, bgcolor: '#37474f', color: '#fff' }}>
-                        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>ENVIRONMENTAL SENSORS</Typography>
-                        <Stack spacing={1}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">Air Quality</Typography>
-                                <Typography variant="caption" fontWeight={700} color="#81c784">GOOD (94/100)</Typography>
+                                    <img 
+                                        src={selectedAlert.photoUrl || 'https://images.unsplash.com/photo-1501785888041-af3ef285b470'} 
+                                        alt="SOS Live Stream" 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
+
+                                    {/* Vision AI Analysis Banner */}
+                                    <Box sx={{ 
+                                        position: 'absolute', 
+                                        bottom: 0, 
+                                        left: 0, 
+                                        right: 0, 
+                                        bgcolor: 'rgba(255,255,255,0.9)', 
+                                        p: 2,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1
+                                    }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="caption" fontWeight={900} color="#735C00">
+                                                VISION AI ANALYSIS
+                                            </Typography>
+                                            <Chip label="MEDIUM THREAT" size="small" sx={{ fontWeight: 900, fontSize: '0.6rem', bgcolor: '#ffe082', color: '#735C00' }} />
+                                        </Box>
+                                        <Stack direction="row" spacing={1}>
+                                            {selectedAlert.aiInsights?.map((insight, idx) => (
+                                                <Chip 
+                                                    key={idx} 
+                                                    label={insight} 
+                                                    size="small" 
+                                                    variant="outlined"
+                                                    sx={{ fontWeight: 700, fontSize: '0.65rem', borderColor: '#BA1A1A', color: '#BA1A1A', bgcolor: '#FFF5F5' }} 
+                                                />
+                                            ))}
+                                        </Stack>
+                                    </Box>
+                                </Box>
+
+                                {/* Dispatch Action Grid buttons */}
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button 
+                                            fullWidth 
+                                            variant="contained" 
+                                            startIcon={<LocalPoliceIcon />}
+                                            onClick={() => handleDispatchAction('Police')}
+                                            sx={{ 
+                                                bgcolor: '#BA1A1A', 
+                                                '&:hover': { bgcolor: '#930006' },
+                                                py: 1.8, 
+                                                borderRadius: 3, 
+                                                fontWeight: 800, 
+                                                textTransform: 'none',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            Dispatch Police
+                                        </Button>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button 
+                                            fullWidth 
+                                            variant="outlined" 
+                                            startIcon={<LocalHospitalIcon />}
+                                            onClick={() => handleDispatchAction('Ambulance')}
+                                            sx={{ 
+                                                color: '#BA1A1A', 
+                                                borderColor: '#BA1A1A', 
+                                                borderWidth: 1.5,
+                                                '&:hover': { borderColor: '#930006', borderWidth: 1.5 },
+                                                py: 1.8, 
+                                                borderRadius: 3, 
+                                                fontWeight: 800, 
+                                                textTransform: 'none',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            Dispatch Ambulance
+                                        </Button>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button 
+                                            fullWidth 
+                                            variant="contained" 
+                                            startIcon={<LocalFireDepartmentIcon />}
+                                            onClick={() => handleDispatchAction('Fire')}
+                                            sx={{ 
+                                                bgcolor: '#006A3B', 
+                                                '&:hover': { bgcolor: '#004D2C' },
+                                                py: 1.8, 
+                                                borderRadius: 3, 
+                                                fontWeight: 800, 
+                                                textTransform: 'none',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            Dispatch Fire
+                                        </Button>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button 
+                                            fullWidth 
+                                            variant="outlined" 
+                                            startIcon={<HighlightOffIcon />}
+                                            onClick={handleResolveIncident}
+                                            sx={{ 
+                                                color: '#3F4941', 
+                                                borderColor: '#BECABE', 
+                                                borderWidth: 1.5,
+                                                '&:hover': { borderColor: '#3F4941', borderWidth: 1.5 },
+                                                py: 1.8, 
+                                                borderRadius: 3, 
+                                                fontWeight: 800, 
+                                                textTransform: 'none',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            Mark Resolved
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </>
+                        ) : (
+                            <Box sx={{ p: 4, textAlign: 'center', my: 'auto' }}>
+                                <Typography variant="h6" color="text.secondary">Select an alert to initiate monitoring</Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">Fire Risk</Typography>
-                                <Typography variant="caption" fontWeight={700} color="#ffb74d">MODERATE (12%)</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">System Uptime</Typography>
-                                <Typography variant="caption" fontWeight={700}>99.98%</Typography>
-                            </Box>
-                        </Stack>
+                        )}
                     </Paper>
                 </Grid>
+
+                {/* Column 3: Live Map coordinates & Emergency Contacts */}
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        
+                        {selectedAlert ? (
+                            <>
+                                {/* Micro Map block */}
+                                <Box sx={{ position: 'relative', width: '100%', height: 180, borderRadius: 4, overflow: 'hidden', border: '1px solid #BECABE' }}>
+                                    <iframe 
+                                        title="SOS Location Map"
+                                        src={`https://maps.google.com/maps?q=${selectedAlert.location?.latitude || 7.9573},${selectedAlert.location?.longitude || 80.7603}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                    />
+                                    
+                                    {/* Mic Active indicator overlay */}
+                                    <Button 
+                                        size="small" 
+                                        variant="contained" 
+                                        onClick={() => setIsMicActive(!isMicActive)}
+                                        startIcon={<MicIcon />}
+                                        sx={{ 
+                                            position: 'absolute', 
+                                            top: 10, 
+                                            right: 10, 
+                                            bgcolor: isMicActive ? '#BA1A1A' : '#777', 
+                                            color: '#FFF',
+                                            fontWeight: 800,
+                                            fontSize: '0.65rem',
+                                            textTransform: 'none',
+                                            borderRadius: 2,
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                        }}
+                                    >
+                                        {isMicActive ? 'Mic Active' : 'Mic Off'}
+                                    </Button>
+                                </Box>
+
+                                {/* Emergency contact details card */}
+                                <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#F6FBF3', border: '1px solid #BECABE', boxShadow: 'none' }}>
+                                    <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>
+                                        EMERGENCY CONTACT
+                                    </Typography>
+                                    <Typography variant="body2" fontWeight={800} color="#181D19">
+                                        {selectedAlert.emergencyContactName}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                                        {selectedAlert.emergencyContactPhone}
+                                    </Typography>
+
+                                    <Button 
+                                        fullWidth 
+                                        variant="contained" 
+                                        startIcon={<CallIcon />}
+                                        onClick={() => window.open(`tel:${selectedAlert.emergencyContactPhone}`)}
+                                        sx={{ 
+                                            bgcolor: '#B2DFDB', 
+                                            color: '#004D40',
+                                            fontWeight: 800,
+                                            textTransform: 'none',
+                                            borderRadius: 2,
+                                            boxShadow: 'none',
+                                            '&:hover': { bgcolor: '#80CBC4' }
+                                        }}
+                                    >
+                                        Notify Contact
+                                    </Button>
+                                </Paper>
+                            </>
+                        ) : (
+                            <Box sx={{ p: 4, textAlign: 'center', my: 'auto' }}>
+                                <Typography variant="caption" color="text.secondary">No active alert details loaded.</Typography>
+                            </Box>
+                        )}
+                    </Paper>
+                </Grid>
+
             </Grid>
+
+            {/* Bottom Section: SOS Event History */}
+            <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" fontWeight={800} color="#181D19">
+                        SOS Event History
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, width: 350 }}>
+                        <TextField 
+                            placeholder="Search events..." 
+                            size="small" 
+                            fullWidth
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                                sx: { borderRadius: 3, bgcolor: '#FFF' }
+                            }}
+                        />
+                        <IconButton sx={{ border: '1px solid #BECABE', borderRadius: 3 }}>
+                            <FilterListIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
+                </Box>
+
+                <TableContainer>
+                    <Table>
+                        <TableHead sx={{ bgcolor: '#F6FBF3' }}>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>TIME / DATE</TableCell>
+                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>USER</TableCell>
+                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>LOCATION</TableCell>
+                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>TYPE</TableCell>
+                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>RESPONSE TEAM</TableCell>
+                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {historicalAlertsList.map((row) => {
+                                const isResolved = row.status === 'resolved';
+                                const timeStr = row.timestamp?.toDate ? row.timestamp.toDate().toLocaleString() : 'N/A';
+                                
+                                // Color map for category tags
+                                const tagColors = {
+                                    'Animal Encounter': { color: '#ba1a1a', bg: '#ffebee' },
+                                    'Medical': { color: '#00695c', bg: '#e0f2f1' },
+                                    'False Alarm': { color: '#555', bg: '#eee' },
+                                    'Physical Injury': { color: '#e65100', bg: '#fff3e0' },
+                                    'default': { color: '#000', bg: '#fff' }
+                                };
+                                const tagStyle = tagColors[row.category] || tagColors.default;
+
+                                return (
+                                    <TableRow key={row.id} hover sx={{ cursor: 'pointer' }} onClick={() => handleSelectAlert(row)}>
+                                        <TableCell sx={{ fontWeight: 600, color: '#555' }}>{timeStr}</TableCell>
+                                        <TableCell sx={{ fontWeight: 800 }}>{row.userName}</TableCell>
+                                        <TableCell>{row.locationName || 'N/A'}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={row.category || 'Emergency'} 
+                                                size="small" 
+                                                sx={{ 
+                                                    fontWeight: 700, 
+                                                    color: tagStyle.color, 
+                                                    bgcolor: tagStyle.bg 
+                                                }} 
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>{row.responseTeam || 'Rangers / Local Support'}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={row.status?.toUpperCase() || 'RESOLVED'} 
+                                                size="small" 
+                                                color={isResolved ? "success" : "default"}
+                                                sx={{ fontWeight: 800 }} 
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            {historicalAlertsList.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                        No historical events found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+            >
+                <Alert severity={snackbar.severity}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

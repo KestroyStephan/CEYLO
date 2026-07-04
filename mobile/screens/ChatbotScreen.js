@@ -49,6 +49,7 @@ export default function ChatbotScreen({ navigation }) {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const [extractedState, setExtractedState] = useState({
     destination: null,
     days: null,
@@ -59,6 +60,53 @@ export default function ChatbotScreen({ navigation }) {
   
   const hudAnim = useRef(new Animated.Value(-100)).current;
   const flatListRef = useRef();
+
+  const waveAnims = useRef([
+    new Animated.Value(20),
+    new Animated.Value(40),
+    new Animated.Value(60),
+    new Animated.Value(40),
+    new Animated.Value(20),
+  ]).current;
+
+  const startWaveAnimation = () => {
+    const anims = waveAnims.map((anim, index) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: Math.random() * 80 + 20,
+            duration: 300 + index * 50,
+            useNativeDriver: false,
+          }),
+          Animated.timing(anim, {
+            toValue: Math.random() * 30 + 10,
+            duration: 300 + index * 50,
+            useNativeDriver: false,
+          }),
+        ])
+      );
+    });
+    Animated.parallel(anims).start();
+  };
+
+  const speakMessage = (text) => {
+    Speech.stop();
+    Speech.speak(text, {
+      language: i18n.language === 'si' ? 'si-LK' : i18n.language === 'ta' ? 'ta-LK' : 'en-US',
+      pitch: 1.0,
+      rate: 0.9,
+    });
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      Speech.stop();
+    });
+    return () => {
+      Speech.stop();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   useEffect(() => {
     // Fetch user mood from onboarding
@@ -148,20 +196,49 @@ export default function ChatbotScreen({ navigation }) {
         setExtractedState(prev => ({ ...prev, ...responseJson.extractedState }));
       }
 
+      // Check if we should inject mock recommendations for frontend display
+      let recommendations = null;
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('sigiriya') || lowerText.includes('culture') || lowerText.includes('stay') || lowerText.includes('hotel') || lowerText.includes('mirissa') || lowerText.includes('safari') || lowerText.includes('wildlife')) {
+        recommendations = [
+          {
+            id: 'rec_1',
+            name: lowerText.includes('mirissa') ? "Mirissa Golden Sandy Beach" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Yala National Park Safari" : "Sigiriya Rock Fortress",
+            category: lowerText.includes('mirissa') ? "Beach" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Wildlife" : "Heritage & Culture",
+            ecoScore: 92,
+            rating: 4.9,
+            image: lowerText.includes('mirissa') 
+              ? "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600"
+              : lowerText.includes('safari') || lowerText.includes('wildlife')
+              ? "https://images.unsplash.com/photo-1581888227599-779811939961?w=600"
+              : "https://images.unsplash.com/photo-1588598130782-690a2985731f?w=600",
+            vibe: lowerText.includes('mirissa') ? "Family Trip" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Adventurer" : "Culture Seeker"
+          },
+          {
+            id: 'rec_2',
+            name: lowerText.includes('mirissa') ? "Paradise Bay Eco Resort" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Cinnamon Wild Yala" : "Sigiriya Wilderness Lodge",
+            category: "Stay",
+            price: lowerText.includes('mirissa') ? "LKR 18,500/night" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "LKR 28,000/night" : "LKR 14,000/night",
+            ecoScore: 96,
+            rating: 4.8,
+            image: lowerText.includes('mirissa')
+              ? "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600"
+              : lowerText.includes('safari') || lowerText.includes('wildlife')
+              ? "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600"
+              : "https://images.unsplash.com/photo-1601248464673-9eb1f5850444?w=600",
+            vibe: "Eco Explorer"
+          }
+        ];
+      }
+
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         text: responseJson.resp,
         sender: 'bot',
         options: responseJson.ui_options,
-        isFinal: responseJson.isReady
+        isFinal: responseJson.isReady,
+        recommendations: recommendations
       }]);
-
-      // TTS implementation
-      Speech.speak(responseJson.resp, {
-        language: i18n.language === 'si' ? 'si-LK' : i18n.language === 'ta' ? 'ta-LK' : 'en-US',
-        pitch: 1.0,
-        rate: 0.9,
-      });
 
     } catch (error) {
       setMessages(prev => [...prev, {
@@ -174,12 +251,19 @@ export default function ChatbotScreen({ navigation }) {
     }
   };
 
-  const simulateDictation = () => {
-    setIsRecording(true);
+  const startVoiceAssistant = () => {
+    setVoiceModalVisible(true);
+    startWaveAnimation();
     setTimeout(() => {
-      setIsRecording(false);
-      setInputText("I would love to explore the wildlife and see some elephants!");
-    }, 2500);
+      setVoiceModalVisible(false);
+      const voiceInputs = [
+        "I want to plan a 3 day culture trip to Sigiriya on a standard budget",
+        "Show me eco friendly stays in Mirissa beach",
+        "Let's make a luxury wildlife safari in Yala National Park",
+      ];
+      const randomInput = voiceInputs[Math.floor(Math.random() * voiceInputs.length)];
+      handleSend(randomInput);
+    }, 3000);
   };
 
   const generateItinerary = async () => {
@@ -213,8 +297,18 @@ export default function ChatbotScreen({ navigation }) {
         plan: dynamicPlan
       };
 
-      await addDoc(collection(db, 'itineraries'), itinerary);
-      Alert.alert("Success", "Your ML-predicted itinerary has been generated from 100,000+ data points!");
+      const docRef = await addDoc(collection(db, 'itineraries'), itinerary);
+      
+      Alert.alert(
+        "Itinerary Ready", 
+        "Your ML-predicted itinerary has been generated from 100,000+ data points!",
+        [
+          {
+            text: "View Itinerary",
+            onPress: () => navigation.navigate('ItineraryDetail', { routeData: { id: docRef.id, ...itinerary } })
+          }
+        ]
+      );
     } catch (e) {
       console.warn("RAG backend failed, check if server.js is running:", e);
       Alert.alert("Error", "Could not connect to the RAG backend. Is server.js running?");
@@ -226,16 +320,70 @@ export default function ChatbotScreen({ navigation }) {
   const RenderMessage = ({ item }) => (
     <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
       {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
-      <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
-        <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333' }]}>{item.text}</Text>
-      </Surface>
-      {item.options && (
-        <View style={styles.optionRow}>
-          {item.options.map((opt, i) => (
-            <Chip key={i} style={styles.optionBtn} onPress={() => handleSend(opt)}>{opt}</Chip>
-          ))}
-        </View>
-      )}
+      <View style={{ flex: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
+        <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flex: 1 }]}>{item.text}</Text>
+            {item.sender === 'bot' && (
+              <IconButton 
+                icon="volume-high" 
+                iconColor="#00695C" 
+                size={18} 
+                style={{ margin: 0, marginLeft: 8 }}
+                onPress={() => speakMessage(item.text)} 
+              />
+            )}
+          </View>
+        </Surface>
+        
+        {/* Rich Media Horizontal Recommendations Carousel */}
+        {item.sender === 'bot' && item.recommendations && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
+            {item.recommendations.map((rec) => (
+              <Surface key={rec.id} style={styles.recCard} elevation={2}>
+                <Image source={{ uri: rec.image }} style={styles.recImage} />
+                <View style={rec.ecoScore >= 95 ? styles.recBadge : [styles.recBadge, { backgroundColor: '#FFA726' }]}>
+                  <Text style={styles.recBadgeText}>{rec.ecoScore}% ECO</Text>
+                </View>
+                <View style={styles.recContent}>
+                  <Text style={styles.recTitle} numberOfLines={1}>{rec.name}</Text>
+                  <Text style={styles.recCategory}>{rec.category}</Text>
+                  <View style={styles.recRow}>
+                    <Text style={styles.recPrice}>{rec.price || 'Free Entry'}</Text>
+                    <View style={styles.recRatingRow}>
+                      <MaterialCommunityIcons name="star" size={12} color="#FFB300" />
+                      <Text style={styles.recRating}>{rec.rating}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.recBtn}
+                    onPress={() => {
+                      if (rec.category === 'Stay') {
+                        Alert.alert("Accommodation Selected", `${rec.name} has been set as your preferred stay!`);
+                      } else {
+                        setExtractedState(prev => ({ ...prev, destination: rec.name }));
+                        Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
+                      }
+                    }}
+                  >
+                    <Text style={styles.recBtnText}>
+                      {rec.category === 'Stay' ? 'Book Stay' : 'Add to Route'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </Surface>
+            ))}
+          </ScrollView>
+        )}
+
+        {item.options && (
+          <View style={styles.optionRow}>
+            {item.options.map((opt, i) => (
+              <Chip key={i} style={styles.optionBtn} onPress={() => handleSend(opt)}>{opt}</Chip>
+            ))}
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -296,11 +444,11 @@ export default function ChatbotScreen({ navigation }) {
       <Surface style={styles.inputArea} elevation={5}>
         <View style={styles.inputRow}>
           <IconButton 
-            icon={isRecording ? "stop-circle" : "microphone"} 
-            containerColor={isRecording ? "#FFEBEE" : "#E0F2F1"} 
-            iconColor={isRecording ? "#D32F2F" : "#00695C"} 
+            icon="microphone" 
+            containerColor="#E0F2F1" 
+            iconColor="#00695C" 
             size={24} 
-            onPress={simulateDictation}
+            onPress={startVoiceAssistant}
             disabled={loading}
           />
           <TextInput
@@ -322,6 +470,45 @@ export default function ChatbotScreen({ navigation }) {
           />
         </View>
       </Surface>
+
+      {/* Voice Assistant Modal Overlay */}
+      <Portal>
+        <Modal 
+          visible={voiceModalVisible} 
+          onDismiss={() => setVoiceModalVisible(false)} 
+          contentContainerStyle={styles.voiceModal}
+        >
+          <LinearGradient colors={['rgba(0, 77, 64, 0.95)', 'rgba(0, 105, 92, 0.95)']} style={styles.voiceGradient}>
+            <IconButton 
+              icon="close" 
+              iconColor="#FFF" 
+              size={20} 
+              style={styles.closeVoiceBtn} 
+              onPress={() => setVoiceModalVisible(false)} 
+            />
+            <Avatar.Icon size={64} icon="microphone" style={{ backgroundColor: '#004D40' }} iconColor="#FFF" />
+            <Text style={styles.voiceTitle}>Ceylo Voice Concierge</Text>
+            <Text style={styles.voiceSubtitle}>Listening to your travel vibes...</Text>
+            
+            {/* Waveform Visualization */}
+            <View style={styles.waveRow}>
+              {waveAnims.map((anim, index) => (
+                <Animated.View 
+                  key={index} 
+                  style={[
+                    styles.waveBar, 
+                    { 
+                      height: anim, 
+                      backgroundColor: index % 2 === 0 ? '#FF7043' : '#4CAF50',
+                      opacity: index % 2 === 0 ? 0.9 : 0.8
+                    }
+                  ]} 
+                />
+              ))}
+            </View>
+          </LinearGradient>
+        </Modal>
+      </Portal>
     </KeyboardAvoidingView>
   );
 }
@@ -353,4 +540,29 @@ const styles = StyleSheet.create({
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   textInput: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 25, height: 50 },
   genBtn: { margin: 20, borderRadius: 15, backgroundColor: '#FF7043' },
+  
+  // Voice Modal Styles
+  voiceModal: { backgroundColor: 'transparent', margin: 20, justifyContent: 'center', alignItems: 'center' },
+  voiceGradient: { width: '90%', borderRadius: 25, padding: 30, alignItems: 'center', position: 'relative' },
+  closeVoiceBtn: { position: 'absolute', top: 10, right: 10 },
+  voiceTitle: { color: '#FFF', fontSize: 20, fontFamily: 'Outfit-Bold', marginTop: 15 },
+  voiceSubtitle: { color: '#B2DFDB', fontSize: 13, fontFamily: 'Outfit-Regular', marginTop: 5, textAlign: 'center' },
+  waveRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 8, height: 100, marginTop: 25 },
+  waveBar: { width: 8, borderRadius: 4 },
+
+  // Recommendation Card Styles
+  recommendationsContainer: { marginTop: 10, paddingVertical: 5 },
+  recCard: { width: 200, backgroundColor: '#FFF', borderRadius: 15, marginRight: 15, overflow: 'hidden', borderBottomWidth: 3, borderBottomColor: '#00695C' },
+  recImage: { width: '100%', height: 100 },
+  recBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#4CAF50', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  recBadgeText: { color: '#FFF', fontSize: 9, fontFamily: 'Outfit-Bold' },
+  recContent: { padding: 10 },
+  recTitle: { fontSize: 13, fontFamily: 'Outfit-Bold', color: '#333' },
+  recCategory: { fontSize: 10, color: '#666', marginTop: 2 },
+  recRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  recPrice: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#00695C' },
+  recRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  recRating: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#FFB300' },
+  recBtn: { backgroundColor: '#E0F2F1', borderRadius: 10, paddingVertical: 6, alignItems: 'center', marginTop: 8 },
+  recBtnText: { color: '#00695C', fontSize: 11, fontFamily: 'Outfit-Bold' },
 });

@@ -19,6 +19,7 @@ mobile/web-build/
 mobile/node_modules/
 mobile/ios/
 mobile/android/
+mobile/.metro-cache/
 
 # Firebase
 .firebase/

@@ -1,195 +1,242 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import { Text, TextInput, Button, Surface, ActivityIndicator, IconButton, SegmentedButtons, HelperText } from 'react-native-paper';
+import {
+  View, StyleSheet, TouchableOpacity, KeyboardAvoidingView,
+  Platform, ScrollView, Alert, TextInput, StatusBar
+} from 'react-native';
+import { Text, ActivityIndicator } from 'react-native-paper';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
-import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function RegisterScreen({ navigation }) {
-  const { t } = useTranslation();
+const ROLES = [
+  { key: 'tourist', icon: 'map-marker-outline', label: 'Tourist' },
+  { key: 'guide', icon: 'account-voice', label: 'Guide' },
+  { key: 'driver', icon: 'car-outline', label: 'Driver' },
+  { key: 'vendor_onboarding', icon: 'storefront-outline', label: 'Vendor' },
+];
+
+export default function RegisterScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('tourist');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  // Role specific fields
+  const [role, setRole] = useState(route?.params?.presetRole || 'tourist');
   const [vehicleType, setVehicleType] = useState('');
   const [licensePlate, setLicensePlate] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState('');
+
+  const isActive = (field) => focusedField === field;
 
   const handleRegister = async () => {
-    let newErrors = {};
-    if (!name) newErrors.name = 'Full Name is required';
-    if (!email) newErrors.email = 'Email is required';
-    else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = 'Invalid email address';
-    if (!phone) newErrors.phone = 'Phone Number is required';
-    if (!password) newErrors.password = 'Password is required';
-    else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
-
-    if (role === 'driver') {
-      if (!vehicleType) newErrors.vehicleType = 'Vehicle Type is required';
-      if (!licensePlate) newErrors.licensePlate = 'License Plate is required';
+    if (!name.trim()) { Alert.alert('Name Required', 'Please enter your full name.'); return; }
+    if (!email.trim()) { Alert.alert('Email Required', 'Please enter your email address.'); return; }
+    if (!/^\S+@\S+\.\S+$/.test(email)) { Alert.alert('Invalid Email', 'Please enter a valid email address.'); return; }
+    if (!phone.trim()) { Alert.alert('Phone Required', 'Please enter your phone number.'); return; }
+    if (password.length < 6) { Alert.alert('Weak Password', 'Password must be at least 6 characters.'); return; }
+    if (role === 'driver' && (!vehicleType.trim() || !licensePlate.trim())) {
+      Alert.alert('Driver Info', 'Please fill in vehicle type and license plate.');
+      return;
     }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) return;
 
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      await updateProfile(user, { displayName: name });
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const user = cred.user;
+      await updateProfile(user, { displayName: name.trim() });
 
       if (role === 'driver') {
         await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          name: name,
-          email: user.email,
-          phone: phone,
-          role: 'driver_pending',
-          status: 'pending_verification',
-          isOnboarded: true,
-          onboardingCompleted: true,
+          uid: user.uid, name: name.trim(), email: user.email, phone,
+          role: 'driver_pending', status: 'pending_verification',
+          isOnboarded: true, onboardingCompleted: true,
           createdAt: new Date().toISOString(),
         });
-
         await setDoc(doc(db, 'drivers', user.uid), {
-          uid: user.uid,
-          name: name,
-          email: user.email,
-          phone: phone,
-          vehicleType: vehicleType,      // Tuk | Car | Van | Bike
-          licensePlate: licensePlate,
-          licenseNumber: '',
-          status: 'pending_verification',
-          isOnline: false,
-          rejectionReason: '',
+          uid: user.uid, name: name.trim(), email: user.email, phone,
+          vehicleType, licensePlate, licenseNumber: '',
+          status: 'pending_verification', isOnline: false, rejectionReason: '',
           createdAt: serverTimestamp(),
         });
       } else {
-        const userData = {
-          uid: user.uid,
-          name,
-          email,
-          phone,
-          role,
-          createdAt: new Date().toISOString(),
-          isOnboarded: false,
-        };
-
-        if (role === 'guide') {
-          userData.guideLicense = guideLicense;
-        }
-
-        await setDoc(doc(db, 'users', user.uid), userData);
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid, name: name.trim(), email: user.email, phone,
+          role, isOnboarded: false, createdAt: new Date().toISOString(),
+        });
       }
-      // Navigation happens via App.js
     } catch (error) {
-      Alert.alert('Registration Failed', error.message);
+      let msg = error.message;
+      if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Try logging in.';
+      Alert.alert('Registration Failed', msg);
     } finally {
       setLoading(false);
     }
   };
 
+  const FieldInput = ({ field, placeholder, value, onChange, secure, keyType, extra }) => (
+    <View style={[styles.inputWrapper, isActive(field) && styles.inputWrapperFocused]}>
+      <TextInput
+        placeholder={placeholder}
+        placeholderTextColor="#B0BCB0"
+        value={value}
+        onChangeText={onChange}
+        onFocus={() => setFocusedField(field)}
+        onBlur={() => setFocusedField('')}
+        secureTextEntry={secure && !showPassword}
+        keyboardType={keyType || 'default'}
+        autoCapitalize={field === 'email' ? 'none' : 'words'}
+        autoCorrect={false}
+        style={[styles.input, secure && { flex: 1 }]}
+        {...extra}
+      />
+      {secure && (
+        <TouchableOpacity onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
+          <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#8A9E8A" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <IconButton icon="arrow-left" onPress={() => navigation.goBack()} style={styles.backButton} iconColor="#00695C" />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join Ceylo and start your adventure</Text>
-        </View>
+    <View style={styles.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#EBF3EA" />
+      <LinearGradient
+        colors={['#EBF3EA', '#F6FBF5', '#FFFFFF']}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.45 }}
+      />
 
-        <Surface style={styles.formContainer} elevation={0}>
-          <TextInput label="Full Name" value={name} onChangeText={setName} mode="flat" style={styles.input} underlineColor="transparent" activeUnderlineColor="transparent" left={<TextInput.Icon icon="account-outline" color="#00695C" />} error={!!errors.name} />
-          <HelperText type="error" visible={!!errors.name} style={styles.errorText}>{errors.name}</HelperText>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Back */}
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={22} color="#1A2E1A" />
+          </TouchableOpacity>
 
-          <TextInput label="Email" value={email} onChangeText={setEmail} mode="flat" keyboardType="email-address" autoCapitalize="none" style={styles.input} underlineColor="transparent" activeUnderlineColor="transparent" left={<TextInput.Icon icon="email-outline" color="#00695C" />} error={!!errors.email} />
-          <HelperText type="error" visible={!!errors.email} style={styles.errorText}>{errors.email}</HelperText>
-
-          <TextInput label="Phone Number" value={phone} onChangeText={setPhone} mode="flat" keyboardType="phone-pad" placeholder="+94 XX XXX XXXX" style={styles.input} underlineColor="transparent" activeUnderlineColor="transparent" left={<TextInput.Icon icon="phone-outline" color="#00695C" />} error={!!errors.phone} />
-          <HelperText type="error" visible={!!errors.phone} style={styles.errorText}>{errors.phone}</HelperText>
-
-          <TextInput label="Password" value={password} onChangeText={setPassword} mode="flat" secureTextEntry={!showPassword} style={styles.input} underlineColor="transparent" activeUnderlineColor="transparent" left={<TextInput.Icon icon="lock-outline" color="#00695C" />} right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />} error={!!errors.password} />
-          <HelperText type="error" visible={!!errors.password} style={styles.errorText}>{errors.password}</HelperText>
-
-          <Text style={styles.sectionLabel}>Select Your Role</Text>
-          <SegmentedButtons
-            value={role}
-            onValueChange={setRole}
-            buttons={[
-              { value: 'tourist', label: 'Tourist', icon: 'map-marker' },
-              { value: 'driver', label: 'Driver', icon: 'car' },
-              { value: 'guide', label: 'Guide', icon: 'account-voice' },
-              { value: 'vendor_onboarding', label: 'Vendor', icon: 'store' },
-            ]}
-            style={styles.rolePicker}
-            theme={{ colors: { secondaryContainer: '#E0F2F1', onSecondaryContainer: '#00695C' } }}
-          />
-
-          {role === 'driver' && (
-            <View style={styles.extraFields}>
-              <TextInput label="Vehicle Type" value={vehicleType} onChangeText={setVehicleType} mode="flat" style={styles.input} underlineColor="transparent" activeUnderlineColor="transparent" error={!!errors.vehicleType} />
-              <HelperText type="error" visible={!!errors.vehicleType} style={styles.errorText}>{errors.vehicleType}</HelperText>
-
-              <TextInput label="License Plate" value={licensePlate} onChangeText={setLicensePlate} mode="flat" style={styles.input} underlineColor="transparent" activeUnderlineColor="transparent" error={!!errors.licensePlate} />
-              <HelperText type="error" visible={!!errors.licensePlate} style={styles.errorText}>{errors.licensePlate}</HelperText>
+          {/* Header */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoCircleOuter}>
+              <View style={styles.logoCircleInner}>
+                <MaterialCommunityIcons name="leaf" size={30} color="#006A3B" />
+              </View>
             </View>
-          )}
+            <Text style={styles.brandName}>Create Account</Text>
+            <Text style={styles.brandTagline}>JOIN THE ECO-LUXURY COMMUNITY</Text>
+          </View>
 
-          {/* Guide License removed; collected during onboarding */}
+          <View style={styles.formCard}>
+            {/* Full Name */}
+            <Text style={styles.fieldLabel}>Full Name</Text>
+            <FieldInput field="name" placeholder="Arjuna Perera" value={name} onChange={setName} />
 
-          <Button
-            mode="contained"
-            onPress={handleRegister}
-            loading={loading}
-            disabled={loading}
-            style={styles.registerButton}
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-          >
-            {t('register')}
-          </Button>
+            {/* Email */}
+            <Text style={styles.fieldLabel}>Email Address</Text>
+            <FieldInput field="email" placeholder="you@example.com" value={email} onChange={setEmail} keyType="email-address" extra={{ autoCapitalize: 'none' }} />
 
+            {/* Phone */}
+            <Text style={styles.fieldLabel}>Phone Number</Text>
+            <FieldInput field="phone" placeholder="+94 XX XXX XXXX" value={phone} onChange={setPhone} keyType="phone-pad" extra={{ autoCapitalize: 'none' }} />
+
+            {/* Password */}
+            <Text style={styles.fieldLabel}>Password</Text>
+            <FieldInput field="password" placeholder="Min. 6 characters" value={password} onChange={setPassword} secure />
+
+            {/* Role Selector */}
+            <Text style={[styles.fieldLabel, { marginTop: 8 }]}>I am a...</Text>
+            <View style={styles.roleGrid}>
+              {ROLES.map(r => (
+                <TouchableOpacity
+                  key={r.key}
+                  onPress={() => setRole(r.key)}
+                  style={[styles.roleCard, role === r.key && styles.roleCardActive]}
+                >
+                  <MaterialCommunityIcons name={r.icon} size={22} color={role === r.key ? '#006A3B' : '#8A9E8A'} />
+                  <Text style={[styles.roleLabel, role === r.key && styles.roleLabelActive]}>{r.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Driver Extra Fields */}
+            {role === 'driver' && (
+              <View style={styles.extraFields}>
+                <Text style={styles.fieldLabel}>Vehicle Type</Text>
+                <FieldInput field="vehicleType" placeholder="e.g. Tuk, Car, Van" value={vehicleType} onChange={setVehicleType} />
+                <Text style={styles.fieldLabel}>License Plate</Text>
+                <FieldInput field="licensePlate" placeholder="e.g. CAB-1234" value={licensePlate} onChange={setLicensePlate} extra={{ autoCapitalize: 'characters' }} />
+              </View>
+            )}
+
+            {/* Submit */}
+            <TouchableOpacity
+              style={styles.registerBtn}
+              onPress={handleRegister}
+              disabled={loading}
+              activeOpacity={0.87}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.registerBtnText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.loginLink}>Login</Text>
+              <Text style={styles.footerLink}>Login</Text>
             </TouchableOpacity>
           </View>
-        </Surface>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  scrollContent: { flexGrow: 1, padding: 24, paddingTop: Platform.OS === 'ios' ? 40 : 20 },
-  header: { marginBottom: 20 },
-  backButton: { marginLeft: -10, marginBottom: 5 },
-  title: { fontSize: 32, fontFamily: 'Outfit-Bold', color: '#00695C' },
-  subtitle: { fontSize: 16, fontFamily: 'Outfit-Regular', color: '#666', marginTop: 5 },
-  formContainer: { backgroundColor: 'transparent', gap: 0 },
-  input: { backgroundColor: '#FFF', borderRadius: 15, borderTopLeftRadius: 15, borderTopRightRadius: 15, height: 60 },
-  errorText: { fontFamily: 'Outfit-Regular', marginTop: -2, marginBottom: 8 },
-  sectionLabel: { fontSize: 16, fontFamily: 'Outfit-SemiBold', color: '#333', marginTop: 10, marginBottom: 10 },
-  rolePicker: { marginBottom: 15 },
+  root: { flex: 1, backgroundColor: '#F6FBF5' },
+
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 60 },
+
+  backBtn: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF', elevation: 2, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, marginBottom: 12 },
+
+  logoSection: { alignItems: 'center', marginBottom: 28 },
+  logoCircleOuter: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#E6F2E8', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  logoCircleInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 3, shadowColor: '#006A3B', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  brandName: { fontSize: 26, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },
+  brandTagline: { fontSize: 10, fontFamily: 'Outfit-Medium', color: '#8A9E8A', letterSpacing: 2.5, marginTop: 3 },
+
+  formCard: { width: '100%', backgroundColor: '#FFF', borderRadius: 24, padding: 22, elevation: 3, shadowColor: '#1A2E1A', shadowOpacity: 0.07, shadowRadius: 14, shadowOffset: { width: 0, height: 5 } },
+
+  fieldLabel: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#4A5E4A', marginBottom: 6, marginTop: 2 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F5F2', borderRadius: 14, paddingHorizontal: 14, marginBottom: 12, borderWidth: 1.5, borderColor: 'transparent' },
+  inputWrapperFocused: { borderColor: '#006A3B', backgroundColor: '#FAFCFA' },
+  input: { flex: 1, height: 50, fontSize: 14, fontFamily: 'Outfit-Regular', color: '#1A2E1A' },
+  eyeBtn: { paddingLeft: 8 },
+
+  roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  roleCard: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F2F5F2', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5, borderColor: 'transparent' },
+  roleCardActive: { backgroundColor: '#E8F5E9', borderColor: '#006A3B' },
+  roleLabel: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#8A9E8A' },
+  roleLabelActive: { color: '#006A3B', fontFamily: 'Outfit-Bold' },
+
   extraFields: { gap: 0 },
-  registerButton: { marginTop: 20, borderRadius: 15, backgroundColor: '#00695C' },
-  buttonContent: { height: 55 },
-  buttonLabel: { fontFamily: 'Outfit-SemiBold', fontSize: 16, letterSpacing: 1 },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30, marginBottom: 40 },
-  footerText: { fontFamily: 'Outfit-Regular', color: '#666' },
-  loginLink: { fontFamily: 'Outfit-Bold', color: '#00695C' },
+
+  registerBtn: { backgroundColor: '#006A3B', borderRadius: 16, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  registerBtnText: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#FFF' },
+
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24 },
+  footerText: { fontSize: 14, fontFamily: 'Outfit-Regular', color: '#6B7B6B' },
+  footerLink: { fontSize: 14, fontFamily: 'Outfit-Bold', color: '#006A3B' },
 });

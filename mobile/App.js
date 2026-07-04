@@ -27,6 +27,7 @@ import SplashScreen from './screens/auth/SplashScreen';
 import WelcomeScreen from './screens/auth/WelcomeScreen';
 import LoginScreen from './screens/auth/LoginScreen';
 import RegisterScreen from './screens/auth/RegisterScreen';
+import RolePickerScreen from './screens/auth/RolePickerScreen';
 import LanguageSelectScreen from './screens/onboarding/LanguageSelectScreen';
 import GuideOnboardingScreen from './screens/onboarding/GuideOnboardingScreen';
 
@@ -49,6 +50,9 @@ import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
 import SOSScreen from './screens/SOSScreen';
 import GuidesListScreen from './screens/GuidesListScreen';
 import GuideProfileScreen from './screens/GuideProfileScreen';
+import ReviewBookingScreen from './screens/ReviewBookingScreen';
+import ConfirmBookingScreen from './screens/ConfirmBookingScreen';
+import GuidePendingScreen from './screens/onboarding/GuidePendingScreen';
 
 // Navigation
 import DrawerNavigator from './navigation/DrawerNavigator';
@@ -206,7 +210,9 @@ export default function App() {
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
                 ) : userRole === 'guide_pending' && !userData?.onboardingCompleted ? (
                   <Stack.Screen name="GuideOnboarding" component={GuideOnboardingScreen} />
-                ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected' || (userRole === 'guide_pending' && userData?.onboardingCompleted)) ? (
+                ) : userRole === 'guide_pending' && userData?.onboardingCompleted ? (
+                  <Stack.Screen name="GuidePending" component={GuidePendingScreen} />
+                ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected') ? (
                   <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
                 ) : (
                   <Stack.Screen name="Main" component={DrawerNavigator} />
@@ -227,6 +233,8 @@ export default function App() {
                 <Stack.Screen name="SOSScreen" component={SOSScreen} />
                 <Stack.Screen name="GuidesList" component={GuidesListScreen} />
                 <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
+                <Stack.Screen name="ReviewBooking" component={ReviewBookingScreen} />
+                <Stack.Screen name="ConfirmBooking" component={ConfirmBookingScreen} />
 
                 {/* Vendor & Utility Screens from Main */}
                 {userRole !== 'vendor_onboarding' && (
@@ -241,6 +249,7 @@ export default function App() {
                 {!isOnboarded && <Stack.Screen name="Splash" component={SplashScreen} />}
                 <Stack.Screen name="LanguageSelect" component={LanguageSelectScreen} />
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="RolePicker" component={RolePickerScreen} />
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="Register" component={RegisterScreen} />
               </Stack.Group>
