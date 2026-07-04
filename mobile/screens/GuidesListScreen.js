@@ -20,68 +20,6 @@ const BADGE_META = {
   'Cultural Expert': { color: '#6A1B9A', bg: '#F3E5F5', icon: 'drama-masks' },
 };
 
-const MOCK_GUIDES = [
-  {
-    id: 'mock-1',
-    name: 'Kasun Perera',
-    specializations: 'Wildlife & Conservation',
-    serviceAreas: 'Sinharaja, Wilpattu',
-    experience: '12',
-    languages: 'English, Sinhala',
-    packageCost: '45',
-    rating: 4.9,
-    badge: 'Platinum Expert',
-    reviewCount: 214,
-    availability: true,
-    photoUrl: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400',
-    coverImage: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=600',
-  },
-  {
-    id: 'mock-2',
-    name: 'Nilani Silva',
-    specializations: 'Cultural Archaeology & History',
-    serviceAreas: 'Kandy, Anuradhapura',
-    experience: '9',
-    languages: 'English, Tamil, Sinhala',
-    packageCost: '38',
-    rating: 4.8,
-    badge: 'Heritage Scholar',
-    reviewCount: 178,
-    availability: true,
-    photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-    coverImage: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600',
-  },
-  {
-    id: 'mock-3',
-    name: 'Arjun Ratnayake',
-    specializations: 'Mountain Trekking',
-    serviceAreas: 'Knuckles, Ella',
-    experience: '7',
-    languages: 'English, Sinhala',
-    packageCost: '52',
-    rating: 5.0,
-    badge: 'Adventure Lead',
-    reviewCount: 99,
-    availability: false,
-    photoUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=400',
-    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600',
-  },
-  {
-    id: 'mock-4',
-    name: 'Thilan Gamage',
-    specializations: 'Marine & Oceans',
-    serviceAreas: 'Mirissa, Whale Watching',
-    experience: '6',
-    languages: 'English, Sinhala',
-    packageCost: '60',
-    rating: 4.7,
-    badge: 'Marine Ranger',
-    reviewCount: 143,
-    availability: true,
-    photoUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400',
-    coverImage: 'https://images.unsplash.com/photo-1544551763-77ef2d0cfc6c?w=600',
-  },
-];
 
 export default function GuidesListScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -99,14 +37,10 @@ export default function GuidesListScreen({ navigation }) {
       const q = query(collection(db, 'users'), where('role', '==', 'guide'));
       const snap = await getDocs(q);
       const live = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const merged = [...MOCK_GUIDES];
-      live.forEach(g => {
-        if (!merged.some(m => m.id === g.id || m.name === g.name)) merged.push(g);
-      });
-      setGuides(merged);
+      setGuides(live);
     } catch (e) {
-      console.error(e);
-      setGuides(MOCK_GUIDES);
+      console.error('Guides fetch error:', e);
+      setGuides([]);
     } finally {
       setLoading(false);
     }
@@ -273,7 +207,9 @@ export default function GuidesListScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="account-search-outline" size={60} color="#CCC" />
-              <Text style={styles.emptyText}>No guides found for "{search}"</Text>
+              <Text style={styles.emptyText}>
+                {search ? `No guides found for "${search}"` : 'No certified guides found yet.\nCheck back once guides are approved by admin.'}
+              </Text>
             </View>
           }
         />

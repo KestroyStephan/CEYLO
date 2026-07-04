@@ -327,6 +327,35 @@ export default function TransportScreen({ route, navigation }) {
       });
       setActiveBookingId(bookingRef.id);
       setBookingStep('searching');
+
+      // SIMULATION: Automatically assign a mock driver after 5 seconds
+      setTimeout(async () => {
+        try {
+          const bookingCheck = await getDoc(bookingRef);
+          if (bookingCheck.exists() && bookingCheck.data().status === 'pending') {
+            await updateDoc(bookingRef, {
+              status: 'Confirmed',
+              driverId: 'mock_driver_123',
+              driverLocation: {
+                latitude: pickupCoords.latitude + 0.005,
+                longitude: pickupCoords.longitude + 0.005,
+              }
+            });
+            // Ensure the mock driver exists in the drivers collection for the UI to display details
+            const { setDoc } = require('firebase/firestore');
+            const mockDriverRef = doc(db, 'drivers', 'mock_driver_123');
+            await setDoc(mockDriverRef, {
+              name: 'Kamal (Mock Driver)',
+              phone: '+94712345678',
+              vehicleType: selectedVehicle,
+              licensePlate: 'WP-ABC-1234'
+            }, { merge: true });
+          }
+        } catch (simError) {
+          console.log("Mock driver simulation failed:", simError);
+        }
+      }, 5000);
+      
     } catch (error) {
       Alert.alert('Booking Failed', error.message);
     }

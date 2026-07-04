@@ -26,39 +26,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
-// Default mock payout ledger matching mockup
-const defaultLedger = [
-    {
-        id: 'payout-1',
-        name: 'Amara Silva',
-        role: 'Field Guide',
-        period: 'Oct 01 - Oct 15',
-        gross: 4200.00,
-        fees: 630.00,
-        net: 3570.00,
-        status: 'Completed'
-    },
-    {
-        id: 'payout-2',
-        name: 'Ceylon Tea Trails',
-        role: 'Resort Vendor',
-        period: 'Oct 01 - Oct 15',
-        gross: 28500.00,
-        fees: 4275.00,
-        net: 24225.00,
-        status: 'Processing'
-    },
-    {
-        id: 'payout-3',
-        name: 'Ramesh Jayasuriya',
-        role: 'Transport',
-        period: 'Sep 15 - Sep 30',
-        gross: 1250.00,
-        fees: 187.50,
-        net: 1062.50,
-        status: 'Pending Approval'
-    }
-];
 
 export default function Reports() {
     const [revenue, setRevenue] = useState(142850.00);
@@ -68,13 +35,12 @@ export default function Reports() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
-        // Query confirmed bookings to get real-time revenue aggregates
+        // Query confirmed bookings for real-time revenue aggregates
         const q = query(collection(db, "bookings"), where("status", "==", "confirmed"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             let total = 0;
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
-                // Parse booking price
                 const price = parseFloat(data.price || data.totalPrice || data.amount || 0);
                 total += price;
             });
@@ -87,12 +53,33 @@ export default function Reports() {
             console.error("Revenue aggregator error:", err);
         });
 
-        // Initialize ledger list
-        setLedger(defaultLedger);
+        // Listen to real payouts from Firestore
+        const payoutsUnsub = onSnapshot(collection(db, "payouts"), (snapshot) => {
+            const realPayouts = snapshot.docs.map(doc => {
+                const d = doc.data();
+                const gross = parseFloat(d.gross || d.amount || 0);
+                const fees = parseFloat(d.fees || gross * 0.15);
+                return {
+                    id: doc.id,
+                    name: d.name || d.partnerName || 'Partner',
+                    role: d.role || d.type || 'Vendor',
+                    period: d.period || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString() : 'N/A'),
+                    gross,
+                    fees,
+                    net: gross - fees,
+                    status: d.status || 'Pending Approval'
+                };
+            });
+            setLedger(realPayouts);
+        }, (err) => {
+            console.error("Payouts listener error:", err);
+            setLedger([]);
+        });
 
         return () => {
             setTimeout(() => {
                 if (typeof unsubscribe === 'function') unsubscribe();
+                if (typeof payoutsUnsub === 'function') payoutsUnsub();
             }, 0);
         };
     }, []);
@@ -392,7 +379,15 @@ export default function Reports() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredLedger.map((item) => (
+                            {filteredLedger.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} sx={{ textAlign: 'center', py: 6 }}>
+                                        <Typography color="text.secondary" fontWeight={700}>
+                                            No payout records found. Payouts will appear here once processed.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredLedger.map((item) => (
                                 <TableRow key={item.id} hover>
                                     
                                     <TableCell>
@@ -441,6 +436,7 @@ export default function Reports() {
 
                                 </TableRow>
                             ))}
+
                         </TableBody>
                     </Table>
                 </TableContainer>

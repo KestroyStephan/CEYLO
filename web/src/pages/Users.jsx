@@ -28,64 +28,6 @@ import GroupIcon from '@mui/icons-material/Group';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 
-// Default mock registry matching high-fidelity layout
-const defaultUsers = [
-    {
-        id: 'user-mock-1',
-        name: 'Amara Perera',
-        email: 'amara.p@example.com',
-        role: 'tourist',
-        createdAt: new Date('2023-10-12'),
-        lastActivity: '2h ago',
-        ecoScore: 94,
-        isBanned: false,
-        flagged: false
-    },
-    {
-        id: 'user-mock-2',
-        name: 'Sunil Rajapaksa',
-        email: 'sunil.r@ceylodrivers.com',
-        role: 'driver',
-        createdAt: new Date('2023-01-05'),
-        lastActivity: '14m ago',
-        ecoScore: 78,
-        isBanned: false,
-        flagged: false
-    },
-    {
-        id: 'user-mock-3',
-        name: 'David Miller',
-        email: 'd.miller@outlook.com',
-        role: 'tourist',
-        createdAt: new Date('2024-03-18'),
-        lastActivity: '3 days ago',
-        ecoScore: 42,
-        isBanned: false,
-        flagged: true
-    },
-    {
-        id: 'user-mock-4',
-        name: 'Kavindi Silva',
-        email: 'kavindi.s@ceylo.com',
-        role: 'guide',
-        createdAt: new Date('2024-02-10'),
-        lastActivity: '5h ago',
-        ecoScore: 89,
-        isBanned: false,
-        flagged: false
-    },
-    {
-        id: 'user-mock-5',
-        name: 'Sharoobini K.',
-        email: 'sharoobini.k@ceylo.com',
-        role: 'admin',
-        createdAt: new Date('2022-08-15'),
-        lastActivity: 'Active Now',
-        ecoScore: 98,
-        isBanned: false,
-        flagged: false
-    }
-];
 
 export default function Users() {
     const [users, setUsers] = useState([]);
@@ -125,20 +67,10 @@ export default function Users() {
                 };
             });
 
-            // Merge with mock registry
-            let merged = [...firebaseUsers];
-            defaultUsers.forEach(mock => {
-                if (!merged.some(u => u.id === mock.id || u.email === mock.email)) {
-                    merged.push(mock);
-                }
-            });
-
-            setUsers(merged);
+            setUsers(firebaseUsers);
         }, (err) => {
             console.error("Users listen error:", err);
-            let merged = [];
-            defaultUsers.forEach(mock => merged.push(mock));
-            setUsers(merged);
+            setUsers([]);
         });
 
         return () => {

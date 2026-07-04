@@ -16,68 +16,6 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import CategoryIcon from '@mui/icons-material/Category';
 
-// Realistic fallback/mock data matching the screenshot
-const defaultVendors = [
-    {
-        id: 'mock-vendor-1',
-        businessName: 'Ranatunga Arts',
-        businessType: 'Handicrafts & Art',
-        description: 'Traditional Sri Lankan handicrafts and hand-woven textiles from the Galle region.',
-        email: 'info@ranatungaarts.lk',
-        phone: '+94 91 224 4567',
-        status: 'pending_verification', // under review
-        createdAt: { toDate: () => new Date() },
-        nicFrontUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2', // mock NIC front
-        businessCertUrl: 'https://images.unsplash.com/photo-1588598116174-279585913220', // mock cert
-        bankAccount: '**** 9082',
-        licenseNumber: 'BR-98421',
-        subStatus: 'UNDER REVIEW',
-        kycStatus: 'KYC Documents Uploaded'
-    },
-    {
-        id: 'mock-vendor-2',
-        businessName: 'Ceylon Spice Co',
-        businessType: 'Organic Spices & Teas',
-        description: 'Premium organic spices sourced directly from smallholder farms in Kandy and Matale.',
-        email: 'sales@ceylonspice.com',
-        phone: '+94 81 223 3445',
-        status: 'pending_verification', // pending
-        createdAt: { toDate: () => new Date() },
-        bankAccount: '**** 1124',
-        licenseNumber: 'BR-84920',
-        subStatus: 'PENDING',
-        kycStatus: 'Awaiting initial check'
-    },
-    {
-        id: 'mock-vendor-3',
-        businessName: 'Lanka Gems & Jewelry',
-        businessType: 'Precious Stones',
-        description: 'Ethically mined sapphires, rubies, and handcrafted silver jewelry from Ratnapura.',
-        email: 'contact@lankagems.lk',
-        phone: '+94 45 222 1234',
-        status: 'flagged',
-        rejectionReason: 'Mismatch in Tax ID',
-        createdAt: { toDate: () => new Date() },
-        bankAccount: '**** 5566',
-        licenseNumber: 'BR-33211',
-        subStatus: 'FLAGGED',
-        kycStatus: 'Mismatch in Tax ID'
-    },
-    {
-        id: 'mock-vendor-4',
-        businessName: 'Eco-Trek Tours',
-        businessType: 'Adventure Travel',
-        description: 'Guided hiking, camping, and wildlife safaris in Knuckles and Sinharaja forest reserves.',
-        email: 'bookings@ecotrektours.com',
-        phone: '+94 77 987 6543',
-        status: 'pending_verification',
-        createdAt: { toDate: () => new Date() },
-        bankAccount: '**** 7788',
-        licenseNumber: 'BR-44912',
-        subStatus: 'PENDING',
-        kycStatus: 'Awaiting initial check'
-    }
-];
 
 export default function Vendors() {
     const [vendors, setVendors] = useState([]);
@@ -100,15 +38,7 @@ export default function Vendors() {
                 };
             });
 
-            // Merge Firebase vendors with mock data
-            let merged = [...firebaseVendors];
-            defaultVendors.forEach(mock => {
-                if (!merged.some(v => v.id === mock.id || v.businessName === mock.businessName)) {
-                    merged.push(mock);
-                }
-            });
-
-            setVendors(merged);
+            setVendors(firebaseVendors);
             setLoading(false);
         }, (error) => {
             console.error('Vendors fetch error:', error);
@@ -129,18 +59,16 @@ export default function Vendors() {
         if (!selectedVendor) return;
 
         try {
-            if (!selectedVendor.id.startsWith('mock-')) {
-                await updateDoc(doc(db, 'vendors', selectedVendor.id), {
-                    status: 'approved',
-                    approvedAt: serverTimestamp(),
-                    rejectionReason: '',
-                });
+            await updateDoc(doc(db, 'vendors', selectedVendor.id), {
+                status: 'approved',
+                approvedAt: serverTimestamp(),
+                rejectionReason: '',
+            });
 
-                await updateDoc(doc(db, 'users', selectedVendor.id), {
-                    role: 'vendor_active',
-                    status: 'approved',
-                });
-            }
+            await updateDoc(doc(db, 'users', selectedVendor.id), {
+                role: 'vendor_active',
+                status: 'approved',
+            });
 
             setSnackbar({
                 open: true,
@@ -166,18 +94,16 @@ export default function Vendors() {
         }
 
         try {
-            if (!selectedVendor.id.startsWith('mock-')) {
-                await updateDoc(doc(db, 'vendors', selectedVendor.id), {
-                    status: 'rejected',
-                    rejectionReason: rejectionReason,
-                    rejectedAt: serverTimestamp(),
-                });
+            await updateDoc(doc(db, 'vendors', selectedVendor.id), {
+                status: 'rejected',
+                rejectionReason: rejectionReason,
+                rejectedAt: serverTimestamp(),
+            });
 
-                await updateDoc(doc(db, 'users', selectedVendor.id), {
-                    role: 'vendor_rejected',
-                    status: 'rejected',
-                });
-            }
+            await updateDoc(doc(db, 'users', selectedVendor.id), {
+                role: 'vendor_rejected',
+                status: 'rejected',
+            });
 
             setSnackbar({
                 open: true,

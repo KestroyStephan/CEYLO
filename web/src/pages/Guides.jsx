@@ -26,61 +26,6 @@ import HikingIcon from '@mui/icons-material/Hiking';
 import ExploreIcon from '@mui/icons-material/Explore';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
-// Mock default list matching screenshot
-const defaultGuides = [
-    {
-        id: 'guide-mock-1',
-        name: 'Asanka Perera',
-        guideLicense: 'SLTDA/G/2023/4521',
-        languages: ['English', 'Sinhala', 'German'],
-        specializations: 'Wildlife',
-        status: 'Verified',
-        ecoScore: 85,
-        region: 'Central Province',
-        email: 'asanka.p@ceylo.com',
-        phone: '+94 77 123 4567',
-        experience: 5
-    },
-    {
-        id: 'guide-mock-2',
-        name: 'Dilani Jayawardena',
-        guideLicense: 'SLTDA/G/2024/0912',
-        languages: ['English', 'French'],
-        specializations: 'Cultural',
-        status: 'Pending',
-        ecoScore: 60,
-        region: 'Southern Province',
-        email: 'dilani.j@ceylo.com',
-        phone: '+94 71 987 6543',
-        experience: 2
-    },
-    {
-        id: 'guide-mock-3',
-        name: 'Mahinda Gunathilaka',
-        guideLicense: 'SLTDA/G/2018/1204',
-        languages: ['English', 'Japanese', 'Sinhala'],
-        specializations: 'Heritage',
-        status: 'Verified',
-        ecoScore: 95,
-        region: 'North Central Province',
-        email: 'mahinda.g@ceylo.com',
-        phone: '+94 72 345 6789',
-        experience: 8
-    },
-    {
-        id: 'guide-mock-4',
-        name: 'Ruwan Silva',
-        guideLicense: 'SLTDA/G/2024/0115',
-        languages: ['English'],
-        specializations: 'Adventure',
-        status: 'Under Review',
-        ecoScore: 45,
-        region: 'Uva Province',
-        email: 'ruwan.s@ceylo.com',
-        phone: '+94 76 567 8901',
-        experience: 3
-    }
-];
 
 export default function Guides() {
     const [guides, setGuides] = useState([]);
@@ -143,21 +88,10 @@ export default function Guides() {
                 };
             });
 
-            // Merge with mock defaults if not present
-            let merged = [...firebaseGuides];
-            defaultGuides.forEach(mock => {
-                if (!merged.some(g => g.id === mock.id || g.name === mock.name)) {
-                    merged.push(mock);
-                }
-            });
-
-            setGuides(merged);
+            setGuides(firebaseGuides);
         }, (err) => {
             console.error("Guides listen error:", err);
-            // Fallback to mocks
-            let merged = [];
-            defaultGuides.forEach(mock => merged.push(mock));
-            setGuides(merged);
+            setGuides([]);
         });
 
         return () => {

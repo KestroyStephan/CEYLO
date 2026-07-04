@@ -41,6 +41,8 @@ export default function SOSScreen() {
   const [breadcrumbs, setBreadcrumbs] = useState([]);
   const countdownRef = useRef(null);
   const cameraRef = useRef(null);
+  const lastAudioTimestampRef = useRef(null);
+  const lastCameraRequestRef = useRef(null);
 
   // AI Assistant States
   const [userLoc, setUserLoc] = useState(null);
@@ -121,17 +123,35 @@ export default function SOSScreen() {
     }
   };
 
-  // Walkie-Talkie Listener
+  // Walkie-Talkie & Admin Camera Request Listener
   useEffect(() => {
     let unsub = () => {};
     if (activeDocId) {
       unsub = onSnapshot(doc(db, "sos_alerts", activeDocId), async (snap) => {
         const data = snap.data();
-        if (data && data.adminAudioUrl) {
-          try {
-            const { sound } = await Audio.Sound.createAsync({ uri: data.adminAudioUrl });
-            await sound.playAsync();
-          } catch (e) { console.error("Walkie-Talkie playback failed:", e); }
+        if (!data) return;
+
+        // Walkie-Talkie Logic
+        if (data.adminAudioUrl && data.adminAudioTimestamp) {
+          if (lastAudioTimestampRef.current !== data.adminAudioTimestamp) {
+            lastAudioTimestampRef.current = data.adminAudioTimestamp;
+            try {
+              const { sound } = await Audio.Sound.createAsync({ uri: data.adminAudioUrl });
+              await sound.playAsync();
+            } catch (e) { console.error("Walkie-Talkie playback failed:", e); }
+          }
+        }
+
+        // Camera Request Logic
+        if (data.cameraRequestedAt) {
+          const reqTime = data.cameraRequestedAt.toMillis ? data.cameraRequestedAt.toMillis() : Date.now();
+          if (lastCameraRequestRef.current !== reqTime) {
+            lastCameraRequestRef.current = reqTime;
+            // Prevent showing camera if it's an old request from previous sessions
+            if (Date.now() - reqTime < 60000) { 
+              handleOptionalPhoto();
+            }
+          }
         }
       });
     }

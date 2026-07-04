@@ -51,8 +51,9 @@ export default function GuidePendingScreen({ navigation }) {
         if (snap.exists()) {
           const role = snap.data().role;
           if (role === 'guide') {
+            // App.js onSnapshot listener already handles the redirect automatically
+            // when role becomes 'guide'. No manual navigation needed here.
             setStatus('approved');
-            setTimeout(() => navigation.replace('GuideDashboard'), 1800);
           } else if (role === 'guide_rejected') {
             setStatus('rejected');
           } else {
@@ -146,18 +147,23 @@ export default function GuidePendingScreen({ navigation }) {
         {/* CTA Buttons */}
         {status === 'approved' ? (
           <LinearGradient colors={['#006A3B', '#004D2C']} style={styles.dashBtn}>
-            <MaterialCommunityIcons name="view-dashboard" size={20} color="#FFF" style={{ marginRight: 8 }} />
-            <Text style={styles.dashBtnText}>Go to Dashboard</Text>
+            <MaterialCommunityIcons name="check-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
+            <Text style={styles.dashBtnText}>Approved! Redirecting to Dashboard...</Text>
             <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={{ marginLeft: 10 }} />
           </LinearGradient>
+        ) : status === 'rejected' ? (
+          <View style={[styles.dashBtn, { backgroundColor: '#D32F2F' }]}>
+            <MaterialCommunityIcons name="close-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
+            <Text style={styles.dashBtnText}>Application Rejected</Text>
+          </View>
         ) : (
           <TouchableOpacity
             style={styles.dashBtn}
-            onPress={() => Alert.alert('Pending', 'Your account is still under review. You will be notified when approved.')}
+            onPress={() => Alert.alert('Still Pending', 'Your account is under review. You will be notified once approved.')}
           >
             <LinearGradient colors={['#006A3B', '#004D2C']} style={StyleSheet.absoluteFillObject} />
-            <MaterialCommunityIcons name="home-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
-            <Text style={styles.dashBtnText}>Go to Dashboard</Text>
+            <MaterialCommunityIcons name="clock-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
+            <Text style={styles.dashBtnText}>Under Review — Check Back Soon</Text>
           </TouchableOpacity>
         )}
 

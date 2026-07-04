@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Keyboard, Dimensions, FlatList, Alert } from 'react-native';
 import { Text, TextInput, Avatar, ActivityIndicator, IconButton, Surface, Chip, Card, Portal, Modal, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,12 +10,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
-// API URLs (Using Waterfall logic)
-const MODELS = [
-  { name: 'Groq Llama 3', url: 'https://api.groq.com/openai/v1/chat/completions', type: 'groq', key: process.env.EXPO_PUBLIC_GROQ_API_KEY },
-  { name: 'Gemini 1.5 Flash', url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`, type: 'gemini' },
-  { name: 'OpenAI GPT-4o-mini', url: 'https://api.openai.com/v1/chat/completions', type: 'openai', key: process.env.EXPO_PUBLIC_OPENAI_API_KEY },
-];
+
+
 
 const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge. 
 Your goal is to build a "Trip Profile" for the traveler through natural conversation.
@@ -131,13 +127,32 @@ export default function ChatbotScreen({ navigation }) {
 
   const callWaterfall = async (prompt) => {
     const contextPrompt = `\n\nCURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${prompt}`;
-    for (const model of MODELS) {
-      if (!model.key && model.type !== 'gemini') continue;
+    
+    const models = [
+      { name: 'Groq Llama 3', url: 'https://api.groq.com/openai/v1/chat/completions', type: 'groq', key: process.env.EXPO_PUBLIC_GROQ_API_KEY },
+      { name: 'OpenAI GPT-4o-mini', url: 'https://api.openai.com/v1/chat/completions', type: 'openai', key: process.env.EXPO_PUBLIC_OPENAI_API_KEY },
+      { name: 'Gemini 1.5 Flash', url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`, type: 'gemini' },
+    ];
+
+    // Helper to safely parse JSON from AI response (strips markdown fences if present)
+    const safeParseJSON = (raw) => {
+      let text = raw.trim();
+      // Strip ```json ... ``` or ``` ... ``` wrappers
+      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      return JSON.parse(text);
+    };
+
+    for (const model of models) {
+      // Skip models with no API key (except Gemini which embeds key in URL)
+      if (model.type !== 'gemini' && !model.key) {
+        console.warn(`Skipping ${model.name}: no API key set`);
+        continue;
+      }
       
       try {
         console.log(`Trying ${model.name}...`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
 
         let response;
         if (model.type === 'gemini') {
@@ -159,7 +174,10 @@ export default function ChatbotScreen({ navigation }) {
             },
             body: JSON.stringify({
               model: model.type === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4o-mini",
-              messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: contextPrompt }],
+              messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'user', content: contextPrompt }
+              ],
               response_format: { type: "json_object" }
             }),
             signal: controller.signal
@@ -167,21 +185,30 @@ export default function ChatbotScreen({ navigation }) {
         }
 
         clearTimeout(timeoutId);
-        if (!response.ok) throw new Error(`${model.name} failed`);
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          throw new Error(`${model.name} HTTP ${response.status}: ${errText.substring(0, 120)}`);
+        }
+
         const data = await response.json();
         
         const resultString = model.type === 'gemini' 
-          ? data.candidates[0].content.parts[0].text 
-          : data.choices[0].message.content;
+          ? data?.candidates?.[0]?.content?.parts?.[0]?.text 
+          : data?.choices?.[0]?.message?.content;
+
+        if (!resultString) throw new Error(`${model.name} returned empty content`);
           
-        return JSON.parse(resultString);
+        console.log(`${model.name} success ✅`);
+        return safeParseJSON(resultString);
       } catch (err) {
-        console.warn(`${model.name} error:`, err.message);
+        console.warn(`${model.name} failed:`, err.message);
         continue; // Try next model
       }
     }
     throw new Error("All AI models exhausted");
   };
+
 
   const handleSend = async (text = inputText) => {
     if (!text.trim()) return;
@@ -310,85 +337,134 @@ export default function ChatbotScreen({ navigation }) {
         ]
       );
     } catch (e) {
-      console.warn("RAG backend failed, check if server.js is running:", e);
-      Alert.alert("Error", "Could not connect to the RAG backend. Is server.js running?");
+      console.warn("RAG backend failed, generating fallback itinerary:", e);
+      
+      // FALLBACK TO MOCK PLAN
+      const dynamicPlan = [
+        { day: 1, activity: `Arrive and settle in ${extractedState.destination || 'Colombo'}`, eco: 85, lat: 6.9271, lon: 79.8612, destinationId: 'colombo', transport: 'car' },
+        { day: 2, activity: `Eco-friendly city tour and local cuisine`, eco: 92, lat: 6.9271, lon: 79.8612, destinationId: 'colombo_tour', transport: 'walk' },
+        { day: 3, activity: `Visit nearest national park for wildlife safari`, eco: 98, lat: 6.9271, lon: 79.8612, destinationId: 'safari', transport: 'train' }
+      ];
+
+      const itinerary = {
+        title: `Your ${extractedState.mood || 'Custom'} trip to ${extractedState.destination || 'Sri Lanka'}`,
+        userId: auth.currentUser?.uid || 'anonymous',
+        createdAt: new Date().toISOString(),
+        plan: dynamicPlan,
+        ecoScore: 92,
+        cost: "LKR 20,000",
+        duration: "3 Days"
+      };
+
+      try {
+        const docRef = await addDoc(collection(db, 'itineraries'), itinerary);
+        Alert.alert(
+          "Itinerary Ready (Fallback Mode)", 
+          "Could not connect to the ML backend. A smart fallback itinerary has been generated and saved instead.",
+          [
+            {
+              text: "View Itinerary",
+              onPress: () => navigation.navigate('ItineraryDetail', { routeData: { id: docRef.id, ...itinerary } })
+            }
+          ]
+        );
+      } catch (firestoreError) {
+        console.error("Firestore error:", firestoreError);
+        Alert.alert("Error", "Could not connect to the RAG backend, and failed to save fallback itinerary to Firestore.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const RenderMessage = ({ item }) => (
-    <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
-      {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
-      <View style={{ flex: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
-        <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flex: 1 }]}>{item.text}</Text>
-            {item.sender === 'bot' && (
-              <IconButton 
-                icon="volume-high" 
-                iconColor="#00695C" 
-                size={18} 
-                style={{ margin: 0, marginLeft: 8 }}
-                onPress={() => speakMessage(item.text)} 
-              />
-            )}
-          </View>
-        </Surface>
-        
-        {/* Rich Media Horizontal Recommendations Carousel */}
-        {item.sender === 'bot' && item.recommendations && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
-            {item.recommendations.map((rec) => (
-              <Surface key={rec.id} style={styles.recCard} elevation={2}>
-                <Image source={{ uri: rec.image }} style={styles.recImage} />
-                <View style={rec.ecoScore >= 95 ? styles.recBadge : [styles.recBadge, { backgroundColor: '#FFA726' }]}>
-                  <Text style={styles.recBadgeText}>{rec.ecoScore}% ECO</Text>
-                </View>
-                <View style={styles.recContent}>
-                  <Text style={styles.recTitle} numberOfLines={1}>{rec.name}</Text>
-                  <Text style={styles.recCategory}>{rec.category}</Text>
-                  <View style={styles.recRow}>
-                    <Text style={styles.recPrice}>{rec.price || 'Free Entry'}</Text>
-                    <View style={styles.recRatingRow}>
-                      <MaterialCommunityIcons name="star" size={12} color="#FFB300" />
-                      <Text style={styles.recRating}>{rec.rating}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.recBtn}
-                    onPress={() => {
-                      if (rec.category === 'Stay') {
-                        Alert.alert("Accommodation Selected", `${rec.name} has been set as your preferred stay!`);
-                      } else {
-                        setExtractedState(prev => ({ ...prev, destination: rec.name }));
-                        Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
-                      }
-                    }}
-                  >
-                    <Text style={styles.recBtnText}>
-                      {rec.category === 'Stay' ? 'Book Stay' : 'Add to Route'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </Surface>
-            ))}
-          </ScrollView>
-        )}
+// ─── Rendered outside component to prevent keyboard dismissal on re-render ───
+const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
+  <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
+    {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
+    <View style={{ flex: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
+      <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flex: 1 }]}>{item.text}</Text>
+          {item.sender === 'bot' && (
+            <IconButton
+              icon="volume-high"
+              iconColor="#00695C"
+              size={18}
+              style={{ margin: 0, marginLeft: 8 }}
+              onPress={() => onSpeak(item.text)}
+            />
+          )}
+        </View>
+      </Surface>
 
-        {item.options && (
-          <View style={styles.optionRow}>
-            {item.options.map((opt, i) => (
-              <Chip key={i} style={styles.optionBtn} onPress={() => handleSend(opt)}>{opt}</Chip>
-            ))}
-          </View>
-        )}
-      </View>
+      {/* Rich Media Horizontal Recommendations Carousel */}
+      {item.sender === 'bot' && item.recommendations && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
+          {item.recommendations.map((rec) => (
+            <Surface key={rec.id} style={styles.recCard} elevation={2}>
+              <Image source={{ uri: rec.image }} style={styles.recImage} />
+              <View style={rec.ecoScore >= 95 ? styles.recBadge : [styles.recBadge, { backgroundColor: '#FFA726' }]}>
+                <Text style={styles.recBadgeText}>{rec.ecoScore}% ECO</Text>
+              </View>
+              <View style={styles.recContent}>
+                <Text style={styles.recTitle} numberOfLines={1}>{rec.name}</Text>
+                <Text style={styles.recCategory}>{rec.category}</Text>
+                <View style={styles.recRow}>
+                  <Text style={styles.recPrice}>{rec.price || 'Free Entry'}</Text>
+                  <View style={styles.recRatingRow}>
+                    <MaterialCommunityIcons name="star" size={12} color="#FFB300" />
+                    <Text style={styles.recRating}>{rec.rating}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.recBtn}
+                  onPress={() => {
+                    if (rec.category === 'Stay') {
+                      Alert.alert("Accommodation Selected", `${rec.name} has been set as your preferred stay!`);
+                    } else {
+                      onSetDestination(rec.name);
+                      Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
+                    }
+                  }}
+                >
+                  <Text style={styles.recBtnText}>
+                    {rec.category === 'Stay' ? 'Book Stay' : 'Add to Route'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Surface>
+          ))}
+        </ScrollView>
+      )}
+
+      {item.options && (
+        <View style={styles.optionRow}>
+          {item.options.map((opt, i) => (
+            <Chip key={i} style={styles.optionBtn} onPress={() => onSend(opt)}>{opt}</Chip>
+          ))}
+        </View>
+      )}
     </View>
-  );
+  </View>
+));
+
+  // Stable callbacks passed to memoized RenderMessage
+  const handleSpeak = useCallback((text) => speakMessage(text), []);
+  const handleSendCallback = useCallback((text) => handleSend(text), [inputText, extractedState, loading]);
+  const handleSetDestination = useCallback((name) => {
+    setExtractedState(prev => ({ ...prev, destination: name }));
+  }, []);
+  const renderItem = useCallback(({ item }) => (
+    <RenderMessage
+      item={item}
+      onSpeak={handleSpeak}
+      onSend={handleSendCallback}
+      onSetDestination={handleSetDestination}
+    />
+  ), [handleSpeak, handleSendCallback, handleSetDestination]);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
       <LinearGradient colors={['#004D40', '#00695C']} style={styles.topBar}>
         <Text style={styles.barTitle}>Ceylo AI Concierge</Text>
       </LinearGradient>
@@ -416,9 +492,11 @@ export default function ChatbotScreen({ navigation }) {
       <FlatList
         ref={flatListRef}
         data={messages}
-        renderItem={RenderMessage}
+        renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.chatScroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 

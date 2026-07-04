@@ -40,3 +40,11 @@ WORK_DIVISION.md
 *.txt
 # google-services.json (removed to allow EAS build to see the force-added file)
 
+# Python & ML
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyd
+*.so
+ai_datasets/*.csv
