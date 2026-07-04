@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Text, TextInput, Button, Surface, ActivityIndicator, IconButton, SegmentedButtons, HelperText } from 'react-native-paper';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -30,39 +30,66 @@ export default function RegisterScreen({ navigation }) {
     if (!phone) newErrors.phone = 'Phone Number is required';
     if (!password) newErrors.password = 'Password is required';
     else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
-    
+
     if (role === 'driver') {
       if (!vehicleType) newErrors.vehicleType = 'Vehicle Type is required';
       if (!licensePlate) newErrors.licensePlate = 'License Plate is required';
     }
 
     setErrors(newErrors);
-    
+
     if (Object.keys(newErrors).length > 0) return;
 
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+
       await updateProfile(user, { displayName: name });
 
-      const userData = {
-        uid: user.uid,
-        name,
-        email,
-        phone,
-        role: role === 'guide' ? 'guide_pending' : role,
-        createdAt: new Date().toISOString(),
-        isOnboarded: false,
-      };
-
       if (role === 'driver') {
-        userData.vehicleType = vehicleType;
-        userData.licensePlate = licensePlate;
-      }
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          name: name,
+          email: user.email,
+          phone: phone,
+          role: 'driver_pending',
+          status: 'pending_verification',
+          isOnboarded: true,
+          onboardingCompleted: true,
+          createdAt: new Date().toISOString(),
+        });
 
-      await setDoc(doc(db, 'users', user.uid), userData);
+        await setDoc(doc(db, 'drivers', user.uid), {
+          uid: user.uid,
+          name: name,
+          email: user.email,
+          phone: phone,
+          vehicleType: vehicleType,      // Tuk | Car | Van | Bike
+          licensePlate: licensePlate,
+          licenseNumber: '',
+          status: 'pending_verification',
+          isOnline: false,
+          rejectionReason: '',
+          createdAt: serverTimestamp(),
+        });
+      } else {
+        const userData = {
+          uid: user.uid,
+          name,
+          email,
+          phone,
+          role,
+          createdAt: new Date().toISOString(),
+          isOnboarded: false,
+        };
+
+        if (role === 'guide') {
+          userData.guideLicense = guideLicense;
+        }
+
+        await setDoc(doc(db, 'users', user.uid), userData);
+      }
       // Navigation happens via App.js
     } catch (error) {
       Alert.alert('Registration Failed', error.message);

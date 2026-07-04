@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import { Typography, Box, Chip, Paper, Tooltip, Avatar } from '@mui/material';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { DataGrid } from '@mui/x-data-grid';
+import {
+  Typography, Box, Chip, Paper, Tooltip, Avatar, Button, Stack,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  TextField, Snackbar, Alert, IconButton
+} from '@mui/material';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import BlockIcon from '@mui/icons-material/Block';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -11,6 +15,10 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 function Users() {
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [selectedDriverId, setSelectedDriverId] = useState(null);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
@@ -19,7 +27,6 @@ function Users() {
         }, (error) => {
             console.error("Error fetching users: ", error);
             setLoading(false);
-            // Optionally set an error state to show a message to the user
         });
         return () => unsubscribe();
     }, []);
@@ -39,6 +46,44 @@ function Users() {
             } catch (error) {
                 console.error("Error deleting user: ", error);
             }
+        }
+    };
+
+    const handleApproveDriver = async (driverId) => {
+        try {
+            await updateDoc(doc(db, 'drivers', driverId), {
+                status: 'approved',
+                approvedAt: serverTimestamp(),
+                rejectionReason: '',
+            });
+            await updateDoc(doc(db, 'users', driverId), {
+                role: 'driver_active',
+                status: 'approved',
+            });
+            setSnackbar({ open: true, message: 'Driver approved!', severity: 'success' });
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Error: ' + error.message, severity: 'error' });
+        }
+    };
+
+    const handleRejectDriver = async () => {
+        if (!rejectionReason.trim()) return;
+        try {
+            await updateDoc(doc(db, 'drivers', selectedDriverId), {
+                status: 'rejected',
+                rejectionReason: rejectionReason,
+                rejectedAt: serverTimestamp(),
+            });
+            await updateDoc(doc(db, 'users', selectedDriverId), {
+                role: 'driver_rejected',
+                status: 'rejected',
+            });
+            setSnackbar({ open: true, message: 'Driver rejected.', severity: 'info' });
+            setRejectDialogOpen(false);
+            setRejectionReason('');
+            setSelectedDriverId(null);
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Error: ' + error.message, severity: 'error' });
         }
     };
 
@@ -97,7 +142,7 @@ function Users() {
         { 
             field: 'createdAt', 
             headerName: 'Joined Date', 
-            width: 180,
+            width: 120,
             valueGetter: (value, row) => {
                 if (!row.createdAt) return 'N/A';
                 const date = row.createdAt.toDate ? row.createdAt.toDate() : new Date(row.createdAt);
@@ -106,23 +151,64 @@ function Users() {
         },
         {
             field: 'actions',
-            type: 'actions',
             headerName: 'Management',
-            width: 120,
-            getActions: (params) => [
-                <GridActionsCellItem
-                    icon={<Tooltip title={params.row.isBanned ? "Unban User" : "Ban User"}><BlockIcon /></Tooltip>}
-                    label="Toggle Ban"
-                    onClick={() => handleUpdateStatus(params.id, !params.row.isBanned)}
-                    color={params.row.isBanned ? 'success' : 'error'}
-                />,
-                <GridActionsCellItem
-                    icon={<Tooltip title="Delete Account"><DeleteIcon /></Tooltip>}
-                    label="Delete"
-                    onClick={() => handleDelete(params.id)}
-                    color="inherit"
-                />,
-            ],
+            width: 220,
+            sortable: false,
+            renderCell: (params) => {
+                const isDriverPending = params.row.role === 'driver_pending';
+                const isDriverActive = params.row.role === 'driver_active';
+                const isDriverRejected = params.row.role === 'driver_rejected';
+
+                if (isDriverPending) {
+                    return (
+                        <Stack direction="row" spacing={1} sx={{ height: '100%', alignItems: 'center' }}>
+                            <Button size="small" variant="contained" color="success" 
+                                onClick={() => handleApproveDriver(params.row.id)}>
+                                Approve
+                            </Button>
+                            <Button size="small" variant="contained" color="error" 
+                                onClick={() => { setSelectedDriverId(params.row.id); setRejectDialogOpen(true); }}>
+                                Reject
+                            </Button>
+                        </Stack>
+                    );
+                }
+
+                if (isDriverActive) {
+                    return (
+                        <Stack direction="row" spacing={1} sx={{ height: '100%', alignItems: 'center' }}>
+                            <Chip label="Approved" color="success" size="small" sx={{ fontWeight: 700 }} />
+                        </Stack>
+                    );
+                }
+
+                if (isDriverRejected) {
+                    return (
+                        <Stack direction="row" spacing={1} sx={{ height: '100%', alignItems: 'center' }}>
+                            <Chip label="Rejected" color="error" size="small" sx={{ fontWeight: 700 }} />
+                        </Stack>
+                    );
+                }
+
+                return (
+                    <Stack direction="row" spacing={1} sx={{ height: '100%', alignItems: 'center' }}>
+                        <IconButton
+                            onClick={() => handleUpdateStatus(params.id, !params.row.isBanned)}
+                            color={params.row.isBanned ? 'success' : 'error'}
+                            size="small"
+                        >
+                            <Tooltip title={params.row.isBanned ? "Unban User" : "Ban User"}><BlockIcon /></Tooltip>
+                        </IconButton>
+                        <IconButton
+                            onClick={() => handleDelete(params.id)}
+                            color="inherit"
+                            size="small"
+                        >
+                            <Tooltip title="Delete Account"><DeleteIcon /></Tooltip>
+                        </IconButton>
+                    </Stack>
+                );
+            }
         }
     ];
 
@@ -159,6 +245,46 @@ function Users() {
                     }}
                 />
             </Paper>
+
+            <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)}>
+                <DialogTitle>Reject Driver Application</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Provide a reason for rejection. The driver will see this message.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Rejection Reason"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        onClick={handleRejectDriver}
+                        color="error"
+                        variant="contained"
+                        disabled={!rejectionReason.trim()}
+                    >
+                        Confirm Rejection
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+            >
+                <Alert severity={snackbar.severity}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

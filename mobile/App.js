@@ -32,7 +32,9 @@ import GuideOnboardingScreen from './screens/onboarding/GuideOnboardingScreen';
 
 // Core Screens
 import HomeScreen from './screens/HomeScreen';
-import DriverDashboard from './screens/DriverDashboard';
+import DriverNavigator from './navigation/DriverNavigator';
+import ActiveRideScreen from './screens/driver/ActiveRideScreen';
+import RideTrackingScreen from './screens/RideTrackingScreen';
 import GuideDashboard from './screens/GuideDashboard';
 import ChatbotScreen from './screens/ChatbotScreen';
 import MapScreen from './screens/MapScreen';
@@ -58,6 +60,9 @@ import SustainableRoutesListScreen from './screens/SustainableRoutesListScreen';
 import VendorNavigator from './navigation/VendorNavigator';
 import VendorRegistrationScreen from './screens/vendor/VendorRegistrationScreen';
 import VendorPendingScreen from './screens/vendor/VendorPendingScreen';
+
+// Driver approval gate
+import DriverPendingScreen from './screens/driver/DriverPendingScreen';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = React.createRef();
@@ -189,8 +194,10 @@ export default function App() {
                   <Stack.Screen name="MoodSelect" component={MoodSelectScreen} />
                 ) : null}
 
-                {userRole === 'driver' ? (
-                  <Stack.Screen name="DriverDashboard" component={DriverDashboard} />
+                {(userRole === 'driver' || userRole === 'driver_active') ? (
+                  <Stack.Screen name="DriverDashboard" component={DriverNavigator} />
+                ) : (userRole === 'driver_pending' || userRole === 'driver_rejected') ? (
+                  <Stack.Screen name="DriverPending" component={DriverPendingScreen} />
                 ) : userRole === 'guide' ? (
                   <Stack.Screen name="GuideDashboard" component={GuideDashboard} />
                 ) : (userRole === 'vendor' || userRole === 'vendor_active') ? (
@@ -207,6 +214,8 @@ export default function App() {
 
                 {/* Common Screens */}
                 <Stack.Screen name="Chatbot" component={ChatbotScreen} />
+                <Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
+                <Stack.Screen name="RideTracking" component={RideTrackingScreen} />
                 <Stack.Screen name="MapScreen" component={MapScreen} />
                 <Stack.Screen name="HiddenGemsList" component={HiddenGemsListScreen} />
                 <Stack.Screen name="DestinationDetail" component={DestinationDetailScreen} />
