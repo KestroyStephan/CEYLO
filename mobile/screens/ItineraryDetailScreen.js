@@ -1,21 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { Text, Surface, IconButton, Button, Avatar, Chip, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { db, auth } from '../firebaseConfig';
 
 const { width } = Dimensions.get('window');
 
-const MOCK_PLAN = [
-  { id: '1', day: 1, title: 'Arrival at Colombo & Eco Walk', time: '09:00 AM', type: 'nature', icon: 'leaf', eco: 95, fee: 'LKR 2,500', transport: 'walk' },
-  { id: '2', day: 1, title: 'Gangaramaya Temple Visit', time: '02:00 PM', type: 'culture', icon: 'castle', eco: 80, fee: 'LKR 1,500', transport: 'tuk' },
-  { id: '3', day: 2, title: 'Train to Kandy (Scenic Route)', time: '07:00 AM', type: 'travel', icon: 'train', eco: 90, fee: 'LKR 1,200', transport: 'train' },
-];
-
 export default function ItineraryDetailScreen({ route, navigation }) {
-  const [plan, setPlan] = useState(MOCK_PLAN);
+  const incomingData = route?.params?.routeData;
+  const [plan, setPlan] = useState(incomingData && incomingData.plan ? incomingData.plan : []);
+  const [data, setData] = useState(incomingData);
+
+  useEffect(() => {
+    if (!incomingData && auth.currentUser) {
+      const fetchItin = async () => {
+        try {
+          const q = query(
+            collection(db, 'itineraries'),
+            where('userId', '==', auth.currentUser.uid),
+            orderBy('createdAt', 'desc'),
+            limit(1)
+          );
+          const snaps = await getDocs(q);
+          if (!snaps.empty) {
+            const itin = snaps.docs[0].data();
+            setData(itin);
+            if (itin.plan) setPlan(itin.plan);
+          }
+        } catch (e) {
+          console.error("Error fetching itinerary:", e);
+        }
+      };
+      fetchItin();
+    }
+  }, [incomingData]);
+
+  const duration = data ? data.duration || '2 Days' : '2 Days';
+  const ecoAvg = data ? data.ecoScore || 88 : 88;
+  const cost = data ? data.cost || 'LKR 5.2k' : 'LKR 5.2k';
+  const title = data ? data.title || 'Your Eco Itinerary' : 'Your Eco Itinerary';
 
   const exportToPDF = async () => {
     const html = `
@@ -26,9 +53,9 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           <hr/>
           ${plan.map(item => `
             <div style="margin-bottom: 20px;">
-              <h3 style="margin: 0;">${item.time} - ${item.title}</h3>
-              <p style="margin: 5px 0; color: #4CAF50;">Eco Score: ${item.eco}%</p>
-              <p style="margin: 0; color: #666;">Transport: ${item.transport}</p>
+              <h3 style="margin: 0;">${item.time || 'Day ' + item.day} - ${item.title || item.activity}</h3>
+              <p style="margin: 5px 0; color: #4CAF50;">Eco Score: ${item.eco || 80}%</p>
+              <p style="margin: 0; color: #666;">Transport: ${item.transport || 'walk'}</p>
             </div>
           `).join('')}
         </body>
@@ -48,22 +75,22 @@ export default function ItineraryDetailScreen({ route, navigation }) {
       >
         <Surface style={styles.card} elevation={1}>
           <View style={styles.timeLine}>
-            <Text style={styles.timeText}>{item.time}</Text>
+            <Text style={styles.timeText}>{item.time || 'Day ' + item.day}</Text>
             <View style={styles.dot} />
             <View style={styles.line} />
           </View>
           
           <View style={styles.details}>
             <View style={styles.cardHeader}>
-              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemTitle}>{item.title || item.activity}</Text>
               <MaterialCommunityIcons name="drag-vertical" size={20} color="#999" />
             </View>
             
             <View style={styles.chipRow}>
-              <Chip style={[styles.ecoChip, { backgroundColor: item.eco >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>
-                {item.eco}% ECO
+              <Chip style={[styles.ecoChip, { backgroundColor: (item.eco || 80) >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>
+                {item.eco || 80}% ECO
               </Chip>
-              <Chip icon="currency-usd" style={styles.feeChip} textStyle={{ fontSize: 10 }}>{item.fee}</Chip>
+              <Chip icon="currency-usd" style={styles.feeChip} textStyle={{ fontSize: 10 }}>{item.fee || 'Free'}</Chip>
               <MaterialCommunityIcons name={item.transport === 'walk' ? 'walk' : 'taxi'} size={18} color="#00695C" />
             </View>
           </View>
@@ -77,23 +104,23 @@ export default function ItineraryDetailScreen({ route, navigation }) {
       <Surface style={styles.header} elevation={4}>
         <View style={styles.headerTop}>
           <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
-          <Text style={styles.title}>Your Eco Itinerary</Text>
+          <Text style={styles.title}>{title}</Text>
           <IconButton icon="share-variant" />
         </View>
         
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryVal}>2 Days</Text>
+            <Text style={styles.summaryVal}>{duration}</Text>
             <Text style={styles.summaryLab}>Duration</Text>
           </View>
           <View style={styles.vDivider} />
           <View style={styles.summaryItem}>
-            <Text style={[styles.summaryVal, { color: '#4CAF50' }]}>88%</Text>
+            <Text style={[styles.summaryVal, { color: '#4CAF50' }]}>{ecoAvg}%</Text>
             <Text style={styles.summaryLab}>Carbon Score</Text>
           </View>
           <View style={styles.vDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryVal}>LKR 5.2k</Text>
+            <Text style={styles.summaryVal}>{cost}</Text>
             <Text style={styles.summaryLab}>Est. Cost</Text>
           </View>
         </View>
@@ -102,7 +129,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
       <DraggableFlatList
         data={plan}
         onDragEnd={({ data }) => setPlan(data)}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={<Text style={styles.dayHeader}>DAY 1 — THE EXPLORATION</Text>}
@@ -128,7 +155,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   header: { backgroundColor: '#FFF', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, paddingBottom: 20 },
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 40, paddingHorizontal: 10 },
-  title: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#004D40' },
+  title: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#004D40', flex: 1, textAlign: 'center' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20, paddingHorizontal: 20 },
   summaryItem: { alignItems: 'center' },
   summaryVal: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#333' },
@@ -140,12 +167,12 @@ const styles = StyleSheet.create({
   activeItem: { opacity: 0.8 },
   card: { backgroundColor: '#FFF', borderRadius: 20, flexDirection: 'row', padding: 15, minHeight: 100 },
   timeLine: { width: 60, alignItems: 'center' },
-  timeText: { fontSize: 10, fontFamily: 'Outfit-Bold', color: '#666', marginBottom: 5 },
+  timeText: { fontSize: 10, fontFamily: 'Outfit-Bold', color: '#666', marginBottom: 5, textAlign: 'center' },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#00695C' },
   line: { flex: 1, width: 2, backgroundColor: '#E0E0E0', marginTop: 5 },
   details: { flex: 1, marginLeft: 10 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemTitle: { fontSize: 15, fontFamily: 'Outfit-SemiBold', color: '#333' },
+  itemTitle: { fontSize: 15, fontFamily: 'Outfit-SemiBold', color: '#333', flex: 1 },
   chipRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   ecoChip: { minHeight: 24, paddingVertical: 0 },
   feeChip: { minHeight: 24, backgroundColor: '#F5F5F5', paddingVertical: 0 },

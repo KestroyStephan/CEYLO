@@ -6,19 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
 import destinationsData from '../assets/data/ai_destinations.json';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-const SafeImage = ({ source, style }) => {
-  const [error, setError] = useState(false);
-  return (
-    <Image 
-      source={error ? { uri: 'https://images.unsplash.com/photo-1563290231-155097486e9b' } : source} 
-      style={style} 
-      onError={() => setError(true)} 
-    />
-  );
-};
 
 export default function HiddenGemsListScreen({ navigation, route }) {
   const filterType = route.params?.filterType || 'hidden';
@@ -158,7 +149,7 @@ export default function HiddenGemsListScreen({ navigation, route }) {
       onPress={() => navigation.navigate('DestinationDetail', { place: item })}
     >
       <Surface style={styles.card} elevation={2}>
-        <SafeImage source={{ uri: item.image }} style={styles.cardImage} />
+        <ProgressiveImage source={{ uri: item.image }} style={styles.cardImage} />
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.cardSubtitle} numberOfLines={1}>{item.category.charAt(0).toUpperCase() + item.category.slice(1)} • {item.province}</Text>

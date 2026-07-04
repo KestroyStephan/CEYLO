@@ -184,7 +184,7 @@ export default function MapScreen({ navigation }) {
 
       {/* Right Side Floating Buttons */}
       <View style={[styles.rightFloatingStack, { top: insets.top + 120 }]}>
-        <TouchableOpacity style={styles.floatingBtnWhite}>
+        <TouchableOpacity style={styles.floatingBtnWhite} onPress={() => navigation.navigate('OfflineMapSettings')}>
           <MaterialCommunityIcons name="wifi-off" size={22} color="#333" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.floatingBtnGold}>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Image, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, Surface, IconButton, Button, Chip } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 const { width } = Dimensions.get('window');
 
@@ -111,7 +112,7 @@ Only output the raw JSON string without markdown wrapping.`;
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Hero Section */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: place.image || 'https://images.unsplash.com/photo-1589923188900-85dae523342b' }} style={styles.heroImage} />
+          <ProgressiveImage source={{ uri: place.image }} style={styles.heroImage} resizeMode="cover" />
           <LinearGradient colors={['rgba(0,0,0,0.5)', 'transparent']} style={styles.topGradient} />
           
           <IconButton icon="arrow-left" iconColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
@@ -207,7 +208,7 @@ Only output the raw JSON string without markdown wrapping.`;
                   <>
                     {/* Large Left Item */}
                     <View style={styles.masonryLeft}>
-                      <Image source={{ uri: aiData.explore_nearby[0].image }} style={styles.masonryImgLarge} />
+                      <ProgressiveImage source={{ uri: aiData.explore_nearby[0].image }} style={styles.masonryImgLarge} />
                       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.masonryGradient} />
                       <Text style={styles.masonryTag}>RECOMMENDED</Text>
                       <Text style={styles.masonryTitle}>{aiData.explore_nearby[0].name}</Text>
@@ -215,9 +216,9 @@ Only output the raw JSON string without markdown wrapping.`;
 
                     {/* Right Stack */}
                     <View style={styles.masonryRight}>
-                      <Image source={{ uri: aiData.explore_nearby[1].image }} style={styles.masonryImgSmall} />
+                      <ProgressiveImage source={{ uri: aiData.explore_nearby[1].image }} style={styles.masonryImgSmall} />
                       <View style={styles.masonryImgSmallWrapper}>
-                        <Image source={{ uri: aiData.explore_nearby[2].image }} style={styles.masonryImgSmall} />
+                        <ProgressiveImage source={{ uri: aiData.explore_nearby[2].image }} style={styles.masonryImgSmall} />
                         <View style={styles.pinOverlay}>
                           <MaterialCommunityIcons name="map-marker" size={16} color="#FFF" />
                         </View>

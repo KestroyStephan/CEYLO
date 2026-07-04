@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ImageBackground } from 'react-native';
-import { Text, Surface, Card } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, RefreshControl, ImageBackground, Image } from 'react-native';
+import { Text, Surface, Card, Avatar } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { auth } from '../firebaseConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -14,6 +15,17 @@ import destinationsData from '../assets/data/ai_destinations.json';
 import eventsData from '../assets/data/ai_events.json';
 
 const { width } = Dimensions.get('window');
+
+const COLORS = {
+  primary: '#00695C',
+  dark: '#004D40',
+  accent: '#D4AF37', // Gold for culture
+  ecoGreen: '#2E7D32', // Deep green for eco
+  bg: '#F9FCF8',
+  card: '#FFFFFF',
+  text: '#1A1A2E',
+  sub: '#6B7280',
+};
 
 export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
@@ -25,6 +37,7 @@ export default function HomeScreen({ navigation }) {
   const [hiddenGems, setHiddenGems] = useState([]);
   const [loadingGems, setLoadingGems] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
+  const [trendingRoutes, setTrendingRoutes] = useState([]);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -36,21 +49,84 @@ export default function HomeScreen({ navigation }) {
   }, []);
   
   const loadAIData = () => {
-    // Hidden Gems Fallback
     const hidden = destinationsData.filter(d => d.hidden_gem === true || d.hidden_gem === "True" || d.hidden_gem === "true");
     const shuffledHidden = hidden.sort(() => 0.5 - Math.random());
     setHiddenGems(shuffledHidden.slice(0, 3));
     
-    // AI Picks Fallback (Overwritten by fetchRealNearbyGems if location granted)
     const famous = destinationsData.filter(d => (d.hidden_gem === false || d.hidden_gem === "False") && parseFloat(d.avg_rating) >= 4.5);
     const sortedEco = famous.sort((a, b) => b.eco_score - a.eco_score);
     setAIPicks(sortedEco.slice(0, 5));
     
-    // Random Event
     if (eventsData && eventsData.length > 0) {
       const randEvent = eventsData[Math.floor(Math.random() * eventsData.length)];
       setFeaturedEvent(randEvent);
     }
+    
+    const centralPlaces = destinationsData.filter(d => d.province === 'Central Province').slice(0, 3);
+    const southernPlaces = destinationsData.filter(d => d.province === 'Southern Province').slice(0, 3);
+    
+    setTrendingRoutes([
+        {
+            id: 'route_1',
+            title: 'Central Eco-Trail',
+            subtitle: 'Knuckles & Horton Plains',
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Knuckles_mountain_range_Sri_Lanka.jpg/800px-Knuckles_mountain_range_Sri_Lanka.jpg',
+            duration: '3 Days',
+            cost: 'LKR 15k',
+            ecoScore: 92,
+            type: 'Nature'
+        },
+        {
+            id: 'route_2',
+            title: 'Southern Heritage',
+            subtitle: 'Galle Fort & Marine Life',
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Galle_Fort_Lighthouse_Sri_Lanka.jpg/800px-Galle_Fort_Lighthouse_Sri_Lanka.jpg',
+            duration: '2 Days',
+            cost: 'LKR 12k',
+            ecoScore: 85,
+            type: 'Culture'
+        },
+        {
+            id: 'route_3',
+            title: 'Northern Peninsula',
+            subtitle: 'Jaffna & Delft Island',
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Nallur_Kandaswamy_Temple_Jaffna.jpg/800px-Nallur_Kandaswamy_Temple_Jaffna.jpg',
+            duration: '4 Days',
+            cost: 'LKR 20k',
+            ecoScore: 95,
+            type: 'Untouched'
+        },
+        {
+            id: 'route_4',
+            title: 'Eastern Safari',
+            subtitle: 'Arugam Bay & Kumana',
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Elephant_at_Yala_National_Park_Sri_Lanka.jpg/800px-Elephant_at_Yala_National_Park_Sri_Lanka.jpg',
+            duration: '3 Days',
+            cost: 'LKR 18k',
+            ecoScore: 88,
+            type: 'Wildlife'
+        },
+        {
+            id: 'route_5',
+            title: 'Cultural Triangle',
+            subtitle: 'Sigiriya to Polonnaruwa',
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Sigiriya_rock_fortress.jpg/800px-Sigiriya_rock_fortress.jpg',
+            duration: '3 Days',
+            cost: 'LKR 25k',
+            ecoScore: 80,
+            type: 'Heritage'
+        },
+        {
+            id: 'route_6',
+            title: 'Tea Country Train',
+            subtitle: 'Kandy to Ella Scenic',
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Nine_Arch_Bridge%2C_Demodara.jpg/800px-Nine_Arch_Bridge%2C_Demodara.jpg',
+            duration: '1 Day',
+            cost: 'LKR 5k',
+            ecoScore: 98,
+            type: 'Scenic'
+        }
+    ]);
   };
 
   const fetchRealNearbyGems = async () => {
@@ -63,7 +139,6 @@ export default function HomeScreen({ navigation }) {
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
 
-      // Update AI Picks by calculating distance for famous places (Heritage, Nature, etc)
       const aiQuery = 'popular tourist attraction OR heritage site OR famous landmark';
       const aiUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(aiQuery)}&location=${lat},${lng}&radius=20000&key=${GOOGLE_API_KEY}`;
       const aiRes = await fetch(aiUrl);
@@ -106,7 +181,7 @@ export default function HomeScreen({ navigation }) {
           name: p.name,
           category: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Nature',
           province: 'Nearby',
-          eco_score: 85,
+          eco_score: 90,
           image: p.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${p.photos[0].photo_reference}&key=${GOOGLE_API_KEY}` : null,
           description: `A beautiful spot located near your current location.`,
           coords: { latitude: p.geometry.location.lat, longitude: p.geometry.location.lng }
@@ -128,12 +203,19 @@ export default function HomeScreen({ navigation }) {
 
   const Header = () => (
     <View style={styles.header}>
-      <TouchableOpacity>
-        <Feather name="menu" size={24} color="#004D40" />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>Explore Sri Lanka</Text>
-      <TouchableOpacity>
-        <Feather name="search" size={24} color="#004D40" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <View style={styles.menuBtn}>
+            <Feather name="grid" size={20} color={COLORS.primary} />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>CEYLO</Text>
+      </View>
+      <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
+        <View style={styles.ecoPointsBadge}>
+          <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
+          <Text style={styles.ecoPointsText}>1,250 pt</Text>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -141,44 +223,38 @@ export default function HomeScreen({ navigation }) {
   const WelcomeSection = () => (
     <View style={styles.welcomeSection}>
       <View>
-        <Text style={styles.greeting}>WELCOME BACK,</Text>
-        <Text style={styles.name}>{userName}!</Text>
+        <Text style={styles.greeting}>AYUBOWAN,</Text>
+        <Text style={styles.name}>{userName}</Text>
+        <Text style={styles.subtitle}>Ready for a sustainable journey?</Text>
       </View>
-      <Surface style={styles.weatherCard} elevation={0}>
-        <View>
-          <Text style={styles.weatherTemp}>29°C</Text>
-          <Text style={styles.weatherDesc}>Sunny • Colombo</Text>
-        </View>
-        <Feather name="sun" size={24} color="#D97706" style={styles.weatherIcon} />
-      </Surface>
     </View>
   );
 
   const QuickActions = () => (
     <View style={styles.quickActionsContainer}>
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('EcoPassport')}>
+        <View style={[styles.actionIconBg, { backgroundColor: '#E8F5E9' }]}>
+          <MaterialCommunityIcons name="leaf-circle-outline" size={26} color={COLORS.ecoGreen} />
+        </View>
+        <Text style={styles.actionText}>Passport</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Marketplace')}>
+        <View style={[styles.actionIconBg, { backgroundColor: '#FFF8E1' }]}>
+          <MaterialCommunityIcons name="basket-outline" size={26} color={COLORS.accent} />
+        </View>
+        <Text style={styles.actionText}>Local Crafts</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Transport')}>
-        <View style={[styles.actionIconBg, { backgroundColor: '#E0F2F1' }]}>
-          <MaterialCommunityIcons name="bus" size={24} color="#00695C" />
+        <View style={[styles.actionIconBg, { backgroundColor: '#E3F2FD' }]}>
+          <MaterialCommunityIcons name="train-car" size={26} color="#1565C0" />
         </View>
         <Text style={styles.actionText}>Transport</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Chatbot')}>
-        <View style={[styles.actionIconBg, { backgroundColor: '#E0F7FA' }]}>
-          <MaterialCommunityIcons name="map-marker-path" size={24} color="#00838F" />
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('GuidesList')}>
+        <View style={[styles.actionIconBg, { backgroundColor: '#F3E5F5' }]}>
+          <MaterialCommunityIcons name="account-group-outline" size={26} color="#7B1FA2" />
         </View>
-        <Text style={styles.actionText}>Guides</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('SOSScreen')}>
-        <View style={[styles.actionIconBg, { backgroundColor: '#FFEBEE' }]}>
-          <MaterialCommunityIcons name="asterisk" size={24} color="#D32F2F" />
-        </View>
-        <Text style={styles.actionText}>Emergency</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('OfflineMapSettings')}>
-        <View style={[styles.actionIconBg, { backgroundColor: '#EFEBE9' }]}>
-          <MaterialCommunityIcons name="map-outline" size={24} color="#5D4037" />
-        </View>
-        <Text style={styles.actionText}>Offline</Text>
+        <Text style={styles.actionText}>Local Guides</Text>
       </TouchableOpacity>
     </View>
   );
@@ -186,10 +262,12 @@ export default function HomeScreen({ navigation }) {
   const AIPicks = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>AI Picks For You</Text>
-        <TouchableOpacity style={styles.seeAllRow} onPress={() => navigation.navigate('HiddenGemsList', { filterType: 'all' })}>
+        <View>
+          <Text style={styles.sectionTitle}>Eco-Destinations</Text>
+          <Text style={styles.sectionSubtitle}>Top rated sustainable spots</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList', { filterType: 'all' })}>
           <Text style={styles.seeAll}>See All</Text>
-          <MaterialCommunityIcons name="arrow-right" size={16} color="#00695C" />
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
@@ -203,25 +281,21 @@ export default function HomeScreen({ navigation }) {
                 name: item.name, 
                 image: item.image || 'https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a',
                 ecoScore: Math.round(item.eco_score || 80),
-                description: item.description || `Explore ${item.name} in ${item.province} Province.`
+                description: item.description || `Explore the natural beauty of ${item.name} in ${item.province} Province.`
               } 
             })}
           >
-            <Card style={styles.pickCard}>
-            <View style={styles.pickImageContainer}>
-              <Image source={{ uri: item.image || 'https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a' }} style={styles.pickImage} />
-              <View style={styles.ecoBadge}>
-                <Text style={styles.ecoBadgeText}>{Math.round(item.eco_score)}</Text>
-              </View>
+            <View style={styles.pickCard}>
+              <ProgressiveImage source={{ uri: item.image }} style={styles.pickImage} />
+              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.pickOverlay}>
+                <View style={styles.ecoBadgeRow}>
+                  <MaterialCommunityIcons name="leaf" size={14} color={COLORS.ecoGreen} />
+                  <Text style={styles.ecoBadgeTextEco}>{Math.round(item.eco_score)} Eco Score</Text>
+                </View>
+                <Text style={styles.pickName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.pickLocation}>{item.dist ? `${item.dist.toFixed(1)} km away` : item.province.replace(' Province', '')}</Text>
+              </LinearGradient>
             </View>
-            <Card.Content style={styles.pickContent}>
-              <Text style={styles.pickName} numberOfLines={1}>{item.name}</Text>
-              <View style={styles.locationRow}>
-                <MaterialCommunityIcons name="map-marker-outline" size={14} color="#00695C" />
-                <Text style={styles.locationText}>{item.dist ? `${item.dist.toFixed(1)} km • ` : ''}{item.province.replace(' Province', '')}</Text>
-              </View>
-            </Card.Content>
-          </Card>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -231,18 +305,21 @@ export default function HomeScreen({ navigation }) {
   const HiddenGems = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Hidden Gems Near You</Text>
+        <View>
+          <Text style={styles.sectionTitle}>Untouched Nature</Text>
+          <Text style={styles.sectionSubtitle}>Discover hidden biodiversity</Text>
+        </View>
         <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
       </View>
       {loadingGems ? (
         <View style={{ padding: 20, alignItems: 'center' }}>
-          <Text style={{ fontFamily: 'Outfit-Regular', color: '#666' }}>Finding real gems near you...</Text>
+          <Text style={{ fontFamily: 'Outfit-Regular', color: '#666' }}>Locating nearby gems...</Text>
         </View>
       ) : hiddenGems.map((gem) => (
         <TouchableOpacity 
           key={gem.destination_id} 
           activeOpacity={0.8} 
-          style={{ marginBottom: 10 }}
+          style={{ marginBottom: 12 }}
           onPress={() => navigation.navigate('DestinationDetail', { 
               place: { 
                 ...gem,
@@ -253,16 +330,21 @@ export default function HomeScreen({ navigation }) {
               } 
           })}
         >
-          <Surface style={styles.gemCard} elevation={0}>
-            <Image source={{ uri: gem.image || 'https://images.unsplash.com/photo-1563290231-155097486e9b' }} style={styles.gemImage} />
+          <Surface style={styles.gemCard} elevation={2}>
+            <ProgressiveImage source={{ uri: gem.image }} style={styles.gemImage} />
             <View style={styles.gemContent}>
-              <Text style={styles.gemTitle} numberOfLines={1}>{gem.name}</Text>
-              <Text style={styles.gemSubtitle} numberOfLines={1}>{gem.category} • {gem.province}</Text>
-              <View style={styles.ecoCertifiedBadge}>
-                <Text style={styles.ecoCertifiedText}>ECO-CERTIFIED</Text>
+              <View style={styles.gemTagRow}>
+                <View style={styles.ecoCertifiedBadge}>
+                  <MaterialCommunityIcons name="shield-check-outline" size={12} color={COLORS.ecoGreen} />
+                  <Text style={styles.ecoCertifiedText}>PRESERVED ZONE</Text>
+                </View>
               </View>
+              <Text style={styles.gemTitle} numberOfLines={1}>{gem.name}</Text>
+              <Text style={styles.gemSubtitle} numberOfLines={1}>{gem.category}</Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={24} color="#666" />
+            <View style={styles.gemAction}>
+              <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.primary} />
+            </View>
           </Surface>
         </TouchableOpacity>
       ))}
@@ -274,22 +356,39 @@ export default function HomeScreen({ navigation }) {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Cultural Events</Text>
-          <TouchableOpacity><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
+          <View>
+            <Text style={styles.sectionTitle}>Cultural Heritage</Text>
+            <Text style={styles.sectionSubtitle}>Experience local traditions</Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('CulturalEvents')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
         </View>
         <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('CulturalEvents')}>
-          <Surface style={styles.eventCard} elevation={0}>
-            <View style={styles.eventOverlay}>
-              <View style={styles.eventTag}>
-                <Text style={styles.tagText}>{featuredEvent.month}</Text>
+          <ImageBackground 
+            source={{ uri: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa' }} // Fallback cultural image
+            style={styles.eventCard}
+            imageStyle={{ borderRadius: 20 }}
+          >
+            <LinearGradient colors={['rgba(0,0,0,0.1)', 'rgba(0,77,64,0.9)']} style={styles.eventOverlay}>
+              <View style={styles.eventTopRow}>
+                <View style={styles.eventTag}>
+                  <MaterialCommunityIcons name="calendar-month" size={14} color="#FFF" />
+                  <Text style={styles.tagText}>{featuredEvent.month}</Text>
+                </View>
+                <View style={styles.eventTagGold}>
+                  <Text style={styles.tagTextGold}>Cultural</Text>
+                </View>
               </View>
-              <Text style={styles.eventTitle}>{featuredEvent.name}</Text>
-              <Text style={styles.eventDesc} numberOfLines={2}>{featuredEvent.location} - {featuredEvent.category}</Text>
-              <TouchableOpacity style={styles.remindBtn}>
-                <Text style={styles.remindBtnText}>Remind Me</Text>
-              </TouchableOpacity>
-            </View>
-          </Surface>
+              <View>
+                <Text style={styles.eventTitle}>{featuredEvent.name}</Text>
+                <Text style={styles.eventDesc} numberOfLines={2}>{featuredEvent.location} • Join the community and learn local crafts and traditions.</Text>
+                <View style={{ flexDirection: 'row', marginTop: 12 }}>
+                  <TouchableOpacity style={styles.remindBtn}>
+                    <Text style={styles.remindBtnText}>Learn More</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
       </View>
     );
@@ -298,24 +397,27 @@ export default function HomeScreen({ navigation }) {
   const TrendingRoutes = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Trending Routes</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Transport')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
+        <View>
+          <Text style={styles.sectionTitle}>Sustainable Routes</Text>
+          <Text style={styles.sectionSubtitle}>Low carbon footprint journeys</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('SustainableRoutesList')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('ItineraryDetail')}>
-          <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa' }} style={styles.routeCard} imageStyle={{ borderRadius: 16 }}>
-            <LinearGradient colors={['transparent', 'rgba(0,105,92,0.8)']} style={styles.routeOverlay}>
-              <Text style={styles.routeTitle}>Tea Country{'\n'}Trail</Text>
-              <Text style={styles.routeSubtitle}>3 Days • Nuwara Eliya</Text>
-            </LinearGradient>
-          </ImageBackground>
-        </TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('ItineraryDetail')}>
-          <Surface style={[styles.routeCardSolid, { backgroundColor: '#E8EBE6' }]} elevation={0}>
-            <Text style={styles.routeSolidTitle}>ANCIENT CITIES</Text>
-            <Text style={styles.routeSolidSubtitle}>Anuradhapura Loop</Text>
-          </Surface>
-        </TouchableOpacity>
+        {trendingRoutes.map((route) => (
+          <TouchableOpacity key={route.id} activeOpacity={0.8} onPress={() => navigation.navigate('ItineraryDetail', { routeData: route })}>
+            <View style={styles.routeCard}>
+              <ProgressiveImage source={{ uri: route.image }} style={styles.routeImage} />
+              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.routeOverlay}>
+                <View style={[styles.routeTypeTag, { backgroundColor: route.type === 'Nature' || route.type === 'Wildlife' ? COLORS.ecoGreen : route.type === 'Untouched' ? '#0277BD' : COLORS.accent }]}>
+                   <Text style={styles.routeTypeText}>{route.type}</Text>
+                </View>
+                <Text style={styles.routeTitle}>{route.title.replace(' ', '\n')}</Text>
+                <Text style={styles.routeSubtitle}>{route.subtitle}</Text>
+              </LinearGradient>
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
@@ -325,12 +427,24 @@ export default function HomeScreen({ navigation }) {
       <ScrollView 
         style={styles.container} 
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#00695C']} />}
-        contentContainerStyle={{ paddingBottom: 100 }} // padding for FAB
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+        contentContainerStyle={{ paddingBottom: 120 }}
       >
         <Header />
         <WelcomeSection />
         <QuickActions />
+        
+        {/* Banner */}
+        <Surface style={styles.bannerContainer} elevation={0}>
+          <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.bannerGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bannerTitle}>Support Local Communities</Text>
+              <Text style={styles.bannerSub}>Every booking contributes to conservation efforts.</Text>
+            </View>
+            <MaterialCommunityIcons name="hand-heart" size={40} color={COLORS.ecoGreen} style={{ opacity: 0.8 }} />
+          </LinearGradient>
+        </Surface>
+
         <AIPicks />
         <HiddenGems />
         <CulturalEvents />
@@ -343,74 +457,81 @@ export default function HomeScreen({ navigation }) {
         activeOpacity={0.8} 
         onPress={() => navigation.navigate('SOSScreen')}
       >
-        <Text style={styles.fabSOSText}>SOS</Text>
+        <MaterialCommunityIcons name="phone-in-talk" size={24} color="#FFF" />
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#F9FCF8' },
+  mainContainer: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1, paddingHorizontal: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 20 },
-  headerTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#004D40' },
-  welcomeSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 25 },
-  greeting: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#666', letterSpacing: 1, textTransform: 'uppercase' },
-  name: { fontSize: 28, fontFamily: 'Outfit-Bold', color: '#222', marginTop: 4 },
-  weatherCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F4F1', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 16, gap: 10 },
-  weatherTemp: { fontFamily: 'Outfit-Bold', color: '#111', fontSize: 18 },
-  weatherDesc: { fontFamily: 'Outfit-Medium', color: '#666', fontSize: 10 },
-  weatherIcon: { marginLeft: 5 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 30 },
+  menuBtn: { backgroundColor: '#FFF', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2 },
+  headerTitle: { fontSize: 22, fontFamily: 'Outfit-Bold', color: COLORS.dark, letterSpacing: 1 },
+  ecoPointsBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.ecoGreen, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 4, elevation: 3 },
+  ecoPointsText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 },
   
-  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 35 },
-  actionItem: { alignItems: 'center', gap: 8 },
-  actionIconBg: { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  actionText: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#444' },
+  welcomeSection: { marginBottom: 30 },
+  greeting: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: COLORS.primary, letterSpacing: 1.5 },
+  name: { fontSize: 32, fontFamily: 'Outfit-Bold', color: COLORS.text, marginTop: 4 },
+  subtitle: { fontSize: 14, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 4 },
+  
+  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
+  actionItem: { alignItems: 'center', gap: 10 },
+  actionIconBg: { width: 64, height: 64, borderRadius: 24, justifyContent: 'center', alignItems: 'center', elevation: 1 },
+  actionText: { fontSize: 12, fontFamily: 'Outfit-Medium', color: COLORS.text },
 
-  section: { marginBottom: 35 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  sectionTitle: { fontSize: 18, fontFamily: 'Outfit-SemiBold', color: '#222' },
-  seeAllRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  seeAll: { color: '#00695C', fontFamily: 'Outfit-Bold', fontSize: 12 },
-  
-  horizontalScroll: { gap: 15, paddingRight: 20 },
-  
-  pickCard: { width: 220, borderRadius: 16, overflow: 'hidden', backgroundColor: '#FFF', elevation: 1 },
-  pickImageContainer: { position: 'relative' },
-  pickImage: { height: 140, width: '100%', resizeMode: 'cover' },
-  ecoBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#FFF', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#00695C' },
-  ecoBadgeText: { color: '#00695C', fontFamily: 'Outfit-Bold', fontSize: 12 },
-  pickContent: { padding: 15 },
-  pickName: { fontFamily: 'Outfit-SemiBold', fontSize: 16, color: '#222', marginBottom: 4 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locationText: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#666' },
+  bannerContainer: { borderRadius: 16, overflow: 'hidden', marginBottom: 35 },
+  bannerGradient: { flexDirection: 'row', alignItems: 'center', padding: 20 },
+  bannerTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: COLORS.dark, marginBottom: 4 },
+  bannerSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: COLORS.primary, paddingRight: 20, lineHeight: 18 },
 
-  gemCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F4F1', padding: 12, borderRadius: 16, gap: 15 },
-  gemImage: { width: 70, height: 70, borderRadius: 12 },
+  section: { marginBottom: 40 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 15 },
+  sectionTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: COLORS.text },
+  sectionSubtitle: { fontSize: 13, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 2 },
+  seeAll: { color: COLORS.primary, fontFamily: 'Outfit-Bold', fontSize: 13, marginBottom: 4 },
+  
+  horizontalScroll: { gap: 16, paddingRight: 20, paddingBottom: 10 },
+  
+  pickCard: { width: 200, height: 260, borderRadius: 20, overflow: 'hidden', backgroundColor: '#EEE', elevation: 4 },
+  pickImage: { width: '100%', height: '100%', position: 'absolute' },
+  pickOverlay: { flex: 1, padding: 16, justifyContent: 'flex-end' },
+  ecoBadgeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginBottom: 10, gap: 4 },
+  ecoBadgeTextEco: { color: COLORS.ecoGreen, fontFamily: 'Outfit-Bold', fontSize: 11 },
+  pickName: { fontFamily: 'Outfit-Bold', fontSize: 18, color: '#FFF', marginBottom: 4 },
+  pickLocation: { fontSize: 13, fontFamily: 'Outfit-Medium', color: 'rgba(255,255,255,0.8)' },
+
+  gemCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, padding: 12, borderRadius: 16, gap: 15 },
+  gemImage: { width: 80, height: 80, borderRadius: 12 },
   gemContent: { flex: 1, justifyContent: 'center' },
-  gemTitle: { fontFamily: 'Outfit-SemiBold', fontSize: 15, color: '#222', marginBottom: 2 },
-  gemSubtitle: { fontFamily: 'Outfit-Regular', fontSize: 13, color: '#666', marginBottom: 8 },
-  ecoCertifiedBadge: { backgroundColor: '#D4E8D9', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  ecoCertifiedText: { color: '#00695C', fontSize: 9, fontFamily: 'Outfit-Bold' },
+  gemTagRow: { flexDirection: 'row', marginBottom: 6 },
+  ecoCertifiedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
+  ecoCertifiedText: { color: COLORS.ecoGreen, fontSize: 10, fontFamily: 'Outfit-Bold', letterSpacing: 0.5 },
+  gemTitle: { fontFamily: 'Outfit-Bold', fontSize: 16, color: COLORS.text, marginBottom: 2 },
+  gemSubtitle: { fontFamily: 'Outfit-Regular', fontSize: 13, color: COLORS.sub },
+  gemAction: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0F4F1', justifyContent: 'center', alignItems: 'center' },
 
-  eventCard: { width: '100%', height: 200, borderRadius: 20, backgroundColor: '#00695C', overflow: 'hidden' },
+  eventCard: { width: '100%', height: 240, borderRadius: 20, backgroundColor: COLORS.primary, overflow: 'hidden', elevation: 4 },
   eventOverlay: { flex: 1, padding: 20, justifyContent: 'space-between' },
-  eventTag: { backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  tagText: { color: '#FFF', fontSize: 11, fontFamily: 'Outfit-Bold' },
-  eventTitle: { color: '#FFF', fontSize: 22, fontFamily: 'Outfit-Bold', marginTop: 'auto', marginBottom: 8 },
-  eventDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontFamily: 'Outfit-Regular', marginBottom: 15, lineHeight: 18 },
-  remindBtn: { backgroundColor: '#FFF', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  remindBtnText: { color: '#00695C', fontFamily: 'Outfit-Bold', fontSize: 13 },
+  eventTopRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  eventTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 6 },
+  tagText: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-Bold' },
+  eventTagGold: { backgroundColor: COLORS.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+  tagTextGold: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-Bold' },
+  eventTitle: { color: '#FFF', fontSize: 24, fontFamily: 'Outfit-Bold', marginBottom: 8 },
+  eventDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontFamily: 'Outfit-Regular', marginBottom: 15, lineHeight: 20 },
+  remindBtn: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 14 },
+  remindBtnText: { color: COLORS.dark, fontFamily: 'Outfit-Bold', fontSize: 14 },
 
-  routeCard: { width: 140, height: 140, borderRadius: 16, overflow: 'hidden' },
-  routeOverlay: { flex: 1, padding: 15, justifyContent: 'flex-end' },
+  routeCard: { width: 160, height: 180, borderRadius: 16, overflow: 'hidden', elevation: 3 },
+  routeImage: { position: 'absolute', width: '100%', height: '100%', resizeMode: 'cover' },
+  routeOverlay: { flex: 1, padding: 16, justifyContent: 'flex-end' },
+  routeTypeTag: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginBottom: 8 },
+  routeTypeText: { color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold', textTransform: 'uppercase' },
   routeTitle: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16, marginBottom: 4 },
-  routeSubtitle: { color: 'rgba(255,255,255,0.8)', fontFamily: 'Outfit-Regular', fontSize: 11 },
-  
-  routeCardSolid: { width: 140, height: 140, borderRadius: 16, padding: 15, justifyContent: 'center' },
-  routeSolidTitle: { color: '#444', fontFamily: 'Outfit-Bold', fontSize: 14, marginBottom: 4, letterSpacing: 0.5 },
-  routeSolidSubtitle: { color: '#666', fontFamily: 'Outfit-Regular', fontSize: 12 },
+  routeSubtitle: { color: 'rgba(255,255,255,0.8)', fontFamily: 'Outfit-Regular', fontSize: 12 },
 
-  fabSOS: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#FF5252', width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#FF5252', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
-  fabSOSText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16 },
+  fabSOS: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#D32F2F', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#D32F2F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6 },
 });

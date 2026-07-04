@@ -12,6 +12,7 @@ import Vendors from './pages/Vendors';
 import Bookings from './pages/Bookings';
 import SOSAlerts from './pages/SOSAlerts';
 import SOSMonitor from './pages/SOSMonitor';
+import Guides from './pages/Guides';
 import Login from './pages/Login';
 import Destinations from './pages/Destinations';
 import CulturalEvents from './pages/CulturalEvents';
@@ -50,13 +51,16 @@ function RoleBasedDashboard() {
   return <AdminDashboard />;
 }
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <AuthProvider>
-          <Routes>
+      <ErrorBoundary>
+        <Router>
+          <AuthProvider>
+            <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
             <Route path="/register-provider" element={<ProviderRegister />} />
@@ -72,6 +76,7 @@ function App() {
               <Route path="vendors" element={<Vendors />} />
               <Route path="bookings" element={<Bookings />} />
               <Route path="sos" element={<SOSMonitor />} />
+              <Route path="guides" element={<Guides />} />
               <Route path="destinations" element={<Destinations />} />
               <Route path="events" element={<CulturalEvents />} />
               <Route path="analytics" element={<Analytics />} />
@@ -84,7 +89,8 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
-      </Router>
+        </Router>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

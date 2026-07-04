@@ -101,7 +101,7 @@ export default function TransportScreen({ route, navigation }) {
           <View style={styles.content}>
             <Text style={styles.sheetTitle}>Where to?</Text>
             <TouchableOpacity style={styles.destBox}>
-              <MaterialCommunityIcons name="map-marker-search" size={20} color="#00695C" />
+              <MaterialCommunityIcons name="map-search" size={20} color="#00695C" />
               <Text style={[styles.destText, destination && {color: '#333'}]}>
                 {destination ? destination.name : "Search destination..."}
               </Text>

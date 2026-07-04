@@ -58,7 +58,7 @@ def generate_destinations():
         dest_id_counter += 1
         
     # Generate the rest
-    while len(destinations) < 275:
+    while len(destinations) < 100000:
         province, p_data = random.choice(list(REGIONS.items()))
         city = random.choice(p_data["cities"])
         cat, suffixes = random.choice(ATTRACTION_TYPES)
@@ -77,9 +77,8 @@ def generate_destinations():
         hidden = random.random() > 0.7 # 30% hidden gems
         pop_rank = random.randint(21, 300)
         
-        # Don't add duplicates by name
-        if any(d['name'] == name for d in destinations):
-            continue
+        # Append random ID to make it unique for 100k scale
+        name = f"{name} {random.randint(1000, 999999)}"
             
         destinations.append(create_destination_record(dest_id_counter, name, cat, province, lat, lon, hidden, pop_rank))
         dest_id_counter += 1

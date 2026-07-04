@@ -8,21 +8,20 @@ export default function EventDetailScreen({ route, navigation }) {
   // If navigated from push notification or map, it passes 'event' param
   const { event = {} } = route.params || {};
 
-  const dummyEvent = {
-    title: 'Kandy Esala Perahera',
-    date: 'Aug 10 - Aug 20',
-    location: 'Temple of the Tooth, Kandy',
-    description: 'A grand festival with elegant costumes, fire breathing, and beautifully decorated elephants. This is one of the oldest and grandest of all Buddhist festivals in Sri Lanka.',
-    type: 'Cultural',
-    ecoScore: 90,
-    imageUrl: 'https://images.unsplash.com/photo-1549474148-356c12fb7e93?auto=format&fit=crop&w=800&q=80',
-    ...event
-  };
+  const displayEvent = event || {};
+  
+  if (!displayEvent.title) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>No event data provided.</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} bounces={false}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: dummyEvent.imageUrl }} style={styles.image} />
+        <Image source={{ uri: displayEvent.imageUrl }} style={styles.image} />
         <LinearGradient
           colors={['rgba(0,0,0,0.6)', 'transparent', 'rgba(0,0,0,0.8)']}
           style={styles.gradient}
@@ -36,9 +35,9 @@ export default function EventDetailScreen({ route, navigation }) {
         />
         <View style={styles.imageOverlay}>
           <Chip icon="calendar" style={styles.dateChip} textStyle={styles.dateChipText}>
-            {dummyEvent.date}
+            {displayEvent.date}
           </Chip>
-          <Text style={styles.title}>{dummyEvent.title}</Text>
+          <Text style={styles.title}>{displayEvent.title}</Text>
         </View>
       </View>
 
@@ -46,16 +45,16 @@ export default function EventDetailScreen({ route, navigation }) {
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <MaterialCommunityIcons name="map-marker" size={24} color="#00695C" />
-            <Text style={styles.metaText}>{dummyEvent.location}</Text>
+            <Text style={styles.metaText}>{displayEvent.location}</Text>
           </View>
           <Surface style={styles.ecoBadge} elevation={2}>
-            <Text style={styles.ecoScore}>{dummyEvent.ecoScore}</Text>
+            <Text style={styles.ecoScore}>{displayEvent.ecoScore}</Text>
             <Text style={styles.ecoLabel}>ECO SCORE</Text>
           </Surface>
         </View>
 
         <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.description}>{dummyEvent.description}</Text>
+        <Text style={styles.description}>{displayEvent.description}</Text>
 
         <Surface style={styles.alertBox} elevation={1}>
           <MaterialCommunityIcons name="bell-ring-outline" size={24} color="#D84315" />

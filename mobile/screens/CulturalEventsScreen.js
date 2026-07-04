@@ -2,9 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, FlatList, Image, Dimensions } from 'react-native';
 import { Text, Searchbar, Chip, Card, IconButton, Surface, ActivityIndicator, Divider } from 'react-native-paper';
+import ProgressiveImage from '../components/ProgressiveImage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../firebaseConfig';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import aiEventsData from '../assets/data/ai_events.json';
+
+const getMonthIndex = (monthStr) => {
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return months.indexOf(monthStr) !== -1 ? months.indexOf(monthStr) : 0;
+};
+
 // Native date formatting helpers instead of date-fns
 const formatDate = (dateString, formatType) => {
     const d = new Date(dateString);
@@ -31,14 +39,20 @@ export default function CulturalEventsScreen({ navigation }) {
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
     useEffect(() => {
-        const q = query(collection(db, "cultural_events"), orderBy("date", "asc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setEvents(eventsData);
-            setFilteredEvents(eventsData);
-            setLoading(false);
-        });
-        return () => unsubscribe();
+        const mappedData = aiEventsData.map((e) => ({
+            id: e.event_id,
+            title: e.name,
+            location: e.location,
+            type: e.category,
+            category: e.category,
+            date: new Date(2024, getMonthIndex(e.occurrence_month), 15).toISOString(),
+            description: `Experience the ${e.name} in ${e.location}. Expected attendance: ${e.expected_attendance}.`,
+            imageUrl: e.image || null
+        }));
+        mappedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+        setEvents(mappedData);
+        setFilteredEvents(mappedData);
+        setLoading(false);
     }, []);
 
     useEffect(() => {
@@ -54,11 +68,13 @@ export default function CulturalEventsScreen({ navigation }) {
 
     const renderEventCard = ({ item }) => (
         <Card style={styles.eventCard} elevation={2} onPress={() => {/* Show details */}}>
-            <Card.Cover source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2' }} style={styles.cardImage} />
+        <View style={styles.cardImageWrapper}>
+            <ProgressiveImage source={{ uri: item.imageUrl }} style={styles.cardImage} />
             <Surface style={styles.dateBadge} elevation={4}>
                 <Text style={styles.dateDay}>{item.date ? formatDate(item.date, 'dd') : '??'}</Text>
                 <Text style={styles.dateMonth}>{item.date ? formatDate(item.date, 'MMM') : '???'}</Text>
             </Surface>
+        </View>
             <Card.Content style={styles.cardContent}>
                 <View style={styles.typeRow}>
                     <Chip size={10} style={styles.typeChip} textStyle={styles.typeChipText}>{item.type || 'Event'}</Chip>
@@ -173,7 +189,8 @@ const styles = StyleSheet.create({
     selectedChipText: { color: '#FFF' },
     listContent: { padding: 20, gap: 20 },
     eventCard: { borderRadius: 20, overflow: 'hidden', backgroundColor: '#FFF' },
-    cardImage: { height: 180 },
+    cardImageWrapper: { position: 'relative' },
+    cardImage: { height: 180, width: '100%', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
     dateBadge: { 
         position: 'absolute', 
         top: 20, 

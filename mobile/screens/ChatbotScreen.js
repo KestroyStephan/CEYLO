@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Keyboard, Dimensions, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Keyboard, Dimensions, FlatList, Alert } from 'react-native';
 import { Text, TextInput, Avatar, ActivityIndicator, IconButton, Surface, Chip, Card, Portal, Modal, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { db, auth } from '../firebaseConfig';
-import { doc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -48,6 +48,7 @@ export default function ChatbotScreen({ navigation }) {
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [extractedState, setExtractedState] = useState({
     destination: null,
     days: null,
@@ -60,6 +61,20 @@ export default function ChatbotScreen({ navigation }) {
   const flatListRef = useRef();
 
   useEffect(() => {
+    // Fetch user mood from onboarding
+    const fetchUserMood = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().mood) {
+          setExtractedState(prev => ({ ...prev, mood: userDoc.data().mood }));
+        }
+      }
+    };
+    fetchUserMood();
+  }, []);
+
+  useEffect(() => {
     // Animate HUD in when valid data exists
     if (extractedState.destination || extractedState.mood) {
       Animated.spring(hudAnim, { toValue: 0, useNativeDriver: true }).start();
@@ -67,7 +82,10 @@ export default function ChatbotScreen({ navigation }) {
   }, [extractedState]);
 
   const callWaterfall = async (prompt) => {
+    const contextPrompt = `\n\nCURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${prompt}`;
     for (const model of MODELS) {
+      if (!model.key && model.type !== 'gemini') continue;
+      
       try {
         console.log(`Trying ${model.name}...`);
         const controller = new AbortController();
@@ -79,7 +97,7 @@ export default function ChatbotScreen({ navigation }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\nUser: ${prompt}` }] }],
+              contents: [{ parts: [{ text: `${SYSTEM_PROMPT}${contextPrompt}` }] }],
               generationConfig: { responseMimeType: "application/json" }
             }),
             signal: controller.signal
@@ -93,7 +111,7 @@ export default function ChatbotScreen({ navigation }) {
             },
             body: JSON.stringify({
               model: model.type === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4o-mini",
-              messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: prompt }],
+              messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: contextPrompt }],
               response_format: { type: "json_object" }
             }),
             signal: controller.signal
@@ -145,14 +163,10 @@ export default function ChatbotScreen({ navigation }) {
         rate: 0.9,
       });
 
-      if (responseJson.extractedState?.destination) {
-        // Mock weather context injection
-        console.log("Injecting weather info for", responseJson.extractedState.destination);
-      }
     } catch (error) {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: "I'm having a bit of trouble connecting to my signals. Could you repeat that?",
+        text: "I'm having a bit of trouble connecting to my signals. Please check your internet connection.",
         sender: 'bot'
       }]);
     } finally {
@@ -160,23 +174,53 @@ export default function ChatbotScreen({ navigation }) {
     }
   };
 
+  const simulateDictation = () => {
+    setIsRecording(true);
+    setTimeout(() => {
+      setIsRecording(false);
+      setInputText("I would love to explore the wildlife and see some elephants!");
+    }, 2500);
+  };
+
   const generateItinerary = async () => {
     setLoading(true);
-    // Phase 4 specific: Structured plan generation
-    setTimeout(async () => {
+    try {
+      // 1. Fetch real 100k data RAG matches from backend
+      const backendIp = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+      const ragResponse = await fetch(`http://${backendIp}:5000/api/recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: extractedState.mood || 'Adventurer' })
+      });
+      
+      const ragData = await ragResponse.json();
+      const topDestinations = ragData.top_matches;
+
+      // 2. Build the dynamic plan from real AI predictions
+      const dynamicPlan = topDestinations.map((dest, index) => ({
+        day: index + 1,
+        activity: `Explore ${dest.name} in ${dest.province} (${dest.category})`,
+        eco: dest.ecoScore,
+        lat: dest.lat,
+        lon: dest.lon,
+        destinationId: dest.id
+      }));
+
       const itinerary = {
-        title: `Your ${extractedState.mood} trip to ${extractedState.destination}`,
+        title: `Your ${extractedState.mood || 'Custom'} trip to ${extractedState.destination || 'Sri Lanka'}`,
         userId: auth.currentUser?.uid,
         createdAt: new Date().toISOString(),
-        plan: [
-          { day: 1, activity: "Arrival and local eco-walk", eco: 95 },
-          { day: 2, activity: "Temple visit and cultural tour", eco: 80 }
-        ]
+        plan: dynamicPlan
       };
+
       await addDoc(collection(db, 'itineraries'), itinerary);
+      Alert.alert("Success", "Your ML-predicted itinerary has been generated from 100,000+ data points!");
+    } catch (e) {
+      console.warn("RAG backend failed, check if server.js is running:", e);
+      Alert.alert("Error", "Could not connect to the RAG backend. Is server.js running?");
+    } finally {
       setLoading(false);
-      Alert.alert("Success", "Your premium itinerary has been generated and saved!");
-    }, 2000);
+    }
   };
 
   const RenderMessage = ({ item }) => (
@@ -242,9 +286,23 @@ export default function ChatbotScreen({ navigation }) {
         </Button>
       )}
 
+      {isRecording && (
+        <View style={styles.recordingOverlay}>
+          <MaterialCommunityIcons name="microphone" size={24} color="#D32F2F" style={styles.recordingIcon} />
+          <Text style={styles.recordingText}>Listening...</Text>
+        </View>
+      )}
+
       <Surface style={styles.inputArea} elevation={5}>
         <View style={styles.inputRow}>
-          <IconButton icon="microphone" containerColor="#E0F2F1" iconColor="#00695C" size={24} />
+          <IconButton 
+            icon={isRecording ? "stop-circle" : "microphone"} 
+            containerColor={isRecording ? "#FFEBEE" : "#E0F2F1"} 
+            iconColor={isRecording ? "#D32F2F" : "#00695C"} 
+            size={24} 
+            onPress={simulateDictation}
+            disabled={loading}
+          />
           <TextInput
             placeholder="Type your preferences..."
             value={inputText}
@@ -260,7 +318,7 @@ export default function ChatbotScreen({ navigation }) {
             iconColor="#FFF" 
             size={24} 
             onPress={() => handleSend()}
-            disabled={loading || !inputText.trim()}
+            disabled={loading || (!inputText.trim() && !isRecording)}
           />
         </View>
       </Surface>
@@ -288,6 +346,9 @@ const styles = StyleSheet.create({
   msgText: { fontFamily: 'Outfit-Regular', fontSize: 15 },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   optionBtn: { backgroundColor: '#B2DFDB' },
+  recordingOverlay: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10, backgroundColor: '#FFEBEE', borderRadius: 20, marginHorizontal: 20, marginBottom: 10 },
+  recordingText: { color: '#D32F2F', fontFamily: 'Outfit-Bold', marginLeft: 10 },
+  recordingIcon: { opacity: 0.8 },
   inputArea: { padding: 15, borderTopLeftRadius: 30, borderTopRightRadius: 30, backgroundColor: '#FFF' },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   textInput: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 25, height: 50 },

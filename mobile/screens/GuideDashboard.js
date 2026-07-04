@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Dimensions, Alert, ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { Text, Button, Card, Avatar, ActivityIndicator, Surface, IconButton, Divider, Chip } from 'react-native-paper';
 import { db, auth } from '../firebaseConfig';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,21 +12,45 @@ const { width } = Dimensions.get('window');
 export default function GuideDashboard({ navigation }) {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeGuests, setActiveGuests] = useState([
-    { id: '1', name: 'Sarah Miller', mood: 'Family', lang: 'English' },
-    { id: '2', name: 'Klaus Schmidt', mood: 'Eco Explorer', lang: 'German' }
-  ]);
+  const [activeGuests, setActiveGuests] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
 
   useEffect(() => {
-    const q = query(collection(db, "tours"), where("guideId", "==", auth.currentUser?.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    if (!auth.currentUser) return;
+    
+    // Listen to Tours
+    const qTours = query(collection(db, "tours"), where("guideId", "==", auth.currentUser.uid));
+    const unsubTours = onSnapshot(qTours, (snapshot) => {
       const tourList = [];
       snapshot.forEach((doc) => tourList.push({ id: doc.id, ...doc.data() }));
       setTours(tourList);
+    });
+
+    // Listen to Bookings
+    const qBookings = query(collection(db, "bookings"), where("guideId", "==", auth.currentUser.uid));
+    const unsubBookings = onSnapshot(qBookings, (snapshot) => {
+      const pending = [];
+      const active = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.status === 'pending') pending.push({ id: doc.id, ...data });
+        else if (data.status === 'accepted') active.push({ id: doc.id, ...data });
+      });
+      setPendingRequests(pending);
+      setActiveGuests(active);
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => { unsubTours(); unsubBookings(); };
   }, []);
+
+  const handleUpdateBooking = async (id, newStatus) => {
+    try {
+      await updateDoc(doc(db, 'bookings', id), { status: newStatus });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  };
 
   const StatBox = ({ label, value, icon, color }) => (
     <Surface style={styles.statBox} elevation={1}>
@@ -55,15 +79,34 @@ export default function GuideDashboard({ navigation }) {
       </LinearGradient>
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {pendingRequests.length > 0 && (
+          <View>
+            <Text style={styles.sectionTitle}>Booking Requests ({pendingRequests.length})</Text>
+            {pendingRequests.map(req => (
+              <Surface key={req.id} style={[styles.guestCard, { borderColor: '#FFB300', borderWidth: 1 }]} elevation={1}>
+                <Avatar.Text size={45} label={req.touristName?.[0] || 'T'} style={{ backgroundColor: '#FFECB3' }} />
+                <View style={{ flex: 1, marginLeft: 15 }}>
+                  <Text style={styles.guestName}>{req.touristName}</Text>
+                  <Text style={{ fontSize: 12, color: '#666', fontFamily: 'Outfit-Regular' }}>Wants to book you for {req.packageCost} LKR</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 5 }}>
+                  <IconButton icon="check" iconColor="#FFF" containerColor="#00695C" size={20} onPress={() => handleUpdateBooking(req.id, 'accepted')} />
+                  <IconButton icon="close" iconColor="#FFF" containerColor="#D32F2F" size={20} onPress={() => handleUpdateBooking(req.id, 'declined')} />
+                </View>
+              </Surface>
+            ))}
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>Currently Guiding</Text>
+        {activeGuests.length === 0 && <Text style={{ color: '#999', fontFamily: 'Outfit-Regular', marginBottom: 15 }}>No active tourists currently.</Text>}
         {activeGuests.map(guest => (
           <Surface key={guest.id} style={styles.guestCard} elevation={1}>
-            <Avatar.Text size={45} label={guest.name[0]} style={{ backgroundColor: '#B2DFDB' }} />
+            <Avatar.Text size={45} label={guest.touristName?.[0] || 'T'} style={{ backgroundColor: '#B2DFDB' }} />
             <View style={{ flex: 1, marginLeft: 15 }}>
-              <Text style={styles.guestName}>{guest.name}</Text>
+              <Text style={styles.guestName}>{guest.touristName}</Text>
               <View style={styles.guestMeta}>
-                <Chip icon="heart" style={styles.moodChip} textStyle={{ fontSize: 10 }}>{guest.mood}</Chip>
-                <Chip icon="translate" style={styles.langChip} textStyle={{ fontSize: 10 }}>{guest.lang}</Chip>
+                <Chip icon="check-circle" style={styles.moodChip} textStyle={{ fontSize: 10 }}>Confirmed</Chip>
               </View>
             </View>
             <IconButton icon="message-text" iconColor="#00695C" mode="contained-tonal" />

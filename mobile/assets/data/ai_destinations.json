@@ -16,7 +16,7 @@
     "community_benefit_score": "42",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.8,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0002",
@@ -35,7 +35,7 @@
     "community_benefit_score": "86",
     "carrying_capacity_adherence": "False",
     "eco_score": 72.5,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0003",
@@ -54,7 +54,7 @@
     "community_benefit_score": "33",
     "carrying_capacity_adherence": "False",
     "eco_score": 60.4,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Yala_Beach.jpg/960px-Yala_Beach.jpg"
   },
   {
     "destination_id": "DEST_0004",
@@ -73,7 +73,7 @@
     "community_benefit_score": "66",
     "carrying_capacity_adherence": "True",
     "eco_score": 86.3,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0005",
@@ -92,7 +92,7 @@
     "community_benefit_score": "59",
     "carrying_capacity_adherence": "False",
     "eco_score": 54.5,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/NineArchesBridge.JPG/960px-NineArchesBridge.JPG"
   },
   {
     "destination_id": "DEST_0006",
@@ -111,7 +111,7 @@
     "community_benefit_score": "70",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.9,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Galle_Fort.jpg/960px-Galle_Fort.jpg"
   },
   {
     "destination_id": "DEST_0007",
@@ -130,7 +130,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.9,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0008",
@@ -149,7 +149,7 @@
     "community_benefit_score": "43",
     "carrying_capacity_adherence": "False",
     "eco_score": 57.4,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Pinnawala_01.jpg/960px-Pinnawala_01.jpg"
   },
   {
     "destination_id": "DEST_0009",
@@ -168,7 +168,7 @@
     "community_benefit_score": "74",
     "carrying_capacity_adherence": "True",
     "eco_score": 66.5,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Srilankamountainforest.jpg/960px-Srilankamountainforest.jpg"
   },
   {
     "destination_id": "DEST_0010",
@@ -186,8 +186,8 @@
     "plastic_pollution_risk": "50",
     "community_benefit_score": "68",
     "carrying_capacity_adherence": "True",
-    "eco_score": 79.0,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "eco_score": 79,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Beach_of_Arugam_Bay.jpg/960px-Beach_of_Arugam_Bay.jpg"
   },
   {
     "destination_id": "DEST_0011",
@@ -206,7 +206,7 @@
     "community_benefit_score": "68",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.7,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0012",
@@ -225,7 +225,7 @@
     "community_benefit_score": "57",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.7,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Udawalawe_National_Park_%28Udawalawa_Reservoir%29.jpg/960px-Udawalawe_National_Park_%28Udawalawa_Reservoir%29.jpg"
   },
   {
     "destination_id": "DEST_0013",
@@ -244,7 +244,7 @@
     "community_benefit_score": "81",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.5,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0014",
@@ -263,7 +263,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
     "eco_score": 66.3,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/SL_Anuradhapura_asv2020-01_img11_Ruwanwelisaya_Stupa.jpg/960px-SL_Anuradhapura_asv2020-01_img11_Ruwanwelisaya_Stupa.jpg"
   },
   {
     "destination_id": "DEST_0015",
@@ -282,7 +282,7 @@
     "community_benefit_score": "38",
     "carrying_capacity_adherence": "True",
     "eco_score": 66.8,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Bambarakanda_Waterfall.jpg/960px-Bambarakanda_Waterfall.jpg"
   },
   {
     "destination_id": "DEST_0016",
@@ -301,7 +301,7 @@
     "community_benefit_score": "40",
     "carrying_capacity_adherence": "True",
     "eco_score": 66.8,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0017",
@@ -320,7 +320,7 @@
     "community_benefit_score": "76",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.4,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0018",
@@ -339,7 +339,7 @@
     "community_benefit_score": "38",
     "carrying_capacity_adherence": "False",
     "eco_score": 59.9,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Birds_at_the_Minneriya-Giritale_National_Park.jpg/960px-Birds_at_the_Minneriya-Giritale_National_Park.jpg"
   },
   {
     "destination_id": "DEST_0019",
@@ -358,7 +358,7 @@
     "community_benefit_score": "68",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.5,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Pigeon_Island_National_Park%2C_Trincomalee.jpg/960px-Pigeon_Island_National_Park%2C_Trincomalee.jpg"
   },
   {
     "destination_id": "DEST_0020",
@@ -377,7 +377,7 @@
     "community_benefit_score": "41",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Jaffna_Fort_%281%29.jpg/960px-Jaffna_Fort_%281%29.jpg"
   },
   {
     "destination_id": "DEST_0021",
@@ -395,8 +395,8 @@
     "plastic_pollution_risk": "45",
     "community_benefit_score": "55",
     "carrying_capacity_adherence": "False",
-    "eco_score": 68.0,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "eco_score": 68,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0022",
@@ -415,7 +415,7 @@
     "community_benefit_score": "64",
     "carrying_capacity_adherence": "False",
     "eco_score": 73.7,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0023",
@@ -434,7 +434,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "False",
     "eco_score": 69.9,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0024",
@@ -453,7 +453,7 @@
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "False",
     "eco_score": 63.8,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0025",
@@ -472,7 +472,7 @@
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "True",
     "eco_score": 84.7,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0026",
@@ -491,7 +491,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0027",
@@ -510,7 +510,7 @@
     "community_benefit_score": "61",
     "carrying_capacity_adherence": "False",
     "eco_score": 75.3,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0028",
@@ -529,7 +529,7 @@
     "community_benefit_score": "88",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.9,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0029",
@@ -548,7 +548,7 @@
     "community_benefit_score": "90",
     "carrying_capacity_adherence": "True",
     "eco_score": 87.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0030",
@@ -567,7 +567,7 @@
     "community_benefit_score": "86",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.9,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0031",
@@ -586,7 +586,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "True",
     "eco_score": 59.5,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0032",
@@ -604,8 +604,8 @@
     "plastic_pollution_risk": "71",
     "community_benefit_score": "72",
     "carrying_capacity_adherence": "False",
-    "eco_score": 57.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 57,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0033",
@@ -624,7 +624,7 @@
     "community_benefit_score": "46",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0034",
@@ -643,7 +643,7 @@
     "community_benefit_score": "76",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.6,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0035",
@@ -662,7 +662,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.4,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0036",
@@ -680,8 +680,8 @@
     "plastic_pollution_risk": "61",
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
-    "eco_score": 68.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 68,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0037",
@@ -700,7 +700,7 @@
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.9,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0038",
@@ -719,7 +719,7 @@
     "community_benefit_score": "50",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.8,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0039",
@@ -738,7 +738,7 @@
     "community_benefit_score": "34",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.9,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0040",
@@ -757,7 +757,7 @@
     "community_benefit_score": "50",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.8,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0041",
@@ -776,7 +776,7 @@
     "community_benefit_score": "70",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.5,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0042",
@@ -795,7 +795,7 @@
     "community_benefit_score": "57",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.6,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0043",
@@ -814,7 +814,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 87.2,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0044",
@@ -833,7 +833,7 @@
     "community_benefit_score": "80",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.6,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0045",
@@ -852,7 +852,7 @@
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.7,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0046",
@@ -871,7 +871,7 @@
     "community_benefit_score": "80",
     "carrying_capacity_adherence": "False",
     "eco_score": 64.7,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0047",
@@ -889,8 +889,8 @@
     "plastic_pollution_risk": "63",
     "community_benefit_score": "34",
     "carrying_capacity_adherence": "True",
-    "eco_score": 63.0,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "eco_score": 63,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0048",
@@ -909,7 +909,7 @@
     "community_benefit_score": "42",
     "carrying_capacity_adherence": "False",
     "eco_score": 55.1,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0049",
@@ -928,7 +928,7 @@
     "community_benefit_score": "54",
     "carrying_capacity_adherence": "True",
     "eco_score": 82.9,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0050",
@@ -947,7 +947,7 @@
     "community_benefit_score": "41",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.9,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0051",
@@ -965,8 +965,8 @@
     "plastic_pollution_risk": "61",
     "community_benefit_score": "48",
     "carrying_capacity_adherence": "False",
-    "eco_score": 60.0,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "eco_score": 60,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0052",
@@ -985,7 +985,7 @@
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0053",
@@ -1004,7 +1004,7 @@
     "community_benefit_score": "90",
     "carrying_capacity_adherence": "False",
     "eco_score": 63.8,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0054",
@@ -1023,7 +1023,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "False",
     "eco_score": 68.3,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0055",
@@ -1042,7 +1042,7 @@
     "community_benefit_score": "82",
     "carrying_capacity_adherence": "True",
     "eco_score": 88.5,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0056",
@@ -1061,7 +1061,7 @@
     "community_benefit_score": "46",
     "carrying_capacity_adherence": "True",
     "eco_score": 60.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0057",
@@ -1080,7 +1080,7 @@
     "community_benefit_score": "83",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.7,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0058",
@@ -1099,7 +1099,7 @@
     "community_benefit_score": "58",
     "carrying_capacity_adherence": "False",
     "eco_score": 67.8,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0059",
@@ -1117,8 +1117,8 @@
     "plastic_pollution_risk": "77",
     "community_benefit_score": "39",
     "carrying_capacity_adherence": "True",
-    "eco_score": 66.0,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "eco_score": 66,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0060",
@@ -1137,7 +1137,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.7,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0061",
@@ -1156,7 +1156,7 @@
     "community_benefit_score": "40",
     "carrying_capacity_adherence": "True",
     "eco_score": 79.8,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0062",
@@ -1175,7 +1175,7 @@
     "community_benefit_score": "65",
     "carrying_capacity_adherence": "True",
     "eco_score": 83.6,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0063",
@@ -1194,7 +1194,7 @@
     "community_benefit_score": "48",
     "carrying_capacity_adherence": "False",
     "eco_score": 64.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0064",
@@ -1213,7 +1213,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.7,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0065",
@@ -1231,8 +1231,8 @@
     "plastic_pollution_risk": "72",
     "community_benefit_score": "50",
     "carrying_capacity_adherence": "True",
-    "eco_score": 72.0,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "eco_score": 72,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0066",
@@ -1250,8 +1250,8 @@
     "plastic_pollution_risk": "20",
     "community_benefit_score": "40",
     "carrying_capacity_adherence": "True",
-    "eco_score": 70.0,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "eco_score": 70,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0067",
@@ -1270,7 +1270,7 @@
     "community_benefit_score": "82",
     "carrying_capacity_adherence": "True",
     "eco_score": 87.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0068",
@@ -1289,7 +1289,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "True",
     "eco_score": 67.5,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0069",
@@ -1308,7 +1308,7 @@
     "community_benefit_score": "65",
     "carrying_capacity_adherence": "False",
     "eco_score": 68.2,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0070",
@@ -1327,7 +1327,7 @@
     "community_benefit_score": "77",
     "carrying_capacity_adherence": "False",
     "eco_score": 71.3,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0071",
@@ -1346,7 +1346,7 @@
     "community_benefit_score": "82",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.1,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0072",
@@ -1365,7 +1365,7 @@
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
     "eco_score": 79.1,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0073",
@@ -1384,7 +1384,7 @@
     "community_benefit_score": "85",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.2,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0074",
@@ -1403,7 +1403,7 @@
     "community_benefit_score": "45",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.8,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0075",
@@ -1422,7 +1422,7 @@
     "community_benefit_score": "77",
     "carrying_capacity_adherence": "True",
     "eco_score": 82.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0076",
@@ -1441,7 +1441,7 @@
     "community_benefit_score": "55",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.5,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0077",
@@ -1460,7 +1460,7 @@
     "community_benefit_score": "30",
     "carrying_capacity_adherence": "False",
     "eco_score": 57.4,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0078",
@@ -1479,7 +1479,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.4,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0079",
@@ -1498,7 +1498,7 @@
     "community_benefit_score": "89",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.5,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0080",
@@ -1517,7 +1517,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.4,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0081",
@@ -1536,7 +1536,7 @@
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "True",
     "eco_score": 66.3,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0082",
@@ -1555,7 +1555,7 @@
     "community_benefit_score": "64",
     "carrying_capacity_adherence": "False",
     "eco_score": 59.9,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0083",
@@ -1574,7 +1574,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.6,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0084",
@@ -1593,7 +1593,7 @@
     "community_benefit_score": "79",
     "carrying_capacity_adherence": "True",
     "eco_score": 86.4,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0085",
@@ -1612,7 +1612,7 @@
     "community_benefit_score": "88",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.8,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0086",
@@ -1631,7 +1631,7 @@
     "community_benefit_score": "65",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0087",
@@ -1650,7 +1650,7 @@
     "community_benefit_score": "57",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.8,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0088",
@@ -1669,7 +1669,7 @@
     "community_benefit_score": "33",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.4,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0089",
@@ -1688,7 +1688,7 @@
     "community_benefit_score": "55",
     "carrying_capacity_adherence": "False",
     "eco_score": 55.8,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0090",
@@ -1707,7 +1707,7 @@
     "community_benefit_score": "90",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.5,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0091",
@@ -1726,7 +1726,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "True",
     "eco_score": 63.7,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0092",
@@ -1745,7 +1745,7 @@
     "community_benefit_score": "68",
     "carrying_capacity_adherence": "False",
     "eco_score": 72.5,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0093",
@@ -1764,7 +1764,7 @@
     "community_benefit_score": "38",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.8,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0094",
@@ -1783,7 +1783,7 @@
     "community_benefit_score": "87",
     "carrying_capacity_adherence": "True",
     "eco_score": 83.3,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0095",
@@ -1802,7 +1802,7 @@
     "community_benefit_score": "89",
     "carrying_capacity_adherence": "False",
     "eco_score": 77.2,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0096",
@@ -1820,8 +1820,8 @@
     "plastic_pollution_risk": "71",
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
-    "eco_score": 63.0,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "eco_score": 63,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0097",
@@ -1840,7 +1840,7 @@
     "community_benefit_score": "49",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.5,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0098",
@@ -1859,7 +1859,7 @@
     "community_benefit_score": "43",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0099",
@@ -1878,7 +1878,7 @@
     "community_benefit_score": "73",
     "carrying_capacity_adherence": "True",
     "eco_score": 84.9,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0100",
@@ -1897,7 +1897,7 @@
     "community_benefit_score": "39",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.7,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0101",
@@ -1916,7 +1916,7 @@
     "community_benefit_score": "48",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.7,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0102",
@@ -1935,7 +1935,7 @@
     "community_benefit_score": "36",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0103",
@@ -1954,7 +1954,7 @@
     "community_benefit_score": "42",
     "carrying_capacity_adherence": "True",
     "eco_score": 69.8,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0104",
@@ -1973,7 +1973,7 @@
     "community_benefit_score": "65",
     "carrying_capacity_adherence": "False",
     "eco_score": 64.9,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0105",
@@ -1991,8 +1991,8 @@
     "plastic_pollution_risk": "25",
     "community_benefit_score": "44",
     "carrying_capacity_adherence": "True",
-    "eco_score": 78.0,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "eco_score": 78,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0106",
@@ -2011,7 +2011,7 @@
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "False",
     "eco_score": 64.5,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0107",
@@ -2030,7 +2030,7 @@
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0108",
@@ -2049,7 +2049,7 @@
     "community_benefit_score": "59",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.2,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0109",
@@ -2068,7 +2068,7 @@
     "community_benefit_score": "31",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.2,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0110",
@@ -2087,7 +2087,7 @@
     "community_benefit_score": "77",
     "carrying_capacity_adherence": "True",
     "eco_score": 63.2,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0111",
@@ -2106,7 +2106,7 @@
     "community_benefit_score": "67",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.3,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0112",
@@ -2124,8 +2124,8 @@
     "plastic_pollution_risk": "64",
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "True",
-    "eco_score": 60.0,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "eco_score": 60,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0113",
@@ -2144,7 +2144,7 @@
     "community_benefit_score": "73",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.4,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0114",
@@ -2163,7 +2163,7 @@
     "community_benefit_score": "34",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.6,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0115",
@@ -2182,7 +2182,7 @@
     "community_benefit_score": "31",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.4,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0116",
@@ -2201,7 +2201,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.3,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0117",
@@ -2220,7 +2220,7 @@
     "community_benefit_score": "74",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.8,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0118",
@@ -2239,7 +2239,7 @@
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.7,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0119",
@@ -2258,7 +2258,7 @@
     "community_benefit_score": "49",
     "carrying_capacity_adherence": "False",
     "eco_score": 71.3,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0120",
@@ -2277,7 +2277,7 @@
     "community_benefit_score": "46",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.8,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0121",
@@ -2296,7 +2296,7 @@
     "community_benefit_score": "73",
     "carrying_capacity_adherence": "False",
     "eco_score": 68.5,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0122",
@@ -2315,7 +2315,7 @@
     "community_benefit_score": "44",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.4,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0123",
@@ -2334,7 +2334,7 @@
     "community_benefit_score": "79",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.8,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0124",
@@ -2353,7 +2353,7 @@
     "community_benefit_score": "31",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0125",
@@ -2372,7 +2372,7 @@
     "community_benefit_score": "72",
     "carrying_capacity_adherence": "False",
     "eco_score": 65.5,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0126",
@@ -2391,7 +2391,7 @@
     "community_benefit_score": "51",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.5,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0127",
@@ -2410,7 +2410,7 @@
     "community_benefit_score": "58",
     "carrying_capacity_adherence": "True",
     "eco_score": 66.7,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0128",
@@ -2429,7 +2429,7 @@
     "community_benefit_score": "58",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.8,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0129",
@@ -2448,7 +2448,7 @@
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "True",
     "eco_score": 67.4,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0130",
@@ -2467,7 +2467,7 @@
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.5,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0131",
@@ -2485,8 +2485,8 @@
     "plastic_pollution_risk": "62",
     "community_benefit_score": "79",
     "carrying_capacity_adherence": "True",
-    "eco_score": 78.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 78,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0132",
@@ -2505,7 +2505,7 @@
     "community_benefit_score": "45",
     "carrying_capacity_adherence": "False",
     "eco_score": 61.8,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0133",
@@ -2523,8 +2523,8 @@
     "plastic_pollution_risk": "41",
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
-    "eco_score": 71.0,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "eco_score": 71,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0134",
@@ -2543,7 +2543,7 @@
     "community_benefit_score": "75",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.6,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0135",
@@ -2562,7 +2562,7 @@
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.2,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0136",
@@ -2581,7 +2581,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
     "eco_score": 86.8,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0137",
@@ -2600,7 +2600,7 @@
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.7,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0138",
@@ -2619,7 +2619,7 @@
     "community_benefit_score": "44",
     "carrying_capacity_adherence": "True",
     "eco_score": 67.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0139",
@@ -2638,7 +2638,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.2,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0140",
@@ -2657,7 +2657,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.5,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0141",
@@ -2676,7 +2676,7 @@
     "community_benefit_score": "56",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.8,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0142",
@@ -2695,7 +2695,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
     "eco_score": 84.7,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0143",
@@ -2713,8 +2713,8 @@
     "plastic_pollution_risk": "54",
     "community_benefit_score": "54",
     "carrying_capacity_adherence": "False",
-    "eco_score": 58.0,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "eco_score": 58,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0144",
@@ -2733,7 +2733,7 @@
     "community_benefit_score": "38",
     "carrying_capacity_adherence": "False",
     "eco_score": 58.1,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0145",
@@ -2752,7 +2752,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "False",
     "eco_score": 56.9,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0146",
@@ -2771,7 +2771,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "False",
     "eco_score": 59.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0147",
@@ -2790,7 +2790,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.7,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0148",
@@ -2809,7 +2809,7 @@
     "community_benefit_score": "86",
     "carrying_capacity_adherence": "True",
     "eco_score": 82.2,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0149",
@@ -2828,7 +2828,7 @@
     "community_benefit_score": "67",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.5,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0150",
@@ -2847,7 +2847,7 @@
     "community_benefit_score": "41",
     "carrying_capacity_adherence": "True",
     "eco_score": 82.6,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0151",
@@ -2866,7 +2866,7 @@
     "community_benefit_score": "85",
     "carrying_capacity_adherence": "False",
     "eco_score": 75.5,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0152",
@@ -2885,7 +2885,7 @@
     "community_benefit_score": "74",
     "carrying_capacity_adherence": "True",
     "eco_score": 79.1,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0153",
@@ -2904,7 +2904,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.9,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0154",
@@ -2923,7 +2923,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "False",
     "eco_score": 67.2,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0155",
@@ -2942,7 +2942,7 @@
     "community_benefit_score": "65",
     "carrying_capacity_adherence": "False",
     "eco_score": 57.5,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0156",
@@ -2961,7 +2961,7 @@
     "community_benefit_score": "77",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.7,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0157",
@@ -2980,7 +2980,7 @@
     "community_benefit_score": "86",
     "carrying_capacity_adherence": "True",
     "eco_score": 84.8,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0158",
@@ -2998,8 +2998,8 @@
     "plastic_pollution_risk": "25",
     "community_benefit_score": "50",
     "carrying_capacity_adherence": "False",
-    "eco_score": 65.0,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "eco_score": 65,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0159",
@@ -3018,7 +3018,7 @@
     "community_benefit_score": "67",
     "carrying_capacity_adherence": "True",
     "eco_score": 67.3,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0160",
@@ -3037,7 +3037,7 @@
     "community_benefit_score": "39",
     "carrying_capacity_adherence": "True",
     "eco_score": 67.3,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0161",
@@ -3056,7 +3056,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.6,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0162",
@@ -3074,8 +3074,8 @@
     "plastic_pollution_risk": "23",
     "community_benefit_score": "59",
     "carrying_capacity_adherence": "False",
-    "eco_score": 69.0,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "eco_score": 69,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0163",
@@ -3094,7 +3094,7 @@
     "community_benefit_score": "34",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.3,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0164",
@@ -3112,8 +3112,8 @@
     "plastic_pollution_risk": "74",
     "community_benefit_score": "60",
     "carrying_capacity_adherence": "True",
-    "eco_score": 67.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 67,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0165",
@@ -3132,7 +3132,7 @@
     "community_benefit_score": "39",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.2,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0166",
@@ -3151,7 +3151,7 @@
     "community_benefit_score": "41",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.1,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0167",
@@ -3170,7 +3170,7 @@
     "community_benefit_score": "81",
     "carrying_capacity_adherence": "True",
     "eco_score": 82.5,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0168",
@@ -3189,7 +3189,7 @@
     "community_benefit_score": "65",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.6,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0169",
@@ -3208,7 +3208,7 @@
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.4,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0170",
@@ -3227,7 +3227,7 @@
     "community_benefit_score": "31",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.2,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0171",
@@ -3245,8 +3245,8 @@
     "plastic_pollution_risk": "57",
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "True",
-    "eco_score": 70.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 70,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0172",
@@ -3264,8 +3264,8 @@
     "plastic_pollution_risk": "47",
     "community_benefit_score": "87",
     "carrying_capacity_adherence": "True",
-    "eco_score": 84.0,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "eco_score": 84,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0173",
@@ -3284,7 +3284,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
     "eco_score": 80.8,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0174",
@@ -3303,7 +3303,7 @@
     "community_benefit_score": "59",
     "carrying_capacity_adherence": "True",
     "eco_score": 75.4,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0175",
@@ -3322,7 +3322,7 @@
     "community_benefit_score": "75",
     "carrying_capacity_adherence": "True",
     "eco_score": 68.5,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0176",
@@ -3341,7 +3341,7 @@
     "community_benefit_score": "42",
     "carrying_capacity_adherence": "True",
     "eco_score": 77.1,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0177",
@@ -3360,7 +3360,7 @@
     "community_benefit_score": "56",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0178",
@@ -3379,7 +3379,7 @@
     "community_benefit_score": "64",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.9,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0179",
@@ -3398,7 +3398,7 @@
     "community_benefit_score": "34",
     "carrying_capacity_adherence": "False",
     "eco_score": 61.7,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0180",
@@ -3417,7 +3417,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.5,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0181",
@@ -3436,7 +3436,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 85.5,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0182",
@@ -3455,7 +3455,7 @@
     "community_benefit_score": "76",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.5,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0183",
@@ -3474,7 +3474,7 @@
     "community_benefit_score": "40",
     "carrying_capacity_adherence": "True",
     "eco_score": 67.6,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0184",
@@ -3493,7 +3493,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "False",
     "eco_score": 68.2,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0185",
@@ -3512,7 +3512,7 @@
     "community_benefit_score": "89",
     "carrying_capacity_adherence": "True",
     "eco_score": 91.9,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0186",
@@ -3531,7 +3531,7 @@
     "community_benefit_score": "74",
     "carrying_capacity_adherence": "True",
     "eco_score": 81.5,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0187",
@@ -3550,7 +3550,7 @@
     "community_benefit_score": "61",
     "carrying_capacity_adherence": "True",
     "eco_score": 81.8,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0188",
@@ -3569,7 +3569,7 @@
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.9,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0189",
@@ -3588,7 +3588,7 @@
     "community_benefit_score": "69",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0190",
@@ -3607,7 +3607,7 @@
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "True",
     "eco_score": 80.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0191",
@@ -3625,8 +3625,8 @@
     "plastic_pollution_risk": "10",
     "community_benefit_score": "44",
     "carrying_capacity_adherence": "True",
-    "eco_score": 75.0,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "eco_score": 75,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0192",
@@ -3645,7 +3645,7 @@
     "community_benefit_score": "57",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.5,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0193",
@@ -3664,7 +3664,7 @@
     "community_benefit_score": "77",
     "carrying_capacity_adherence": "False",
     "eco_score": 59.8,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0194",
@@ -3683,7 +3683,7 @@
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.4,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0195",
@@ -3702,7 +3702,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "False",
     "eco_score": 61.2,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0196",
@@ -3721,7 +3721,7 @@
     "community_benefit_score": "44",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.6,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0197",
@@ -3739,8 +3739,8 @@
     "plastic_pollution_risk": "39",
     "community_benefit_score": "62",
     "carrying_capacity_adherence": "True",
-    "eco_score": 66.0,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "eco_score": 66,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0198",
@@ -3759,7 +3759,7 @@
     "community_benefit_score": "83",
     "carrying_capacity_adherence": "True",
     "eco_score": 85.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0199",
@@ -3778,7 +3778,7 @@
     "community_benefit_score": "85",
     "carrying_capacity_adherence": "False",
     "eco_score": 65.3,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0200",
@@ -3797,7 +3797,7 @@
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.5,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0201",
@@ -3816,7 +3816,7 @@
     "community_benefit_score": "36",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.3,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0202",
@@ -3835,7 +3835,7 @@
     "community_benefit_score": "85",
     "carrying_capacity_adherence": "True",
     "eco_score": 79.5,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0203",
@@ -3854,7 +3854,7 @@
     "community_benefit_score": "36",
     "carrying_capacity_adherence": "False",
     "eco_score": 65.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0204",
@@ -3873,7 +3873,7 @@
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "False",
     "eco_score": 55.7,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0205",
@@ -3892,7 +3892,7 @@
     "community_benefit_score": "72",
     "carrying_capacity_adherence": "False",
     "eco_score": 58.9,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0206",
@@ -3910,8 +3910,8 @@
     "plastic_pollution_risk": "58",
     "community_benefit_score": "36",
     "carrying_capacity_adherence": "False",
-    "eco_score": 56.0,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "eco_score": 56,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0207",
@@ -3930,7 +3930,7 @@
     "community_benefit_score": "89",
     "carrying_capacity_adherence": "False",
     "eco_score": 80.9,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0208",
@@ -3948,8 +3948,8 @@
     "plastic_pollution_risk": "63",
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
-    "eco_score": 77.0,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "eco_score": 77,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0209",
@@ -3968,7 +3968,7 @@
     "community_benefit_score": "75",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0210",
@@ -3987,7 +3987,7 @@
     "community_benefit_score": "61",
     "carrying_capacity_adherence": "False",
     "eco_score": 57.4,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0211",
@@ -4006,7 +4006,7 @@
     "community_benefit_score": "81",
     "carrying_capacity_adherence": "False",
     "eco_score": 72.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0212",
@@ -4025,7 +4025,7 @@
     "community_benefit_score": "90",
     "carrying_capacity_adherence": "False",
     "eco_score": 73.2,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0213",
@@ -4044,7 +4044,7 @@
     "community_benefit_score": "44",
     "carrying_capacity_adherence": "False",
     "eco_score": 59.4,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0214",
@@ -4063,7 +4063,7 @@
     "community_benefit_score": "78",
     "carrying_capacity_adherence": "True",
     "eco_score": 83.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0215",
@@ -4082,7 +4082,7 @@
     "community_benefit_score": "31",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.2,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0216",
@@ -4101,7 +4101,7 @@
     "community_benefit_score": "33",
     "carrying_capacity_adherence": "True",
     "eco_score": 60.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0217",
@@ -4120,7 +4120,7 @@
     "community_benefit_score": "49",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.7,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0218",
@@ -4139,7 +4139,7 @@
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.1,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0219",
@@ -4158,7 +4158,7 @@
     "community_benefit_score": "79",
     "carrying_capacity_adherence": "False",
     "eco_score": 74.9,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0220",
@@ -4177,7 +4177,7 @@
     "community_benefit_score": "43",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.8,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0221",
@@ -4196,7 +4196,7 @@
     "community_benefit_score": "57",
     "carrying_capacity_adherence": "True",
     "eco_score": 64.5,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0222",
@@ -4215,7 +4215,7 @@
     "community_benefit_score": "83",
     "carrying_capacity_adherence": "False",
     "eco_score": 72.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0223",
@@ -4234,7 +4234,7 @@
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
     "eco_score": 64.3,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0224",
@@ -4253,7 +4253,7 @@
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.9,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0225",
@@ -4272,7 +4272,7 @@
     "community_benefit_score": "41",
     "carrying_capacity_adherence": "True",
     "eco_score": 63.9,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0226",
@@ -4290,8 +4290,8 @@
     "plastic_pollution_risk": "70",
     "community_benefit_score": "74",
     "carrying_capacity_adherence": "True",
-    "eco_score": 74.0,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "eco_score": 74,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0227",
@@ -4310,7 +4310,7 @@
     "community_benefit_score": "43",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.7,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0228",
@@ -4329,7 +4329,7 @@
     "community_benefit_score": "39",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.4,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0229",
@@ -4348,7 +4348,7 @@
     "community_benefit_score": "49",
     "carrying_capacity_adherence": "True",
     "eco_score": 80.9,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0230",
@@ -4367,7 +4367,7 @@
     "community_benefit_score": "87",
     "carrying_capacity_adherence": "False",
     "eco_score": 76.6,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0231",
@@ -4386,7 +4386,7 @@
     "community_benefit_score": "46",
     "carrying_capacity_adherence": "False",
     "eco_score": 60.5,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0232",
@@ -4405,7 +4405,7 @@
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0233",
@@ -4424,7 +4424,7 @@
     "community_benefit_score": "73",
     "carrying_capacity_adherence": "True",
     "eco_score": 69.6,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0234",
@@ -4443,7 +4443,7 @@
     "community_benefit_score": "88",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0235",
@@ -4461,8 +4461,8 @@
     "plastic_pollution_risk": "33",
     "community_benefit_score": "47",
     "carrying_capacity_adherence": "False",
-    "eco_score": 65.0,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "eco_score": 65,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0236",
@@ -4481,7 +4481,7 @@
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
     "eco_score": 69.6,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0237",
@@ -4500,7 +4500,7 @@
     "community_benefit_score": "39",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.1,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0238",
@@ -4519,7 +4519,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.6,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0239",
@@ -4538,7 +4538,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0240",
@@ -4557,7 +4557,7 @@
     "community_benefit_score": "75",
     "carrying_capacity_adherence": "True",
     "eco_score": 81.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0241",
@@ -4576,7 +4576,7 @@
     "community_benefit_score": "70",
     "carrying_capacity_adherence": "True",
     "eco_score": 76.2,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0242",
@@ -4595,7 +4595,7 @@
     "community_benefit_score": "81",
     "carrying_capacity_adherence": "False",
     "eco_score": 66.7,
-    "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0243",
@@ -4613,8 +4613,8 @@
     "plastic_pollution_risk": "63",
     "community_benefit_score": "88",
     "carrying_capacity_adherence": "True",
-    "eco_score": 79.0,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "eco_score": 79,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0244",
@@ -4633,7 +4633,7 @@
     "community_benefit_score": "87",
     "carrying_capacity_adherence": "True",
     "eco_score": 84.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0245",
@@ -4652,7 +4652,7 @@
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.5,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0246",
@@ -4671,7 +4671,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "False",
     "eco_score": 67.3,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0247",
@@ -4690,7 +4690,7 @@
     "community_benefit_score": "68",
     "carrying_capacity_adherence": "False",
     "eco_score": 60.1,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0248",
@@ -4709,7 +4709,7 @@
     "community_benefit_score": "53",
     "carrying_capacity_adherence": "True",
     "eco_score": 74.6,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0249",
@@ -4728,7 +4728,7 @@
     "community_benefit_score": "60",
     "carrying_capacity_adherence": "True",
     "eco_score": 72.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0250",
@@ -4746,8 +4746,8 @@
     "plastic_pollution_risk": "79",
     "community_benefit_score": "37",
     "carrying_capacity_adherence": "False",
-    "eco_score": 53.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 53,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0251",
@@ -4766,7 +4766,7 @@
     "community_benefit_score": "43",
     "carrying_capacity_adherence": "True",
     "eco_score": 60.7,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0252",
@@ -4785,7 +4785,7 @@
     "community_benefit_score": "67",
     "carrying_capacity_adherence": "False",
     "eco_score": 62.6,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0253",
@@ -4804,7 +4804,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "False",
     "eco_score": 76.9,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0254",
@@ -4823,7 +4823,7 @@
     "community_benefit_score": "82",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.9,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0255",
@@ -4842,7 +4842,7 @@
     "community_benefit_score": "75",
     "carrying_capacity_adherence": "True",
     "eco_score": 86.8,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0256",
@@ -4861,7 +4861,7 @@
     "community_benefit_score": "38",
     "carrying_capacity_adherence": "False",
     "eco_score": 67.2,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0257",
@@ -4879,8 +4879,8 @@
     "plastic_pollution_risk": "58",
     "community_benefit_score": "86",
     "carrying_capacity_adherence": "True",
-    "eco_score": 86.0,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "eco_score": 86,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0258",
@@ -4899,7 +4899,7 @@
     "community_benefit_score": "54",
     "carrying_capacity_adherence": "True",
     "eco_score": 81.4,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0259",
@@ -4918,7 +4918,7 @@
     "community_benefit_score": "63",
     "carrying_capacity_adherence": "True",
     "eco_score": 71.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0260",
@@ -4937,7 +4937,7 @@
     "community_benefit_score": "82",
     "carrying_capacity_adherence": "False",
     "eco_score": 68.5,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0261",
@@ -4956,7 +4956,7 @@
     "community_benefit_score": "75",
     "carrying_capacity_adherence": "False",
     "eco_score": 65.2,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bambarakanda_Falls.jpg/800px-Bambarakanda_Falls.jpg"
   },
   {
     "destination_id": "DEST_0262",
@@ -4975,7 +4975,7 @@
     "community_benefit_score": "42",
     "carrying_capacity_adherence": "False",
     "eco_score": 61.7,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0263",
@@ -4994,7 +4994,7 @@
     "community_benefit_score": "58",
     "carrying_capacity_adherence": "False",
     "eco_score": 61.2,
-    "image": "https://images.unsplash.com/photo-1596700049405-0210f97be9b2"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0264",
@@ -5013,7 +5013,7 @@
     "community_benefit_score": "73",
     "carrying_capacity_adherence": "False",
     "eco_score": 57.8,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0265",
@@ -5032,7 +5032,7 @@
     "community_benefit_score": "36",
     "carrying_capacity_adherence": "True",
     "eco_score": 65.1,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Sri_Lanka_Unawatuna.jpg/800px-Sri_Lanka_Unawatuna.jpg"
   },
   {
     "destination_id": "DEST_0266",
@@ -5050,8 +5050,8 @@
     "plastic_pollution_risk": "57",
     "community_benefit_score": "49",
     "carrying_capacity_adherence": "True",
-    "eco_score": 66.0,
-    "image": "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f"
+    "eco_score": 66,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0267",
@@ -5070,7 +5070,7 @@
     "community_benefit_score": "32",
     "carrying_capacity_adherence": "True",
     "eco_score": 64.8,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0268",
@@ -5089,7 +5089,7 @@
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "True",
     "eco_score": 64.5,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0269",
@@ -5108,7 +5108,7 @@
     "community_benefit_score": "71",
     "carrying_capacity_adherence": "True",
     "eco_score": 82.6,
-    "image": "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0270",
@@ -5127,7 +5127,7 @@
     "community_benefit_score": "79",
     "carrying_capacity_adherence": "False",
     "eco_score": 66.2,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0271",
@@ -5146,7 +5146,7 @@
     "community_benefit_score": "38",
     "carrying_capacity_adherence": "True",
     "eco_score": 61.7,
-    "image": "https://images.unsplash.com/photo-1546522304-469b81e8eb95"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0272",
@@ -5165,7 +5165,7 @@
     "community_benefit_score": "84",
     "carrying_capacity_adherence": "True",
     "eco_score": 78.5,
-    "image": "https://images.unsplash.com/photo-1544735716-392fe2489ffa"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg/800px-Elephant_in_Yala_National_Park%2C_Sri_Lanka.jpg"
   },
   {
     "destination_id": "DEST_0273",
@@ -5184,7 +5184,7 @@
     "community_benefit_score": "80",
     "carrying_capacity_adherence": "True",
     "eco_score": 70.8,
-    "image": "https://images.unsplash.com/photo-1574510007802-9a3d46328bc6"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0274",
@@ -5202,8 +5202,8 @@
     "plastic_pollution_risk": "49",
     "community_benefit_score": "35",
     "carrying_capacity_adherence": "True",
-    "eco_score": 70.0,
-    "image": "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a"
+    "eco_score": 70,
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg"
   },
   {
     "destination_id": "DEST_0275",
@@ -5222,6 +5222,6 @@
     "community_benefit_score": "73",
     "carrying_capacity_adherence": "True",
     "eco_score": 73.8,
-    "image": "https://images.unsplash.com/photo-1563290231-155097486e9b"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   }
 ]

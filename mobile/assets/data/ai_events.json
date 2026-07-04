@@ -8,7 +8,8 @@
     "impact_on_demand": "High",
     "eco_impact_score": "60",
     "expected_attendance": "89090",
-    "recommended_for_tourists": "False"
+    "recommended_for_tourists": "False",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_002",
@@ -19,7 +20,8 @@
     "impact_on_demand": "Medium",
     "eco_impact_score": "85",
     "expected_attendance": "7026",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_003",
@@ -30,7 +32,8 @@
     "impact_on_demand": "Very High",
     "eco_impact_score": "70",
     "expected_attendance": "61017",
-    "recommended_for_tourists": "False"
+    "recommended_for_tourists": "False",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_004",
@@ -41,7 +44,8 @@
     "impact_on_demand": "High",
     "eco_impact_score": "65",
     "expected_attendance": "42763",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_005",
@@ -52,7 +56,8 @@
     "impact_on_demand": "Medium",
     "eco_impact_score": "75",
     "expected_attendance": "2801",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_006",
@@ -63,7 +68,8 @@
     "impact_on_demand": "Medium",
     "eco_impact_score": "65",
     "expected_attendance": "7272",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_007",
@@ -74,7 +80,8 @@
     "impact_on_demand": "High",
     "eco_impact_score": "50",
     "expected_attendance": "83549",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_008",
@@ -85,7 +92,8 @@
     "impact_on_demand": "High",
     "eco_impact_score": "55",
     "expected_attendance": "96548",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_009",
@@ -96,7 +104,8 @@
     "impact_on_demand": "Medium",
     "eco_impact_score": "40",
     "expected_attendance": "6571",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_010",
@@ -107,7 +116,8 @@
     "impact_on_demand": "Medium",
     "eco_impact_score": "70",
     "expected_attendance": "14129",
-    "recommended_for_tourists": "False"
+    "recommended_for_tourists": "False",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_011",
@@ -118,7 +128,8 @@
     "impact_on_demand": "High",
     "eco_impact_score": "65",
     "expected_attendance": "7098",
-    "recommended_for_tourists": "False"
+    "recommended_for_tourists": "False",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_012",
@@ -129,7 +140,8 @@
     "impact_on_demand": "Medium",
     "eco_impact_score": "80",
     "expected_attendance": "6341",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_013",
@@ -140,7 +152,8 @@
     "impact_on_demand": "High",
     "eco_impact_score": "75",
     "expected_attendance": "83129",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_014",
@@ -151,7 +164,8 @@
     "impact_on_demand": "Low",
     "eco_impact_score": "80",
     "expected_attendance": "7733",
-    "recommended_for_tourists": "True"
+    "recommended_for_tourists": "True",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   },
   {
     "event_id": "EVT_015",
@@ -162,6 +176,7 @@
     "impact_on_demand": "High",
     "eco_impact_score": "60",
     "expected_attendance": "72058",
-    "recommended_for_tourists": "False"
+    "recommended_for_tourists": "False",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ella_Rock_Sri_Lanka.jpg/800px-Ella_Rock_Sri_Lanka.jpg"
   }
 ]

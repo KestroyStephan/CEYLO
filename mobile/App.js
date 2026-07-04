@@ -13,10 +13,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OfflineQueue } from './services/OfflineQueue';
 import { NotificationService } from './services/NotificationService';
 
-// Suppress common warnings that are unavoidable or web-specific
+// Suppress known unavoidable deprecation warnings
 LogBox.ignoreLogs([
-  'props.pointerEvents is deprecated',
-  'Animated: `useNativeDriver` is not supported'
+  'Method getInfoAsync imported from "expo-file-system" is deprecated',
+  'Method makeDirectoryAsync imported from "expo-file-system" is deprecated',
+  'Method downloadAsync imported from "expo-file-system" is deprecated',
+  'Method deleteAsync imported from "expo-file-system" is deprecated',
+  'expo-notifications',
 ]);
 
 // Auth Screens
@@ -25,6 +28,7 @@ import WelcomeScreen from './screens/auth/WelcomeScreen';
 import LoginScreen from './screens/auth/LoginScreen';
 import RegisterScreen from './screens/auth/RegisterScreen';
 import LanguageSelectScreen from './screens/onboarding/LanguageSelectScreen';
+import GuideOnboardingScreen from './screens/onboarding/GuideOnboardingScreen';
 
 // Core Screens
 import HomeScreen from './screens/HomeScreen';
@@ -40,11 +44,15 @@ import MarketplaceScreen from './screens/MarketplaceScreen';
 import EcoPassportScreen from './screens/EcoPassportScreen';
 import CulturalEventsScreen from './screens/CulturalEventsScreen';
 import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
+import SOSScreen from './screens/SOSScreen';
+import GuidesListScreen from './screens/GuidesListScreen';
+import GuideProfileScreen from './screens/GuideProfileScreen';
 
 // Navigation
-import MainTabNavigator from './navigation/MainTabNavigator';
+import DrawerNavigator from './navigation/DrawerNavigator';
 import OfflineMapSettings from './screens/OfflineMapSettings';
 import EventDetailScreen from './screens/EventDetailScreen';
+import SustainableRoutesListScreen from './screens/SustainableRoutesListScreen';
 
 // Vendor portal
 import VendorNavigator from './navigation/VendorNavigator';
@@ -178,7 +186,7 @@ export default function App() {
               <Stack.Group>
                 {/* Role-based entry screens */}
                 {userRole === 'tourist' && !userData?.onboardingCompleted ? (
-                   <Stack.Screen name="MoodSelect" component={MoodSelectScreen} />
+                  <Stack.Screen name="MoodSelect" component={MoodSelectScreen} />
                 ) : null}
 
                 {userRole === 'driver' ? (
@@ -189,10 +197,12 @@ export default function App() {
                   <Stack.Screen name="VendorPortal" component={VendorNavigator} />
                 ) : userRole === 'vendor_onboarding' ? (
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
-                ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected') ? (
+                ) : userRole === 'guide_pending' && !userData?.onboardingCompleted ? (
+                  <Stack.Screen name="GuideOnboarding" component={GuideOnboardingScreen} />
+                ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected' || (userRole === 'guide_pending' && userData?.onboardingCompleted)) ? (
                   <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
                 ) : (
-                  <Stack.Screen name="Main" component={MainTabNavigator} />
+                  <Stack.Screen name="Main" component={DrawerNavigator} />
                 )}
 
                 {/* Common Screens */}
@@ -205,13 +215,17 @@ export default function App() {
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
                 <Stack.Screen name="EcoPassport" component={EcoPassportScreen} />
                 <Stack.Screen name="CulturalEvents" component={CulturalEventsScreen} />
-                
+                <Stack.Screen name="SOSScreen" component={SOSScreen} />
+                <Stack.Screen name="GuidesList" component={GuidesListScreen} />
+                <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
+
                 {/* Vendor & Utility Screens from Main */}
                 {userRole !== 'vendor_onboarding' && (
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
                 )}
                 <Stack.Screen name="OfflineMapSettings" component={OfflineMapSettings} />
                 <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+                <Stack.Screen name="SustainableRoutesList" component={SustainableRoutesListScreen} />
               </Stack.Group>
             ) : (
               <Stack.Group>

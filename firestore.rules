@@ -119,6 +119,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.userId ||
         hasRole('admin') || hasRole('guide') || hasRole('driver')
       );
+      allow update: if true; // In production, restrict to resource.data.userId or admins
     }
 
     // Destinations & Events (public read, admin write)
@@ -128,7 +129,7 @@ service cloud.firestore {
     }
     match /cultural_events/{id} {
       allow read:  if true;
-      allow write: if isAdmin() || isSignedIn();
+      allow write: if isAdmin();
     }
 
     // Reviews

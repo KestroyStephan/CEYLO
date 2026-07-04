@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start --go --host lan",
+    "start": "expo start --host lan",
+    "start:tunnel": "expo start --tunnel",
+    "start:clear": "expo start --host lan --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"
@@ -24,6 +26,7 @@
     "@react-navigation/native-stack": "^7.14.11",
     "date-fns": "^4.1.0",
     "expo": "~54.0.35",
+    "expo-av": "~16.0.8",
     "expo-build-properties": "~1.0.10",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import { Text, TextInput, Button, Surface, ActivityIndicator, IconButton } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, ActivityIndicator, IconButton, HelperText } from 'react-native-paper';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import { useTranslation } from 'react-i18next';
@@ -13,12 +13,19 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
+    let newErrors = {};
+    if (!email) newErrors.email = 'Email is required';
+    else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = 'Invalid email address';
+    
+    if (!password) newErrors.password = 'Password is required';
+    
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length > 0) return;
+    
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -77,7 +84,11 @@ export default function LoginScreen({ navigation }) {
             activeUnderlineColor="transparent"
             left={<TextInput.Icon icon="email-outline" color="#00695C" />}
             contentStyle={{ fontFamily: 'Outfit-Regular' }}
+            error={!!errors.email}
           />
+          <HelperText type="error" visible={!!errors.email} style={styles.errorText}>
+            {errors.email}
+          </HelperText>
 
           <TextInput
             label="Password"
@@ -91,7 +102,11 @@ export default function LoginScreen({ navigation }) {
             left={<TextInput.Icon icon="lock-outline" color="#00695C" />}
             right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
             contentStyle={{ fontFamily: 'Outfit-Regular' }}
+            error={!!errors.password}
           />
+          <HelperText type="error" visible={!!errors.password} style={styles.errorText}>
+            {errors.password}
+          </HelperText>
 
           <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
             <Text style={styles.forgotText}>Forgot Password?</Text>
@@ -174,6 +189,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
     height: 60,
+  },
+  errorText: {
+    fontFamily: 'Outfit-Regular',
+    marginTop: -5,
     marginBottom: 5,
   },
   forgotPassword: {

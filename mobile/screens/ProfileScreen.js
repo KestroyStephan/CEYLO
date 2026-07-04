@@ -1,15 +1,36 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { Text, Avatar, List, Surface, IconButton, Button, Divider } from 'react-native-paper';
-import { auth } from '../firebaseConfig';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
+import { Text, Surface } from 'react-native-paper';
+import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
     const user = auth.currentUser;
+    const [userData, setUserData] = useState(null);
+    const [itinerariesCount, setItinerariesCount] = useState(0);
+
+    useEffect(() => {
+        if (!user) return;
+        const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                setUserData(docSnap.data());
+            }
+        });
+        
+        const q = query(collection(db, 'itineraries'), where('userId', '==', user.uid));
+        const unsubItin = onSnapshot(q, (snap) => {
+            setItinerariesCount(snap.docs.length);
+        });
+
+        return () => {
+            unsub();
+            unsubItin();
+        };
+    }, [user]);
 
     const handleLogout = async () => {
         try {
@@ -19,134 +40,180 @@ export default function ProfileScreen({ navigation }) {
         }
     };
 
-    const StatItem = ({ label, value, icon }) => (
-        <View style={styles.statItem}>
-            <MaterialCommunityIcons name={icon} size={24} color="#00695C" />
-            <Text style={styles.statVal}>{value}</Text>
-            <Text style={styles.statLab}>{label}</Text>
+    const Header = () => (
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.openDrawer()}>
+                <Feather name="menu" size={24} color="#004D40" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Explore Sri Lanka</Text>
+            <TouchableOpacity>
+                <Feather name="search" size={24} color="#004D40" />
+            </TouchableOpacity>
         </View>
     );
 
+    const StatCard = ({ value, label, valueColor }) => (
+        <Surface style={styles.statCard} elevation={1}>
+            <Text style={[styles.statValue, { color: valueColor }]}>{value}</Text>
+            <Text style={styles.statLabel}>{label}</Text>
+        </Surface>
+    );
+
+    const PassportCard = ({ icon, title, date, borderColor }) => (
+        <Surface style={[styles.passportCard, { borderColor: borderColor || '#E0F2F1' }]} elevation={0}>
+            <View style={styles.passportIconWrapper}>
+                <MaterialCommunityIcons name={icon} size={24} color="#004D40" />
+            </View>
+            <Text style={styles.passportTitle}>{title}</Text>
+            <Text style={styles.passportDate}>{date}</Text>
+        </Surface>
+    );
+
+    const MenuItem = ({ icon, title, subtitle, onPress }) => (
+        <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.8}>
+            <View style={styles.menuIconWrapper}>
+                <Feather name={icon} size={20} color="#004D40" />
+            </View>
+            <View style={styles.menuTextContent}>
+                <Text style={styles.menuTitle}>{title}</Text>
+                <Text style={styles.menuSubtitle}>{subtitle}</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#666" />
+        </TouchableOpacity>
+    );
+
+    // Real Data Fallbacks
+    const ecoPoints = userData?.ecoPoints || 0;
+    const visitedCount = userData?.visitedPlaces?.length || 0;
+    const reviewsCount = userData?.reviews?.length || 0;
+    const savedPlacesCount = userData?.savedPlaces?.length || 0;
+    
+    // Fallback to real visited places if available
+    const visitedPlaces = userData?.visitedPlaces || [];
+
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <LinearGradient colors={['#004D40', '#00695C']} style={styles.header}>
-                <View style={styles.headerTop}>
-                    <IconButton icon="cog-outline" iconColor="#FFF" size={24} />
-                    <IconButton icon="bell-outline" iconColor="#FFF" size={24} />
-                </View>
+        <View style={styles.mainContainer}>
+            <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                <Header />
                 
-                <View style={styles.profileInfo}>
-                    <Surface style={styles.avatarSurface} elevation={4}>
-                        <Avatar.Text
-                            size={90}
-                            label={user?.displayName ? user.displayName[0].toUpperCase() : "U"}
-                            style={styles.avatar}
-                            labelStyle={{ fontFamily: 'Outfit-Bold' }}
+                <View style={styles.profileSection}>
+                    <View style={styles.avatarContainer}>
+                        <Image 
+                            source={{ uri: user?.photoURL || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80' }} 
+                            style={styles.avatar} 
                         />
-                    </Surface>
+                        <View style={styles.levelBadge}>
+                            <Text style={styles.levelText}>LVL {userData?.level || 1}</Text>
+                        </View>
+                    </View>
                     <Text style={styles.name}>{user?.displayName || "Traveler"}</Text>
-                    <View style={styles.rankBadge}>
-                        <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
-                        <Text style={styles.rankText}>Eco Expert</Text>
+                    <View style={styles.ecoTag}>
+                        <MaterialCommunityIcons name="leaf" size={16} color="#00897B" />
+                        <Text style={styles.ecoTagText}>{userData?.rank || 'Eco-Traveler'}</Text>
                     </View>
                 </View>
-            </LinearGradient>
 
-            <Surface style={styles.statsSurface} elevation={2}>
-                <StatItem label="Trips" value="12" icon="map-marker-distance" />
-                <View style={styles.vDivider} />
-                <StatItem label="Eco Score" value="94" icon="leaf" />
-                <View style={styles.vDivider} />
-                <StatItem label="Badges" value="8" icon="medal" />
-            </Surface>
+                <View style={styles.statsContainer}>
+                    <StatCard value={visitedCount} label={"Places\nVisited"} valueColor="#00897B" />
+                    <StatCard value={ecoPoints} label="Eco Points" valueColor="#B8860B" />
+                    <StatCard value={reviewsCount} label="Reviews" valueColor="#00695C" />
+                </View>
 
-            <View style={styles.menuContainer}>
-                <List.Section>
-                    <List.Subheader style={styles.subheader}>Travel Dashboard</List.Subheader>
-                    <List.Item
-                        title="Saved Itineraries"
-                        left={props => <List.Icon {...props} icon="format-list-bulleted" color="#00695C" />}
-                        onPress={() => navigation.navigate('ItineraryDetail')}
-                        style={styles.menuItem}
-                        titleStyle={styles.menuTitle}
-                    />
-                    <List.Item
-                        title="Eco Passport"
-                        left={props => <List.Icon {...props} icon="passport" color="#4CAF50" />}
-                        onPress={() => navigation.navigate('EcoPassport')}
-                        style={styles.menuItem}
-                        titleStyle={styles.menuTitle}
-                    />
-                    <List.Item
-                        title="Ride History"
-                        left={props => <List.Icon {...props} icon="car-clock" color="#333" />}
-                        onPress={() => {}}
-                        style={styles.menuItem}
-                        titleStyle={styles.menuTitle}
-                    />
-                </List.Section>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>My Eco Passport</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
+                        <Text style={styles.viewAll}>View All</Text>
+                    </TouchableOpacity>
+                </View>
 
-                <List.Section>
-                    <List.Subheader style={styles.subheader}>Administration</List.Subheader>
-                    <List.Item
-                        title="Personal Details"
-                        left={props => <List.Icon {...props} icon="account-details-outline" color="#666" />}
-                        onPress={() => {}}
-                        style={styles.menuItem}
-                        titleStyle={styles.menuTitle}
-                    />
-                    <List.Item
-                        title="Payments & Wallet"
-                        left={props => <List.Icon {...props} icon="wallet-outline" color="#666" />}
-                        onPress={() => {}}
-                        style={styles.menuItem}
-                        titleStyle={styles.menuTitle}
-                    />
-                    <List.Item
-                        title="Help & Support"
-                        left={props => <List.Icon {...props} icon="help-circle-outline" color="#666" />}
-                        onPress={() => {}}
-                        style={styles.menuItem}
-                        titleStyle={styles.menuTitle}
-                    />
-                </List.Section>
+                {visitedPlaces.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.passportScroll}>
+                        {visitedPlaces.map((place, index) => (
+                            <PassportCard 
+                                key={index} 
+                                icon="map-marker-check" 
+                                title={place.name} 
+                                date={place.date || 'Recently'} 
+                                borderColor="#B2DFDB" 
+                            />
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <View style={styles.emptyPassport}>
+                        <MaterialCommunityIcons name="passport" size={32} color="#CCC" />
+                        <Text style={styles.emptyPassportText}>You haven't visited any destinations yet.</Text>
+                        <Text style={styles.emptyPassportSub}>Start exploring to earn stamps!</Text>
+                    </View>
+                )}
 
-                <Button 
-                    mode="contained-tonal" 
-                    onPress={handleLogout} 
-                    style={styles.logoutBtn}
-                    textColor="#D32F2F"
-                    buttonColor="#FFEBEE"
-                    icon="logout"
-                >
-                    Logout Account
-                </Button>
-                <Text style={styles.version}>Ceylo App v1.0.4 Premium</Text>
-            </View>
-            <View style={{ height: 40 }} />
-        </ScrollView>
+                <View style={styles.menuList}>
+                    <MenuItem icon="bookmark" title="Saved Places" subtitle={`${savedPlacesCount} Hidden Gems saved`} onPress={() => {}} />
+                    <MenuItem icon="map" title="Itineraries" subtitle={`${itinerariesCount} Upcoming journeys`} onPress={() => navigation.navigate('ItineraryDetail')} />
+                    <MenuItem icon="settings" title="Settings" subtitle="Preferences & Privacy" onPress={() => {}} />
+                </View>
+
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+                    <MaterialCommunityIcons name="logout" size={20} color="#D32F2F" />
+                    <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
+            </ScrollView>
+
+            {/* Floating SOS Button */}
+            <TouchableOpacity 
+                style={styles.fabSOS}
+                activeOpacity={0.8} 
+                onPress={() => navigation.navigate('SOSScreen')}
+            >
+                <Text style={styles.fabSOSText}>SOS</Text>
+            </TouchableOpacity>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8F9FA' },
-    header: { padding: 24, paddingTop: 60, paddingBottom: 100, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
-    headerTop: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 10 },
-    profileInfo: { alignItems: 'center' },
-    avatarSurface: { padding: 4, borderRadius: 50, backgroundColor: '#FFF', marginBottom: 15 },
-    avatar: { backgroundColor: '#00695C' },
-    name: { fontSize: 24, fontFamily: 'Outfit-Bold', color: '#FFF' },
-    rankBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 15, marginTop: 8, gap: 6 },
-    rankText: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-Bold' },
-    statsSurface: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 25, padding: 20, marginHorizontal: 24, marginTop: -40, justifyContent: 'space-around', alignItems: 'center' },
-    statItem: { alignItems: 'center', gap: 5 },
-    statVal: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#333' },
-    statLab: { fontSize: 10, fontFamily: 'Outfit-Regular', color: '#666' },
-    vDivider: { width: 1, backgroundColor: '#EEE', height: 40 },
-    menuContainer: { paddingHorizontal: 10, marginTop: 20 },
-    subheader: { fontFamily: 'Outfit-Bold', color: '#00695C', fontSize: 14, letterSpacing: 1 },
-    menuItem: { backgroundColor: '#FFF', borderRadius: 15, marginBottom: 8, marginHorizontal: 10 },
-    menuTitle: { fontFamily: 'Outfit-Medium', fontSize: 15 },
-    logoutBtn: { margin: 20, borderRadius: 15, height: 50, justifyContent: 'center' },
-    version: { textAlign: 'center', color: '#999', fontSize: 10, fontFamily: 'Outfit-Regular', marginBottom: 20 },
+    mainContainer: { flex: 1, backgroundColor: '#F4F9F4' },
+    container: { flex: 1, paddingHorizontal: 20 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 20 },
+    headerTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#004D40' },
+    
+    profileSection: { alignItems: 'center', marginBottom: 25 },
+    avatarContainer: { position: 'relative', marginBottom: 15 },
+    avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: '#A7FFEB' },
+    levelBadge: { position: 'absolute', bottom: 0, right: -5, backgroundColor: '#DAA520', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, borderWidth: 2, borderColor: '#FFF' },
+    levelText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 10, letterSpacing: 0.5 },
+    name: { fontSize: 26, fontFamily: 'Outfit-Bold', color: '#111', marginBottom: 5 },
+    ecoTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    ecoTagText: { color: '#00897B', fontFamily: 'Outfit-Medium', fontSize: 14 },
+
+    statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 35 },
+    statCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', marginHorizontal: 5 },
+    statValue: { fontSize: 22, fontFamily: 'Outfit-Bold', marginBottom: 4 },
+    statLabel: { fontSize: 11, fontFamily: 'Outfit-SemiBold', color: '#444', textAlign: 'center', lineHeight: 14 },
+
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+    sectionTitle: { fontSize: 18, fontFamily: 'Outfit-SemiBold', color: '#111' },
+    viewAll: { color: '#00695C', fontFamily: 'Outfit-Medium', fontSize: 14 },
+
+    passportScroll: { gap: 15, paddingBottom: 10 },
+    passportCard: { width: 120, backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', borderWidth: 1 },
+    passportIconWrapper: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#F0F4F1', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    passportTitle: { fontFamily: 'Outfit-Bold', fontSize: 13, color: '#333', marginBottom: 4, textAlign: 'center' },
+    passportDate: { fontFamily: 'Outfit-Regular', fontSize: 11, color: '#666' },
+
+    emptyPassport: { backgroundColor: '#FFF', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#EEE' },
+    emptyPassportText: { fontFamily: 'Outfit-SemiBold', color: '#444', fontSize: 14, marginTop: 10 },
+    emptyPassportSub: { fontFamily: 'Outfit-Regular', color: '#888', fontSize: 12, marginTop: 4 },
+
+    menuList: { marginTop: 20 },
+    menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 12 },
+    menuIconWrapper: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    menuTextContent: { flex: 1 },
+    menuTitle: { fontFamily: 'Outfit-Bold', fontSize: 16, color: '#111', marginBottom: 2 },
+    menuSubtitle: { fontFamily: 'Outfit-Regular', fontSize: 13, color: '#666' },
+
+    logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F9F4', borderWidth: 1, borderColor: '#FFCDD2', paddingVertical: 15, borderRadius: 16, marginTop: 10, marginBottom: 20, gap: 8 },
+    logoutText: { color: '#D32F2F', fontFamily: 'Outfit-Medium', fontSize: 16 },
+
+    fabSOS: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#FF7043', width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#FF7043', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+    fabSOSText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16 },
 });

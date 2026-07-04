@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, Dimensions, Image } from 'react-native';
-import { Text, Surface, ProgressBar, IconButton, Button, Avatar, Chip } from 'react-native-paper';
+import { Text, Surface, ProgressBar, IconButton, Button, Avatar, Chip, Divider } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 

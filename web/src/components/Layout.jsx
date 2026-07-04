@@ -12,6 +12,7 @@ import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import EventIcon from '@mui/icons-material/Event';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import MapIcon from '@mui/icons-material/Map';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import { useAuth } from '../context/AuthContext';
@@ -51,6 +52,7 @@ function Layout() {
         { text: t('destinations'), icon: <TravelExploreIcon />, path: '/destinations' },
         { text: t('cultural_events'), icon: <EventIcon />, path: '/events' },
         { text: t('vendors'), icon: <StoreIcon />, path: '/vendors' },
+        { text: 'Guides', icon: <MapIcon />, path: '/guides' },
         { text: t('users'), icon: <PeopleIcon />, path: '/users' },
         { text: t('bookings'), icon: <BookOnlineIcon />, path: '/bookings' },
         { text: t('analytics'), icon: <AnalyticsIcon />, path: '/analytics' },
