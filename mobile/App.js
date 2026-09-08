@@ -212,6 +212,8 @@ export default function App() {
                   <Stack.Screen name="GuideOnboarding" component={GuideOnboardingScreen} />
                 ) : userRole === 'guide_pending' && userData?.onboardingCompleted ? (
                   <Stack.Screen name="GuidePending" component={GuidePendingScreen} />
+                ) : (userRole === 'guide_rejected') ? (
+                  <Stack.Screen name="GuidePending" component={GuidePendingScreen} />
                 ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected') ? (
                   process.env.EXPO_PUBLIC_DEMO_MODE === 'true' ? (
                     <Stack.Screen name="VendorPortal" component={VendorNavigator} />

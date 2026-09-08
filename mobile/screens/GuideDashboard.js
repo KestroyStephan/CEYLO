@@ -13,33 +13,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-const MOCK_JOURNEYS = [
-  {
-    id: 'j1',
-    type: 'HERITAGE TOUR',
-    title: 'Ancient Sigiriya Walk',
-    time: 'Tomorrow, 06:30 AM',
-    persons: 4,
-    bookingId: '8821',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/400px-Sigiriya_rock_from_the_south_side.jpg',
-  },
-  {
-    id: 'j2',
-    type: 'TEA EXPERIENCE',
-    title: 'Highland Tea Trail',
-    time: '24 Jun, 09:00 AM',
-    persons: 2,
-    bookingId: '8944',
-    imageUrl: 'https://images.unsplash.com/photo-1576091358783-a212ec293c59?w=400',
-  },
-];
-
 const TYPE_COLORS = {
   'HERITAGE TOUR': '#6A1B9A',
   'TEA EXPERIENCE': '#1565C0',
   'WILDLIFE TREK': '#2E7D32',
   'MARINE DIVE': '#00838F',
+  'GUIDED TOUR': '#006A3B',
+  'ADVENTURE': '#D84315',
 };
+
 
 export default function GuideDashboard({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -47,7 +29,7 @@ export default function GuideDashboard({ navigation }) {
   const [bookings, setBookings] = useState([]);
   const [pendingBookings, setPendingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ecoScore] = useState(94);
+  const [ecoScore, setEcoScore] = useState(0);
 
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const firstName = guideData?.name?.split(' ')[0] || auth.currentUser?.displayName?.split(' ')[0] || 'Guide';
@@ -58,7 +40,11 @@ export default function GuideDashboard({ navigation }) {
 
     // Fetch guide profile
     const userUnsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
-      if (snap.exists()) setGuideData(snap.data());
+      if (snap.exists()) {
+        const data = snap.data();
+        setGuideData(data);
+        setEcoScore(data.ecoScore || 0);
+      }
     }, err => console.log(err.message));
 
     // Fetch bookings
@@ -83,23 +69,19 @@ export default function GuideDashboard({ navigation }) {
     catch (e) { Alert.alert('Error', e.message); }
   };
 
-  // Merge live bookings with mocks for UI richness
-  const displayJourneys = [
-    ...MOCK_JOURNEYS,
-    ...bookings.map(b => ({
-      id: b.id,
-      type: b.guideSpecialization?.toUpperCase() || 'GUIDED TOUR',
-      title: `Journey with ${b.touristName || 'Explorer'}`,
-      time: b.createdAt?.toDate?.()?.toLocaleDateString() || 'Upcoming',
-      persons: 1,
-      bookingId: b.id?.slice(-4),
-      imageUrl: null,
-    })),
-  ];
+  // Only show real bookings — no mock data
+  const displayJourneys = bookings.map(b => ({
+    id: b.id,
+    type: (b.guideSpecialization || b.tourType || 'GUIDED TOUR').toUpperCase(),
+    title: b.tourTitle || `Journey with ${b.touristName || 'Explorer'}`,
+    time: b.tourDate || b.createdAt?.toDate?.()?.toLocaleDateString() || 'Upcoming',
+    persons: b.groupSize || b.persons || 1,
+    bookingId: b.id?.slice(-4),
+    imageUrl: b.imageUrl || null,
+  }));
 
-  // Earnings calculation
+  // Earnings from real confirmed bookings only
   const totalEarnings = bookings.reduce((sum, b) => sum + parseFloat(b.packageCost || 0), 0);
-  const displayEarnings = totalEarnings > 0 ? totalEarnings : 1240;
 
   if (loading) {
     return (
@@ -162,7 +144,7 @@ export default function GuideDashboard({ navigation }) {
             <MaterialCommunityIcons name="cash-multiple" size={20} color="#FFF" />
           </View>
           <Text style={styles.earningsLabel}>Earnings: {currentMonth}</Text>
-          <Text style={styles.earningsAmt}>${displayEarnings.toLocaleString()}.00</Text>
+          <Text style={styles.earningsAmt}>${totalEarnings > 0 ? totalEarnings.toLocaleString() : '0.00'}</Text>
           <View style={styles.earningsChange}>
             <MaterialCommunityIcons name="trending-up" size={14} color="#FFF" />
             <Text style={styles.earningsChangeTxt}>+12.5% vs May</Text>
@@ -177,7 +159,7 @@ export default function GuideDashboard({ navigation }) {
           </View>
           <Text style={styles.statusLevel}>LEVEL 4 MASTER GUIDE</Text>
           <Text style={styles.statusHappy}>
-            {(bookings.length * 10 + 248)} Happy Explorers
+            {bookings.length} Completed Tours
           </Text>
         </View>
 
@@ -216,6 +198,13 @@ export default function GuideDashboard({ navigation }) {
             <Text style={styles.viewAll}>View All Bookings</Text>
           </TouchableOpacity>
         </View>
+
+        {displayJourneys.length === 0 && (
+          <View style={styles.emptyState}>
+            <MaterialCommunityIcons name="calendar-blank-outline" size={40} color="#BECABE" />
+            <Text style={styles.emptyText}>No upcoming journeys yet.{`\n`}Bookings from tourists will appear here.</Text>
+          </View>
+        )}
 
         {displayJourneys.map(journey => (
           <TouchableOpacity key={journey.id} style={styles.journeyCard} activeOpacity={0.85}>
@@ -264,12 +253,12 @@ export default function GuideDashboard({ navigation }) {
       {/* Bottom Nav */}
       <View style={[styles.bottomNav, { paddingBottom: insets.bottom + 4 }]}>
         {[
-          { icon: 'compass-outline', label: 'Discover' },
-          { icon: 'calendar-check-outline', label: 'Bookings' },
-          { icon: 'account', label: 'Profile', active: true },
-          { icon: 'bell-outline', label: 'SOS' },
+          { icon: 'compass-outline', label: 'Discover', onPress: () => {} },
+          { icon: 'calendar-check-outline', label: 'Bookings', onPress: () => {} },
+          { icon: 'account', label: 'Profile', active: true, onPress: () => {} },
+          { icon: 'bell-outline', label: 'SOS', onPress: () => navigation.navigate('SOSScreen') },
         ].map(tab => (
-          <TouchableOpacity key={tab.label} style={styles.navTab}>
+          <TouchableOpacity key={tab.label} style={styles.navTab} onPress={tab.onPress}>
             <MaterialCommunityIcons name={tab.icon} size={22} color={tab.active ? '#006A3B' : '#8A9E8A'} />
             <Text style={[styles.navLabel, tab.active && styles.navLabelActive]}>{tab.label}</Text>
           </TouchableOpacity>
@@ -283,6 +272,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F7F4' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F4F7F4' },
   body: { paddingHorizontal: 20, paddingBottom: 100 },
+  emptyState: { alignItems: 'center', paddingVertical: 30, gap: 10 },
+  emptyText: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#8A9E8A', textAlign: 'center', lineHeight: 20 },
 
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   brandName: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#006A3B' },

@@ -21,79 +21,9 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import WarningIcon from '@mui/icons-material/Warning';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
-
-// Realistic fallback / default data matching the screenshot
-const defaultActiveAlerts = [
-    {
-        id: 'mock-active-1',
-        userName: 'Aanya Perera',
-        phone: '+94 77 123 4567',
-        status: 'active',
-        locationName: 'Sigiriya, North Wing',
-        location: { latitude: 7.9573, longitude: 80.7603 },
-        timestamp: { toDate: () => new Date(Date.now() - 137000) }, // 02:17m ago
-        photoUrl: 'https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a', // Sigiriya rock
-        category: 'Physical Injury',
-        emergencyContactName: 'Sunil Perera (Father)',
-        emergencyContactPhone: '+94 77 123 4567',
-        threatLevel: 'CRITICAL',
-        aiInsights: ['Crowd Gathering', 'Slippery Surface', 'Heat Level High']
-    },
-    {
-        id: 'mock-active-2',
-        userName: 'Kavindu Silva',
-        phone: '+94 71 999 8888',
-        status: 'active',
-        locationName: 'Ella Rock Path',
-        location: { latitude: 6.8722, longitude: 81.0456 },
-        timestamp: { toDate: () => new Date(Date.now() - 765000) }, // 12:45m ago
-        photoUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b', // Ella Bridge
-        category: 'Lost / Navigation',
-        emergencyContactName: 'Champa Silva (Mother)',
-        emergencyContactPhone: '+94 71 888 7777',
-        threatLevel: 'STABLE',
-        aiInsights: ['Low Visibility', 'Dense Forest', 'Altitude 1042m']
-    }
-];
-
-const defaultHistoryAlerts = [
-    {
-        id: 'mock-h1',
-        userName: 'Nimal Jayasuriya',
-        locationName: 'Yala Block 1',
-        category: 'Animal Encounter',
-        responseTeam: 'Ranger Unit 03',
-        status: 'resolved',
-        timestamp: { toDate: () => new Date('2026-10-12T14:22:00') }
-    },
-    {
-        id: 'mock-h2',
-        userName: 'Sarah Jenkins',
-        locationName: 'Mirissa Beach',
-        category: 'Medical',
-        responseTeam: 'Mirissa Hospital EMS',
-        status: 'resolved',
-        timestamp: { toDate: () => new Date('2026-10-11T09:15:00') }
-    },
-    {
-        id: 'mock-h3',
-        userName: 'Li Wei',
-        locationName: 'Pettah Market',
-        category: 'False Alarm',
-        responseTeam: 'None',
-        status: 'closed',
-        timestamp: { toDate: () => new Date('2026-10-10T23:04:00') }
-    },
-    {
-        id: 'mock-h4',
-        userName: 'Dinesh Perera',
-        locationName: "Adam's Peak Path",
-        category: 'Physical Injury',
-        responseTeam: 'Air Force SAR 01',
-        status: 'resolved',
-        timestamp: { toDate: () => new Date('2026-10-10T18:45:00') }
-    }
-];
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebaseConfig';
 
 function SOSMonitor() {
     const [alerts, setAlerts] = useState([]);
@@ -101,7 +31,9 @@ function SOSMonitor() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [subTab, setSubTab] = useState('alerts'); // 'feed', 'alerts'
-    const [isMicActive, setIsMicActive] = useState(true);
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const audioRef = useRef(null);
 
@@ -136,20 +68,7 @@ function SOSMonitor() {
                 };
             });
 
-            // Merge Firebase alerts with mock data if not already present
-            let merged = [...firebaseAlerts];
-            defaultActiveAlerts.forEach(mock => {
-                if (!merged.some(a => a.id === mock.id || a.userName === mock.userName)) {
-                    merged.push(mock);
-                }
-            });
-            defaultHistoryAlerts.forEach(mock => {
-                if (!merged.some(a => a.id === mock.id || a.userName === mock.userName)) {
-                    merged.push(mock);
-                }
-            });
-
-            setAlerts(merged);
+            setAlerts(firebaseAlerts);
 
             // Handle active siren
             const activeInDB = firebaseAlerts.some(a => a.status === 'active');
@@ -160,11 +79,7 @@ function SOSMonitor() {
             }
         }, (err) => {
             console.error("SOS Monitor listener error:", err);
-            // Fallback to mock data on query failure (e.g. permission restriction)
-            let merged = [];
-            defaultActiveAlerts.forEach(mock => merged.push(mock));
-            defaultHistoryAlerts.forEach(mock => merged.push(mock));
-            setAlerts(merged);
+            setAlerts([]);
         });
 
         return () => unsubscribe();
@@ -240,6 +155,62 @@ function SOSMonitor() {
             setSelectedAlert(null);
         } catch (e) {
             setSnackbar({ open: true, message: 'Failed to resolve: ' + e.message, severity: 'error' });
+        }
+    };
+
+    const toggleWalkieTalkie = async () => {
+        if (!selectedAlert) return;
+
+        if (isRecording) {
+            mediaRecorderRef.current?.stop();
+            setIsRecording(false);
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = mediaRecorder;
+                audioChunksRef.current = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunksRef.current.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    try {
+                        const audioRef = ref(storage, `sos_alerts/${selectedAlert.id}_admin_audio_${Date.now()}.webm`);
+                        await uploadBytes(audioRef, audioBlob);
+                        const downloadUrl = await getDownloadURL(audioRef);
+                        
+                        await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                            adminAudioUrl: downloadUrl,
+                            adminAudioTimestamp: Date.now()
+                        });
+                        setSnackbar({ open: true, message: 'Voice message sent!', severity: 'success' });
+                    } catch (err) {
+                        setSnackbar({ open: true, message: 'Upload failed: ' + err.message, severity: 'error' });
+                    }
+                };
+
+                mediaRecorder.start();
+                setIsRecording(true);
+            } catch (err) {
+                setSnackbar({ open: true, message: 'Mic permission denied', severity: 'error' });
+            }
+        }
+    };
+
+    const handleRequestCamera = async () => {
+        if (!selectedAlert) return;
+        try {
+            await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                cameraRequestedAt: serverTimestamp()
+            });
+            setSnackbar({ open: true, message: 'Camera request sent to tourist!', severity: 'success' });
+        } catch (e) {
+            setSnackbar({ open: true, message: 'Failed to request camera: ' + e.message, severity: 'error' });
         }
     };
 
@@ -544,26 +515,43 @@ function SOSMonitor() {
                                     />
                                     
                                     {/* Mic Active indicator overlay */}
-                                    <Button 
-                                        size="small" 
-                                        variant="contained" 
-                                        onClick={() => setIsMicActive(!isMicActive)}
-                                        startIcon={<MicIcon />}
-                                        sx={{ 
-                                            position: 'absolute', 
-                                            top: 10, 
-                                            right: 10, 
-                                            bgcolor: isMicActive ? '#BA1A1A' : '#777', 
-                                            color: '#FFF',
-                                            fontWeight: 800,
-                                            fontSize: '0.65rem',
-                                            textTransform: 'none',
-                                            borderRadius: 2,
-                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                                        }}
-                                    >
-                                        {isMicActive ? 'Mic Active' : 'Mic Off'}
-                                    </Button>
+                                    <Box sx={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 1 }}>
+                                        <Button 
+                                            size="small" 
+                                            variant="contained" 
+                                            onClick={toggleWalkieTalkie}
+                                            startIcon={<MicIcon />}
+                                            sx={{ 
+                                                bgcolor: isRecording ? '#BA1A1A' : '#777', 
+                                                color: '#FFF',
+                                                fontWeight: 800,
+                                                fontSize: '0.65rem',
+                                                textTransform: 'none',
+                                                borderRadius: 2,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                                animation: isRecording ? 'pulse 1.2s infinite' : 'none'
+                                            }}
+                                        >
+                                            {isRecording ? 'Recording...' : 'Hold to Talk'}
+                                        </Button>
+                                        <Button 
+                                            size="small" 
+                                            variant="contained" 
+                                            onClick={handleRequestCamera}
+                                            startIcon={<CameraAltIcon />}
+                                            sx={{ 
+                                                bgcolor: '#006A3B', 
+                                                color: '#FFF',
+                                                fontWeight: 800,
+                                                fontSize: '0.65rem',
+                                                textTransform: 'none',
+                                                borderRadius: 2,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                            }}
+                                        >
+                                            Check Camera
+                                        </Button>
+                                    </Box>
                                 </Box>
 
                                 {/* Emergency contact details card */}

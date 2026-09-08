@@ -64,6 +64,14 @@ const ROLES = [
     title: 'Guide',
     description: 'Share cultural stories and protect the beauty of our island.',
   },
+  {
+    key: 'vendor',
+    icon: 'storefront-outline',
+    iconColor: '#E65100',
+    iconBg: '#FFF8E1',
+    title: 'Vendor',
+    description: 'Provide sustainable goods, eco-stays, or experiences to travelers.',
+  },
 ];
 
 export default function RolePickerScreen({ navigation }) {
@@ -85,6 +93,8 @@ export default function RolePickerScreen({ navigation }) {
       navigation.navigate('Register', { presetRole: 'driver' });
     } else if (selectedRole === 'guide') {
       navigation.navigate('Register', { presetRole: 'guide' });
+    } else if (selectedRole === 'vendor') {
+      navigation.navigate('Register', { presetRole: 'vendor' });
     } else {
       navigation.navigate('Register', { presetRole: 'tourist' });
     }

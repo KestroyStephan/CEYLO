@@ -76,8 +76,13 @@ export default function GuideOnboardingScreen({ navigation }) {
         Alert.alert('Missing Fields', 'Please fill in Full Name and License Number.');
         return;
       }
+      if (selectedLanguages.length === 0) {
+        Alert.alert('Missing Fields', 'Please select at least one language.');
+        return;
+      }
       setStep(1);
     } else {
+      // Step 1 → Submit
       submitApplication();
     }
   };
@@ -112,7 +117,7 @@ export default function GuideOnboardingScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#F4F7F4" />
@@ -210,7 +215,11 @@ export default function GuideOnboardingScreen({ navigation }) {
                   </TouchableOpacity>
                 )}
               </View>
+            </View>
+          )}
 
+          {step === 1 && (
+            <View style={styles.formCard}>
               {/* Areas of Expertise */}
               <Text style={styles.fieldLabel}>Areas of Expertise</Text>
               <View style={styles.expertiseGrid}>
@@ -310,7 +319,7 @@ export default function GuideOnboardingScreen({ navigation }) {
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <Text style={styles.nextBtnText}>
-                  {step === 0 ? 'Continue to Verification' : 'Submit Application'}
+                  {step === 0 ? 'Continue to Expertise →' : 'Submit Application'}
                 </Text>
               )}
             </TouchableOpacity>
