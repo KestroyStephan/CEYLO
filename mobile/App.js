@@ -220,7 +220,11 @@ export default function App() {
                 ) : (userRole === 'guide_rejected') ? (
                   <Stack.Screen name="GuidePending" component={GuidePendingScreen} />
                 ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected') ? (
-                  <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
+                  process.env.EXPO_PUBLIC_DEMO_MODE === 'true' ? (
+                    <Stack.Screen name="VendorPortal" component={VendorNavigator} />
+                  ) : (
+                    <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
+                  )
                 ) : (
                   <Stack.Screen name="Main" component={DrawerNavigator} />
                 )}

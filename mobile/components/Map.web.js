@@ -17,8 +17,8 @@ const MapView = React.forwardRef(({ children, style, onRegionChange, initialRegi
 });
 
 const Marker = () => null;
-const Polyline = () => null;
 const PROVIDER_GOOGLE = "google";
+const Polyline = () => null;
 const MapViewDirections = () => null;
 
 export default MapView;

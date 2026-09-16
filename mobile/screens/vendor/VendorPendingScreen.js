@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { auth, db } from '../../firebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 
 const PRIMARY   = '#006A3B';
@@ -21,33 +21,6 @@ const BG        = '#F6FBF3';
 const SURFACE   = '#FFFFFF';
 const ON_SURF   = '#181D19';
 const ON_SURF_V = '#3F4941';
-
-const STATUS_CFG = {
-  vendor_pending: {
-    color: '#735C00', bg: '#FFFBEB', border: '#F59E0B',
-    icon: 'time-outline', iconColor: '#D97706',
-    title: 'Application Under Review',
-    message: 'Your application is being carefully reviewed by our team. This usually takes 1–2 business days. Thank you for your patience!',
-  },
-  vendor_active: {
-    color: PRIMARY, bg: '#F0FDF4', border: '#6EE7B7',
-    icon: 'checkmark-circle', iconColor: PRIMARY,
-    title: 'You\'re Approved! 🎉',
-    message: 'Welcome to the CEYLO vendor family! Redirecting you to your dashboard now...',
-  },
-  vendor: {
-    color: PRIMARY, bg: '#F0FDF4', border: '#6EE7B7',
-    icon: 'checkmark-circle', iconColor: PRIMARY,
-    title: 'You\'re Approved! 🎉',
-    message: 'Welcome to the CEYLO vendor family! Redirecting you to your dashboard now...',
-  },
-  vendor_rejected: {
-    color: ERROR, bg: '#FEF2F2', border: '#FCA5A5',
-    icon: 'close-circle', iconColor: ERROR,
-    title: 'Application Rejected',
-    message: null,
-  },
-};
 
 const NEXT_STEPS = [
   { icon: 'document-text-outline', text: 'Our team reviews your submitted documents' },
@@ -118,8 +91,31 @@ export default function VendorPendingScreen({ navigation }) {
     };
   }, []);
 
+  useEffect(() => {
+    // demo mode for checking
+    if (process.env.EXPO_PUBLIC_DEMO_MODE === 'true' && vendorStatus !== 'approved') {
+      handleBypass();
+    }
+  }, [vendorStatus]);
+
   const handleLogout = async () => {
     try { await signOut(auth); } catch (e) {}
+  };
+
+  const handleBypass = async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    setLoading(true);
+    try {
+      // 1. Update vendor document status to approved
+      await updateDoc(doc(db, 'vendors', uid), { status: 'approved' });
+      // 2. Update user role to vendor
+      await updateDoc(doc(db, 'users', uid), { role: 'vendor' });
+      // The onSnapshot listener will handle the rest or the app will re-render
+    } catch (e) {
+      Alert.alert('Bypass Error', e.message);
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -210,6 +206,13 @@ export default function VendorPendingScreen({ navigation }) {
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
         <Ionicons name="log-out-outline" size={18} color={PRIMARY} />
         <Text style={styles.logoutText}>Sign Out</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.logoutBtn, { marginTop: 12, borderColor: '#d97706' }]}
+        onPress={handleBypass}
+      >
+        <Text style={[styles.logoutText, { color: '#d97706' }]}>Bypass Review (Demo Mode)</Text>
       </TouchableOpacity>
     </ScrollView>
   );
