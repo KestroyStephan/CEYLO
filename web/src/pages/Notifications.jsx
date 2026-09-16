@@ -14,6 +14,7 @@ function Notifications() {
     const [target, setTarget] = useState('all');
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
+    const [expiryDate, setExpiryDate] = useState('');
     const [sending, setSending] = useState(false);
     const [sentStatus, setSentStatus] = useState(null); // { success: true/false, count: X }
     const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -68,13 +69,15 @@ function Notifications() {
                 message,
                 target,
                 recipientCount: tokens.length,
-                sentAt: serverTimestamp()
+                sentAt: serverTimestamp(),
+                expiresAt: expiryDate ? expiryDate : null
             });
 
             setSentStatus({ success: true, count: tokens.length });
             setSnackbarOpen(true);
             setTitle('');
             setMessage('');
+            setExpiryDate('');
         } catch (error) {
             console.error("Error broadcasting notification: ", error);
             setSentStatus({ success: false, error: error.message });
@@ -133,6 +136,17 @@ function Notifications() {
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 placeholder="Describe the important update for your users..."
+                                disabled={sending}
+                            />
+
+                            <TextField 
+                                type="date"
+                                label="Valid Until (Expiry Date)" 
+                                fullWidth 
+                                value={expiryDate}
+                                onChange={(e) => setExpiryDate(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                helperText="If set, the message will automatically disappear from the app after this date."
                                 disabled={sending}
                             />
 

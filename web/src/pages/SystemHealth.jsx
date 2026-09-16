@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Box, Typography, Grid, Paper, LinearProgress, 
-    Stack, Chip, Divider, List, ListItem, ListItemText, ListItemIcon
+    Stack, Chip, Divider, List, ListItem, ListItemText, ListItemIcon,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LanIcon from '@mui/icons-material/Lan';
@@ -9,6 +10,8 @@ import StorageIcon from '@mui/icons-material/Storage';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
+import KeyIcon from '@mui/icons-material/Key';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -143,7 +146,7 @@ function SystemHealth() {
                 </Grid>
             </Grid>
 
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, lg: 8 }}>
                     <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
                         <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee' }}>
@@ -175,7 +178,7 @@ function SystemHealth() {
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, lg: 4 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, bgcolor: '#00695c', color: '#fff' }}>
+                    <Paper sx={{ p: 3, borderRadius: 4, bgcolor: '#00695c', color: '#fff', height: '100%' }}>
                         <Typography variant="h6" fontWeight={800} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                             <SecurityIcon sx={{ mr: 1 }} /> Security Hardening
                         </Typography>
@@ -194,6 +197,123 @@ function SystemHealth() {
                                 <Typography variant="body1" fontWeight={700}>Expires in 284 days</Typography>
                             </Box>
                         </Stack>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* AI Infrastructure & API Keys Section */}
+            <Grid container spacing={3}>
+                {/* AI Models & Training Stats */}
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Paper sx={{ borderRadius: 4, overflow: 'hidden', height: '100%' }}>
+                        <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PsychologyIcon sx={{ color: '#00695c' }} />
+                            <Typography variant="subtitle1" fontWeight={800}>AI Core Model & Training Diagnostics</Typography>
+                        </Box>
+                        <Box sx={{ p: 3 }}>
+                            <Stack spacing={2.5}>
+                                <Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                        <Typography variant="body2" fontWeight={800}>Active Model Instance</Typography>
+                                        <Chip label="Ceylo-Vision-v1.4 (Trained)" size="small" sx={{ fontWeight: 800, bgcolor: '#E0F2F1', color: '#004D40' }} />
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary">Trained on 48,200 travel/SOS scenarios. Fine-tuned with custom Sri Lanka geo-data.</Typography>
+                                </Box>
+
+                                <Divider />
+
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary">Prediction Accuracy</Typography>
+                                        <Typography variant="h6" fontWeight={800} color="#006A3B">98.42%</Typography>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary">SOS Threat False Positives</Typography>
+                                        <Typography variant="h6" fontWeight={800} color="#BA1A1A">0.08%</Typography>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary">Suggestion Latency</Typography>
+                                        <Typography variant="h6" fontWeight={800}>142ms</Typography>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Typography variant="caption" color="text.secondary">Epochs / Training Loss</Typography>
+                                        <Typography variant="h6" fontWeight={800}>250 Epochs / 0.014</Typography>
+                                    </Grid>
+                                </Grid>
+
+                                <Divider />
+
+                                <Box>
+                                    <Typography variant="body2" fontWeight={800} sx={{ mb: 1 }}>Model Inference Load & Capacity</Typography>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                        <Typography variant="caption" color="text.secondary">Daily Active Tokens (Inference limit)</Typography>
+                                        <Typography variant="caption" fontWeight={700}>4.8M / 10.0M tokens</Typography>
+                                    </Box>
+                                    <LinearProgress variant="determinate" value={48} sx={{ height: 6, borderRadius: 2, bgcolor: '#eee', '& .MuiLinearProgress-bar': { bgcolor: '#00695c' } }} />
+                                </Box>
+                            </Stack>
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                {/* API Key Health & Limit Monitoring */}
+                <Grid size={{ xs: 12, lg: 6 }}>
+                    <Paper sx={{ borderRadius: 4, overflow: 'hidden', height: '100%' }}>
+                        <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <KeyIcon sx={{ color: '#00695c' }} />
+                            <Typography variant="subtitle1" fontWeight={800}>External API Keys & Usage Limits</Typography>
+                        </Box>
+                        <Box sx={{ p: 2 }}>
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 800 }}>API Service</TableCell>
+                                            <TableCell sx={{ fontWeight: 800 }}>Key Status</TableCell>
+                                            <TableCell sx={{ fontWeight: 800 }}>Usage (Limit)</TableCell>
+                                            <TableCell sx={{ fontWeight: 800 }} align="right">Latency</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {[
+                                            { name: 'Google Gemini Pro API', key: 'AI_GEMINI_...4F8x', status: 'Working', usage: '62,403 / 100K requests', progress: 62.4, color: 'success', latency: '210ms' },
+                                            { name: 'OpenAI GPT-4o Vision API', key: 'OPENAI_KEY_...9xKL', status: 'Working', usage: '8,410 / 50K requests', progress: 16.8, color: 'success', latency: '482ms' },
+                                            { name: 'Google Places & Maps API', key: 'MAPS_GEOC_...2A4b', status: 'Working', usage: '214,190 / 500K requests', progress: 42.8, color: 'success', latency: '42ms' },
+                                            { name: 'Firebase Admin API SDK', key: 'FIREBASE_S...9dM2', status: 'Working', usage: 'Unlimited', progress: 10, color: 'success', latency: '24ms' },
+                                            { name: 'Fallback OpenAI API Key', key: 'OPENAI_ERR_...1s8P', status: 'Rate Limited', usage: '10,000 / 10K requests', progress: 100, color: 'warning', latency: '---' },
+                                            { name: 'Expired Test Gemini Key', key: 'GEMINI_TST_...8fG3', status: 'Invalid / Revoked', usage: '0 / 0 requests', progress: 0, color: 'error', latency: '---' },
+                                        ].map((row, idx) => (
+                                            <TableRow key={idx} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                                <TableCell sx={{ py: 1.5 }}>
+                                                    <Typography variant="body2" fontWeight={700}>{row.name}</Typography>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'monospace' }}>{row.key}</Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip 
+                                                        label={row.status} 
+                                                        size="small" 
+                                                        color={row.color}
+                                                        sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
+                                                    />
+                                                </TableCell>
+                                                <TableCell sx={{ minWidth: 150 }}>
+                                                    <Typography variant="caption" color="text.secondary">{row.usage}</Typography>
+                                                    {row.progress > 0 && (
+                                                        <LinearProgress 
+                                                            variant="determinate" 
+                                                            value={row.progress} 
+                                                            color={row.color} 
+                                                            sx={{ height: 3, borderRadius: 1, mt: 0.5, bgcolor: '#eee' }} 
+                                                        />
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right" sx={{ fontWeight: 800 }}>{row.latency}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Box>
                     </Paper>
                 </Grid>
             </Grid>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, RefreshControl, ImageBackground, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, RefreshControl, ImageBackground, Image, Modal, FlatList } from 'react-native';
 import { Text, Surface, Card, Avatar } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-import { auth } from '../firebaseConfig';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
@@ -38,6 +39,10 @@ export default function HomeScreen({ navigation }) {
   const [loadingGems, setLoadingGems] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [trendingRoutes, setTrendingRoutes] = useState([]);
+  
+  // Chat Notifications State
+  const [activeChats, setActiveChats] = useState([]);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -46,6 +51,32 @@ export default function HomeScreen({ navigation }) {
     }
     loadAIData();
     fetchRealNearbyGems();
+
+    // Fetch active bookings for chat
+    if (user) {
+      const q = query(
+        collection(db, 'bookings'),
+        where('touristId', '==', user.uid),
+        where('status', 'in', ['pending', 'accepted', 'confirmed'])
+      );
+      const unsub = onSnapshot(q, (snap) => {
+        const allBookings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const uniqueChats = [];
+        const seen = new Set();
+        for (const b of allBookings) {
+          const tId = b.touristId || b.userId;
+          const gId = b.guideId || 'demo';
+          const key = `${tId}_${gId}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueChats.push({ ...b, touristId: tId, guideId: gId });
+          }
+        }
+        console.log("HomeScreen activeChats loaded:", uniqueChats.map(c => `${c.touristId}_${c.guideId}`));
+        setActiveChats(uniqueChats);
+      });
+      return () => unsub();
+    }
   }, []);
   
   const loadAIData = () => {
@@ -211,12 +242,25 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>CEYLO</Text>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
-        <View style={styles.ecoPointsBadge}>
-          <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
-          <Text style={styles.ecoPointsText}>1,250 pt</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <TouchableOpacity onPress={() => setShowChatModal(true)}>
+          <View style={[styles.menuBtn, { position: 'relative' }]}>
+            <Feather name="message-circle" size={20} color={COLORS.primary} />
+            {activeChats.length > 0 && (
+              <View style={styles.badgeCount}>
+                <Text style={{ color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold' }}>{activeChats.length}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
+          <View style={styles.ecoPointsBadge}>
+            <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
+            <Text style={styles.ecoPointsText}>1,250 pt</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -459,6 +503,51 @@ export default function HomeScreen({ navigation }) {
       >
         <MaterialCommunityIcons name="phone-in-talk" size={24} color="#FFF" />
       </TouchableOpacity>
+
+      {/* Small Chat Modal */}
+      <Modal visible={showChatModal} animationType="fade" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowChatModal(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.chatModalContent}>
+            <View style={styles.chatModalHeader}>
+              <Text style={styles.chatModalTitle}>Your Conversations</Text>
+              <TouchableOpacity onPress={() => setShowChatModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={COLORS.dark} />
+              </TouchableOpacity>
+            </View>
+            
+            {activeChats.length === 0 ? (
+              <Text style={{ padding: 20, textAlign: 'center', color: COLORS.sub, fontFamily: 'Outfit-Regular' }}>
+                No active conversations right now. Book a guide to start chatting!
+              </Text>
+            ) : (
+              <FlatList
+                data={activeChats}
+                keyExtractor={item => item.id}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.chatListItem} 
+                    onPress={() => {
+                      setShowChatModal(false);
+                      const combinedChatId = `${item.touristId}_${item.guideId}`;
+                      console.log("HomeScreen navigating to chat:", combinedChatId);
+                      navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: item.guideName });
+                    }}
+                  >
+                    <Image source={{ uri: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }} style={styles.chatAvatar} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.chatName}>{item.guideName}</Text>
+                      <Text style={styles.chatDesc} numberOfLines={1}>Tap to view messages</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color="#CCC" />
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
     </View>
   );
 }
@@ -534,4 +623,14 @@ const styles = StyleSheet.create({
   routeSubtitle: { color: 'rgba(255,255,255,0.8)', fontFamily: 'Outfit-Regular', fontSize: 12 },
 
   fabSOS: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#D32F2F', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#D32F2F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6 },
+  
+  badgeCount: { position: 'absolute', top: -5, right: -5, backgroundColor: '#D32F2F', width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  chatModalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, maxHeight: '60%', overflow: 'hidden' },
+  chatModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  chatModalTitle: { fontSize: 18, fontFamily: 'Outfit-Bold', color: COLORS.dark },
+  chatListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  chatAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: 15 },
+  chatName: { fontSize: 16, fontFamily: 'Outfit-Bold', color: COLORS.text, marginBottom: 2 },
+  chatDesc: { fontSize: 13, fontFamily: 'Outfit-Regular', color: COLORS.sub },
 });

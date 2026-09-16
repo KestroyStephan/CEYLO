@@ -13,13 +13,15 @@ const { width, height } = Dimensions.get('window');
 
 
 
-const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge. 
+const getSystemPrompt = (mode) => {
+  if (mode === 'trip_planner') {
+    return `You are CEYLO, a premium Sri Lankan Travel Planner. 
 Your goal is to build a "Trip Profile" for the traveler through natural conversation.
 STRICT JSON OUTPUT REQUIRED for every response.
 
 ExtractedState JSON Schema:
 {
-  "resp": "Conversational reply in traveler's language",
+  "resp": "Conversational reply guiding the trip plan, suggesting best routes, locations, and accommodation places.",
   "extractedState": {
     "destination": "City Name",
     "days": 0,
@@ -33,14 +35,49 @@ ExtractedState JSON Schema:
 }
 
 CONTEXT:
-- Use Sri Lankan hospitality markers (Ayubowan, Vanakkam).
+- Use hospitality markers (Ayubowan, Vanakkam) ONLY in the first message. DO NOT repeat them in subsequent replies.
 - Prioritize eco-friendly destinations.
 - Extract preferences silently while talking.`;
+  } else if (mode === 'personal_assistant') {
+    return `You are CEYLO, a premium Sri Lankan Personal Travel Assistant.
+Answer questions naturally like weather, transport recommendations, travel routes (e.g. to Nuwara Eliya), what to do next, or tourist advice.
+STRICT JSON OUTPUT REQUIRED.
+
+ExtractedState JSON Schema:
+{
+  "resp": "Detailed response as a helpful personal assistant answering traveler's questions (e.g. routes, climate, transport advice). Keep it concise, friendly, and practical.",
+  "extractedState": {},
+  "isReady": false,
+  "ui_options": ["Ask about Nuwara Eliya route", "Ask about climate today", "Ask about train travel"]
+}
+
+CONTEXT:
+- Use hospitality markers (Ayubowan, Vanakkam) ONLY in the first message. DO NOT repeat them in subsequent replies.
+- Offer actionable local tips.`;
+  } else {
+    return `You are CEYLO, a premium Sri Lankan Travel Concierge.
+STRICT JSON OUTPUT REQUIRED.
+
+ExtractedState JSON Schema:
+{
+  "resp": "Welcome response. Guide them to select a mode.",
+  "extractedState": {},
+  "isReady": false,
+  "ui_options": ["🗺️ Plan a Trip", "💁 Personal Assistant"]
+}`;
+  }
+};
 
 export default function ChatbotScreen({ navigation }) {
   const { t, i18n } = useTranslation();
+  const [chatbotMode, setChatbotMode] = useState(null); // 'trip_planner' or 'personal_assistant'
   const [messages, setMessages] = useState([
-    { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
+    { 
+      id: '1', 
+      text: "Ayubowan! I'm Ceylo, your personal travel concierge. How can I help you today?", 
+      sender: 'bot',
+      options: ["🗺️ Plan a Trip", "💁 Personal Assistant"]
+    }
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,7 +162,8 @@ export default function ChatbotScreen({ navigation }) {
     }
   }, [extractedState]);
 
-  const callWaterfall = async (prompt) => {
+  const callWaterfall = async (prompt, activeMode = chatbotMode) => {
+    const activeSystemPrompt = getSystemPrompt(activeMode);
     const contextPrompt = `\n\nCURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${prompt}`;
     
     const models = [
@@ -160,7 +198,7 @@ export default function ChatbotScreen({ navigation }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `${SYSTEM_PROMPT}${contextPrompt}` }] }],
+              contents: [{ parts: [{ text: `${activeSystemPrompt}${contextPrompt}` }] }],
               generationConfig: { responseMimeType: "application/json" }
             }),
             signal: controller.signal
@@ -175,7 +213,7 @@ export default function ChatbotScreen({ navigation }) {
             body: JSON.stringify({
               model: model.type === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4o-mini",
               messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'system', content: activeSystemPrompt },
                 { role: 'user', content: contextPrompt }
               ],
               response_format: { type: "json_object" }
@@ -210,22 +248,54 @@ export default function ChatbotScreen({ navigation }) {
   };
 
 
-  const handleSend = async (text = inputText) => {
-    if (!text.trim()) return;
-    const userMsg = { id: Date.now().toString(), text, sender: 'user' };
-    setMessages(prev => [...prev, userMsg]);
+  const handleSend = async (text) => {
+    const messageText = text || inputText;
+    console.log("[Chatbot] handleSend called with messageText:", messageText, "inputText:", inputText);
+    if (!messageText || !messageText.trim()) {
+      console.log("[Chatbot] Empty message text, aborting.");
+      return;
+    }
+    const cleanText = messageText.trim();
+    console.log("[Chatbot] Sending cleanText:", cleanText);
+
+    const userMsg = { id: Date.now().toString(), text: cleanText, sender: 'user' };
+    setMessages(prev => {
+      console.log("[Chatbot] Appending user message to state...");
+      return [...prev, userMsg];
+    });
     setInputText('');
     setLoading(true);
 
+    let activeMode = chatbotMode;
+    if (cleanText === "🗺️ Plan a Trip") {
+      console.log("[Chatbot] Mode changed to trip_planner");
+      activeMode = 'trip_planner';
+      setChatbotMode('trip_planner');
+    } else if (cleanText === "💁 Personal Assistant") {
+      console.log("[Chatbot] Mode changed to personal_assistant (static welcoming response)");
+      setChatbotMode('personal_assistant');
+      setLoading(false);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: "I am now active as your Personal Assistant. Ask me anything! For example: Nuwara Eliya route, weather status, or travel tips. 💁",
+        sender: 'bot',
+        options: ["Nuwara Eliya route?", "How is the climate?", "Best way to travel?"]
+      }]);
+      return;
+    }
+
     try {
-      const responseJson = await callWaterfall(text);
+      console.log("[Chatbot] Invoking AI waterfall with activeMode:", activeMode);
+      const responseJson = await callWaterfall(cleanText, activeMode);
+      console.log("[Chatbot] AI response received:", responseJson);
+      
       if (responseJson.extractedState) {
         setExtractedState(prev => ({ ...prev, ...responseJson.extractedState }));
       }
 
       // Check if we should inject mock recommendations for frontend display
       let recommendations = null;
-      const lowerText = text.toLowerCase();
+      const lowerText = cleanText.toLowerCase();
       if (lowerText.includes('sigiriya') || lowerText.includes('culture') || lowerText.includes('stay') || lowerText.includes('hotel') || lowerText.includes('mirissa') || lowerText.includes('safari') || lowerText.includes('wildlife')) {
         recommendations = [
           {
@@ -268,10 +338,37 @@ export default function ChatbotScreen({ navigation }) {
       }]);
 
     } catch (error) {
+      console.warn("[Chatbot] Waterfall error, using offline local rule-based engine:", error);
+      
+      const lower = cleanText.toLowerCase();
+      let responseText = "I'm operating in helper mode right now! How can I assist you with your travels in Sri Lanka?";
+      let nextOptions = ["Plan a Trip", "Weather in Ella?", "Train routes?"];
+
+      if (lower.includes("nuwara eliya") || lower.includes("route") || lower.includes("go to") || lower.includes("direction")) {
+        responseText = "To travel to Nuwara Eliya, the most popular and scenic route is taking the train from Colombo or Kandy to Nanu Oya station, then taking a quick 15-minute taxi or TukTuk up to Nuwara Eliya city center. High-country driving via the A5 highway is also beautiful but has many winding roads.";
+        nextOptions = ["Is it cold there?", "Train tickets?", "What to do next?"];
+      } else if (lower.includes("climate") || lower.includes("weather") || lower.includes("rain") || lower.includes("temperature")) {
+        responseText = "Sri Lanka has a tropical climate. Coastal areas (like Colombo, Hikkaduwa, Trincomalee) are sunny and warm at 28-32°C. Central hill country locations (like Nuwara Eliya, Ella) are cooler, averaging 15-20°C. Be prepared for occasional rain showers in the hills!";
+        nextOptions = ["Nuwara Eliya route?", "Best time to visit?", "Beach weather?"];
+      } else if (lower.includes("travel") || lower.includes("transport") || lower.includes("train") || lower.includes("bus") || lower.includes("tuktuk") || lower.includes("way to")) {
+        responseText = "For long distances, the local train system is highly recommended (especially the Kandy to Ella line). For daily local commuting, hiring a TukTuk or using ride-hailing apps like PickMe/Uber is the most convenient and cost-effective method.";
+        nextOptions = ["Train booking?", "Rent a car?", "Nuwara Eliya route?"];
+      } else if (lower.includes("plan") || lower.includes("trip") || lower.includes("itinerary")) {
+        responseText = "Let's map out your journey! A classic 7-day Sri Lankan itinerary starts in Colombo, moves to Kandy & Sigiriya for culture, then Ella for tea hills, and finishes with a Yala wildlife safari and Mirissa beaches. Would you like suggestions for beaches or cultural sites?";
+        nextOptions = ["Show beaches", "Cultural sites", "How many days?"];
+      } else if (lower.includes("beach") || lower.includes("mirissa") || lower.includes("hikkaduwa")) {
+        responseText = "Sri Lanka's south coast has beautiful beaches! Mirissa is famous for whale watching and surfing, Hikkaduwa has coral sanctuaries, and Unawatuna is perfect for swimming. They are best visited between November and April.";
+        nextOptions = ["Mirissa stays", "Whale watching", "Ella highlands?"];
+      } else if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey") || lower.includes("ayubowan")) {
+        responseText = "Ayubowan! I am your Ceylo personal assistant. Ask me anything about routes, climate, transport, or trip planning in Sri Lanka!";
+        nextOptions = ["Nuwara Eliya route?", "How is the climate?", "Best way to travel?"];
+      }
+
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: "I'm having a bit of trouble connecting to my signals. Please check your internet connection.",
-        sender: 'bot'
+        text: responseText,
+        sender: 'bot',
+        options: nextOptions
       }]);
     } finally {
       setLoading(false);
@@ -398,7 +495,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
       </Surface>
 
       {/* Rich Media Horizontal Recommendations Carousel */}
-      {item.sender === 'bot' && item.recommendations && (
+      {item.sender === 'bot' && item.recommendations && Array.isArray(item.recommendations) && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
           {item.recommendations.map((rec) => (
             <Surface key={rec.id} style={styles.recCard} elevation={2}>
@@ -437,7 +534,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         </ScrollView>
       )}
 
-      {item.options && (
+      {item.options && Array.isArray(item.options) && (
         <View style={styles.optionRow}>
           {item.options.map((opt, i) => (
             <Chip key={i} style={styles.optionBtn} onPress={() => onSend(opt)}>{opt}</Chip>
@@ -450,7 +547,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
 
   // Stable callbacks passed to memoized RenderMessage
   const handleSpeak = useCallback((text) => speakMessage(text), []);
-  const handleSendCallback = useCallback((text) => handleSend(text), [inputText, extractedState, loading]);
+  const handleSendCallback = useCallback((text) => handleSend(text), [inputText, extractedState, loading, chatbotMode]);
   const handleSetDestination = useCallback((name) => {
     setExtractedState(prev => ({ ...prev, destination: name }));
   }, []);
@@ -497,10 +594,18 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         contentContainerStyle={styles.chatScroll}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() => {
+          if (flatListRef.current) {
+            try {
+              flatListRef.current.scrollToEnd({ animated: true });
+            } catch (e) {
+              console.warn("FlatList scroll to end failed:", e);
+            }
+          }
+        }}
       />
 
-      {messages[messages.length - 1].isFinal && (
+      {messages && messages.length > 0 && messages[messages.length - 1]?.isFinal && (
         <Button 
           mode="contained" 
           icon="sparkles" 

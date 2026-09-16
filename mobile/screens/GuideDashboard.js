@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, StyleSheet, FlatList, TouchableOpacity, Image,
-  Alert, ScrollView, StatusBar, Dimensions
+  Alert, ScrollView, StatusBar, Dimensions, Modal
 } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { db, auth } from '../firebaseConfig';
@@ -30,6 +30,7 @@ export default function GuideDashboard({ navigation }) {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ecoScore, setEcoScore] = useState(0);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const firstName = guideData?.name?.split(' ')[0] || auth.currentUser?.displayName?.split(' ')[0] || 'Guide';
@@ -52,7 +53,7 @@ export default function GuideDashboard({ navigation }) {
     const bookUnsub = onSnapshot(q, (snap) => {
       const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setPendingBookings(all.filter(b => b.status === 'pending'));
-      setBookings(all.filter(b => b.status === 'accepted' || b.status === 'confirmed'));
+      setBookings(all.filter(b => ['accepted', 'confirmed', 'completed'].includes(b.status)));
       setLoading(false);
     }, () => setLoading(false));
 
@@ -69,19 +70,81 @@ export default function GuideDashboard({ navigation }) {
     catch (e) { Alert.alert('Error', e.message); }
   };
 
-  // Only show real bookings — no mock data
-  const displayJourneys = bookings.map(b => ({
-    id: b.id,
-    type: (b.guideSpecialization || b.tourType || 'GUIDED TOUR').toUpperCase(),
-    title: b.tourTitle || `Journey with ${b.touristName || 'Explorer'}`,
-    time: b.tourDate || b.createdAt?.toDate?.()?.toLocaleDateString() || 'Upcoming',
-    persons: b.groupSize || b.persons || 1,
-    bookingId: b.id?.slice(-4),
-    imageUrl: b.imageUrl || null,
-  }));
+  const handleLogout = async () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Log Out", 
+          style: "destructive", 
+          onPress: async () => {
+            try { await signOut(auth); }
+            catch (e) { Alert.alert('Error', e.message); }
+          } 
+        }
+      ]
+    );
+  };
 
-  // Earnings from real confirmed bookings only
-  const totalEarnings = bookings.reduce((sum, b) => sum + parseFloat(b.packageCost || 0), 0);
+  // Only show real bookings — no mock data
+  const displayJourneys = bookings
+    .filter(b => b.status === 'accepted' || b.status === 'confirmed')
+    .map(b => ({
+      id: b.id,
+      type: (b.guideSpecialization || b.tourType || 'GUIDED TOUR').toUpperCase(),
+      title: b.tourTitle || `Journey with ${b.touristName || 'Explorer'}`,
+      time: b.selectedDate || b.tourDate || b.createdAt?.toDate?.()?.toLocaleDateString() || 'Upcoming',
+      persons: b.explorers || b.groupSize || b.persons || 1,
+      bookingId: b.id?.slice(-4),
+      imageUrl: b.touristPhoto || b.imageUrl || null,
+      touristId: b.touristId || b.userId,
+      guideId: b.guideId || 'demo',
+      touristName: b.touristName || 'Explorer'
+    }));
+
+  // Earnings from real confirmed/completed bookings only
+  const totalEarnings = bookings
+    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+    .reduce((sum, b) => sum + parseFloat(b.totalAmount || b.packageCost || 0), 0);
+
+  const getUpcomingReminder = () => {
+    const upcoming = bookings.filter(b => b.status === 'accepted' || b.status === 'confirmed');
+    if (upcoming.length === 0) return null;
+    
+    let closestBooking = null;
+    let minDays = Infinity;
+    
+    for (const b of upcoming) {
+      const dateStr = b.selectedDate || b.tourDate;
+      if (!dateStr) continue;
+      const tourDate = new Date(dateStr);
+      if (isNaN(tourDate.getTime())) continue;
+      
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      tourDate.setHours(0,0,0,0);
+      
+      const diffTime = tourDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 0 && diffDays < minDays) {
+        minDays = diffDays;
+        closestBooking = b;
+      }
+    }
+    
+    if (closestBooking && minDays <= 3) {
+      return {
+        booking: closestBooking,
+        days: minDays
+      };
+    }
+    return null;
+  };
+  
+  const reminder = getUpcomingReminder();
 
   if (loading) {
     return (
@@ -98,12 +161,29 @@ export default function GuideDashboard({ navigation }) {
 
         {/* ─── Header ─── */}
         <View style={styles.topBar}>
-          <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
-          <Text style={styles.brandName}>LankaEco</Text>
-          <Image
-            source={{ uri: guideData?.photoUrl || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }}
-            style={styles.avatar}
-          />
+          <TouchableOpacity onPress={handleLogout} style={{ padding: 4, marginLeft: -4 }}>
+            <MaterialCommunityIcons name="logout" size={24} color="#1A2E1A" />
+          </TouchableOpacity>
+          <Text style={styles.brandName}>Ceylo</Text>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <TouchableOpacity onPress={() => setShowChatModal(true)} style={{ position: 'relative' }}>
+              <MaterialCommunityIcons name="message-text-outline" size={24} color="#1A2E1A" />
+              {bookings.filter(b => b.status === 'accepted' || b.status === 'confirmed').length > 0 && (
+                <View style={styles.badgeCount}>
+                  <Text style={{ color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold' }}>
+                    {bookings.filter(b => b.status === 'accepted' || b.status === 'confirmed').length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
+              <Image
+                source={{ uri: guideData?.photoUrl || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Greeting */}
@@ -113,11 +193,55 @@ export default function GuideDashboard({ navigation }) {
             <Text style={styles.verifiedText}>VERIFIED</Text>
           </View>
         </View>
-        <Text style={styles.greetMini}>NAMASTE, {firstName.toUpperCase()}</Text>
+        <Text style={styles.greetSub}>Welcome back to your ecosystem</Text>
         <Text style={styles.greetTitle}>Your Sanctuary Overview</Text>
 
+        {reminder && (
+          <TouchableOpacity 
+            style={[styles.notificationBanner, { backgroundColor: '#FFF3E0', borderColor: '#FFE0B2', borderWidth: 1 }]}
+            onPress={() => {
+              const tId = reminder.booking.touristId || reminder.booking.userId;
+              const gId = reminder.booking.guideId || 'demo';
+              const combinedChatId = `${tId}_${gId}`;
+              console.log("GuideDashboard reminder navigating to chat:", combinedChatId);
+              navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: reminder.booking.touristName });
+            }}
+          >
+            <View style={[styles.notificationIconWrap, { backgroundColor: '#FFE0B2' }]}>
+              <MaterialCommunityIcons name="calendar-clock" size={20} color="#E65100" />
+            </View>
+            <View style={styles.notificationTextWrap}>
+              <Text style={[styles.notificationTitle, { color: '#E65100' }]}>Upcoming Journey Reminder!</Text>
+              <Text style={[styles.notificationSub, { color: '#B26A00' }]}>
+                {reminder.days === 0 
+                  ? `Your journey with ${reminder.booking.touristName} is TODAY!` 
+                  : reminder.days === 1 
+                  ? `Only 1 day left for tour with ${reminder.booking.touristName}!` 
+                  : `${reminder.days} days left for tour with ${reminder.booking.touristName}!`}
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#E65100" />
+          </TouchableOpacity>
+        )}
+
+        {pendingBookings.length > 0 && (
+          <TouchableOpacity 
+            style={styles.notificationBanner}
+            onPress={() => navigation.navigate('Bookings', { filter: 'pending' })}
+          >
+            <View style={styles.notificationIconWrap}>
+              <MaterialCommunityIcons name="bell-ring" size={20} color="#FFF" />
+            </View>
+            <View style={styles.notificationTextWrap}>
+              <Text style={styles.notificationTitle}>New Booking Request!</Text>
+              <Text style={styles.notificationSub}>{pendingBookings.length} tourist(s) want to book you.</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#006A3B" />
+          </TouchableOpacity>
+        )}
+
         {/* Update Availability Button */}
-        <TouchableOpacity style={styles.availBtn}>
+        <TouchableOpacity style={styles.availBtn} onPress={() => navigation.navigate('GuideAvailability')}>
           <MaterialCommunityIcons name="calendar-check" size={16} color="#006A3B" />
           <Text style={styles.availBtnText}>Update Availability</Text>
         </TouchableOpacity>
@@ -159,42 +283,14 @@ export default function GuideDashboard({ navigation }) {
           </View>
           <Text style={styles.statusLevel}>LEVEL 4 MASTER GUIDE</Text>
           <Text style={styles.statusHappy}>
-            {bookings.length} Completed Tours
+            {bookings.filter(b => b.status === 'completed').length} Completed Tours
           </Text>
         </View>
-
-        {/* ─── Pending Requests ─── */}
-        {pendingBookings.length > 0 && (
-          <View>
-            <Text style={styles.sectionTitle}>Booking Requests ({pendingBookings.length})</Text>
-            {pendingBookings.map(req => (
-              <View key={req.id} style={styles.pendingCard}>
-                <View style={styles.pendingInfo}>
-                  <View style={styles.pendingAvatar}>
-                    <Text style={styles.pendingAvatarText}>{(req.touristName || 'T')[0]}</Text>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.pendingName}>{req.touristName}</Text>
-                    <Text style={styles.pendingSub}>Requesting ${req.packageCost}/day booking</Text>
-                  </View>
-                </View>
-                <View style={styles.pendingBtns}>
-                  <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(req.id)}>
-                    <MaterialCommunityIcons name="check" size={18} color="#FFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.declineBtn} onPress={() => handleDecline(req.id)}>
-                    <MaterialCommunityIcons name="close" size={18} color="#FFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
 
         {/* ─── Upcoming Journeys ─── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Upcoming Journeys</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Bookings')}>
             <Text style={styles.viewAll}>View All Bookings</Text>
           </TouchableOpacity>
         </View>
@@ -207,7 +303,16 @@ export default function GuideDashboard({ navigation }) {
         )}
 
         {displayJourneys.map(journey => (
-          <TouchableOpacity key={journey.id} style={styles.journeyCard} activeOpacity={0.85}>
+          <TouchableOpacity 
+            key={journey.id} 
+            style={styles.journeyCard} 
+            activeOpacity={0.85}
+            onPress={() => {
+              const combinedChatId = `${journey.touristId}_${journey.guideId}`;
+              console.log("GuideDashboard journey card navigating to chat:", combinedChatId);
+              navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: journey.touristName });
+            }}
+          >
             <Image
               source={{ uri: journey.imageUrl || 'https://images.unsplash.com/photo-1566554273541-37a9ca77b91f?w=300' }}
               style={styles.journeyImg}
@@ -237,7 +342,7 @@ export default function GuideDashboard({ navigation }) {
           <Text style={styles.offeringsSub}>
             Edit your seasonal packages, update pricing, or add new sustainable experiences to your profile.
           </Text>
-          <TouchableOpacity style={styles.offeringsBtn}>
+          <TouchableOpacity style={styles.offeringsBtn} onPress={() => navigation.navigate('GuideServices')}>
             <Text style={styles.offeringsBtnText}>MANAGE SERVICES</Text>
           </TouchableOpacity>
         </LinearGradient>
@@ -246,24 +351,68 @@ export default function GuideDashboard({ navigation }) {
       </ScrollView>
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => signOut(auth)}>
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('SOS')}>
         <MaterialCommunityIcons name="asterisk" size={28} color="#FFF" />
       </TouchableOpacity>
 
-      {/* Bottom Nav */}
-      <View style={[styles.bottomNav, { paddingBottom: insets.bottom + 4 }]}>
-        {[
-          { icon: 'compass-outline', label: 'Discover', onPress: () => {} },
-          { icon: 'calendar-check-outline', label: 'Bookings', onPress: () => {} },
-          { icon: 'account', label: 'Profile', active: true, onPress: () => {} },
-          { icon: 'bell-outline', label: 'SOS', onPress: () => navigation.navigate('SOSScreen') },
-        ].map(tab => (
-          <TouchableOpacity key={tab.label} style={styles.navTab} onPress={tab.onPress}>
-            <MaterialCommunityIcons name={tab.icon} size={22} color={tab.active ? '#006A3B' : '#8A9E8A'} />
-            <Text style={[styles.navLabel, tab.active && styles.navLabelActive]}>{tab.label}</Text>
+      {/* Chat List Modal */}
+      <Modal visible={showChatModal} animationType="fade" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowChatModal(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.chatModalContent}>
+            <View style={styles.chatModalHeader}>
+              <Text style={styles.chatModalTitle}>Active Chats</Text>
+              <TouchableOpacity onPress={() => setShowChatModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color="#1A2E1A" />
+              </TouchableOpacity>
+            </View>
+            {(() => {
+              const uniqueChats = Array.from(
+                new Map(
+                  [...bookings, ...pendingBookings].map(item => {
+                    const tId = item.touristId || item.userId;
+                    const gId = item.guideId || 'demo';
+                    return [`${tId}_${gId}`, { ...item, touristId: tId, guideId: gId }];
+                  })
+                ).values()
+              );
+              console.log("GuideDashboard uniqueChats loaded:", uniqueChats.map(c => `${c.touristId}_${c.guideId}`));
+              if (uniqueChats.length === 0) {
+                return (
+                  <Text style={{ padding: 20, textAlign: 'center', color: '#8A9E8A', fontFamily: 'Outfit-Regular' }}>
+                    No active conversations. Accept a booking to start chatting!
+                  </Text>
+                );
+              }
+              return (
+                <FlatList
+                  data={uniqueChats}
+                  keyExtractor={item => item.id}
+                  contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.chatListItem}
+                      onPress={() => {
+                        setShowChatModal(false);
+                        const combinedChatId = `${item.touristId}_${item.guideId}`;
+                        console.log("GuideDashboard navigating to chat:", combinedChatId);
+                        navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: item.touristName });
+                      }}
+                    >
+                      <Image source={{ uri: item.touristPhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }} style={styles.chatAvatar} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.chatName}>{item.touristName || 'Tourist'}</Text>
+                        <Text style={styles.chatDesc} numberOfLines={1}>Tap to view messages</Text>
+                      </View>
+                      <MaterialCommunityIcons name="chevron-right" size={20} color="#CCC" />
+                    </TouchableOpacity>
+                  )}
+                />
+              );
+            })()}
           </TouchableOpacity>
-        ))}
-      </View>
+        </TouchableOpacity>
+      </Modal>
+
     </View>
   );
 }
@@ -282,8 +431,14 @@ const styles = StyleSheet.create({
   greetRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   verifiedTag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   verifiedText: { fontSize: 10, fontFamily: 'Outfit-Bold', color: '#006A3B', letterSpacing: 0.5 },
-  greetMini: { fontSize: 12, fontFamily: 'Outfit-Bold', color: '#8A9E8A', letterSpacing: 1, marginTop: 10 },
-  greetTitle: { fontSize: 26, fontFamily: 'Outfit-Bold', color: '#1A2E1A', marginTop: 2, marginBottom: 14 },
+  greetSub: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#6B7B6B', marginTop: 10 },
+  greetTitle: { fontSize: 24, fontFamily: 'Outfit-Bold', color: '#1A2E1A', marginBottom: 20 },
+
+  notificationBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', padding: 15, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: '#C8E6C9' },
+  notificationIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#006A3B', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  notificationTextWrap: { flex: 1 },
+  notificationTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#006A3B' },
+  notificationSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#2E7D32', marginTop: 2 },
 
   availBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderWidth: 1.5, borderColor: '#006A3B', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 20 },
   availBtnText: { fontSize: 13, fontFamily: 'Outfit-Bold', color: '#006A3B' },
@@ -347,4 +502,14 @@ const styles = StyleSheet.create({
   navTab: { flex: 1, alignItems: 'center', gap: 2 },
   navLabel: { fontSize: 10, fontFamily: 'Outfit-Regular', color: '#8A9E8A' },
   navLabelActive: { color: '#006A3B', fontFamily: 'Outfit-Bold' },
+
+  badgeCount: { position: 'absolute', top: -5, right: -5, backgroundColor: '#D32F2F', width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  chatModalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, maxHeight: '60%', overflow: 'hidden' },
+  chatModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  chatModalTitle: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },
+  chatListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  chatAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: 15 },
+  chatName: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#1A2E1A', marginBottom: 2 },
+  chatDesc: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#8A9E8A' },
 });

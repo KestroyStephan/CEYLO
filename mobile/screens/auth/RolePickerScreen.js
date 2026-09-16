@@ -94,7 +94,7 @@ export default function RolePickerScreen({ navigation }) {
     } else if (selectedRole === 'guide') {
       navigation.navigate('Register', { presetRole: 'guide' });
     } else if (selectedRole === 'vendor') {
-      navigation.navigate('Register', { presetRole: 'vendor' });
+      navigation.navigate('Register', { presetRole: 'vendor_onboarding' });
     } else {
       navigation.navigate('Register', { presetRole: 'tourist' });
     }

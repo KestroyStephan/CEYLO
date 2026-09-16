@@ -21,15 +21,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Users collection - vendor role update allowed
+    // Users collection
     match /users/{uid} {
-      allow read: if request.auth != null && 
-        (request.auth.uid == uid || 
-         isAdmin());
-      allow write: if request.auth != null && request.auth.uid == uid;
-      allow update: if request.auth != null && 
-        (request.auth.uid == uid || 
-         isAdmin());
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && (
+        request.auth.uid == uid || 
+        isAdmin());
     }
 
     // Bookings (legacy, read by drivers)
@@ -39,11 +37,15 @@ service cloud.firestore {
         request.auth.uid == resource.data.userId ||
         request.auth.uid == resource.data.driverId ||
         request.auth.uid == resource.data.vendorId ||
+        request.auth.uid == resource.data.guideId ||
         isAdmin() ||
         ((hasRole('driver') || hasRole('driver_active')) && resource.data.status == 'pending')
       );
       allow update: if isSignedIn() && (
-        hasRole('driver') || hasRole('driver_active') || hasRole('tourist') ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.touristId == request.auth.uid ||
+        resource.data.guideId == request.auth.uid ||
+        hasRole('driver') || hasRole('driver_active') || hasRole('tourist') || hasRole('guide') ||
         isAdmin()
       );
     }
@@ -127,7 +129,7 @@ service cloud.firestore {
       allow create: if true;
       allow read:   if isSignedIn() && (
         request.auth.uid == resource.data.userId ||
-        hasRole('admin') || hasRole('guide') || hasRole('driver')
+        isAdmin() || hasRole('guide') || hasRole('driver')
       );
       allow update: if true; // In production, restrict to resource.data.userId or admins
     }
@@ -137,8 +139,15 @@ service cloud.firestore {
       allow read:  if true;
       allow write: if isAdmin();
     }
+    // Cultural Events (public read, admin write)
     match /cultural_events/{id} {
       allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // Notifications (authenticated read, admin write)
+    match /notifications/{id} {
+      allow read:  if isSignedIn();
       allow write: if isAdmin();
     }
 
@@ -167,5 +176,11 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if true;
     }
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.touristId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.touristId || isAdmin());
+    }
+
   }
 }

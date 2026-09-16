@@ -50,6 +50,19 @@ export default function SOSScreen() {
   const [aiLoading, setAiLoading] = useState(true);
 
   useEffect(() => {
+    const setAudioMode = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          allowsRecordingIOS: false,
+          stayActiveInBackground: true,
+        });
+      } catch (e) {
+        console.log("Audio mode set error:", e);
+      }
+    };
+    setAudioMode();
+
     if (active) {
       Animated.loop(
         Animated.sequence([
@@ -315,6 +328,9 @@ export default function SOSScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient colors={['#FF5252', '#D32F2F']} style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Emergency Support</Text>
           <Text style={styles.headerSubtitle}>Immediate assistance across Sri Lanka</Text>
         </LinearGradient>
@@ -527,7 +543,8 @@ export default function SOSScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
-  header: { padding: 40, paddingTop: 60, paddingBottom: 60, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
+  backButton: { marginBottom: 10, width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
+  header: { padding: 40, paddingTop: 50, paddingBottom: 50, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
   headerTitle: { fontSize: 28, fontFamily: 'Outfit-Bold', color: '#FFF' },
   headerSubtitle: { fontSize: 16, fontFamily: 'Outfit-Regular', color: 'rgba(255,255,255,0.8)', marginTop: 5 },
   sosSection: { height: 300, justifyContent: 'center', alignItems: 'center' },

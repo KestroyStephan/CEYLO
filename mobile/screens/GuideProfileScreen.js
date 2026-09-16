@@ -3,31 +3,91 @@ import {
   View, StyleSheet, ScrollView, Image, TouchableOpacity,
   Alert, Dimensions, StatusBar
 } from 'react-native';
-import { Text, ActivityIndicator } from 'react-native-paper';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../firebaseConfig';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Text, ActivityIndicator, TextInput } from 'react-native-paper';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { db, auth } from '../firebaseConfig';
 
 const { width } = Dimensions.get('window');
-
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const REVIEW_DATA = [
-  { id: 1, name: 'Elena G.', rating: 5, text: '"Arjuna\'s knowledge of the local flora was mind-blowing. Truly an eco-conscious journey from start to finish!"', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100' },
-];
 
 export default function GuideProfileScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { guide } = route.params;
   const [loading, setLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState(2); // Default Wed selected
+  const [pendingBooking, setPendingBooking] = useState(null);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [newReviewText, setNewReviewText] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   const stars = guide.rating || 4.8;
 
+  React.useEffect(() => {
+    if (auth.currentUser) {
+      // Listen for pending bookings
+      const q = query(
+        collection(db, 'bookings'),
+        where('guideId', '==', guide.id),
+        where('userId', '==', auth.currentUser.uid),
+        where('status', '==', 'pending')
+      );
+      const unsub = onSnapshot(q, (snap) => {
+        if (!snap.empty) {
+          setPendingBooking({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        } else {
+          setPendingBooking(null);
+        }
+      });
+      
+      // Listen for reviews
+      const reviewQ = query(collection(db, 'reviews'), where('guideId', '==', guide.id));
+      const unsubReviews = onSnapshot(reviewQ, (snap) => {
+        setReviews(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+
+      return () => { unsub(); unsubReviews(); };
+    }
+  }, [guide.id]);
+
   const handleBook = () => {
-    // Navigate to ConfirmBooking screen with guide details
-    navigation.navigate('ConfirmBooking', { guide });
+    if (pendingBooking) {
+      navigation.navigate('WaitingApproval', {
+        bookingId: pendingBooking.id,
+        guideName: guide.name,
+        guidePhoto: guide.photoUrl
+      });
+    } else {
+      // Navigate to ConfirmBooking screen with guide details
+      navigation.navigate('ConfirmBooking', { guide });
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!newReviewText.trim()) return;
+    setSubmittingReview(true);
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        guideId: guide.id,
+        touristId: auth.currentUser.uid,
+        name: auth.currentUser.displayName || 'Guest',
+        avatar: auth.currentUser.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+        text: newReviewText,
+        rating: newReviewRating,
+        createdAt: serverTimestamp()
+      });
+      setNewReviewText('');
+      setNewReviewRating(5);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit feedback');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   // Availability calendar — generate upcoming 14 days from today
@@ -46,8 +106,12 @@ export default function GuideProfileScreen({ route, navigation }) {
   };
 
   const calendarDays = getCalendarDays();
-  const specializations = guide.specializations?.split(',').map(s => s.trim()) || ['General'];
-  const languages = guide.languages?.split(',').map(l => l.trim()) || ['English'];
+  const specializations = Array.isArray(guide.specializations)
+    ? guide.specializations
+    : (guide.specializations?.split(',').map(s => s.trim()) || ['General']);
+  const languages = Array.isArray(guide.languages)
+    ? guide.languages
+    : (guide.languages?.split(',').map(l => l.trim()) || ['English']);
 
   return (
     <View style={[styles.container, { paddingTop: 0 }]}>
@@ -78,14 +142,44 @@ export default function GuideProfileScreen({ route, navigation }) {
               <Text style={styles.verifiedText}>{guide.badge}</Text>
             </View>
           )}
+
+          {/* Profile Avatar overlapping the hero */}
+          <View style={styles.avatarOverlapContainer}>
+            <Image
+              source={{ uri: guide.photoUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200' }}
+              style={styles.profileAvatar}
+            />
+            {guide.verifiedBadge && (
+              <View style={styles.avatarBadge}>
+                <MaterialCommunityIcons name="check-decagram" size={16} color="#006A3B" />
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Profile Info Card */}
         <View style={styles.profileCard}>
+          {/* Name & Rating centered under avatar */}
+          <View style={styles.avatarInfoCenter}>
+            <Text style={styles.guideName}>{guide.name}</Text>
+            <Text style={styles.guideSubtitle}>{guide.specializations || 'Sri Lankan Tour Guide'}</Text>
+            <View style={styles.starsCenter}>
+              {[1,2,3,4,5].map(s => (
+                <MaterialCommunityIcons
+                  key={s}
+                  name={s <= Math.round(guide.rating || 4.8) ? 'star' : 'star-outline'}
+                  size={18}
+                  color="#FFD700"
+                />
+              ))}
+              <Text style={styles.ratingNum}>{(guide.rating || 4.8).toFixed(1)}</Text>
+            </View>
+          </View>
+
           <View style={styles.nameRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.guideName}>{guide.name}</Text>
-              <Text style={styles.guideSubtitle}>{guide.specializations || 'Sri Lankan Tour Guide'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <MaterialCommunityIcons name="map-marker-outline" size={14} color="#8A9E8A" />
+              <Text style={styles.guideLocation}>{guide.location || 'Sri Lanka'}</Text>
             </View>
             {/* Eco Score Ring */}
             <View style={styles.ecoRing}>
@@ -97,7 +191,7 @@ export default function GuideProfileScreen({ route, navigation }) {
           {/* Biography */}
           <Text style={styles.sectionTitle}>Biography</Text>
           <Text style={styles.bioText}>
-            {guide.bio || `Born and raised in the foothills of Sri Lanka, ${guide.name.split(' ')[0]} has spent ${guide.experience || 10}+ years guiding travelers through the island's most pristine wilderness. Combining traditional cultural wisdom with modern sustainability practices, they specialize in rare endemic species identification and carbon-neutral trekking expeditions.`}
+            {guide.bio ? guide.bio : "This guide hasn't added a biography yet. However, they are a verified local expert dedicated to providing great sustainable experiences."}
           </Text>
 
           {/* Specialization Tags */}
@@ -123,11 +217,27 @@ export default function GuideProfileScreen({ route, navigation }) {
           {/* Experience */}
           <View style={styles.expCard}>
             <View>
-              <Text style={styles.expNum}>{guide.experience || '15'}+</Text>
+              <Text style={styles.expNum}>{guide.experience || '1'}+</Text>
               <Text style={styles.expLabel}>YEARS EXP.</Text>
             </View>
             <MaterialCommunityIcons name="leaf" size={40} color="rgba(0,106,59,0.15)" />
           </View>
+          
+          {/* Services Offered */}
+          <Text style={styles.sectionTitle}>Services Offered</Text>
+          {guide.offeredServices && guide.offeredServices.length > 0 ? (
+            guide.offeredServices.map(service => (
+              <View key={service.id} style={{ backgroundColor: '#F4F7F4', borderRadius: 12, padding: 15, marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <Text style={{ fontSize: 15, fontFamily: 'Outfit-Bold', color: '#1A2E1A' }}>{service.name}</Text>
+                  <Text style={{ fontSize: 16, fontFamily: 'Outfit-Bold', color: '#006A3B' }}>${service.price}</Text>
+                </View>
+                <Text style={{ fontSize: 13, fontFamily: 'Outfit-Regular', color: '#4A5E4A' }}>{service.description}</Text>
+              </View>
+            ))
+          ) : (
+             <Text style={styles.bioText}>No specific services listed. Contact for custom tours.</Text>
+          )}
 
           {/* Availability Calendar */}
           <Text style={styles.sectionTitle}>Availability</Text>
@@ -167,23 +277,55 @@ export default function GuideProfileScreen({ route, navigation }) {
           </View>
 
           {/* Reviews */}
-          <Text style={styles.sectionTitle}>What travelers say</Text>
-          {REVIEW_DATA.map(r => (
-            <View key={r.id} style={styles.reviewCard}>
-              <View style={styles.reviewHeader}>
-                <Image source={{ uri: r.avatar }} style={styles.reviewAvatar} />
-                <View style={{ marginLeft: 10 }}>
-                  <Text style={styles.reviewName}>{r.name}</Text>
-                  <View style={styles.starsRow}>
-                    {[...Array(5)].map((_, i) => (
-                      <MaterialCommunityIcons key={i} name="star" size={13} color={i < r.rating ? '#FFCA28' : '#DDD'} />
-                    ))}
+          <Text style={styles.sectionTitle}>Traveler Feedback</Text>
+          {reviews.length === 0 ? (
+            <Text style={styles.bioText}>No reviews yet. Be the first to leave feedback!</Text>
+          ) : (
+            reviews.map(r => (
+              <View key={r.id} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <Image source={{ uri: r.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }} style={styles.reviewAvatar} />
+                  <View style={{ marginLeft: 10 }}>
+                    <Text style={styles.reviewName}>{r.name}</Text>
+                    <View style={styles.starsRow}>
+                      {[...Array(5)].map((_, i) => (
+                        <MaterialCommunityIcons key={i} name="star" size={13} color={i < r.rating ? '#FFCA28' : '#DDD'} />
+                      ))}
+                    </View>
                   </View>
                 </View>
+                <Text style={styles.reviewText}>{r.text}</Text>
               </View>
-              <Text style={styles.reviewText}>{r.text}</Text>
+            ))
+          )}
+
+          {/* Leave Feedback Form */}
+          {auth.currentUser && (
+            <View style={styles.feedbackForm}>
+              <Text style={styles.feedbackTitle}>Leave Feedback</Text>
+              <View style={styles.starSelectRow}>
+                {[1,2,3,4,5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setNewReviewRating(star)}>
+                    <MaterialCommunityIcons name="star" size={24} color={star <= newReviewRating ? '#FFCA28' : '#DDD'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                mode="outlined"
+                placeholder="Share your experience..."
+                value={newReviewText}
+                onChangeText={setNewReviewText}
+                multiline
+                numberOfLines={3}
+                style={styles.feedbackInput}
+                outlineColor="#E0E8E0"
+                activeOutlineColor="#006A3B"
+              />
+              <TouchableOpacity style={styles.submitFeedbackBtn} onPress={handleSubmitReview} disabled={submittingReview}>
+                {submittingReview ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.submitFeedbackText}>Submit Feedback</Text>}
+              </TouchableOpacity>
             </View>
-          ))}
+          )}
 
           <View style={{ height: 100 }} />
         </View>
@@ -192,10 +334,17 @@ export default function GuideProfileScreen({ route, navigation }) {
       {/* Footer CTA */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <View>
-          <Text style={styles.footerPrice}>${guide.packageCost}<Text style={styles.footerUnit}>/day</Text></Text>
+          <Text style={styles.footerPrice}>
+            {guide.offeredServices && guide.offeredServices.length > 0 ? 
+              `$${Math.min(...guide.offeredServices.map(s => s.price))}` : 
+              (guide.packageCost ? `$${guide.packageCost}` : 'N/A')}
+            <Text style={styles.footerUnit}>
+              {guide.offeredServices && guide.offeredServices.length > 0 ? '/service' : '/day'}
+            </Text>
+          </Text>
         </View>
         <TouchableOpacity
-          style={styles.bookBtn}
+          style={[styles.bookBtn, pendingBooking && { backgroundColor: '#F57C00' }]}
           onPress={handleBook}
           disabled={loading}
           activeOpacity={0.85}
@@ -203,7 +352,7 @@ export default function GuideProfileScreen({ route, navigation }) {
           {loading ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.bookBtnText}>Book This Guide</Text>
+            <Text style={styles.bookBtnText}>{pendingBooking ? 'View Pending Request' : 'Book This Guide'}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -214,18 +363,27 @@ export default function GuideProfileScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F7F4' },
 
-  coverContainer: { height: 300, position: 'relative' },
+  coverContainer: { height: 280, position: 'relative' },
   coverImage: { width: '100%', height: '100%' },
   topNav: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   backCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
-  verifiedBadge: { position: 'absolute', bottom: 14, left: 16, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
+  verifiedBadge: { position: 'absolute', bottom: 70, left: 16, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   verifiedText: { fontSize: 12, fontFamily: 'Outfit-Bold', color: '#006A3B' },
 
-  profileCard: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -20, paddingHorizontal: 20, paddingTop: 24 },
+  avatarOverlapContainer: { position: 'absolute', bottom: -55, alignSelf: 'center', left: 0, right: 0, alignItems: 'center' },
+  profileAvatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 4, borderColor: '#FFF', backgroundColor: '#DDD' },
+  avatarBadge: { position: 'absolute', bottom: 2, right: 2, backgroundColor: '#FFF', borderRadius: 12, padding: 2 },
 
-  nameRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 },
-  guideName: { fontSize: 24, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },
-  guideSubtitle: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#6B7B6B', marginTop: 2 },
+  profileCard: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -24, paddingHorizontal: 20, paddingTop: 70 },
+
+  avatarInfoCenter: { alignItems: 'center', marginBottom: 20 },
+  starsCenter: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  ratingNum: { fontSize: 14, fontFamily: 'Outfit-Bold', color: '#8B6914', marginLeft: 4 },
+  guideLocation: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#8A9E8A' },
+
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  guideName: { fontSize: 22, fontFamily: 'Outfit-Bold', color: '#1A2E1A', textAlign: 'center' },
+  guideSubtitle: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#6B7B6B', marginTop: 4, textAlign: 'center' },
 
   ecoRing: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFF8DC', borderWidth: 3, borderColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
   ecoScore: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#8B6914' },
@@ -269,6 +427,13 @@ const styles = StyleSheet.create({
   reviewName: { fontSize: 13, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },
   starsRow: { flexDirection: 'row', gap: 2, marginTop: 2 },
   reviewText: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#4A5E4A', lineHeight: 19, fontStyle: 'italic' },
+  
+  feedbackForm: { backgroundColor: '#FFF', borderRadius: 14, padding: 16, marginTop: 20, borderWidth: 1, borderColor: '#EEF2EE' },
+  feedbackTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#1A2E1A', marginBottom: 10 },
+  starSelectRow: { flexDirection: 'row', marginBottom: 12, gap: 8 },
+  feedbackInput: { backgroundColor: '#F4F7F4', fontSize: 14, marginBottom: 12 },
+  submitFeedbackBtn: { backgroundColor: '#006A3B', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  submitFeedbackText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 14 },
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 14, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
   footerPrice: { fontSize: 22, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },

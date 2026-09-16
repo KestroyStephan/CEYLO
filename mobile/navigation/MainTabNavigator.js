@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; // Using Expo's vector icons
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
@@ -7,7 +8,33 @@ import ChatbotScreen from '../screens/ChatbotScreen';
 import MarketplaceScreen from '../screens/MarketplaceScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
+import GuidesListScreen from '../screens/GuidesListScreen';
+import GuideProfileScreen from '../screens/GuideProfileScreen';
+import ReviewBookingScreen from '../screens/ReviewBookingScreen';
+import ConfirmBookingScreen from '../screens/ConfirmBookingScreen';
+import WaitingApprovalScreen from '../screens/WaitingApprovalScreen';
+import MessageScreen from '../screens/MessageScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import SOSScreen from '../screens/SOSScreen';
+
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function TouristHomeStack() {
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="GuidesList" component={GuidesListScreen} />
+            <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
+            <Stack.Screen name="ReviewBooking" component={ReviewBookingScreen} />
+            <Stack.Screen name="ConfirmBooking" component={ConfirmBookingScreen} />
+            <Stack.Screen name="WaitingApproval" component={WaitingApprovalScreen} />
+            <Stack.Screen name="MessageScreen" component={MessageScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="SOSScreen" component={SOSScreen} />
+        </Stack.Navigator>
+    );
+}
 
 export default function MainTabNavigator() {
     return (
@@ -32,7 +59,7 @@ export default function MainTabNavigator() {
         >
             <Tab.Screen
                 name="HomeTab"
-                component={HomeScreen}
+                component={TouristHomeStack}
                 options={{
                     tabBarLabel: 'Home',
                     tabBarIcon: ({ focused, color, size }) => (

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, StyleSheet, FlatList, TouchableOpacity, Image,
-  TextInput, StatusBar, ScrollView, Platform
+  TextInput, StatusBar, ScrollView, Platform, Alert
 } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const CATEGORY_FILTERS = ['All Guides', 'Wildlife', 'Cultural', 'Heritage', 'Adventure', 'Marine'];
 
@@ -27,9 +28,31 @@ export default function GuidesListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All Guides');
+  
+  // Date filtering for availability
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const [pendingBooking, setPendingBooking] = useState(null);
 
   useEffect(() => {
     fetchGuides();
+
+    if (auth.currentUser) {
+      const q = query(
+        collection(db, 'bookings'),
+        where('touristId', '==', auth.currentUser.uid),
+        where('status', '==', 'pending')
+      );
+      const unsub = onSnapshot(q, (snap) => {
+        if (!snap.empty) {
+          setPendingBooking({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        } else {
+          setPendingBooking(null);
+        }
+      });
+      return () => unsub();
+    }
   }, []);
 
   const fetchGuides = async () => {
@@ -38,30 +61,56 @@ export default function GuidesListScreen({ navigation }) {
       const snap = await getDocs(q);
       const live = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setGuides(live);
+      if (live.length === 0) {
+        // Alert.alert('Debug', 'Query succeeded but 0 guides were found in the users collection with role="guide".');
+      }
     } catch (e) {
       console.error('Guides fetch error:', e);
+      Alert.alert('Fetch Error', e.message);
       setGuides([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDateChange = (event, selected) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selected) {
+      setSelectedDate(selected);
+    }
+  };
+
   const filtered = guides.filter(g => {
+    const specString = Array.isArray(g.specializations) ? g.specializations.join(',') : g.specializations;
+    const areaString = Array.isArray(g.serviceAreas) ? g.serviceAreas.join(',') : g.serviceAreas;
+    
     const matchesSearch =
       !search ||
-      g.name?.toLowerCase().includes(search.toLowerCase()) ||
-      g.specializations?.toLowerCase().includes(search.toLowerCase()) ||
-      g.serviceAreas?.toLowerCase().includes(search.toLowerCase());
+      g.name?.toLowerCase()?.includes(search.toLowerCase()) ||
+      specString?.toLowerCase()?.includes(search.toLowerCase()) ||
+      areaString?.toLowerCase()?.includes(search.toLowerCase());
+      
     const matchesFilter =
       activeFilter === 'All Guides' ||
-      g.specializations?.toLowerCase().includes(activeFilter.toLowerCase()) ||
-      g.serviceAreas?.toLowerCase().includes(activeFilter.toLowerCase());
-    return matchesSearch && matchesFilter;
+      specString?.toLowerCase()?.includes(activeFilter.toLowerCase()) ||
+      areaString?.toLowerCase()?.includes(activeFilter.toLowerCase());
+      
+    // Check if the selected date is in the guide's unavailableDates array
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const isAvailable = !(g.unavailableDates && g.unavailableDates.includes(dateStr));
+
+    return matchesSearch && matchesFilter && isAvailable;
   });
 
   const renderGuide = useCallback(({ item }) => {
-    const badge = BADGE_META[item.badge];
-    const stars = item.rating || 4.5;
+    const badge = item.badge ? BADGE_META[item.badge] : null;
+    const stars = item.rating || 0;
+    
+    // Calculate lowest price from services
+    let startingPrice = item.packageCost;
+    if (item.offeredServices && item.offeredServices.length > 0) {
+      startingPrice = Math.min(...item.offeredServices.map(s => s.price));
+    }
 
     return (
       <TouchableOpacity
@@ -92,20 +141,24 @@ export default function GuidesListScreen({ navigation }) {
 
         <View style={styles.cardBody}>
           <Text style={styles.guideName}>{item.name}</Text>
-          <Text style={styles.guideSpec}>{item.specializations}</Text>
+          <Text style={styles.guideSpec}>{item.specializations || 'Sri Lankan Tour Guide'}</Text>
 
           <View style={styles.chipRow}>
-            {item.serviceAreas?.split(',').slice(0, 2).map((area, i) => (
+            {item.serviceAreas ? item.serviceAreas.split(',').slice(0, 2).map((area, i) => (
               <View key={i} style={styles.areaChip}>
                 <Text style={styles.areaChipText}>{area.trim()}</Text>
               </View>
-            ))}
+            )) : (
+              <View style={styles.areaChip}>
+                <Text style={styles.areaChipText}>Island-wide</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.cardFooter}>
             <View>
               <Text style={styles.startLabel}>STARTS FROM</Text>
-              <Text style={styles.priceLabel}>${item.packageCost}<Text style={styles.priceUnit}>/day</Text></Text>
+              <Text style={styles.priceLabel}>{startingPrice ? `$${startingPrice}` : 'N/A'}<Text style={styles.priceUnit}>{startingPrice ? '/service' : ''}</Text></Text>
             </View>
             <TouchableOpacity
               style={styles.viewBtn}
@@ -123,6 +176,27 @@ export default function GuidesListScreen({ navigation }) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
 
+      {/* Pending Booking Banner */}
+      {pendingBooking && (
+        <TouchableOpacity
+          style={styles.pendingBanner}
+          onPress={() => navigation.navigate('WaitingApproval', {
+            bookingId: pendingBooking.id,
+            guideName: pendingBooking.guideName,
+            guidePhoto: pendingBooking.guidePhoto || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400'
+          })}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <MaterialCommunityIcons name="clock-fast" size={20} color="#FFF" style={{ marginRight: 8 }} />
+            <View>
+              <Text style={styles.pendingBannerText}>Pending Request with {pendingBooking.guideName}</Text>
+              <Text style={styles.pendingBannerSub}>Tap to view status</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#FFF" />
+        </TouchableOpacity>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -131,7 +205,7 @@ export default function GuidesListScreen({ navigation }) {
         <Text style={styles.appName}>Ceylon Echoes</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
+            source={{ uri: auth.currentUser?.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
             style={styles.avatar}
           />
         </TouchableOpacity>
@@ -157,11 +231,26 @@ export default function GuidesListScreen({ navigation }) {
       </View>
 
       {/* Category Filter Chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
+        {/* Date Picker Button */}
+        <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
+          <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#006A3B" />
+          <Text style={styles.datePickerText}>
+            Showing available guides for: {selectedDate.toLocaleDateString()}
+          </Text>
+          <MaterialCommunityIcons name="chevron-down" size={20} color="#006A3B" />
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            minimumDate={new Date()}
+            onChange={handleDateChange}
+          />
+        )}
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={{ paddingRight: 20 }}>
         {CATEGORY_FILTERS.map(f => (
           <TouchableOpacity
             key={f}
@@ -225,6 +314,9 @@ export default function GuidesListScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F7F4' },
+  pendingBanner: { backgroundColor: '#F57C00', paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pendingBannerText: { fontSize: 13, fontFamily: 'Outfit-Bold', color: '#FFF' },
+  pendingBannerSub: { fontSize: 11, fontFamily: 'Outfit-Regular', color: 'rgba(255,255,255,0.8)' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#FFF' },
   appName: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#006A3B' },
   backBtn: { padding: 4 },
@@ -242,6 +334,24 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: '#E8F5E9', borderColor: '#006A3B' },
   filterChipText: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#666' },
   filterChipTextActive: { color: '#006A3B', fontFamily: 'Outfit-Bold' },
+  filterTextActive: { color: '#FFF' },
+  
+  datePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    justifyContent: 'center',
+  },
+  datePickerText: {
+    fontFamily: 'Outfit-Medium',
+    color: '#006A3B',
+    marginHorizontal: 10,
+    fontSize: 14,
+  },
 
   listContent: { padding: 16, gap: 16, paddingBottom: 100 },
 

@@ -54,7 +54,13 @@ export default function ConfirmBookingScreen({ route, navigation }) {
   const BOOKED_DAYS = [6, 13, 20]; // mock booked days
   const isCurrent = calMonth === todayMonth;
 
-  const baseRatePerPerson = parseFloat(guide?.packageCost || 45);
+  // Find base rate from offeredServices or fallback
+  let minServicePrice = null;
+  if (guide?.offeredServices && guide.offeredServices.length > 0) {
+    minServicePrice = Math.min(...guide.offeredServices.map(s => s.price));
+  }
+  
+  const baseRatePerPerson = parseFloat(minServicePrice || guide?.packageCost || 45);
   const baseTotal = (baseRatePerPerson * explorers).toFixed(2);
   const carbonOffset = (baseRatePerPerson * explorers * 0.07).toFixed(2);
   const originalTotal = (parseFloat(baseTotal) + parseFloat(carbonOffset) + 15).toFixed(2);
@@ -69,15 +75,17 @@ export default function ConfirmBookingScreen({ route, navigation }) {
     }
     setLoading(true);
     try {
-      await addDoc(collection(db, 'bookings'), {
+      const bookingRef = await addDoc(collection(db, 'bookings'), {
         type: 'guide',
         guideId: guide?.id || 'demo',
         guideName: guide?.name || 'Arjuna Perera',
         guideSpecialization: guide?.specializations || 'Sinharaja Rainforest Specialist',
         touristId: auth.currentUser.uid,
+        userId: auth.currentUser.uid,
         touristName: auth.currentUser.displayName || 'Explorer',
+        touristPhoto: auth.currentUser.photoURL || null,
         status: 'pending',
-        packageCost: guide?.packageCost || '45',
+        packageCost: minServicePrice || guide?.packageCost || '45',
         explorers,
         selectedDate: `${selectedDate} ${monthName} ${calYear}`,
         pickupLocation: PICKUP_OPTIONS[pickupIdx],
@@ -86,11 +94,11 @@ export default function ConfirmBookingScreen({ route, navigation }) {
         createdAt: serverTimestamp(),
       });
 
-      Alert.alert(
-        '🌿 Confirmed!',
-        `Your eco-journey with ${guide?.name || 'Arjuna Perera'} on ${selectedDate} ${monthName} has been booked!`,
-        [{ text: 'Explore More', onPress: () => navigation.popToTop() }]
-      );
+      navigation.replace('WaitingApproval', {
+        bookingId: bookingRef.id,
+        guideName: guide?.name || 'Arjuna Perera',
+        guidePhoto: guide?.photoUrl,
+      });
     } catch (e) {
       Alert.alert('Booking Error', e.message);
     } finally {
@@ -120,7 +128,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Confirm Booking</Text>
           <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
+            source={{ uri: auth.currentUser?.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
             style={styles.headerAvatar}
           />
         </View>
@@ -289,17 +297,20 @@ export default function ConfirmBookingScreen({ route, navigation }) {
             </View>
           </View>
 
-          {/* Confirm Button */}
-          <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} disabled={loading} activeOpacity={0.88}>
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <>
-                <Text style={styles.confirmBtnText}>Confirm & Pay Securely</Text>
-                <MaterialCommunityIcons name="lock" size={18} color="rgba(255,255,255,0.7)" style={{ marginLeft: 8 }} />
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Footer Actions */}
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+            <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Text style={styles.confirmBtnText}>Request to Book</Text>
+                  <MaterialCommunityIcons name="send" size={18} color="#FFF" />
+                </>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.footerNote}>You won't be charged until the guide accepts.</Text>
+          </View>
 
           {/* Trust Footer */}
           <View style={styles.trustFooter}>
@@ -389,8 +400,10 @@ const styles = StyleSheet.create({
   carbonBadge: { backgroundColor: '#006A3B', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
   carbonBadgeText: { fontSize: 9, fontFamily: 'Outfit-Bold', color: '#FFF', textAlign: 'center', letterSpacing: 0.3, lineHeight: 13 },
 
-  confirmBtn: { backgroundColor: '#006A3B', borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginBottom: 12 },
-  confirmBtnText: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#FFF' },
+  confirmBtn: { backgroundColor: '#006A3B', borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, marginBottom: 8 },
+  confirmBtnText: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#FFF', marginRight: 8 },
+  footer: { marginTop: 12 },
+  footerNote: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#8A9E8A', textAlign: 'center', marginBottom: 12 },
 
   trustFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   trustText: { fontSize: 11, fontFamily: 'Outfit-Regular', color: '#8A9E8A' },

@@ -37,6 +37,7 @@ import DriverNavigator from './navigation/DriverNavigator';
 import ActiveRideScreen from './screens/driver/ActiveRideScreen';
 import RideTrackingScreen from './screens/RideTrackingScreen';
 import GuideDashboard from './screens/GuideDashboard';
+import GuideNavigator from './navigation/GuideNavigator';
 import ChatbotScreen from './screens/ChatbotScreen';
 import MapScreen from './screens/MapScreen';
 import DestinationDetailScreen from './screens/DestinationDetailScreen';
@@ -49,10 +50,14 @@ import CulturalEventsScreen from './screens/CulturalEventsScreen';
 import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
 import SOSScreen from './screens/SOSScreen';
 import GuidesListScreen from './screens/GuidesListScreen';
+import MessageScreen from './screens/MessageScreen';
+
 import GuideProfileScreen from './screens/GuideProfileScreen';
 import ReviewBookingScreen from './screens/ReviewBookingScreen';
 import ConfirmBookingScreen from './screens/ConfirmBookingScreen';
 import GuidePendingScreen from './screens/onboarding/GuidePendingScreen';
+import WaitingApprovalScreen from './screens/WaitingApprovalScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
 
 // Navigation
 import DrawerNavigator from './navigation/DrawerNavigator';
@@ -203,7 +208,7 @@ export default function App() {
                 ) : (userRole === 'driver_pending' || userRole === 'driver_rejected') ? (
                   <Stack.Screen name="DriverPending" component={DriverPendingScreen} />
                 ) : userRole === 'guide' ? (
-                  <Stack.Screen name="GuideDashboard" component={GuideDashboard} />
+                  <Stack.Screen name="GuideNavigator" component={GuideNavigator} />
                 ) : (userRole === 'vendor' || userRole === 'vendor_active') ? (
                   <Stack.Screen name="VendorPortal" component={VendorNavigator} />
                 ) : userRole === 'vendor_onboarding' ? (
@@ -237,6 +242,9 @@ export default function App() {
                 <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
                 <Stack.Screen name="ReviewBooking" component={ReviewBookingScreen} />
                 <Stack.Screen name="ConfirmBooking" component={ConfirmBookingScreen} />
+                <Stack.Screen name="WaitingApproval" component={WaitingApprovalScreen} />
+                <Stack.Screen name="MessageScreen" component={MessageScreen} />
+                <Stack.Screen name="EditProfile" component={EditProfileScreen} />
 
                 {/* Vendor & Utility Screens from Main */}
                 {userRole !== 'vendor_onboarding' && (

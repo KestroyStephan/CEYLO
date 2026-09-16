@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, Platform, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
 import * as Location from 'expo-location';
 import { IconButton, Text, Surface, Chip, Avatar } from 'react-native-paper';
@@ -16,6 +16,8 @@ export default function MapScreen({ navigation }) {
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All Island');
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [showTypeFilterModal, setShowTypeFilterModal] = useState(false);
   const sheetAnim = useRef(new Animated.Value(0)).current; // Initially visible
   
   const filters = ['All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'];
@@ -127,7 +129,7 @@ export default function MapScreen({ navigation }) {
         mapType="standard"
         customMapStyle={mapStyle}
       >
-        {nearbyPlaces.map((marker) => (
+        {nearbyPlaces.filter(p => typeFilter === 'All' || p.type === typeFilter).map((marker) => (
           <Marker
             key={marker.id}
             coordinate={marker.coords}
@@ -218,7 +220,7 @@ export default function MapScreen({ navigation }) {
                 {loadingPlaces ? "Searching area..." : `Found ${nearbyPlaces.length} locations within 5km`}
               </Text>
             </View>
-            <TouchableOpacity style={styles.filterIconBtn}>
+            <TouchableOpacity style={styles.filterIconBtn} onPress={() => setShowTypeFilterModal(true)}>
               <MaterialCommunityIcons name="tune-vertical" size={20} color="#333" />
             </TouchableOpacity>
           </View>
@@ -226,7 +228,7 @@ export default function MapScreen({ navigation }) {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.cardsScroll}>
             {loadingPlaces ? (
               <ActivityIndicator size="large" color="#00695C" style={{marginTop: 40}} />
-            ) : nearbyPlaces.map(place => (
+            ) : nearbyPlaces.filter(p => typeFilter === 'All' || p.type === typeFilter).map(place => (
               <TouchableOpacity 
                 key={place.id} 
                 style={styles.discoveryCard}
@@ -261,6 +263,32 @@ export default function MapScreen({ navigation }) {
           </ScrollView>
         </Surface>
       </Animated.View>
+
+      {/* Type Filter Modal */}
+      <Modal visible={showTypeFilterModal} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTypeFilterModal(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter by Type</Text>
+            
+            {['All', 'cultural', 'nature', 'restaurant', 'gem'].map(type => (
+              <TouchableOpacity 
+                key={type} 
+                style={[styles.modalOption, typeFilter === type && styles.modalOptionActive]}
+                onPress={() => {
+                  setTypeFilter(type);
+                  setShowTypeFilterModal(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, typeFilter === type && styles.modalOptionTextActive]}>
+                  {type === 'All' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
+                </Text>
+                {typeFilter === type && <MaterialCommunityIcons name="check" size={20} color="#00695C" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </View>
   );
 }
@@ -320,4 +348,13 @@ const styles = StyleSheet.create({
   cardTagRow: { flexDirection: 'row' },
   hiddenGemTag: { borderWidth: 1, borderColor: '#E0E0E0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
   hiddenGemText: { fontSize: 9, fontFamily: 'Outfit-Bold', color: '#777', letterSpacing: 0.5 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', backgroundColor: '#FFF', borderRadius: 20, padding: 20 },
+  modalTitle: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#111', marginBottom: 15 },
+  modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  modalOptionActive: { backgroundColor: '#F0F8F7' },
+  modalOptionText: { fontSize: 15, fontFamily: 'Outfit-Medium', color: '#555' },
+  modalOptionTextActive: { color: '#00695C', fontFamily: 'Outfit-Bold' },
 });

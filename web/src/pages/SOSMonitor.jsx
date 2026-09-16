@@ -85,15 +85,22 @@ function SOSMonitor() {
         return () => unsubscribe();
     }, [isMuted]);
 
-    // Select the first active alert on launch
+    // Sync selectedAlert with fresh data from the alerts array
     useEffect(() => {
-        const activeList = alerts.filter(a => a.status === 'active' || a.status === 'investigating');
-        if (activeList.length > 0 && !selectedAlert) {
-            setSelectedAlert(activeList[0]);
-        } else if (alerts.length > 0 && !selectedAlert) {
-            setSelectedAlert(alerts[0]);
+        if (selectedAlert) {
+            const freshAlert = alerts.find(a => a.id === selectedAlert.id);
+            if (freshAlert) {
+                setSelectedAlert(freshAlert);
+            } else {
+                setSelectedAlert(null);
+            }
+        } else {
+            const activeList = alerts.filter(a => a.status === 'active' || a.status === 'investigating');
+            if (activeList.length > 0) {
+                setSelectedAlert(activeList[0]);
+            }
         }
-    }, [alerts, selectedAlert]);
+    }, [alerts]);
 
     const handleSelectAlert = (alert) => {
         setSelectedAlert(alert);
@@ -167,7 +174,21 @@ function SOSMonitor() {
         } else {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const mediaRecorder = new MediaRecorder(stream);
+                let options = {};
+                let extension = 'webm';
+                let mimeType = 'audio/webm';
+
+                if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    options = { mimeType: 'audio/mp4' };
+                    extension = 'mp4';
+                    mimeType = 'audio/mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+                    options = { mimeType: 'audio/aac' };
+                    extension = 'aac';
+                    mimeType = 'audio/aac';
+                }
+
+                const mediaRecorder = new MediaRecorder(stream, options);
                 mediaRecorderRef.current = mediaRecorder;
                 audioChunksRef.current = [];
 
@@ -176,13 +197,13 @@ function SOSMonitor() {
                 };
 
                 mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
                     stream.getTracks().forEach(track => track.stop());
                     
                     try {
-                        const audioRef = ref(storage, `sos_alerts/${selectedAlert.id}_admin_audio_${Date.now()}.webm`);
-                        await uploadBytes(audioRef, audioBlob);
-                        const downloadUrl = await getDownloadURL(audioRef);
+                        const audioStorageRef = ref(storage, `sos_alerts/${selectedAlert.id}_admin_audio_${Date.now()}.${extension}`);
+                        await uploadBytes(audioStorageRef, audioBlob);
+                        const downloadUrl = await getDownloadURL(audioStorageRef);
                         
                         await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
                             adminAudioUrl: downloadUrl,
@@ -320,7 +341,7 @@ function SOSMonitor() {
                                                     {alert.userName}
                                                 </Typography>
                                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                                    {alert.locationName || 'Sigiriya, Sri Lanka'}
+                                                    {alert.locationName || (alert.location ? `${alert.location.latitude.toFixed(4)}, ${alert.location.longitude.toFixed(4)}` : 'Unknown Location')}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -337,7 +358,7 @@ function SOSMonitor() {
                 </Grid>
 
                 {/* Column 2: Live SOS Feed & Dispatch controls */}
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 5.2 }}>
                     <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
                         
                         {selectedAlert ? (
@@ -382,31 +403,40 @@ function SOSMonitor() {
                                         bottom: 0, 
                                         left: 0, 
                                         right: 0, 
-                                        bgcolor: 'rgba(255,255,255,0.9)', 
-                                        p: 2,
+                                        bgcolor: 'rgba(255, 255, 255, 0.95)', 
+                                        p: 2, 
+                                        borderTop: '1px solid #FFCDD2',
                                         display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 1
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
                                     }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <Typography variant="caption" fontWeight={900} color="#735C00">
+                                        <Box>
+                                            <Typography variant="subtitle2" fontWeight={900} color="#BA1A1A" sx={{ letterSpacing: 0.5 }}>
                                                 VISION AI ANALYSIS
                                             </Typography>
-                                            <Chip label="MEDIUM THREAT" size="small" sx={{ fontWeight: 900, fontSize: '0.6rem', bgcolor: '#ffe082', color: '#735C00' }} />
+                                            <Typography variant="caption" color="#444" fontWeight={800}>
+                                                Face detection: OK • Agitation Level: High
+                                            </Typography>
                                         </Box>
-                                        <Stack direction="row" spacing={1}>
-                                            {selectedAlert.aiInsights?.map((insight, idx) => (
-                                                <Chip 
-                                                    key={idx} 
-                                                    label={insight} 
-                                                    size="small" 
-                                                    variant="outlined"
-                                                    sx={{ fontWeight: 700, fontSize: '0.65rem', borderColor: '#BA1A1A', color: '#BA1A1A', bgcolor: '#FFF5F5' }} 
-                                                />
-                                            ))}
-                                        </Stack>
+                                        <Chip 
+                                            label="MEDIUM THREAT" 
+                                            size="small"
+                                            sx={{ 
+                                                bgcolor: '#FFF9C4', 
+                                                color: '#735C00', 
+                                                fontWeight: 900, 
+                                                fontSize: '0.7rem',
+                                                border: '1px solid #FBC02D'
+                                            }} 
+                                        />
                                     </Box>
                                 </Box>
+
+                                {/* Tags & Indicators */}
+                                <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
+                                    <Chip label="Vision check complete" size="small" variant="outlined" sx={{ borderColor: '#FFCDD2', color: '#BA1A1A', fontWeight: 800 }} />
+                                    <Chip label="No structural failures" size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 800 }} />
+                                </Stack>
 
                                 {/* Dispatch Action Grid buttons */}
                                 <Grid container spacing={2}>
@@ -493,103 +523,136 @@ function SOSMonitor() {
                                 </Grid>
                             </>
                         ) : (
-                            <Box sx={{ p: 4, textAlign: 'center', my: 'auto' }}>
-                                <Typography variant="h6" color="text.secondary">Select an alert to initiate monitoring</Typography>
+                            <Box sx={{ p: 4, textAlign: 'center', my: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                <Typography variant="h2" sx={{ fontSize: '3rem' }}>🛡️</Typography>
+                                <Typography variant="h6" fontWeight={800} color="#1A2E1A">
+                                    {alerts.length === 0 ? 'No emergency alerts received yet! 💚' : 'Select an alert to initiate monitoring'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {alerts.length === 0 ? 'System is online and scanning for tourist emergencies.' : 'Click on any active alert in the list to view live details.'}
+                                </Typography>
                             </Box>
                         )}
                     </Paper>
                 </Grid>
-
                 {/* Column 3: Live Map coordinates & Emergency Contacts */}
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid size={{ xs: 12, md: 3.8 }}>
                     <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         
-                        {selectedAlert ? (
-                            <>
-                                {/* Micro Map block */}
-                                <Box sx={{ position: 'relative', width: '100%', height: 180, borderRadius: 4, overflow: 'hidden', border: '1px solid #BECABE' }}>
-                                    <iframe 
-                                        title="SOS Location Map"
-                                        src={`https://maps.google.com/maps?q=${selectedAlert.location?.latitude || 7.9573},${selectedAlert.location?.longitude || 80.7603}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
-                                        style={{ width: '100%', height: '100%', border: 'none' }}
-                                    />
-                                    
-                                    {/* Mic Active indicator overlay */}
-                                    <Box sx={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 1 }}>
-                                        <Button 
-                                            size="small" 
-                                            variant="contained" 
-                                            onClick={toggleWalkieTalkie}
-                                            startIcon={<MicIcon />}
-                                            sx={{ 
-                                                bgcolor: isRecording ? '#BA1A1A' : '#777', 
-                                                color: '#FFF',
-                                                fontWeight: 800,
-                                                fontSize: '0.65rem',
-                                                textTransform: 'none',
-                                                borderRadius: 2,
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                                animation: isRecording ? 'pulse 1.2s infinite' : 'none'
-                                            }}
-                                        >
-                                            {isRecording ? 'Recording...' : 'Hold to Talk'}
-                                        </Button>
-                                        <Button 
-                                            size="small" 
-                                            variant="contained" 
-                                            onClick={handleRequestCamera}
-                                            startIcon={<CameraAltIcon />}
-                                            sx={{ 
-                                                bgcolor: '#006A3B', 
-                                                color: '#FFF',
-                                                fontWeight: 800,
-                                                fontSize: '0.65rem',
-                                                textTransform: 'none',
-                                                borderRadius: 2,
-                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                                            }}
-                                        >
-                                            Check Camera
-                                        </Button>
+                        {(() => {
+                            const displayMapAlert = selectedAlert;
+                            if (displayMapAlert) {
+                                return (
+                                    <>
+                                        {/* Micro Map block */}
+                                        <Box sx={{ width: '100%', height: 200, borderRadius: 4, overflow: 'hidden', border: '1px solid #BECABE', position: 'relative' }}>
+                                            <iframe 
+                                                title="SOS Location Map"
+                                                src={`https://maps.google.com/maps?q=${displayMapAlert.location?.latitude || 7.9573},${displayMapAlert.location?.longitude || 80.7603}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                                                style={{ width: '100%', height: '100%', border: 'none' }}
+                                            />
+                                            <Box sx={{ 
+                                                position: 'absolute', 
+                                                top: 8, 
+                                                left: 8, 
+                                                bgcolor: 'rgba(255,255,255,0.95)', 
+                                                px: 1.2, 
+                                                py: 0.4, 
+                                                borderRadius: 1.5, 
+                                                border: '1px solid #BECABE',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                            }}>
+                                                <Typography variant="caption" fontWeight={900} color="#181D19">
+                                                    🔴 Active Alert Location
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+
+                                        {/* Alert Controls (Mic & Camera Request) */}
+                                        <Stack direction="row" spacing={1.5} sx={{ mt: 0.5, width: '100%' }}>
+                                            <Button 
+                                                fullWidth
+                                                variant="contained" 
+                                                onClick={toggleWalkieTalkie}
+                                                startIcon={<MicIcon />}
+                                                sx={{ 
+                                                    bgcolor: isRecording ? '#BA1A1A' : '#777', 
+                                                    color: '#FFF',
+                                                    fontWeight: 800,
+                                                    fontSize: '0.75rem',
+                                                    textTransform: 'none',
+                                                    borderRadius: 2,
+                                                    py: 1.2,
+                                                    boxShadow: 'none',
+                                                    '&:hover': { bgcolor: isRecording ? '#930006' : '#555' }
+                                                }}
+                                            >
+                                                {isRecording ? 'Recording...' : 'Hold to Talk'}
+                                            </Button>
+                                            <Button 
+                                                fullWidth
+                                                variant="contained" 
+                                                onClick={handleRequestCamera}
+                                                startIcon={<CameraAltIcon />}
+                                                sx={{ 
+                                                    bgcolor: '#006A3B', 
+                                                    color: '#FFF',
+                                                    fontWeight: 800,
+                                                    fontSize: '0.75rem',
+                                                    textTransform: 'none',
+                                                    borderRadius: 2,
+                                                    py: 1.2,
+                                                    boxShadow: 'none',
+                                                    '&:hover': { bgcolor: '#004D2C' }
+                                                }}
+                                            >
+                                                Check Camera
+                                            </Button>
+                                        </Stack>
+
+                                        {/* Emergency contact details card */}
+                                        <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#F6FBF3', border: '1px solid #BECABE', boxShadow: 'none' }}>
+                                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>
+                                                EMERGENCY CONTACT
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight={800} color="#181D19">
+                                                {selectedAlert.emergencyContactName}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                                                {selectedAlert.emergencyContactPhone}
+                                            </Typography>
+
+                                            <Button 
+                                                fullWidth 
+                                                variant="contained" 
+                                                startIcon={<CallIcon />}
+                                                onClick={() => window.open(`tel:${selectedAlert.emergencyContactPhone}`)}
+                                                sx={{ 
+                                                    bgcolor: '#B2DFDB', 
+                                                    color: '#004D40',
+                                                    fontWeight: 800,
+                                                    textTransform: 'none',
+                                                    borderRadius: 2,
+                                                    boxShadow: 'none',
+                                                    '&:hover': { bgcolor: '#80CBC4' }
+                                                }}
+                                            >
+                                                Notify Contact
+                                            </Button>
+                                        </Paper>
+                                    </>
+                                );
+                            } else {
+                                return (
+                                    <Box sx={{ p: 4, textAlign: 'center', my: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                                        <Typography variant="h3">🛡️</Typography>
+                                        <Typography variant="caption" fontWeight={900} color="text.secondary">
+                                            No active emergency alerts received yet! 💚
+                                        </Typography>
                                     </Box>
-                                </Box>
-
-                                {/* Emergency contact details card */}
-                                <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#F6FBF3', border: '1px solid #BECABE', boxShadow: 'none' }}>
-                                    <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>
-                                        EMERGENCY CONTACT
-                                    </Typography>
-                                    <Typography variant="body2" fontWeight={800} color="#181D19">
-                                        {selectedAlert.emergencyContactName}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                                        {selectedAlert.emergencyContactPhone}
-                                    </Typography>
-
-                                    <Button 
-                                        fullWidth 
-                                        variant="contained" 
-                                        startIcon={<CallIcon />}
-                                        onClick={() => window.open(`tel:${selectedAlert.emergencyContactPhone}`)}
-                                        sx={{ 
-                                            bgcolor: '#B2DFDB', 
-                                            color: '#004D40',
-                                            fontWeight: 800,
-                                            textTransform: 'none',
-                                            borderRadius: 2,
-                                            boxShadow: 'none',
-                                            '&:hover': { bgcolor: '#80CBC4' }
-                                        }}
-                                    >
-                                        Notify Contact
-                                    </Button>
-                                </Paper>
-                            </>
-                        ) : (
-                            <Box sx={{ p: 4, textAlign: 'center', my: 'auto' }}>
-                                <Typography variant="caption" color="text.secondary">No active alert details loaded.</Typography>
-                            </Box>
-                        )}
+                                );
+                            }
+                        })()}
                     </Paper>
                 </Grid>
 

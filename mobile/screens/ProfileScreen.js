@@ -98,19 +98,29 @@ export default function ProfileScreen({ navigation }) {
                 
                 <View style={styles.profileSection}>
                     <View style={styles.avatarContainer}>
-                        <Image 
-                            source={{ uri: user?.photoURL || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80' }} 
-                            style={styles.avatar} 
-                        />
+                        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
+                            <Image 
+                                source={{ uri: userData?.photoUrl || user?.photoURL || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80' }} 
+                                style={styles.avatar} 
+                            />
+                            <View style={styles.editAvatarBtn}>
+                                <Feather name="camera" size={14} color="#FFF" />
+                            </View>
+                        </TouchableOpacity>
                         <View style={styles.levelBadge}>
                             <Text style={styles.levelText}>LVL {userData?.level || 1}</Text>
                         </View>
                     </View>
-                    <Text style={styles.name}>{user?.displayName || "Traveler"}</Text>
+                    <Text style={styles.name}>{userData?.displayName || user?.displayName || "Traveler"}</Text>
                     <View style={styles.ecoTag}>
                         <MaterialCommunityIcons name="leaf" size={16} color="#00897B" />
                         <Text style={styles.ecoTagText}>{userData?.rank || 'Eco-Traveler'}</Text>
                     </View>
+                    {userData?.bio ? <Text style={styles.bioText}>{userData.bio}</Text> : null}
+                    <TouchableOpacity style={styles.editProfileBtn} onPress={() => navigation.navigate('EditProfile')}>
+                        <Feather name="edit-2" size={14} color="#00695C" />
+                        <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.statsContainer}>
@@ -149,6 +159,7 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.menuList}>
                     <MenuItem icon="bookmark" title="Saved Places" subtitle={`${savedPlacesCount} Hidden Gems saved`} onPress={() => {}} />
                     <MenuItem icon="map" title="Itineraries" subtitle={`${itinerariesCount} Upcoming journeys`} onPress={() => navigation.navigate('ItineraryDetail')} />
+                    <MenuItem icon="edit-2" title="Edit Profile" subtitle="Update your info & photo" onPress={() => navigation.navigate('EditProfile')} />
                     <MenuItem icon="settings" title="Settings" subtitle="Preferences & Privacy" onPress={() => {}} />
                 </View>
 
@@ -181,9 +192,13 @@ const styles = StyleSheet.create({
     avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: '#A7FFEB' },
     levelBadge: { position: 'absolute', bottom: 0, right: -5, backgroundColor: '#DAA520', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, borderWidth: 2, borderColor: '#FFF' },
     levelText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 10, letterSpacing: 0.5 },
+    editAvatarBtn: { position: 'absolute', top: 0, right: -5, backgroundColor: '#00695C', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
     name: { fontSize: 26, fontFamily: 'Outfit-Bold', color: '#111', marginBottom: 5 },
-    ecoTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    ecoTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
     ecoTagText: { color: '#00897B', fontFamily: 'Outfit-Medium', fontSize: 14 },
+    bioText: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#555', textAlign: 'center', paddingHorizontal: 20, lineHeight: 18, marginBottom: 10 },
+    editProfileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E8F5E9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginTop: 4, borderWidth: 1, borderColor: '#B2DFDB' },
+    editProfileBtnText: { color: '#00695C', fontFamily: 'Outfit-Bold', fontSize: 13 },
 
     statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 35 },
     statCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', marginHorizontal: 5 },

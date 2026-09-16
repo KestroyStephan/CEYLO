@@ -64,9 +64,12 @@ export default function RegisterScreen({ navigation, route }) {
           createdAt: serverTimestamp(),
         });
       } else {
+        let finalRole = role;
+        if (role === 'guide') finalRole = 'guide_pending';
+        
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid, name: name.trim(), email: user.email, phone,
-          role, isOnboarded: false, createdAt: new Date().toISOString(),
+          role: finalRole, isOnboarded: false, createdAt: new Date().toISOString(),
         });
       }
     } catch (error) {
@@ -78,8 +81,8 @@ export default function RegisterScreen({ navigation, route }) {
     }
   };
 
-  const FieldInput = ({ field, placeholder, value, onChange, secure, keyType, extra }) => (
-    <View style={[styles.inputWrapper, isActive(field) && styles.inputWrapperFocused]}>
+  const renderField = (field, placeholder, value, onChange, secure, keyType, extra) => (
+    <View key={field} style={[styles.inputWrapper, isActive(field) && styles.inputWrapperFocused]}>
       <TextInput
         placeholder={placeholder}
         placeholderTextColor="#B0BCB0"
@@ -112,7 +115,7 @@ export default function RegisterScreen({ navigation, route }) {
         end={{ x: 0.5, y: 0.45 }}
       />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]}
           showsVerticalScrollIndicator={false}
@@ -130,49 +133,37 @@ export default function RegisterScreen({ navigation, route }) {
                 <MaterialCommunityIcons name="leaf" size={30} color="#006A3B" />
               </View>
             </View>
-            <Text style={styles.brandName}>Create Account</Text>
+            <Text style={styles.brandName}>
+              Create {role === 'vendor_onboarding' ? 'Vendor' : role.charAt(0).toUpperCase() + role.slice(1)} Account
+            </Text>
             <Text style={styles.brandTagline}>JOIN THE ECO-LUXURY COMMUNITY</Text>
           </View>
 
           <View style={styles.formCard}>
             {/* Full Name */}
             <Text style={styles.fieldLabel}>Full Name</Text>
-            <FieldInput field="name" placeholder="Arjuna Perera" value={name} onChange={setName} />
+            {renderField("name", "Arjuna Perera", name, setName)}
 
             {/* Email */}
             <Text style={styles.fieldLabel}>Email Address</Text>
-            <FieldInput field="email" placeholder="you@example.com" value={email} onChange={setEmail} keyType="email-address" extra={{ autoCapitalize: 'none' }} />
+            {renderField("email", "you@example.com", email, setEmail, false, "email-address", { autoCapitalize: 'none' })}
 
             {/* Phone */}
             <Text style={styles.fieldLabel}>Phone Number</Text>
-            <FieldInput field="phone" placeholder="+94 XX XXX XXXX" value={phone} onChange={setPhone} keyType="phone-pad" extra={{ autoCapitalize: 'none' }} />
+            {renderField("phone", "+94 XX XXX XXXX", phone, setPhone, false, "phone-pad", { autoCapitalize: 'none' })}
 
             {/* Password */}
             <Text style={styles.fieldLabel}>Password</Text>
-            <FieldInput field="password" placeholder="Min. 6 characters" value={password} onChange={setPassword} secure />
+            {renderField("password", "Min. 6 characters", password, setPassword, true)}
 
-            {/* Role Selector */}
-            <Text style={[styles.fieldLabel, { marginTop: 8 }]}>I am a...</Text>
-            <View style={styles.roleGrid}>
-              {ROLES.map(r => (
-                <TouchableOpacity
-                  key={r.key}
-                  onPress={() => setRole(r.key)}
-                  style={[styles.roleCard, role === r.key && styles.roleCardActive]}
-                >
-                  <MaterialCommunityIcons name={r.icon} size={22} color={role === r.key ? '#006A3B' : '#8A9E8A'} />
-                  <Text style={[styles.roleLabel, role === r.key && styles.roleLabelActive]}>{r.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
 
             {/* Driver Extra Fields */}
             {role === 'driver' && (
               <View style={styles.extraFields}>
                 <Text style={styles.fieldLabel}>Vehicle Type</Text>
-                <FieldInput field="vehicleType" placeholder="e.g. Tuk, Car, Van" value={vehicleType} onChange={setVehicleType} />
+                {renderField("vehicleType", "e.g. Tuk, Car, Van", vehicleType, setVehicleType)}
                 <Text style={styles.fieldLabel}>License Plate</Text>
-                <FieldInput field="licensePlate" placeholder="e.g. CAB-1234" value={licensePlate} onChange={setLicensePlate} extra={{ autoCapitalize: 'characters' }} />
+                {renderField("licensePlate", "e.g. CAB-1234", licensePlate, setLicensePlate, false, "default", { autoCapitalize: 'characters' })}
               </View>
             )}
 
