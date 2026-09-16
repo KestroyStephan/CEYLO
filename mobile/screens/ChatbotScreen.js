@@ -7,6 +7,7 @@ import { db, auth } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { API_BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,7 +43,7 @@ CRITICAL RULES (Enforce these when isReady is true and you generate the final pl
 4. Predict & display estimated costs (Accommodation, Food, Transport, Entry Fees) and Total Budget.
 5. Provide Realistic AI Reasoning for EVERY recommendation (e.g. "Recommendation: Knuckles Eco Trail. Reason: Matches your interest in nature and fits your $ budget").
 
-${ragContext ? \`DATABASE RAG CONTEXT (Use these exact places/events in your plan!):\n\${JSON.stringify(ragContext)}\` : "Extract preferences silently while talking. Once budget, days, and mood are known, set isReady to true."}`;
+${ragContext ? `DATABASE RAG CONTEXT (Use these exact places/events in your plan!):\n${JSON.stringify(ragContext)}` : "Extract preferences silently while talking. Once budget, days, and mood are known, set isReady to true."}`;
   } else if (mode === 'personal_assistant') {
     return `You are CEYLO, a premium Sri Lankan Personal Travel Assistant.
 Answer questions naturally like weather, transport recommendations, travel routes (e.g. to Nuwara Eliya), what to do next, or tourist advice.
@@ -295,8 +296,7 @@ export default function ChatbotScreen({ navigation }) {
       let ragContext = null;
       if (activeMode === 'trip_planner') {
         try {
-          const backendIp = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-          const ragResponse = await fetch(`http://${backendIp}:5000/api/recommend`, {
+          const ragResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -447,8 +447,7 @@ export default function ChatbotScreen({ navigation }) {
     setLoading(true);
     try {
       // 1. Fetch real 100k data RAG matches from backend
-      const backendIp = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-      const ragResponse = await fetch(`http://${backendIp}:5000/api/recommend`, {
+      const ragResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mood: extractedState.mood || 'Adventurer' })

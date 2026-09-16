@@ -101,7 +101,11 @@ app.post('/api/recommend', (req, res) => {
     });
 });
 
-const PORT = 5000;
-app.listen(PORT, () => {
-    console.log(`CEYLO AI RAG Backend running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`CEYLO AI RAG Backend running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
