@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image } fro
 import { Text, Surface } from 'react-native-paper';
 import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getCountFromServer, getDocs, limit, orderBy } from 'firebase/firestore';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -12,6 +12,10 @@ export default function ProfileScreen({ navigation }) {
     const user = auth.currentUser;
     const [userData, setUserData] = useState(null);
     const [itinerariesCount, setItinerariesCount] = useState(0);
+    const [savedPlacesCount, setSavedPlacesCount] = useState(0);
+    const [reviewsCount, setReviewsCount] = useState(0);
+    const [visitedCount, setVisitedCount] = useState(0);
+    const [visitedPlaces, setVisitedPlaces] = useState([]);
 
     useEffect(() => {
         if (!user) return;
@@ -21,15 +25,36 @@ export default function ProfileScreen({ navigation }) {
             }
         });
         
-        const q = query(collection(db, 'itineraries'), where('userId', '==', user.uid));
-        const unsubItin = onSnapshot(q, (snap) => {
-            setItinerariesCount(snap.docs.length);
-        });
+        const fetchAggregations = async () => {
+            try {
+                const itinQ = query(collection(db, 'itineraries'), where('userId', '==', user.uid));
+                const itinSnap = await getCountFromServer(itinQ);
+                setItinerariesCount(itinSnap.data().count);
 
-        return () => {
-            unsub();
-            unsubItin();
+                const savedQ = query(collection(db, 'saved_places'), where('userId', '==', user.uid));
+                const savedSnap = await getCountFromServer(savedQ);
+                setSavedPlacesCount(savedSnap.data().count);
+
+                const reviewsQ = query(collection(db, 'reviews'), where('userId', '==', user.uid));
+                const reviewsSnap = await getCountFromServer(reviewsQ);
+                setReviewsCount(reviewsSnap.data().count);
+
+                const visitedQ = query(collection(db, 'visited_places'), where('userId', '==', user.uid));
+                const visitedSnap = await getCountFromServer(visitedQ);
+                setVisitedCount(visitedSnap.data().count);
+
+                // Fetch latest visited places for the passport
+                const placesQ = query(collection(db, 'visited_places'), where('userId', '==', user.uid), orderBy('visitedAt', 'desc'), limit(5));
+                const placesDocs = await getDocs(placesQ);
+                setVisitedPlaces(placesDocs.docs.map(d => d.data()));
+            } catch (error) {
+                console.log("Error fetching aggregations:", error);
+            }
         };
+
+        fetchAggregations();
+
+        return () => unsub();
     }, [user]);
 
     const handleLogout = async () => {
@@ -84,12 +109,6 @@ export default function ProfileScreen({ navigation }) {
 
     // Real Data Fallbacks
     const ecoPoints = userData?.ecoPoints || 0;
-    const visitedCount = userData?.visitedPlaces?.length || 0;
-    const reviewsCount = userData?.reviews?.length || 0;
-    const savedPlacesCount = userData?.savedPlaces?.length || 0;
-    
-    // Fallback to real visited places if available
-    const visitedPlaces = userData?.visitedPlaces || [];
 
     return (
         <View style={styles.mainContainer}>

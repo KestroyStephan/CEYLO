@@ -4,6 +4,8 @@ import MapView, { Marker, PROVIDER_GOOGLE } from '../components/Map';
 import { Text, Surface, Button, Avatar, IconButton, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { auth, db } from '../firebaseConfig';
+import { collection, addDoc, onSnapshot, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -18,6 +20,7 @@ export default function TransportScreen({ navigation }) {
   const [location, setLocation] = useState(null);
   const [selectedType, setSelectedType] = useState('tuk');
   const [step, setStep] = useState(1); // 1: Selector, 2: Searching, 3: Confirmed
+  const [bookingId, setBookingId] = useState(null);
   const sheetAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -29,9 +32,48 @@ export default function TransportScreen({ navigation }) {
     })();
   }, []);
 
-  const handleBook = () => {
-    setStep(2);
-    setTimeout(() => setStep(3), 3000);
+  const handleBook = async () => {
+    if (!auth.currentUser) {
+      alert("Please login to book transport.");
+      return;
+    }
+    setStep(2); // Searching
+
+    try {
+      const selectedVehicle = VEHICLES.find(v => v.id === selectedType);
+      const docRef = await addDoc(collection(db, 'bookings'), {
+        userId: auth.currentUser.uid,
+        serviceType: 'transport',
+        vehicleType: selectedVehicle.id,
+        vehicleName: selectedVehicle.name,
+        priceEst: selectedVehicle.price,
+        status: 'pending',
+        pickupLocation: location,
+        createdAt: serverTimestamp(),
+      });
+      setBookingId(docRef.id);
+
+      let isAccepted = false;
+      const unsub = onSnapshot(doc(db, 'bookings', docRef.id), (docSnap) => {
+        if (docSnap.exists() && docSnap.data().status === 'accepted') {
+          isAccepted = true;
+          setStep(3);
+          unsub();
+        }
+      });
+      
+      // Temporary fallback for demo purposes if no driver accepts within 5 seconds
+      setTimeout(() => {
+        if (!isAccepted) {
+          updateDoc(docRef, { status: 'accepted' });
+        }
+      }, 5000);
+
+    } catch (error) {
+      console.error("Booking error:", error);
+      alert("Failed to create booking.");
+      setStep(1);
+    }
   };
 
   const RenderVehicle = ({ item }) => (

@@ -39,6 +39,9 @@ export default function SOSScreen() {
   const [uploadPct, setUploadPct] = useState(0);
   const [countdown, setCountdown] = useState(null);
   const [breadcrumbs, setBreadcrumbs] = useState([]);
+  const [isOffline, setIsOffline] = useState(false);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [mediaType, setMediaType] = useState('picture');
   const countdownRef = useRef(null);
   const cameraRef = useRef(null);
   const lastAudioTimestampRef = useRef(null);
@@ -276,15 +279,34 @@ export default function SOSScreen() {
         return;
       }
     }
+    const netState = await NetInfo.fetch();
+    setIsOffline(!netState.isConnected);
     setShowCamera(true);
   };
 
-  const takePicture = async () => {
+  const handleCapture = async () => {
     if (!cameraRef.current) return;
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
-      setCapturedUri(photo.uri);
-    } catch (e) { Alert.alert('Error', e.message); }
+      if (isOffline) {
+        const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
+        setCapturedUri(photo.uri);
+        setMediaType('picture');
+      } else {
+        if (isRecordingVideo) {
+          cameraRef.current.stopRecording();
+          setIsRecordingVideo(false);
+        } else {
+          setIsRecordingVideo(true);
+          const video = await cameraRef.current.recordAsync({ maxDuration: 15 });
+          setCapturedUri(video.uri);
+          setMediaType('video');
+          setIsRecordingVideo(false);
+        }
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message);
+      setIsRecordingVideo(false);
+    }
   };
 
   const submitPhotoEvidence = async () => {
@@ -293,9 +315,10 @@ export default function SOSScreen() {
     try {
       const res = await fetch(capturedUri);
       const blob = await res.blob();
-      const r = ref(storage, `sos_alerts/${activeDocId}_evidence.jpg`);
+      const ext = mediaType === 'video' ? 'mp4' : 'jpg';
+      const r = ref(storage, `sos_alerts/${activeDocId}_evidence.${ext}`);
       
-      const photoUrl = await new Promise((resolve, reject) => {
+      const evidenceUrl = await new Promise((resolve, reject) => {
         const task = uploadBytesResumable(r, blob);
         task.on('state_changed',
           snap => setUploadPct(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
@@ -305,7 +328,7 @@ export default function SOSScreen() {
       });
 
       const alertRef = doc(db, "sos_alerts", activeDocId);
-      await updateDoc(alertRef, { photoUrl });
+      await updateDoc(alertRef, { evidenceUrl, mediaType });
       
       setShowCamera(false);
       setCapturedUri(null);
@@ -362,7 +385,7 @@ export default function SOSScreen() {
         {active && (
           <TouchableOpacity style={styles.addPhotoBtn} onPress={handleOptionalPhoto}>
             <MaterialCommunityIcons name="camera-plus" size={20} color="#D32F2F" />
-            <Text style={styles.addPhotoText}>Attach Evidence Photo</Text>
+            <Text style={styles.addPhotoText}>Attach Evidence (Video/Photo)</Text>
           </TouchableOpacity>
         )}
 
@@ -485,7 +508,14 @@ export default function SOSScreen() {
         <View style={{ flex: 1, backgroundColor: '#000' }}>
           {capturedUri ? (
             <View style={{ flex: 1 }}>
-              <Image source={{ uri: capturedUri }} style={{ flex: 1, resizeMode: 'cover' }} />
+              {mediaType === 'video' ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="video-check" size={80} color="#FFF" />
+                  <Text style={{ color: '#FFF', marginTop: 10, fontFamily: 'Outfit-Bold' }}>Video Ready to Upload</Text>
+                </View>
+              ) : (
+                <Image source={{ uri: capturedUri }} style={{ flex: 1, resizeMode: 'cover' }} />
+              )}
               <View style={styles.previewOverlay}>
                 <View style={styles.previewHeader}>
                   <Text style={styles.previewTitle}>Emergency Photo</Text>
@@ -513,23 +543,23 @@ export default function SOSScreen() {
             </View>
           ) : (
             <View style={{ flex: 1 }}>
-              <CameraView style={{ flex: 1 }} ref={cameraRef} facing="back" />
+              <CameraView style={{ flex: 1 }} ref={cameraRef} facing="back" mode={isOffline ? "picture" : "video"} />
               <View style={styles.cameraOverlay}>
                 <View style={styles.cameraHeader}>
                   <TouchableOpacity style={styles.closeBtn} onPress={() => setShowCamera(false)}>
                     <Ionicons name="close" size={24} color="#FFF" />
                   </TouchableOpacity>
-                  <Text style={styles.cameraTitle}>Capture Incident</Text>
+                  <Text style={styles.cameraTitle}>{isOffline ? 'Capture Photo (Offline)' : 'Record Video Evidence'}</Text>
                   <View style={{ width: 40 }} />
                 </View>
                 <View style={styles.cameraFooter}>
-                  <TouchableOpacity style={styles.captureBtn} onPress={takePicture}>
-                    <View style={styles.captureOuter}>
-                      <View style={styles.captureInner} />
+                  <TouchableOpacity style={styles.captureBtn} onPress={handleCapture}>
+                    <View style={[styles.captureOuter, isRecordingVideo && { borderColor: '#D32F2F' }]}>
+                      <View style={[styles.captureInner, isRecordingVideo && { borderRadius: 8, width: 30, height: 30 }]} />
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={{ marginTop: 20 }} onPress={skipPhoto}>
-                    <Text style={{ color: '#FFF', fontSize: 16, fontFamily: 'Outfit-Bold' }}>Cancel Photo</Text>
+                    <Text style={{ color: '#FFF', fontSize: 16, fontFamily: 'Outfit-Bold' }}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
               </View>

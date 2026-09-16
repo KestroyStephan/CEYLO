@@ -13,31 +13,36 @@ const { width, height } = Dimensions.get('window');
 
 
 
-const getSystemPrompt = (mode) => {
+const getSystemPrompt = (mode, ragContext = null) => {
   if (mode === 'trip_planner') {
-    return `You are CEYLO, a premium Sri Lankan Travel Planner. 
-Your goal is to build a "Trip Profile" for the traveler through natural conversation.
+    return `You are CEYLO, an elite Sri Lankan Travel Concierge. 
+Your goal is to build a "Trip Profile" for the traveler and generate a complete personalized tour plan.
 STRICT JSON OUTPUT REQUIRED for every response.
 
 ExtractedState JSON Schema:
 {
-  "resp": "Conversational reply guiding the trip plan, suggesting best routes, locations, and accommodation places.",
+  "resp": "Conversational reply guiding the trip plan, or the final detailed itinerary.",
   "extractedState": {
-    "destination": "City Name",
+    "destination": "City Name or All Sri Lanka",
     "days": 0,
     "budget": "Economy/Standard/Luxury",
     "eco_interest": 0-100,
     "mood": "Adventurer/Culture Seeker/Eco Explorer/Family/Spiritual",
-    "mobility": "Standard/Accessible"
+    "startDate": "YYYY-MM-DD (if known)",
+    "endDate": "YYYY-MM-DD (if known)"
   },
   "isReady": boolean,
   "ui_options": ["Option 1", "Option 2"]
 }
 
-CONTEXT:
-- Use hospitality markers (Ayubowan, Vanakkam) ONLY in the first message. DO NOT repeat them in subsequent replies.
-- Prioritize eco-friendly destinations.
-- Extract preferences silently while talking.`;
+CRITICAL RULES (Enforce these when isReady is true and you generate the final plan):
+1. Recommend destinations across ALL PROVINCES (popular + hidden gems).
+2. Consider Seasonal Events/Activities happening during the travel dates.
+3. Include an intelligent day-by-day route with estimated travel times.
+4. Predict & display estimated costs (Accommodation, Food, Transport, Entry Fees) and Total Budget.
+5. Provide Realistic AI Reasoning for EVERY recommendation (e.g. "Recommendation: Knuckles Eco Trail. Reason: Matches your interest in nature and fits your $ budget").
+
+${ragContext ? \`DATABASE RAG CONTEXT (Use these exact places/events in your plan!):\n\${JSON.stringify(ragContext)}\` : "Extract preferences silently while talking. Once budget, days, and mood are known, set isReady to true."}`;
   } else if (mode === 'personal_assistant') {
     return `You are CEYLO, a premium Sri Lankan Personal Travel Assistant.
 Answer questions naturally like weather, transport recommendations, travel routes (e.g. to Nuwara Eliya), what to do next, or tourist advice.
@@ -162,8 +167,8 @@ export default function ChatbotScreen({ navigation }) {
     }
   }, [extractedState]);
 
-  const callWaterfall = async (prompt, activeMode = chatbotMode) => {
-    const activeSystemPrompt = getSystemPrompt(activeMode);
+  const callWaterfall = async (prompt, activeMode = chatbotMode, ragContext = null) => {
+    const activeSystemPrompt = getSystemPrompt(activeMode, ragContext);
     const contextPrompt = `\n\nCURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${prompt}`;
     
     const models = [
@@ -286,7 +291,33 @@ export default function ChatbotScreen({ navigation }) {
 
     try {
       console.log("[Chatbot] Invoking AI waterfall with activeMode:", activeMode);
-      const responseJson = await callWaterfall(cleanText, activeMode);
+      
+      let ragContext = null;
+      if (activeMode === 'trip_planner') {
+        try {
+          const backendIp = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+          const ragResponse = await fetch(`http://${backendIp}:5000/api/recommend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              startDate: extractedState.startDate, 
+              endDate: extractedState.endDate, 
+              budget: extractedState.budget, 
+              interests: cleanText, 
+              days: extractedState.days, 
+              mood: extractedState.mood 
+            })
+          });
+          const ragData = await ragResponse.json();
+          if (ragData.success) {
+            ragContext = ragData.context;
+          }
+        } catch (e) {
+          console.warn("Failed to fetch RAG context from backend:", e);
+        }
+      }
+
+      const responseJson = await callWaterfall(cleanText, activeMode, ragContext);
       console.log("[Chatbot] AI response received:", responseJson);
       
       if (responseJson.extractedState) {
@@ -340,6 +371,28 @@ export default function ChatbotScreen({ navigation }) {
     } catch (error) {
       console.warn("[Chatbot] Waterfall error, using offline local rule-based engine:", error);
       
+      if (activeMode === 'trip_planner') {
+         let fallbackPlan = "I couldn't reach the AI servers, but based on my local datasets, here is a suggested itinerary:\n\n";
+         if (ragContext && ragContext.destinations && ragContext.destinations.length > 0) {
+             ragContext.destinations.slice(0,3).forEach((d, i) => {
+                 fallbackPlan += `Day ${i+1}: Visit ${d.name} in ${d.district} (${d.category}).\n`;
+             });
+             fallbackPlan += "\nEstimated Budget: LKR 45,000\nEnjoy your trip!";
+         } else {
+             fallbackPlan = "Let's map out your journey! A classic 3-day itinerary: Colombo -> Kandy -> Ella. Would you like to generate this?";
+         }
+         
+         setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            text: fallbackPlan,
+            sender: 'bot',
+            options: [],
+            isFinal: true
+         }]);
+         setLoading(false);
+         return;
+      }
+
       const lower = cleanText.toLowerCase();
       let responseText = "I'm operating in helper mode right now! How can I assist you with your travels in Sri Lanka?";
       let nextOptions = ["Plan a Trip", "Weather in Ella?", "Train routes?"];
@@ -425,7 +478,7 @@ export default function ChatbotScreen({ navigation }) {
       
       Alert.alert(
         "Itinerary Ready", 
-        "Your ML-predicted itinerary has been generated from 100,000+ data points!",
+        "Your ML-predicted itinerary has been generated combining real datasets and AI!",
         [
           {
             text: "View Itinerary",

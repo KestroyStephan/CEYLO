@@ -1,50 +1,90 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, Card, ProgressBar, IconButton, MD3Colors } from 'react-native-paper';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Text, Button, Card, IconButton, ActivityIndicator } from 'react-native-paper';
+import { auth, db } from '../firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-export default function ItineraryScreen() {
+export default function ItineraryScreen({ navigation }) {
+    const [focus, setFocus] = useState('Nature/Eco');
+    const [days, setDays] = useState(5);
+    const [budget, setBudget] = useState('$$ Standard');
+    const [loading, setLoading] = useState(false);
+
+    const handleGenerate = async () => {
+        if (!auth.currentUser) {
+            Alert.alert("Error", "Please login to generate an itinerary.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await addDoc(collection(db, `users/${auth.currentUser.uid}/itineraries`), {
+                focus,
+                days,
+                budget,
+                status: 'generated',
+                createdAt: serverTimestamp(),
+            });
+            Alert.alert("Success", "Itinerary generated and saved successfully!");
+            // Navigate to Concierge passing the extracted state
+            navigation.navigate('Concierge', { 
+                initialState: { focus, days, budget }
+            });
+        } catch (error) {
+            console.error("Error saving itinerary:", error);
+            Alert.alert("Error", "Failed to save itinerary.");
+        }
+        setLoading(false);
+    };
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
-                <IconButton icon="arrow-left" size={24} onPress={() => { }} />
+                <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
                 <Text variant="titleLarge" style={styles.headerTitle}>Tailor Your Journey</Text>
             </View>
 
             <Card style={styles.card}>
                 <Card.Content>
                     <Text variant="titleMedium" style={styles.label}>Trip Focus</Text>
-                    <View style={styles.labelRow}>
-                        <Text variant="bodySmall">Nature/Eco</Text>
-                        <Text variant="bodySmall">Culture/History</Text>
+                    <View style={styles.budgetRow}>
+                        <Button mode={focus === 'Nature/Eco' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={focus === 'Nature/Eco' ? '#00695c' : undefined} onPress={() => setFocus('Nature/Eco')}>
+                            Nature/Eco
+                        </Button>
+                        <Button mode={focus === 'Balanced' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={focus === 'Balanced' ? '#00695c' : undefined} onPress={() => setFocus('Balanced')}>
+                            Balanced
+                        </Button>
+                        <Button mode={focus === 'Culture/History' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={focus === 'Culture/History' ? '#00695c' : undefined} onPress={() => setFocus('Culture/History')}>
+                            Culture/History
+                        </Button>
                     </View>
-                    <ProgressBar progress={0.3} color="#00695c" style={styles.slider} />
 
                     <View style={styles.spacer} />
 
                     <Text variant="titleMedium" style={styles.label}>How many days?</Text>
                     <View style={styles.counterRow}>
-                        <IconButton icon="minus" mode="contained-tonal" size={20} onPress={() => { }} />
-                        <Text variant="headlineMedium">5</Text>
-                        <IconButton icon="plus" mode="contained-tonal" size={20} onPress={() => { }} />
+                        <IconButton icon="minus" mode="contained-tonal" size={20} onPress={() => setDays(Math.max(1, days - 1))} />
+                        <Text variant="headlineMedium">{days}</Text>
+                        <IconButton icon="plus" mode="contained-tonal" size={20} onPress={() => setDays(days + 1)} />
                     </View>
 
                     <View style={styles.spacer} />
 
                     <Text variant="titleMedium" style={styles.label}>Your Budget</Text>
                     <View style={styles.budgetRow}>
-                        <Button mode="contained" style={styles.budgetBtnSelected} buttonColor="#00695c">
+                        <Button mode={budget === '$ Budget' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={budget === '$ Budget' ? '#00695c' : undefined} onPress={() => setBudget('$ Budget')}>
                             $ Budget
                         </Button>
-                        <Button mode="outlined" style={styles.budgetBtn}>
+                        <Button mode={budget === '$$ Standard' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={budget === '$$ Standard' ? '#00695c' : undefined} onPress={() => setBudget('$$ Standard')}>
                             $$ Standard
                         </Button>
-                        <Button mode="outlined" style={styles.budgetBtn}>
+                        <Button mode={budget === '$$$ Luxury' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={budget === '$$$ Luxury' ? '#00695c' : undefined} onPress={() => setBudget('$$$ Luxury')}>
                             $$$ Luxury
                         </Button>
                     </View>
 
-                    <Button mode="contained" style={styles.generateBtn} buttonColor="#00695c">
-                        Generate Itinerary
+                    <Button mode="contained" style={styles.generateBtn} buttonColor="#00695c" onPress={handleGenerate} disabled={loading}>
+                        {loading ? <ActivityIndicator color="white" /> : "Generate Itinerary"}
                     </Button>
                 </Card.Content>
             </Card>

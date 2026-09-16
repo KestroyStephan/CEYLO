@@ -6,7 +6,9 @@ try:
     import tensorflow as tf
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import LSTM, Dense, Dropout
+    from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
     from sklearn.preprocessing import MinMaxScaler
+    from sklearn.metrics import mean_squared_error, mean_absolute_error
     TF_AVAILABLE = True
 except ImportError:
     TF_AVAILABLE = False
@@ -17,9 +19,13 @@ def train_demand_forecast():
         print("Please run this script in Google Colab, Vertex AI, or an environment with TensorFlow installed.")
         return
 
+    # Determine base path for Colab vs Local
+    IN_COLAB = os.path.exists('/content/drive')
+    BASE = '/content/drive/MyDrive/CEYLO' if IN_COLAB else '../..'
+
     print("Loading time-series demand data...")
     try:
-        df = pd.read_csv('../../ai_datasets/time_series_demand.csv')
+        df = pd.read_csv(f'{BASE}/ai_datasets/time_series_demand.csv')
     except Exception as e:
         print(f"Error loading dataset: {e}")
         return
@@ -64,13 +70,43 @@ def train_demand_forecast():
     
     model.compile(optimizer='adam', loss='mean_squared_error')
     
-    print("Training Model (10 Epochs)...")
-    model.fit(X_train, y_train, batch_size=32, epochs=10, validation_data=(X_test, y_test), verbose=1)
+    # Checkpoint and Early Stopping
+    checkpoint_dir = f'{BASE}/ai_models/checkpoints' if IN_COLAB else '../checkpoints'
+    os.makedirs(checkpoint_dir, exist_ok=True)
     
-    # Export Model
-    model_path = '../demand_lstm_model.keras'
-    model.save(model_path)
-    print(f"Demand Forecast LSTM Model exported successfully to {model_path}")
+    checkpoint = ModelCheckpoint(
+        f'{checkpoint_dir}/demand_epoch{{epoch:02d}}.keras',
+        save_best_only=True,
+        monitor='val_loss'
+    )
+    early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    
+    print("Training Model (10 Epochs)...")
+    model.fit(X_train, y_train, batch_size=32, epochs=10, 
+              validation_data=(X_test, y_test), 
+              callbacks=[checkpoint, early_stop],
+              verbose=1)
+              
+    # Evaluation
+    predictions = model.predict(X_test)
+    pred_unscaled = scaler.inverse_transform(predictions)
+    y_test_unscaled = scaler.inverse_transform(y_test.reshape(-1, 1))
+    
+    rmse = np.sqrt(mean_squared_error(y_test_unscaled, pred_unscaled))
+    mae = mean_absolute_error(y_test_unscaled, pred_unscaled)
+    print(f"Validation Metrics - RMSE: {rmse:.2f} | MAE: {mae:.2f}")
+    
+    # Export Model with Versioning
+    import datetime
+    version = datetime.datetime.now().strftime('%Y%m%d')
+    models_dir = f'{BASE}/ai_models' if IN_COLAB else '..'
+    
+    versioned_path = f'{models_dir}/demand_lstm_model_{version}.keras'
+    latest_path = f'{models_dir}/demand_lstm_model.keras'
+    
+    model.save(versioned_path)
+    model.save(latest_path)
+    print(f"Demand Forecast LSTM Model exported successfully to {latest_path} and {versioned_path}")
 
 if __name__ == "__main__":
     train_demand_forecast()
