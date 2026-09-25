@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "CEYLO",
     "slug": "mobile",
     "scheme": "ceylo",
     "version": "1.0.0",
@@ -14,10 +14,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +26,7 @@
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
         }
       }
     },

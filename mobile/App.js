@@ -1,3 +1,5 @@
+import 'react-native-get-random-values';
+import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import './i18n';
