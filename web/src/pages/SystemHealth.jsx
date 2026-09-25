@@ -44,12 +44,15 @@ function SystemHealth() {
     const [dbLatency, setDbLatency] = useState(24);
     const [inferenceTime, setInferenceTime] = useState(482);
     const [uptime, setUptime] = useState(99.982);
+    const [aiEngineStatus, setAiEngineStatus] = useState('operational');
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
     const services = [
         { name: 'Firebase Alpha (Auth/DB)', status: 'operational', version: 'v12.9.0' },
         { name: 'SOS Real-time WebSocket', status: 'operational', version: 'v2.4.1' },
         { name: 'Google Maps API Core', status: 'operational', version: 'v3.54' },
-        { name: 'AI Analysis Engine', status: 'performance_degrade', version: 'v1.0.5-beta' },
+        { name: 'CEYLO AI RAG Engine', status: aiEngineStatus, version: 'v1.0.0-node' },
         { name: 'Notification Service', status: 'operational', version: 'v3.0.0' },
     ];
 
@@ -67,8 +70,28 @@ function SystemHealth() {
             }
         };
 
+        const checkBackendHealth = async () => {
+            try {
+                const res = await fetch(`${backendUrl}/api/health`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'operational') {
+                        setAiEngineStatus('operational');
+                    }
+                } else {
+                    setAiEngineStatus('degraded');
+                }
+            } catch (err) {
+                setAiEngineStatus('degraded');
+            }
+        };
+
         checkLatency();
-        const latencyInterval = setInterval(checkLatency, 8000);
+        checkBackendHealth();
+        const latencyInterval = setInterval(() => {
+            checkLatency();
+            checkBackendHealth();
+        }, 8000);
 
         // Fluctuate stats slightly to simulate active dashboard monitoring
         const statsInterval = setInterval(() => {

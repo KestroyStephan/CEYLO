@@ -7,83 +7,40 @@ import { db, auth } from '../firebaseConfig';
 import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { API_BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
 
 
 
-const getSystemPrompt = (mode, ragContext = null) => {
-  if (mode === 'trip_planner') {
-    return `You are CEYLO, an elite Sri Lankan Travel Concierge. 
-Your goal is to build a "Trip Profile" for the traveler and generate a complete personalized tour plan.
+const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge. 
+Your goal is to build a "Trip Profile" for the traveler through natural conversation.
 STRICT JSON OUTPUT REQUIRED for every response.
 
 ExtractedState JSON Schema:
 {
-  "resp": "Conversational reply guiding the trip plan, or the final detailed itinerary.",
+  "resp": "Conversational reply in traveler's language",
   "extractedState": {
-    "destination": "City Name or All Sri Lanka",
+    "destination": "City Name",
     "days": 0,
     "budget": "Economy/Standard/Luxury",
     "eco_interest": 0-100,
     "mood": "Adventurer/Culture Seeker/Eco Explorer/Family/Spiritual",
-    "startDate": "YYYY-MM-DD (if known)",
-    "endDate": "YYYY-MM-DD (if known)"
+    "mobility": "Standard/Accessible"
   },
   "isReady": boolean,
   "ui_options": ["Option 1", "Option 2"]
 }
 
-CRITICAL RULES (Enforce these when isReady is true and you generate the final plan):
-1. Recommend destinations across ALL PROVINCES (popular + hidden gems).
-2. Consider Seasonal Events/Activities happening during the travel dates.
-3. Include an intelligent day-by-day route with estimated travel times.
-4. Predict & display estimated costs (Accommodation, Food, Transport, Entry Fees) and Total Budget.
-5. Provide Realistic AI Reasoning for EVERY recommendation (e.g. "Recommendation: Knuckles Eco Trail. Reason: Matches your interest in nature and fits your $ budget").
-
-${ragContext ? `DATABASE RAG CONTEXT (Use these exact places/events in your plan!):\n${JSON.stringify(ragContext)}` : "Extract preferences silently while talking. Once budget, days, and mood are known, set isReady to true."}`;
-  } else if (mode === 'personal_assistant') {
-    return `You are CEYLO, a premium Sri Lankan Personal Travel Assistant.
-Answer questions naturally like weather, transport recommendations, travel routes (e.g. to Nuwara Eliya), what to do next, or tourist advice.
-STRICT JSON OUTPUT REQUIRED.
-
-ExtractedState JSON Schema:
-{
-  "resp": "Detailed response as a helpful personal assistant answering traveler's questions (e.g. routes, climate, transport advice). Keep it concise, friendly, and practical.",
-  "extractedState": {},
-  "isReady": false,
-  "ui_options": ["Ask about Nuwara Eliya route", "Ask about climate today", "Ask about train travel"]
-}
-
 CONTEXT:
-- Use hospitality markers (Ayubowan, Vanakkam) ONLY in the first message. DO NOT repeat them in subsequent replies.
-- Offer actionable local tips.`;
-  } else {
-    return `You are CEYLO, a premium Sri Lankan Travel Concierge.
-STRICT JSON OUTPUT REQUIRED.
-
-ExtractedState JSON Schema:
-{
-  "resp": "Welcome response. Guide them to select a mode.",
-  "extractedState": {},
-  "isReady": false,
-  "ui_options": ["🗺️ Plan a Trip", "💁 Personal Assistant"]
-}`;
-  }
-};
+- Use Sri Lankan hospitality markers (Ayubowan, Vanakkam).
+- Prioritize eco-friendly destinations.
+- Extract preferences silently while talking.`;
 
 export default function ChatbotScreen({ navigation }) {
   const { t, i18n } = useTranslation();
-  const [chatbotMode, setChatbotMode] = useState(null); // 'trip_planner' or 'personal_assistant'
   const [messages, setMessages] = useState([
-    { 
-      id: '1', 
-      text: "Ayubowan! I'm Ceylo, your personal travel concierge. How can I help you today?", 
-      sender: 'bot',
-      options: ["🗺️ Plan a Trip", "💁 Personal Assistant"]
-    }
+    { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -168,8 +125,7 @@ export default function ChatbotScreen({ navigation }) {
     }
   }, [extractedState]);
 
-  const callWaterfall = async (prompt, activeMode = chatbotMode, ragContext = null) => {
-    const activeSystemPrompt = getSystemPrompt(activeMode, ragContext);
+  const callWaterfall = async (prompt) => {
     const contextPrompt = `\n\nCURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${prompt}`;
     
     const models = [
@@ -204,7 +160,7 @@ export default function ChatbotScreen({ navigation }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `${activeSystemPrompt}${contextPrompt}` }] }],
+              contents: [{ parts: [{ text: `${SYSTEM_PROMPT}${contextPrompt}` }] }],
               generationConfig: { responseMimeType: "application/json" }
             }),
             signal: controller.signal
@@ -219,7 +175,7 @@ export default function ChatbotScreen({ navigation }) {
             body: JSON.stringify({
               model: model.type === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4o-mini",
               messages: [
-                { role: 'system', content: activeSystemPrompt },
+                { role: 'system', content: SYSTEM_PROMPT },
                 { role: 'user', content: contextPrompt }
               ],
               response_format: { type: "json_object" }
@@ -254,79 +210,22 @@ export default function ChatbotScreen({ navigation }) {
   };
 
 
-  const handleSend = async (text) => {
-    const messageText = text || inputText;
-    console.log("[Chatbot] handleSend called with messageText:", messageText, "inputText:", inputText);
-    if (!messageText || !messageText.trim()) {
-      console.log("[Chatbot] Empty message text, aborting.");
-      return;
-    }
-    const cleanText = messageText.trim();
-    console.log("[Chatbot] Sending cleanText:", cleanText);
-
-    const userMsg = { id: Date.now().toString(), text: cleanText, sender: 'user' };
-    setMessages(prev => {
-      console.log("[Chatbot] Appending user message to state...");
-      return [...prev, userMsg];
-    });
+  const handleSend = async (text = inputText) => {
+    if (!text.trim()) return;
+    const userMsg = { id: Date.now().toString(), text, sender: 'user' };
+    setMessages(prev => [...prev, userMsg]);
     setInputText('');
     setLoading(true);
 
-    let activeMode = chatbotMode;
-    if (cleanText === "🗺️ Plan a Trip") {
-      console.log("[Chatbot] Mode changed to trip_planner");
-      activeMode = 'trip_planner';
-      setChatbotMode('trip_planner');
-    } else if (cleanText === "💁 Personal Assistant") {
-      console.log("[Chatbot] Mode changed to personal_assistant (static welcoming response)");
-      setChatbotMode('personal_assistant');
-      setLoading(false);
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: "I am now active as your Personal Assistant. Ask me anything! For example: Nuwara Eliya route, weather status, or travel tips. 💁",
-        sender: 'bot',
-        options: ["Nuwara Eliya route?", "How is the climate?", "Best way to travel?"]
-      }]);
-      return;
-    }
-
     try {
-      console.log("[Chatbot] Invoking AI waterfall with activeMode:", activeMode);
-      
-      let ragContext = null;
-      if (activeMode === 'trip_planner') {
-        try {
-          const ragResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              startDate: extractedState.startDate, 
-              endDate: extractedState.endDate, 
-              budget: extractedState.budget, 
-              interests: cleanText, 
-              days: extractedState.days, 
-              mood: extractedState.mood 
-            })
-          });
-          const ragData = await ragResponse.json();
-          if (ragData.success) {
-            ragContext = ragData.context;
-          }
-        } catch (e) {
-          console.warn("Failed to fetch RAG context from backend:", e);
-        }
-      }
-
-      const responseJson = await callWaterfall(cleanText, activeMode, ragContext);
-      console.log("[Chatbot] AI response received:", responseJson);
-      
+      const responseJson = await callWaterfall(text);
       if (responseJson.extractedState) {
         setExtractedState(prev => ({ ...prev, ...responseJson.extractedState }));
       }
 
       // Check if we should inject mock recommendations for frontend display
       let recommendations = null;
-      const lowerText = cleanText.toLowerCase();
+      const lowerText = text.toLowerCase();
       if (lowerText.includes('sigiriya') || lowerText.includes('culture') || lowerText.includes('stay') || lowerText.includes('hotel') || lowerText.includes('mirissa') || lowerText.includes('safari') || lowerText.includes('wildlife')) {
         recommendations = [
           {
@@ -369,59 +268,10 @@ export default function ChatbotScreen({ navigation }) {
       }]);
 
     } catch (error) {
-      console.warn("[Chatbot] Waterfall error, using offline local rule-based engine:", error);
-      
-      if (activeMode === 'trip_planner') {
-         let fallbackPlan = "I couldn't reach the AI servers, but based on my local datasets, here is a suggested itinerary:\n\n";
-         if (ragContext && ragContext.destinations && ragContext.destinations.length > 0) {
-             ragContext.destinations.slice(0,3).forEach((d, i) => {
-                 fallbackPlan += `Day ${i+1}: Visit ${d.name} in ${d.district} (${d.category}).\n`;
-             });
-             fallbackPlan += "\nEstimated Budget: LKR 45,000\nEnjoy your trip!";
-         } else {
-             fallbackPlan = "Let's map out your journey! A classic 3-day itinerary: Colombo -> Kandy -> Ella. Would you like to generate this?";
-         }
-         
-         setMessages(prev => [...prev, {
-            id: (Date.now() + 1).toString(),
-            text: fallbackPlan,
-            sender: 'bot',
-            options: [],
-            isFinal: true
-         }]);
-         setLoading(false);
-         return;
-      }
-
-      const lower = cleanText.toLowerCase();
-      let responseText = "I'm operating in helper mode right now! How can I assist you with your travels in Sri Lanka?";
-      let nextOptions = ["Plan a Trip", "Weather in Ella?", "Train routes?"];
-
-      if (lower.includes("nuwara eliya") || lower.includes("route") || lower.includes("go to") || lower.includes("direction")) {
-        responseText = "To travel to Nuwara Eliya, the most popular and scenic route is taking the train from Colombo or Kandy to Nanu Oya station, then taking a quick 15-minute taxi or TukTuk up to Nuwara Eliya city center. High-country driving via the A5 highway is also beautiful but has many winding roads.";
-        nextOptions = ["Is it cold there?", "Train tickets?", "What to do next?"];
-      } else if (lower.includes("climate") || lower.includes("weather") || lower.includes("rain") || lower.includes("temperature")) {
-        responseText = "Sri Lanka has a tropical climate. Coastal areas (like Colombo, Hikkaduwa, Trincomalee) are sunny and warm at 28-32°C. Central hill country locations (like Nuwara Eliya, Ella) are cooler, averaging 15-20°C. Be prepared for occasional rain showers in the hills!";
-        nextOptions = ["Nuwara Eliya route?", "Best time to visit?", "Beach weather?"];
-      } else if (lower.includes("travel") || lower.includes("transport") || lower.includes("train") || lower.includes("bus") || lower.includes("tuktuk") || lower.includes("way to")) {
-        responseText = "For long distances, the local train system is highly recommended (especially the Kandy to Ella line). For daily local commuting, hiring a TukTuk or using ride-hailing apps like PickMe/Uber is the most convenient and cost-effective method.";
-        nextOptions = ["Train booking?", "Rent a car?", "Nuwara Eliya route?"];
-      } else if (lower.includes("plan") || lower.includes("trip") || lower.includes("itinerary")) {
-        responseText = "Let's map out your journey! A classic 7-day Sri Lankan itinerary starts in Colombo, moves to Kandy & Sigiriya for culture, then Ella for tea hills, and finishes with a Yala wildlife safari and Mirissa beaches. Would you like suggestions for beaches or cultural sites?";
-        nextOptions = ["Show beaches", "Cultural sites", "How many days?"];
-      } else if (lower.includes("beach") || lower.includes("mirissa") || lower.includes("hikkaduwa")) {
-        responseText = "Sri Lanka's south coast has beautiful beaches! Mirissa is famous for whale watching and surfing, Hikkaduwa has coral sanctuaries, and Unawatuna is perfect for swimming. They are best visited between November and April.";
-        nextOptions = ["Mirissa stays", "Whale watching", "Ella highlands?"];
-      } else if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey") || lower.includes("ayubowan")) {
-        responseText = "Ayubowan! I am your Ceylo personal assistant. Ask me anything about routes, climate, transport, or trip planning in Sri Lanka!";
-        nextOptions = ["Nuwara Eliya route?", "How is the climate?", "Best way to travel?"];
-      }
-
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: responseText,
-        sender: 'bot',
-        options: nextOptions
+        text: "I'm having a bit of trouble connecting to my signals. Please check your internet connection.",
+        sender: 'bot'
       }]);
     } finally {
       setLoading(false);
@@ -447,7 +297,11 @@ export default function ChatbotScreen({ navigation }) {
     setLoading(true);
     try {
       // 1. Fetch real 100k data RAG matches from backend
-      const ragResponse = await fetch(`${API_BASE_URL}/api/recommend`, {
+      const defaultHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+      const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL 
+        ? process.env.EXPO_PUBLIC_BACKEND_URL.replace('localhost', defaultHost)
+        : `http://${defaultHost}:5000`;
+      const ragResponse = await fetch(`${baseUrl}/api/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mood: extractedState.mood || 'Adventurer' })
@@ -477,7 +331,7 @@ export default function ChatbotScreen({ navigation }) {
       
       Alert.alert(
         "Itinerary Ready", 
-        "Your ML-predicted itinerary has been generated combining real datasets and AI!",
+        "Your ML-predicted itinerary has been generated from 100,000+ data points!",
         [
           {
             text: "View Itinerary",
@@ -547,7 +401,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
       </Surface>
 
       {/* Rich Media Horizontal Recommendations Carousel */}
-      {item.sender === 'bot' && item.recommendations && Array.isArray(item.recommendations) && (
+      {item.sender === 'bot' && item.recommendations && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
           {item.recommendations.map((rec) => (
             <Surface key={rec.id} style={styles.recCard} elevation={2}>
@@ -586,7 +440,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         </ScrollView>
       )}
 
-      {item.options && Array.isArray(item.options) && (
+      {item.options && (
         <View style={styles.optionRow}>
           {item.options.map((opt, i) => (
             <Chip key={i} style={styles.optionBtn} onPress={() => onSend(opt)}>{opt}</Chip>
@@ -599,7 +453,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
 
   // Stable callbacks passed to memoized RenderMessage
   const handleSpeak = useCallback((text) => speakMessage(text), []);
-  const handleSendCallback = useCallback((text) => handleSend(text), [inputText, extractedState, loading, chatbotMode]);
+  const handleSendCallback = useCallback((text) => handleSend(text), [inputText, extractedState, loading]);
   const handleSetDestination = useCallback((name) => {
     setExtractedState(prev => ({ ...prev, destination: name }));
   }, []);
@@ -646,18 +500,10 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         contentContainerStyle={styles.chatScroll}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
-        onContentSizeChange={() => {
-          if (flatListRef.current) {
-            try {
-              flatListRef.current.scrollToEnd({ animated: true });
-            } catch (e) {
-              console.warn("FlatList scroll to end failed:", e);
-            }
-          }
-        }}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {messages && messages.length > 0 && messages[messages.length - 1]?.isFinal && (
+      {messages[messages.length - 1].isFinal && (
         <Button 
           mode="contained" 
           icon="sparkles" 
