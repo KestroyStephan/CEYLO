@@ -18,6 +18,7 @@ import Destinations from './pages/Destinations';
 import CulturalEvents from './pages/CulturalEvents';
 import Analytics from './pages/Analytics';
 import Marketing from './pages/Marketing';
+import AICenter from './pages/AICenter';
 import Notifications from './pages/Notifications';
 import SystemHealth from './pages/SystemHealth';
 import Reports from './pages/Reports';
@@ -96,6 +97,7 @@ function App() {
               <Route path="events" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><CulturalEvents /></PrivateRoute>} />
               <Route path="analytics" element={<PrivateRoute allowedRoles={['finance', 'manager']}><Analytics /></PrivateRoute>} />
               <Route path="marketing" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><Marketing /></PrivateRoute>} />
+              <Route path="ai-center" element={<PrivateRoute allowedRoles={['manager']}><AICenter /></PrivateRoute>} />
               <Route path="notifications" element={<PrivateRoute allowedRoles={['support', 'content_manager', 'manager']}><Notifications /></PrivateRoute>} />
               <Route path="health" element={<PrivateRoute allowedRoles={['manager']}><SystemHealth /></PrivateRoute>} />
               <Route path="reports" element={<PrivateRoute allowedRoles={['finance', 'vendor_manager', 'manager']}><Reports /></PrivateRoute>} />

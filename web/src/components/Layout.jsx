@@ -25,6 +25,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -158,6 +159,7 @@ function Layout() {
         { text: t('system_health'), icon: <HealthAndSafetyIcon />, path: '/health', allowedRoles: ['manager'] },
         { text: t('destinations'), icon: <TravelExploreIcon />, path: '/destinations', allowedRoles: ['content_manager', 'manager'] },
         { text: t('cultural_events'), icon: <EventIcon />, path: '/events', allowedRoles: ['content_manager', 'manager'] },
+        { text: t('ai_center'), icon: <PsychologyIcon />, path: '/ai-center', allowedRoles: ['manager'] },
         { text: 'Marketing & SEO', icon: <CampaignIcon />, path: '/marketing', allowedRoles: ['content_manager', 'manager'] },
         { text: t('users'), icon: <PeopleIcon />, path: '/users', allowedRoles: ['support', 'manager'] },
         { text: t('bookings'), icon: <BookOnlineIcon />, path: '/bookings', allowedRoles: ['finance', 'support', 'vendor_manager', 'manager'] },
