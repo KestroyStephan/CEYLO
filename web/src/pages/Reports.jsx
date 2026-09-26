@@ -235,8 +235,7 @@ export default function Reports() {
                         iconBgColor="#E8F5E9"
                         iconColor="#2E7D32"
                     />
-                </Grid>
-            </Grid>id>
+            </Grid>
 
             {/* Split row: Revenue Trends & Payout Split */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
