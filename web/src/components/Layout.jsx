@@ -164,7 +164,8 @@ function Layout() {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/login');
+            // Force full page reload to ensure strict session/state clearing
+            window.location.href = '/login';
         } catch (error) {
             console.error("Failed to log out", error);
         }

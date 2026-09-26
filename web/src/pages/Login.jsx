@@ -26,26 +26,7 @@ export default function Login() {
         }
     }
 
-    const fillAdminCredentials = () => {
-        if (emailRef.current) emailRef.current.value = 'admin@ceylo.com';
-        if (passwordRef.current) passwordRef.current.value = 'Admin@Ceylo123';
-    };
 
-    // Helper to create the admin account if it doesn't exist (for setup)
-    const initializeAdmin = async () => {
-        const { auth } = await import('../firebaseConfig');
-        const { createUserWithEmailAndPassword } = await import('firebase/auth');
-        try {
-            setLoading(true);
-            setError('');
-            await createUserWithEmailAndPassword(auth, 'admin@ceylo.com', 'Admin@Ceylo123');
-            alert("Admin account created successfully! You can now log in.");
-        } catch (err) {
-            setError('Failed to initialize: ' + err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <Box
@@ -108,15 +89,7 @@ export default function Login() {
                             >
                                 Log In
                             </Button>
-                            <Button
-                                fullWidth
-                                variant="text"
-                                size="small"
-                                onClick={fillAdminCredentials}
-                                sx={{ color: '#00695c', mt: 1 }}
-                            >
-                                Pre-fill Admin Credentials
-                            </Button>
+
                             <Button
                                 fullWidth
                                 variant="text"
@@ -128,13 +101,12 @@ export default function Login() {
                             </Button>
                             <Button
                                 fullWidth
-                                variant="outlined"
+                                variant="text"
                                 size="small"
-                                onClick={initializeAdmin}
-                                sx={{ mt: 2, borderColor: '#00695c', color: '#00695c' }}
-                                disabled={loading}
+                                onClick={() => alert('Password reset flow to be implemented')}
+                                sx={{ color: '#00695c', mt: 1 }}
                             >
-                                First Time? Initialize Admin Account
+                                Forgot Password?
                             </Button>
                         </form>
                     </CardContent>
