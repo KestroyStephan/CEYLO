@@ -601,6 +601,30 @@ export default function Guides() {
                                     <Typography variant="h5" fontWeight={950} color="#006A3B">{selectedGuide.ecoScore}%</Typography>
                                 </Box>
 
+                                {/* Performance and Bookings stats */}
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
+                                            <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                                PERFORMANCE
+                                            </Typography>
+                                            <Typography variant="h6" fontWeight={900} color="#F57C00">
+                                                {selectedGuide.rating || '4.8'} <span style={{ fontSize: '0.8rem', color: '#777' }}>/ 5.0</span>
+                                            </Typography>
+                                        </Paper>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
+                                            <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                                ASSIGNED TOURS
+                                            </Typography>
+                                            <Typography variant="h6" fontWeight={900} color="#006A3B">
+                                                {selectedGuide.completedTours || '24'}
+                                            </Typography>
+                                        </Paper>
+                                    </Grid>
+                                </Grid>
+
                                 {/* Decision actions panel */}
                                 <Box sx={{ pt: 2 }}>
                                     {selectedGuide.status === 'Pending' ? (

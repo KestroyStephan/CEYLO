@@ -110,14 +110,12 @@ function SOSMonitor() {
         if (!selectedAlert) return;
 
         try {
-            // Update Firestore status if it is a real alert
-            if (!selectedAlert.id.startsWith('mock-')) {
-                await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
-                    status: 'investigating',
-                    dispatchTeam: team,
-                    dispatchedAt: serverTimestamp()
-                });
-            }
+            // Update Firestore status
+            await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                status: 'investigating',
+                dispatchTeam: team,
+                dispatchedAt: serverTimestamp()
+            });
 
             // Write record to EmergencyLogs
             await addDoc(collection(db, "EmergencyLogs"), {
@@ -143,12 +141,10 @@ function SOSMonitor() {
     const handleResolveIncident = async () => {
         if (!selectedAlert) return;
         try {
-            if (!selectedAlert.id.startsWith('mock-')) {
-                await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
-                    status: 'resolved',
-                    resolvedAt: serverTimestamp()
-                });
-            }
+            await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                status: 'resolved',
+                resolvedAt: serverTimestamp()
+            });
 
             await addDoc(collection(db, "EmergencyLogs"), {
                 alertId: selectedAlert.id,

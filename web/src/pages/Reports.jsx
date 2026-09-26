@@ -10,6 +10,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import KPICard from '../components/KPICard';
 
 // Icons
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -154,6 +155,11 @@ export default function Reports() {
         item.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Compute derived metrics
+    const pendingTransactionsCount = ledger.filter(l => l.status.toLowerCase() !== 'disbursed').length;
+    const pendingPayoutsValue = ledger.filter(l => l.status.toLowerCase() !== 'disbursed').reduce((sum, item) => sum + item.net, 0);
+    const completedPayoutsValue = ledger.filter(l => l.status.toLowerCase() === 'disbursed').reduce((sum, item) => sum + item.net, 0);
+
     return (
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
             
@@ -189,69 +195,48 @@ export default function Reports() {
                 
                 {/* Total Revenue */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL REVENUE</Typography>
-                            <Avatar variant="rounded" sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', width: 32, height: 32 }}><LocalAtmIcon fontSize="small" /></Avatar>
-                        </Stack>
-                        <Typography variant="h5" fontWeight={950} color="#181D19" gutterBottom>
-                            ${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={850}>
-                            📈 +12.5% from last month
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="TOTAL REVENUE" 
+                        value={`$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                        icon={<LocalAtmIcon fontSize="small" />} 
+                        iconBgColor="#E8F5E9"
+                        iconColor="#2E7D32"
+                    />
                 </Grid>
 
                 {/* Platform Fees */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" fontWeight={900} color="text.secondary">PLATFORM FEES</Typography>
-                            <Avatar variant="rounded" sx={{ bgcolor: '#E0F7FA', color: '#00838F', width: 32, height: 32 }}><AccountBalanceWalletIcon fontSize="small" /></Avatar>
-                        </Stack>
-                        <Typography variant="h5" fontWeight={950} color="#181D19" gutterBottom>
-                            ${(revenue * 0.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={850}>
-                            Fixed 15% across all vendors
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="PLATFORM FEES (15%)" 
+                        value={`$${(revenue * 0.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                        icon={<AccountBalanceWalletIcon fontSize="small" />} 
+                        iconBgColor="#E0F7FA"
+                        iconColor="#00838F"
+                    />
                 </Grid>
 
                 {/* Pending Payouts */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" fontWeight={900} color="text.secondary">PENDING PAYOUTS</Typography>
-                            <Avatar variant="rounded" sx={{ bgcolor: '#FFF3E0', color: '#E65100', width: 32, height: 32 }}><PendingActionsIcon fontSize="small" /></Avatar>
-                        </Stack>
-                        <Typography variant="h5" fontWeight={950} color="#181D19" gutterBottom>
-                            $34,120.00
-                        </Typography>
-                        <Typography variant="caption" color="#E65100" fontWeight={850}>
-                            14 transactions awaiting approval
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="PENDING PAYOUTS" 
+                        value={`$${pendingPayoutsValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                        icon={<PendingActionsIcon fontSize="small" />} 
+                        iconBgColor="#FFF3E0"
+                        iconColor="#E65100"
+                    />
                 </Grid>
 
                 {/* Completed Payouts */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" fontWeight={900} color="text.secondary">COMPLETED PAYOUTS</Typography>
-                            <Avatar variant="rounded" sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', width: 32, height: 32 }}><CheckCircleOutlineIcon fontSize="small" /></Avatar>
-                        </Stack>
-                        <Typography variant="h5" fontWeight={950} color="#181D19" gutterBottom>
-                            $87,302.50
-                        </Typography>
-                        <Typography variant="caption" color="#2E7D32" fontWeight={850}>
-                            Disbursed to {bookingsCount} partners
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="COMPLETED PAYOUTS" 
+                        value={`$${completedPayoutsValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+                        icon={<CheckCircleOutlineIcon fontSize="small" />} 
+                        iconBgColor="#E8F5E9"
+                        iconColor="#2E7D32"
+                    />
                 </Grid>
-
-            </Grid>
+            </Grid>id>
 
             {/* Split row: Revenue Trends & Payout Split */}
             <Grid container spacing={3} sx={{ mb: 4 }}>

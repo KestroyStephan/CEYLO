@@ -1,24 +1,79 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Paper, Card, CardContent, Stack } from '@mui/material';
 import { 
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-
-const flowData = [
-    { name: 'Mon', locals: 400, tourists: 240 },
-    { name: 'Tue', locals: 300, tourists: 139 },
-    { name: 'Wed', locals: 200, tourists: 980 },
-    { name: 'Thu', locals: 278, tourists: 390 },
-    { name: 'Fri', locals: 189, tourists: 480 },
-    { name: 'Sat', locals: 239, tourists: 380 },
-    { name: 'Sun', locals: 349, tourists: 430 },
-];
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 const COLORS = ['#00695c', '#ef6c00', '#2e7d32', '#d32f2f'];
 
 function Analytics() {
+    const [flowData, setFlowData] = useState([]);
+    const [pieData, setPieData] = useState([]);
+    const [ecoRate, setEcoRate] = useState(0);
+
+    useEffect(() => {
+        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+            let totalScore = 0;
+            let validScores = 0;
+            
+            // Map for flow data (by day of week)
+            const days = { 'Mon': { locals: 0, tourists: 0 }, 'Tue': { locals: 0, tourists: 0 }, 'Wed': { locals: 0, tourists: 0 }, 'Thu': { locals: 0, tourists: 0 }, 'Fri': { locals: 0, tourists: 0 }, 'Sat': { locals: 0, tourists: 0 }, 'Sun': { locals: 0, tourists: 0 } };
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.ecoScore) {
+                    totalScore += Number(data.ecoScore);
+                    validScores++;
+                }
+
+                if (data.createdAt) {
+                    const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    if (days[dayName]) {
+                        if (data.role === 'tourist') days[dayName].tourists++;
+                        else days[dayName].locals++;
+                    }
+                }
+            });
+
+            if (validScores > 0) setEcoRate((totalScore / validScores).toFixed(1));
+            
+            const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            setFlowData(orderedDays.map(d => ({ name: d, locals: days[d].locals, tourists: days[d].tourists })));
+        });
+
+        const unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
+            let spots = 0;
+            let events = 0;
+            let tours = 0;
+            
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const price = parseFloat(data.price) || parseFloat(data.cost) || 0;
+                const service = (data.service || data.serviceName || '').toLowerCase();
+                
+                if (service.includes('event') || service.includes('festival')) events += price;
+                else if (service.includes('tour') || service.includes('safari')) tours += price;
+                else spots += price;
+            });
+            
+            setPieData([
+                { name: 'Eco Spots', value: spots },
+                { name: 'Events', value: events },
+                { name: 'Tours', value: tours }
+            ]);
+        });
+
+        return () => {
+            unsubUsers();
+            unsubBookings();
+        };
+    }, []);
+
     return (
         <Box>
             <Box sx={{ mb: 4 }}>
@@ -55,7 +110,7 @@ function Analytics() {
                             <Card sx={{ borderRadius: 4, bgcolor: '#e0f2f1' }}>
                                 <CardContent>
                                     <Typography variant="subtitle2" fontWeight={800} color="#00695c">ECO ADOPTION RATE</Typography>
-                                    <Typography variant="h3" fontWeight={900} sx={{ my: 1 }}>74.2%</Typography>
+                                    <Typography variant="h3" fontWeight={900} sx={{ my: 1 }}>{ecoRate}%</Typography>
                                     <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center' }}>
                                         <TrendingUpIcon fontSize="inherit" sx={{ mr: 0.5 }} /> +8.4% from last period
                                     </Typography>
@@ -69,11 +124,7 @@ function Analytics() {
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
-                                                data={[
-                                                    { name: 'Eco Spots', value: 400 },
-                                                    { name: 'Events', value: 300 },
-                                                    { name: 'Tours', value: 300 },
-                                                ]}
+                                                data={pieData}
                                                 innerRadius={40}
                                                 outerRadius={60}
                                                 paddingAngle={5}
