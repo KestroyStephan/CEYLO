@@ -16,18 +16,22 @@ import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import FilterListIcon from '@mui/icons-material/FilterList';
 
 function Bookings() {
     const [rows, setRows] = useState([]);
     const [filteredRows, setFilteredRows] = useState([]);
     const [tab, setTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState(new Date().toISOString().slice(0,10));
     
     // UI State
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuBooking, setMenuBooking] = useState(null);
+    const [filterAnchor, setFilterAnchor] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
@@ -91,14 +95,127 @@ function Bookings() {
 
     const totalRevenue = rows.filter(r => r.status === 'confirmed').reduce((sum, r) => sum + (parseFloat(r.price) || parseFloat(r.cost) || 0), 0);
 
+    const handleExportData = () => {
+        if (filteredRows.length === 0) {
+            setSnackbar({ open: true, message: 'No data to export', severity: 'warning' });
+            return;
+        }
+
+        let csvContent = "Booking ID,Tourist,Provider,Service,Date,Amount (LKR),Status\n";
+        
+        filteredRows.forEach(row => {
+            const id = row.id.substring(0,8).toUpperCase();
+            const tourist = (row.userName || 'Guest').replace(/,/g, '');
+            const provider = (row.vendorName || 'Direct').replace(/,/g, '');
+            const service = (row.service || row.serviceName || 'Unknown').replace(/,/g, '');
+            const date = formatDate(row.date);
+            const amount = row.price || row.cost || 0;
+            const status = (row.status || 'pending').toUpperCase();
+            
+            csvContent += `"${id}","${tourist}","${provider}","${service}","${date}","${amount}","${status}"\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `CEYLO_Bookings_Export_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setSnackbar({ open: true, message: 'Bookings exported successfully to CSV!', severity: 'success' });
+    };
+
+    const formatDate = (date) => {
+        if (!date) return 'Not Scheduled';
+        try {
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return isNaN(d) ? 'Pending Schedule' : d.toLocaleDateString();
+        } catch (e) {
+            return 'Pending Schedule';
+        }
+    };
+
     return (
         <Box>
             {/* Header */}
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { md: 'flex-end' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={700} color="#0F172A">Bookings</Typography>
+                    <Typography variant="h4" fontWeight={800} color="#006A3B">Bookings Center</Typography>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>Manage and review all platform reservations</Typography>
                 </Box>
-                <Button variant="outlined" startIcon={<FileDownloadIcon />} sx={{ borderColor: '#E2E8F0', color: '#0F172A' }}>Export Data</Button>
+                
+                {/* Filter Controls */}
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField 
+                        type="date" 
+                        size="small" 
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        sx={{ 
+                            bgcolor: '#FFF', 
+                            minWidth: 160, 
+                            '& .MuiOutlinedInput-root': { 
+                                borderRadius: 8, 
+                                '& fieldset': { borderColor: '#EBEFE8' },
+                                '&:hover fieldset': { borderColor: '#006A3B' }
+                            } 
+                        }}
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start"><CalendarMonthIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment>
+                        }}
+                    />
+                    <Button 
+                        variant="outlined" 
+                        size="small" 
+                        startIcon={<FilterListIcon />} 
+                        onClick={(e) => setFilterAnchor(e.currentTarget)}
+                        sx={{ 
+                            borderColor: '#EBEFE8', 
+                            color: '#181D19', 
+                            bgcolor: '#FFF',
+                            borderRadius: 8,
+                            px: 2,
+                            fontWeight: 600,
+                            '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6' }
+                        }}
+                    >
+                        More Filters
+                    </Button>
+                    <Menu
+                        anchorEl={filterAnchor}
+                        open={Boolean(filterAnchor)}
+                        onClose={() => setFilterAnchor(null)}
+                        PaperProps={{
+                            sx: { mt: 1, borderRadius: 3, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #EBEFE8' }
+                        }}
+                    >
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>Service Type: Safari</Typography></MenuItem>
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>Service Type: Transport</Typography></MenuItem>
+                        <Divider />
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>High Value (&gt; LKR 10k)</Typography></MenuItem>
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" color="error" fontWeight={600}>Clear Filters</Typography></MenuItem>
+                    </Menu>
+
+                    <Button 
+                        variant="contained" 
+                        size="small" 
+                        startIcon={<FileDownloadIcon />} 
+                        onClick={handleExportData}
+                        sx={{ 
+                            bgcolor: '#006A3B', 
+                            color: '#FFF',
+                            borderRadius: 8,
+                            px: 2,
+                            fontWeight: 600,
+                            boxShadow: 'none',
+                            '&:hover': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.2)' }
+                        }}
+                    >
+                        Export Data
+                    </Button>
+                </Box>
             </Box>
 
             {/* KPI Cards */}
@@ -109,16 +226,61 @@ function Bookings() {
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Revenue (LKR)" value={`Rs. ${totalRevenue.toLocaleString()}`} icon={<ShowChartIcon fontSize="small"/>} iconBgColor="#DBEAFE" iconColor="#2563EB" /></Grid>
             </Grid>
 
-            {/* Controls */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <Tabs value={tab} onChange={(e, val) => setTab(val)} sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, textTransform: 'none', fontWeight: 600, color: '#64748B' }, '& .Mui-selected': { color: '#0F172A' } }}>
-                    <Tab label="All" value="all" />
-                    <Tab label="Pending" value="pending" />
-                    <Tab label="Confirmed" value="confirmed" />
-                    <Tab label="Cancelled" value="cancelled" />
-                </Tabs>
-                <TextField placeholder="Search by ID or Name..." size="small" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    sx={{ width: 280, bgcolor: '#FFF' }} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+            {/* Modern Controls Section */}
+            <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' }, gap: 2 }}>
+                
+                {/* Segmented Control Pill Tabs */}
+                <Box sx={{ p: 0.5, bgcolor: '#EBEFE8', borderRadius: 2.5, display: 'inline-flex' }}>
+                    <Tabs 
+                        value={tab} 
+                        onChange={(e, val) => setTab(val)} 
+                        TabIndicatorProps={{ sx: { display: 'none' } }}
+                        sx={{
+                            minHeight: 36,
+                            '& .MuiTab-root': {
+                                minHeight: 36,
+                                py: 0.5, px: 3,
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                color: '#5C6E64',
+                                borderRadius: 2,
+                                transition: 'all 0.2s ease',
+                                '&:hover': { color: '#006A3B' }
+                            },
+                            '& .Mui-selected': {
+                                color: '#006A3B !important',
+                                bgcolor: '#FFFFFF',
+                                boxShadow: '0 2px 8px rgba(0, 106, 59, 0.08)'
+                            }
+                        }}
+                    >
+                        <Tab label="All Bookings" value="all" />
+                        <Tab label="Pending" value="pending" />
+                        <Tab label="Confirmed" value="confirmed" />
+                        <Tab label="Cancelled" value="cancelled" />
+                    </Tabs>
+                </Box>
+
+                {/* Premium Search Bar */}
+                <TextField 
+                    placeholder="Search by Booking ID or Tourist Name..." 
+                    size="small" 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)}
+                    sx={{ 
+                        width: { xs: '100%', md: 320 }, 
+                        '& .MuiOutlinedInput-root': { 
+                            bgcolor: '#FFFFFF', 
+                            borderRadius: 2.5,
+                            transition: 'all 0.3s',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                            '&:hover': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.05)' },
+                            '&.Mui-focused': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.1)' }
+                        }
+                    }} 
+                    InputProps={{ 
+                        startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#006A3B', fontSize: 20 }} /></InputAdornment> 
+                    }}
                 />
             </Box>
 
@@ -143,11 +305,11 @@ function Bookings() {
                                 <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4, color: '#64748B' }}>No bookings found.</TableCell></TableRow>
                             ) : filteredRows.map((row) => (
                                 <TableRow key={row.id} hover onClick={() => openDrawer(row)} sx={{ cursor: 'pointer' }}>
-                                    <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#64748B' }}>{row.id.substring(0,8).toUpperCase()}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" fontWeight={600} color="#0F172A">{row.userName || 'Guest'}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{row.vendorName || 'Direct'}</Typography></TableCell>
+                                    <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#5C6E64', fontWeight: 700 }}>{row.id.substring(0,8).toUpperCase()}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" fontWeight={800} color="#181D19">{row.userName || 'Guest'}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary" fontWeight={600}>{row.vendorName || 'Direct'}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary">{row.service || row.serviceName}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{row.date?.toDate ? row.date.toDate().toLocaleDateString() : new Date(row.date).toLocaleDateString()}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary">{formatDate(row.date)}</Typography></TableCell>
                                     <TableCell align="right"><Typography variant="body2" fontWeight={600} color="#0F172A">LKR {(row.price || row.cost || 0).toLocaleString()}</Typography></TableCell>
                                     <TableCell>{getStatusChip(row.status)}</TableCell>
                                     <TableCell align="right">

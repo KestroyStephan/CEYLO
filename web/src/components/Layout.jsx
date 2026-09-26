@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
     AppBar, Toolbar, Typography, Drawer, List, ListItem, 
     ListItemIcon, ListItemText, IconButton, Box, ListItemButton, 
-    Badge, Popover, Divider, Avatar, Stack, Chip, InputBase
+    Badge, Popover, Avatar, Stack, Chip, InputBase
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
@@ -14,23 +14,22 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import EventIcon from '@mui/icons-material/Event';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import MapIcon from '@mui/icons-material/Map';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LanguageIcon from '@mui/icons-material/Language';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import CampaignIcon from '@mui/icons-material/Campaign';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import SearchIcon from '@mui/icons-material/Search';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
-const drawerWidth = 280;
+const drawerWidth = 260;
 
 function Layout() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -43,7 +42,7 @@ function Layout() {
     const { t, i18n } = useTranslation();
 
     useEffect(() => {
-        const pendingList = { drivers: [], guides: [], vendors: [], sos: [] };
+        const pendingList = { vendors: [], sos: [] };
         const updatePending = () => {
             const items = [];
             pendingList.sos.forEach(s => items.push({ id: s.id, title: `ACTIVE SOS ALERT!`, subtitle: `Tourist: ${s.userName || 'Unknown'}`, type: 'sos', path: '/sos', isUrgent: true }));
@@ -63,174 +62,148 @@ function Layout() {
     const changeLanguage = (lang) => { i18n.changeLanguage(lang); handleLangClose(); };
     const handleLogout = async () => { try { await logout(); window.location.href = '/login'; } catch (error) {} };
 
-    const menuGroups = [
-        {
-            title: "OVERVIEW",
-            items: [ { text: t('dashboard'), icon: <DashboardIcon sx={{ fontSize: 20 }}/>, path: '/', allowedRoles: ['all'] } ]
-        },
-        {
-            title: "OPERATIONS",
-            items: [
-                { text: t('bookings'), icon: <BookOnlineIcon sx={{ fontSize: 20 }}/>, path: '/bookings', allowedRoles: ['all'] },
-                { text: t('sos_monitor'), icon: <WarningIcon sx={{ fontSize: 20 }}/>, path: '/sos', allowedRoles: ['all'] },
-                { text: t('cultural_events'), icon: <EventIcon sx={{ fontSize: 20 }}/>, path: '/events', allowedRoles: ['all'] },
-            ]
-        },
-        {
-            title: "TOURISM CONTENT",
-            items: [
-                { text: t('destinations'), icon: <TravelExploreIcon sx={{ fontSize: 20 }}/>, path: '/destinations', allowedRoles: ['all'] },
-                { text: 'Guides', icon: <MapIcon sx={{ fontSize: 20 }}/>, path: '/guides', allowedRoles: ['all'] },
-            ]
-        },
-        {
-            title: "PARTNERS & USERS",
-            items: [
-                { text: t('vendors'), icon: <StoreIcon sx={{ fontSize: 20 }}/>, path: '/vendors', allowedRoles: ['all'] },
-                { text: t('users'), icon: <PeopleIcon sx={{ fontSize: 20 }}/>, path: '/users', allowedRoles: ['all'] },
-            ]
-        },
-        {
-            title: "INTELLIGENCE",
-            items: [
-                { text: t('ai_center'), icon: <AutoAwesomeIcon sx={{ fontSize: 20 }}/>, path: '/ai-center', allowedRoles: ['all'] },
-                { text: t('reports'), icon: <AssessmentIcon sx={{ fontSize: 20 }}/>, path: '/reports', allowedRoles: ['all'] },
-                { text: t('system_health'), icon: <HealthAndSafetyIcon sx={{ fontSize: 20 }}/>, path: '/health', allowedRoles: ['all'] },
-            ]
-        }
+    // Flat list without groups as requested
+    const menuItems = [
+        { text: t('dashboard'), icon: <DashboardIcon sx={{ fontSize: 22 }}/>, path: '/' },
+        { text: t('bookings'), icon: <BookOnlineIcon sx={{ fontSize: 22 }}/>, path: '/bookings' },
+        { text: t('sos_monitor'), icon: <WarningIcon sx={{ fontSize: 22 }}/>, path: '/sos' },
+        { text: t('cultural_events'), icon: <EventIcon sx={{ fontSize: 22 }}/>, path: '/events' },
+        { text: t('destinations'), icon: <TravelExploreIcon sx={{ fontSize: 22 }}/>, path: '/destinations' },
+        { text: 'Guides', icon: <MapIcon sx={{ fontSize: 22 }}/>, path: '/guides' },
+        { text: t('vendors'), icon: <StoreIcon sx={{ fontSize: 22 }}/>, path: '/vendors' },
+        { text: t('users'), icon: <PeopleIcon sx={{ fontSize: 22 }}/>, path: '/users' },
+        { text: t('ai_center'), icon: <AutoAwesomeIcon sx={{ fontSize: 22 }}/>, path: '/ai-center' },
+        { text: t('reports'), icon: <AssessmentIcon sx={{ fontSize: 22 }}/>, path: '/reports' },
+        { text: t('system_health'), icon: <HealthAndSafetyIcon sx={{ fontSize: 22 }}/>, path: '/health' },
+        { text: 'Settings', icon: <SettingsIcon sx={{ fontSize: 22 }}/>, path: '/settings' },
     ];
 
     const drawer = (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0B1121', color: '#F8FAFC' }}>
-            {/* Premium Dark Logo Area */}
-            <Box sx={{ px: 3, py: 4, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 36, height: 36, borderRadius: '10px', background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(37,99,235,0.4)' }}>
-                    <Typography variant="h6" fontWeight={900} color="#FFF">C</Typography>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFFFFF', borderRight: '1px solid #EBEFE8' }}>
+            {/* Attractive Brand Header */}
+            <Box sx={{ px: 3, py: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: '12px', background: 'linear-gradient(135deg, #006A3B 0%, #004A29 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0, 106, 59, 0.3)' }}>
+                    <Typography variant="h5" fontWeight={900} color="#FFF">C</Typography>
                 </Box>
                 <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.5px', lineHeight: 1 }}>CEYLO</Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#64748B', fontSize: '0.65rem', letterSpacing: '0.1em' }}>WORKSPACE</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#006A3B', letterSpacing: '-0.5px', lineHeight: 1 }}>CEYLO</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#5C6E64', fontSize: '0.7rem', letterSpacing: '0.05em' }}>ADMIN PORTAL</Typography>
                 </Box>
             </Box>
 
-            {/* Menu Items List */}
+            {/* Menu List */}
             <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 2, '&::-webkit-scrollbar': { display: 'none' } }}>
-                {menuGroups.map((group) => {
-                    return (
-                        <Box key={group.title} sx={{ mb: 3 }}>
-                            <Typography variant="caption" sx={{ px: 2, mb: 1.5, display: 'block', fontWeight: 700, color: '#475569', fontSize: '0.65rem', letterSpacing: '0.1em' }}>
-                                {group.title}
-                            </Typography>
-                            <List disablePadding>
-                                {group.items.map((item) => {
-                                    const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-                                    return (
-                                        <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-                                            <ListItemButton
-                                                component={NavLink}
-                                                to={item.path}
-                                                sx={{
-                                                    borderRadius: '12px',
-                                                    py: 1,
-                                                    px: 2,
-                                                    color: isActive ? '#FFFFFF' : '#94A3B8',
-                                                    bgcolor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                                    transition: 'all 0.2s',
-                                                    border: isActive ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid transparent',
-                                                    '&:hover': {
-                                                        bgcolor: isActive ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                                        color: '#FFFFFF'
-                                                    }
-                                                }}
-                                            >
-                                                <ListItemIcon sx={{ minWidth: 32, color: isActive ? '#3B82F6' : '#64748B' }}>
-                                                    {item.icon}
-                                                </ListItemIcon>
-                                                <ListItemText 
-                                                    primary={item.text} 
-                                                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 600 : 500 }} 
-                                                />
-                                            </ListItemButton>
-                                        </ListItem>
-                                    );
-                                })}
-                            </List>
-                        </Box>
-                    );
-                })}
+                <List disablePadding>
+                    {menuItems.map((item) => {
+                        const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                        return (
+                            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                                <ListItemButton
+                                    component={NavLink}
+                                    to={item.path}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        py: 1.2,
+                                        px: 2,
+                                        color: isActive ? '#006A3B' : '#5C6E64',
+                                        bgcolor: isActive ? '#E8F5E9' : 'transparent',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: isActive ? '#E8F5E9' : '#F4F7F6',
+                                            color: '#006A3B',
+                                            transform: 'translateX(4px)'
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 36, color: isActive ? '#006A3B' : '#8B9B92' }}>
+                                        {item.icon}
+                                    </ListItemIcon>
+                                    <ListItemText 
+                                        primary={item.text} 
+                                        primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: isActive ? 800 : 600 }} 
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
+                </List>
             </Box>
 
-            {/* Bottom Premium Profile Area */}
-            <Box sx={{ p: 2, m: 2, bgcolor: 'rgba(255, 255, 255, 0.03)', borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)' }}>
+            {/* Profile Footer */}
+            <Box sx={{ p: 2, m: 2, bgcolor: '#F4F7F6', borderRadius: 3, border: '1px solid #EBEFE8' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 36, height: 36, bgcolor: '#1E293B', color: '#FFF', fontWeight: 600, fontSize: '0.85rem' }}>
-                            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : (currentUser?.email ? currentUser.email.substring(0, 2).toUpperCase() : 'U')}
+                        <Avatar sx={{ width: 38, height: 38, bgcolor: '#006A3B', color: '#FFF', fontWeight: 700 }}>
+                            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : (currentUser?.email ? currentUser.email.substring(0, 2).toUpperCase() : 'AD')}
                         </Avatar>
                         <Box>
-                            <Typography variant="body2" fontWeight={600} color="#F8FAFC" sx={{ lineHeight: 1.2 }}>
-                                {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin'}
+                            <Typography variant="body2" fontWeight={800} color="#181D19" sx={{ lineHeight: 1.2 }}>
+                                {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Administrator'}
                             </Typography>
-                            <Typography variant="caption" color="#64748B" sx={{ fontSize: '0.7rem' }}>
+                            <Typography variant="caption" color="#5C6E64" fontWeight={600}>
                                 {userRole ? userRole.replace('_', ' ').toUpperCase() : 'ADMIN'}
                             </Typography>
                         </Box>
                     </Box>
-                    <IconButton onClick={handleLogout} sx={{ color: '#64748B', '&:hover': { color: '#EF4444', bgcolor: 'rgba(239, 68, 68, 0.1)' } }}>
-                        <LogoutIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <IconButton component={NavLink} to="/settings" sx={{ color: '#5C6E64', '&:hover': { color: '#006A3B', bgcolor: '#E8F5E9' } }}>
+                            <SettingsIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                        <IconButton onClick={handleLogout} sx={{ color: '#5C6E64', '&:hover': { color: '#D32F2F', bgcolor: '#FFEBEE' } }}>
+                            <LogoutIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                    </Box>
                 </Box>
             </Box>
         </Box>
     );
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F1F5F9' }}>
-            <AppBar position="fixed" elevation={0} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #E2E8F0', width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}>
-                <Toolbar sx={{ minHeight: '64px !important', px: { xs: 2, sm: 4 } }}>
-                    <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' }, color: '#0F172A' }}><MenuIcon /></IconButton>
+        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F4F7F6' }}>
+            <AppBar position="fixed" elevation={0} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #EBEFE8', width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}>
+                <Toolbar sx={{ minHeight: '72px !important', px: { xs: 2, sm: 4 } }}>
+                    <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' }, color: '#006A3B' }}><MenuIcon /></IconButton>
                     
-                    {/* Sleek Topbar Search */}
+                    {/* Attractive Top Search Bar */}
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
                         <Box sx={{ 
                             display: { xs: 'none', md: 'flex' }, alignItems: 'center', 
-                            bgcolor: '#F8FAFC', borderRadius: '10px', px: 2, py: 0.75, width: 360,
-                            border: '1px solid #E2E8F0', transition: 'all 0.2s',
-                            '&:hover': { borderColor: '#CBD5E1', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }
+                            bgcolor: '#F4F7F6', borderRadius: '12px', px: 2, py: 1, width: 400,
+                            border: '1px solid #EBEFE8', transition: 'all 0.3s',
+                            '&:hover': { borderColor: '#006A3B', bgcolor: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,106,59,0.05)' }
                         }}>
-                            <SearchIcon sx={{ color: '#64748B', fontSize: 20, mr: 1.5 }} />
-                            <InputBase placeholder="Quick search..." sx={{ flex: 1, fontSize: '0.875rem', fontWeight: 500, color: '#0F172A' }} />
-                            <Chip label="⌘ K" size="small" sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700, bgcolor: '#FFFFFF', color: '#64748B', border: '1px solid #E2E8F0', borderRadius: 1.5 }} />
+                            <SearchIcon sx={{ color: '#006A3B', fontSize: 22, mr: 1.5 }} />
+                            <InputBase placeholder="Search anything in CEYLO..." sx={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, color: '#181D19' }} />
                         </Box>
                     </Box>
                     
-                    <Stack direction="row" spacing={1} alignItems="center">
-                        <IconButton onClick={handleLangClick} sx={{ color: '#475569', bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' } }}>
-                            <LanguageIcon sx={{ fontSize: 20 }} />
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <IconButton onClick={handleLangClick} sx={{ color: '#006A3B', bgcolor: '#E8F5E9', '&:hover': { bgcolor: '#C8E6C9' } }}>
+                            <LanguageIcon sx={{ fontSize: 22 }} />
                         </IconButton>
-                        <IconButton onClick={(e) => setNotifAnchorEl(e.currentTarget)} sx={{ color: '#475569', bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' } }}>
-                            <Badge badgeContent={pendingItems.length} color="error" sx={{ '& .MuiBadge-badge': { height: 18, minWidth: 18, fontWeight: 700, border: '2px solid #FFF' } }}>
-                                <NotificationsIcon sx={{ fontSize: 20 }} />
+                        <IconButton onClick={(e) => setNotifAnchorEl(e.currentTarget)} sx={{ color: '#006A3B', bgcolor: '#E8F5E9', '&:hover': { bgcolor: '#C8E6C9' } }}>
+                            <Badge badgeContent={pendingItems.length} color="error" sx={{ '& .MuiBadge-badge': { height: 20, minWidth: 20, fontWeight: 800, border: '2px solid #FFF' } }}>
+                                <NotificationsIcon sx={{ fontSize: 22 }} />
                             </Badge>
                         </IconButton>
                     </Stack>
 
-                    {/* Popovers */}
-                    <Popover open={Boolean(notifAnchorEl)} anchorEl={notifAnchorEl} onClose={() => setNotifAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} PaperProps={{ sx: { width: 340, mt: 1 } }}>
-                        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
-                            <Typography variant="subtitle1" fontWeight={700}>Inbox Alerts</Typography>
-                            <Chip label={`${pendingItems.length} New`} size="small" sx={{ height: 24, fontSize: '0.75rem', fontWeight: 700, bgcolor: '#E0E7FF', color: '#4338CA' }} />
+                    {/* Notification Popover */}
+                    <Popover open={Boolean(notifAnchorEl)} anchorEl={notifAnchorEl} onClose={() => setNotifAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} PaperProps={{ sx: { width: 360, mt: 1.5, borderRadius: 3, boxShadow: '0 12px 24px rgba(0,106,59,0.1)' } }}>
+                        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EBEFE8', bgcolor: '#F8F9FA' }}>
+                            <Typography variant="subtitle1" fontWeight={800} color="#006A3B">Alerts & Notifications</Typography>
+                            <Chip label={`${pendingItems.length} New`} size="small" sx={{ height: 24, fontSize: '0.75rem', fontWeight: 800, bgcolor: '#006A3B', color: '#FFF' }} />
                         </Box>
                         <List sx={{ p: 0 }}>
                             {pendingItems.length === 0 ? (
-                                <Box sx={{ p: 4, textAlign: 'center' }}><Typography variant="body2" color="text.secondary">You're all caught up!</Typography></Box>
+                                <Box sx={{ p: 4, textAlign: 'center' }}><Typography variant="body2" color="text.secondary" fontWeight={600}>You're all caught up!</Typography></Box>
                             ) : (
                                 pendingItems.map((item) => (
-                                    <ListItem key={item.id} disablePadding divider>
-                                        <ListItemButton onClick={() => { setNotifAnchorEl(null); navigate(item.path); }} sx={{ py: 2 }}>
+                                    <ListItem key={item.id} disablePadding divider sx={{ borderColor: '#EBEFE8' }}>
+                                        <ListItemButton onClick={() => { setNotifAnchorEl(null); navigate(item.path); }} sx={{ py: 2, '&:hover': { bgcolor: '#F4F7F6' } }}>
                                             <Stack spacing={0.5}>
-                                                <Typography variant="body2" fontWeight={700} color={item.isUrgent ? 'error.main' : 'text.primary'}>{item.title}</Typography>
-                                                <Typography variant="caption" color="text.secondary">{item.subtitle}</Typography>
+                                                <Typography variant="body2" fontWeight={800} color={item.isUrgent ? '#D32F2F' : '#181D19'}>{item.title}</Typography>
+                                                <Typography variant="caption" color="#5C6E64" fontWeight={600}>{item.subtitle}</Typography>
                                             </Stack>
                                         </ListItemButton>
                                     </ListItem>
@@ -245,11 +218,13 @@ function Layout() {
                 <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: 'none' } }}>
                     {drawer}
                 </Drawer>
-                <Drawer variant="permanent" sx={{ display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: 'none' } }} open>
+                <Drawer variant="permanent" sx={{ display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: 'none', boxShadow: '0px 0px 40px rgba(0, 106, 59, 0.03)' } }} open>
                     {drawer}
                 </Drawer>
             </Box>
-            <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, width: { sm: `calc(100% - ${drawerWidth}px)` }, pt: '88px !important', maxWidth: 1600, mx: 'auto' }}>
+            
+            {/* REMOVED maxWidth: 1600 and mx: 'auto' to ensure the content stretches fully, fixing the left/right whitespace issue */}
+            <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 }, width: { sm: `calc(100% - ${drawerWidth}px)` }, pt: '96px !important' }}>
                 <Outlet />
             </Box>
         </Box>

@@ -2,16 +2,24 @@ import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Button, TextField, Snackbar, Alert, Stack, Avatar,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-    Chip, IconButton, Drawer, Divider, InputAdornment, Menu, MenuItem
+    Chip, IconButton, Drawer, Divider, InputAdornment, Menu, MenuItem, Grid
 } from '@mui/material';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
 import StoreIcon from '@mui/icons-material/Store';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import DescriptionIcon from '@mui/icons-material/Description';
+import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 export default function Vendors() {
     const [vendors, setVendors] = useState([]);
@@ -21,6 +29,8 @@ export default function Vendors() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuVendor, setMenuVendor] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('All');
 
     useEffect(() => {
         const q = query(collection(db, 'vendors'), orderBy('createdAt', 'desc'));
@@ -81,67 +91,195 @@ export default function Vendors() {
         return <Chip label="Pending" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 600 }} />;
     };
 
+    const handleExportPDF = () => {
+        try {
+            const doc = new jsPDF();
+            doc.setFontSize(18);
+            doc.setTextColor(0, 106, 59); // Ceylo Green
+            doc.text('Ceylon Tourism - Vendors Registry', 14, 22);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+            
+            const tableColumn = ["Business", "Category", "Email", "Location", "Status"];
+            const tableRows = [];
+
+            filteredVendors.forEach(v => {
+                const vendorData = [
+                    v.businessName || 'Unnamed Vendor',
+                    v.businessType || 'General',
+                    v.email || '-',
+                    v.address || 'Not provided',
+                    v.verificationStatus || v.status || 'Pending'
+                ];
+                tableRows.push(vendorData);
+            });
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [0, 106, 59] }
+            });
+
+            doc.save('Ceylon_Tourism_Vendors_Registry.pdf');
+            setSnackbar({ open: true, message: 'Registry exported as PDF successfully!', severity: 'success' });
+        } catch (err) {
+            console.error("Export failed:", err);
+            setSnackbar({ open: true, message: 'Failed to generate PDF.', severity: 'error' });
+        }
+    };
+
+    const pendingVendorsCount = vendors.filter(v => v.verificationStatus === 'pending' || v.status === 'pending').length;
+    const activeVendorsCount = vendors.filter(v => v.verificationStatus === 'approved' || v.status === 'approved').length;
+
+    const filteredVendors = vendors.filter(v => {
+        const status = v.verificationStatus || v.status || 'pending';
+        const matchesStatus = filterStatus === 'All' || status.toLowerCase().includes(filterStatus.toLowerCase());
+        const matchesSearch = (v.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (v.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesStatus && matchesSearch;
+    });
+
     return (
-        <Box>
-            {/* Header */}
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h4" fontWeight={700} color="#0F172A">Vendors</Typography>
-                <Button variant="contained" sx={{ bgcolor: '#0F172A', color: '#FFF' }}>+ Add Vendor</Button>
+        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
+            {/* Header segment */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
+                <Box>
+                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        CMS: Vendors Registry
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                        Supervise, verify, and monitor business partners across the island.
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button 
+                        variant="outlined" 
+                        onClick={handleExportPDF}
+                        startIcon={<FileDownloadIcon />} 
+                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                    >
+                        Export Registry
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                    >
+                        Add Vendor
+                    </Button>
+                </Box>
             </Box>
 
-            {/* Filter Bar */}
-            <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
-                <TextField
-                    placeholder="Search vendors..."
+            {/* KPI Banners */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL ACTIVE VENDORS</Typography>
+                        <Typography variant="h4" fontWeight={950} color="#006A3B">{activeVendorsCount}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Verified Businesses</Typography>
+                    </Paper>
+                </Grid>
+                
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #FFCDD2', bgcolor: '#FFF5F5', boxShadow: 'none' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box>
+                                <Typography variant="caption" fontWeight={900} color="#BA1A1A">NEW APPLICATIONS</Typography>
+                                <Typography variant="h4" fontWeight={950} color="#BA1A1A">{pendingVendorsCount}</Typography>
+                                <Typography variant="caption" color="#BA1A1A" fontWeight={750}>Awaiting Verification</Typography>
+                            </Box>
+                            <ErrorOutlineIcon sx={{ color: '#BA1A1A' }} />
+                        </Box>
+                    </Paper>
+                </Grid>
+                
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
+                         <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ fontStyle: 'italic' }}>
+                            "Partner verification is essential for maintaining trust. Ensure all provided documents (business registration, IDs) are thoroughly reviewed within 48 hours."
+                         </Typography>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Premium Controls Toolbar */}
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
+                        <FilterListIcon sx={{ color: '#006A3B' }} />
+                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                    </Box>
+                    <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
+                    <TextField
+                        select
+                        size="small"
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    >
+                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Statuses</MenuItem>
+                        <MenuItem value="Approved" sx={{ fontWeight: 700, color: '#006A3B' }}>Approved</MenuItem>
+                        <MenuItem value="Pending" sx={{ fontWeight: 700, color: '#BA1A1A' }}>Pending</MenuItem>
+                        <MenuItem value="Rejected" sx={{ fontWeight: 700, color: '#777' }}>Rejected</MenuItem>
+                    </TextField>
+                </Box>
+                <TextField 
+                    placeholder="Search businesses, emails..." 
                     size="small"
-                    sx={{ width: 300, bgcolor: '#FFF' }}
-                    InputProps={{
-                        startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
-                    }}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
-                <Button variant="outlined" size="small" sx={{ borderColor: '#E2E8F0', color: '#64748B' }}>Filter by Status</Button>
-            </Box>
+            </Paper>
 
             {/* High Density Table */}
-            <Paper sx={{ overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table size="small" sx={{ minWidth: 800 }}>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Business</TableCell>
-                                <TableCell>Category</TableCell>
-                                <TableCell>Email</TableCell>
-                                <TableCell>Location</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell align="right">Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {vendors.map((v) => (
-                                <TableRow key={v.id} hover onClick={() => openDrawer(v)} sx={{ cursor: 'pointer' }}>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Avatar sx={{ width: 28, height: 28, bgcolor: '#F1F5F9', color: '#64748B' }}><StoreIcon fontSize="small" /></Avatar>
-                                            <Typography variant="body2" fontWeight={600} color="#0F172A">
-                                                {v.businessName || 'Unnamed Vendor'}
-                                            </Typography>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{v.businessType || 'General'}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{v.email}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{v.address || 'Not provided'}</Typography></TableCell>
-                                    <TableCell>{getStatusChip(v.verificationStatus || v.status)}</TableCell>
-                                    <TableCell align="right">
-                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, v); }}>
-                                            <MoreVertIcon fontSize="small" />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <TableContainer>
+                            <Table>
+                                <TableHead sx={{ bgcolor: '#F8F9FA' }}>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>BUSINESS</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>CATEGORY</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>EMAIL</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>LOCATION</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 800, color: '#3F4941' }}>ACTIONS</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {filteredVendors.map((v) => (
+                                        <TableRow key={v.id} hover onClick={() => openDrawer(v)} sx={{ cursor: 'pointer' }}>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: '#e0f2f1', color: '#004d40' }}><StoreIcon fontSize="small" /></Avatar>
+                                                    <Typography variant="body2" fontWeight={800} color="#0F172A">
+                                                        {v.businessName || 'Unnamed Vendor'}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary" fontWeight={600}>{v.businessType || 'General'}</Typography></TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary">{v.email}</Typography></TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary">{v.address || 'Not provided'}</Typography></TableCell>
+                                            <TableCell>{getStatusChip(v.verificationStatus || v.status)}</TableCell>
+                                            <TableCell align="right">
+                                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, v); }}>
+                                                    <MoreVertIcon fontSize="small" />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </Grid>
+            </Grid>
 
             {/* 3-Dot Action Menu */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} PaperProps={{ sx: { minWidth: 150, borderRadius: 2, border: '1px solid #E2E8F0' } }}>

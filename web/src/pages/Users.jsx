@@ -8,6 +8,8 @@ import {
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import KPICard from '../components/KPICard';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -17,12 +19,15 @@ import GroupIcon from '@mui/icons-material/Group';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import CampaignIcon from '@mui/icons-material/Campaign';
 
 export default function Users() {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [filterRole, setFilterRole] = useState('All');
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuUser, setMenuUser] = useState(null);
     const [broadcastOpen, setBroadcastOpen] = useState(false);
@@ -108,18 +113,50 @@ export default function Users() {
         } catch (e) {}
     };
 
-    const handleExportCSV = () => {
-        const csvContent = "ID,Name,Email,Role,Status,Join Date,Eco Score\n" + 
-            filteredUsers.map(u => `"${u.id}","${u.name}","${u.email}","${u.role}","${u.isBanned ? 'Banned' : u.flagged ? 'Flagged' : 'Active'}","${u.createdAt.toLocaleDateString()}","${u.ecoScore}"`).join('\n');
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv' }));
-        link.setAttribute('download', 'ceylo_users.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleExportPDF = () => {
+        try {
+            const doc = new jsPDF();
+            doc.setFontSize(18);
+            doc.setTextColor(0, 106, 59);
+            doc.text('Ceylon Tourism - Users Registry', 14, 22);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+            
+            const tableColumn = ["Name", "Email", "Role", "Status", "Eco Score"];
+            const tableRows = [];
+
+            filteredUsers.forEach(u => {
+                tableRows.push([
+                    u.name,
+                    u.email,
+                    u.role,
+                    u.isBanned ? 'Banned' : u.flagged ? 'Flagged' : 'Active',
+                    `${u.ecoScore}`
+                ]);
+            });
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [0, 106, 59] }
+            });
+
+            doc.save('Ceylon_Tourism_Users_Registry.pdf');
+            setSnackbar({ open: true, message: 'Registry exported as PDF successfully!', severity: 'success' });
+        } catch (err) {
+            console.error("Export failed:", err);
+            setSnackbar({ open: true, message: 'Failed to generate PDF.', severity: 'error' });
+        }
     };
 
-    const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredUsers = users.filter(u => 
+        (filterRole === 'All' || u.role.toLowerCase().includes(filterRole.toLowerCase())) &&
+        (u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
     const newSignups = users.filter(u => (new Date() - u.createdAt) / (1000 * 60 * 60 * 24) <= 1).length;
 
     const getStatusChip = (user) => {
@@ -129,79 +166,152 @@ export default function Users() {
     };
 
     return (
-        <Box>
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h4" fontWeight={700} color="#0F172A">Users</Typography>
+        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
+            
+            {/* Header segment */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
+                <Box>
+                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        CMS: Users Registry
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                        Supervise, verify, and monitor tourists and stakeholders across the island.
+                    </Typography>
+                </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="outlined" onClick={() => setBroadcastOpen(true)} sx={{ borderColor: '#E2E8F0', color: '#0F172A' }}>Broadcast Alert</Button>
-                    <Button variant="contained" onClick={handleExportCSV} startIcon={<FileDownloadIcon />} sx={{ bgcolor: '#0F172A', color: '#FFF' }}>Export CSV</Button>
+                    <Button 
+                        variant="outlined" 
+                        onClick={handleExportPDF}
+                        startIcon={<FileDownloadIcon />} 
+                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                    >
+                        Export Registry
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => setBroadcastOpen(true)}
+                        startIcon={<CampaignIcon />}
+                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                    >
+                        Broadcast Alert
+                    </Button>
                 </Box>
             </Box>
 
+            {/* KPI Banners */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <KPICard title="Total Users" value={users.length.toLocaleString()} icon={<GroupIcon />} />
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL USERS</Typography>
+                        <Typography variant="h4" fontWeight={950} color="#006A3B">{users.length.toLocaleString()}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Registered Members</Typography>
+                    </Paper>
                 </Grid>
+                
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <KPICard title="New Signups (24h)" value={newSignups.toLocaleString()} icon={<PersonAddIcon />} iconBgColor="#D1FAE5" iconColor="#059669" />
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #D1FAE5', bgcolor: '#F0FDF4', boxShadow: 'none' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box>
+                                <Typography variant="caption" fontWeight={900} color="#059669">NEW SIGNUPS (24H)</Typography>
+                                <Typography variant="h4" fontWeight={950} color="#059669">+{newSignups.toLocaleString()}</Typography>
+                                <Typography variant="caption" color="#059669" fontWeight={750}>Growing community</Typography>
+                            </Box>
+                            <PersonAddIcon sx={{ color: '#059669' }} />
+                        </Box>
+                    </Paper>
                 </Grid>
+                
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <KPICard title="Administrators" value={users.filter(u => u.role === 'admin' || u.role === 'super_admin').length} icon={<AdminPanelSettingsIcon />} iconBgColor="#FEF3C7" iconColor="#D97706" />
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={900} color="text.secondary">ADMINISTRATORS</Typography>
+                        <Typography variant="h4" fontWeight={950} color="#006A3B">{users.filter(u => u.role === 'admin' || u.role === 'super_admin').length}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>System maintainers</Typography>
+                    </Paper>
                 </Grid>
             </Grid>
 
-            <Box sx={{ mb: 3, display: 'flex' }}>
-                <TextField placeholder="Search users..." size="small" sx={{ width: 300, bgcolor: '#FFF' }}
-                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                    onChange={e => setSearchQuery(e.target.value)}
+            {/* Premium Controls Toolbar */}
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
+                        <FilterListIcon sx={{ color: '#006A3B' }} />
+                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                    </Box>
+                    <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
+                    <TextField
+                        select
+                        size="small"
+                        value={filterRole}
+                        onChange={(e) => setFilterRole(e.target.value)}
+                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    >
+                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Roles</MenuItem>
+                        <MenuItem value="Admin" sx={{ fontWeight: 700 }}>Admin</MenuItem>
+                        <MenuItem value="Tourist" sx={{ fontWeight: 700 }}>Tourist</MenuItem>
+                        <MenuItem value="Guide" sx={{ fontWeight: 700 }}>Guide</MenuItem>
+                        <MenuItem value="Vendor" sx={{ fontWeight: 700 }}>Vendor</MenuItem>
+                    </TextField>
+                </Box>
+                <TextField 
+                    placeholder="Search members, emails..." 
+                    size="small"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
-            </Box>
-
-            <Paper sx={{ overflow: 'hidden' }}>
-                <TableContainer sx={{ maxHeight: 600 }}>
-                    <Table size="small" stickyHeader>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Name</TableCell>
-                                <TableCell>Email</TableCell>
-                                <TableCell>Role</TableCell>
-                                <TableCell>Eco Score</TableCell>
-                                <TableCell>Join Date</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell align="right">Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {filteredUsers.map((u) => (
-                                <TableRow key={u.id} hover onClick={() => openDrawer(u)} sx={{ cursor: 'pointer' }}>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Avatar sx={{ width: 28, height: 28, bgcolor: '#F1F5F9', color: '#0F172A', fontSize: '0.75rem', fontWeight: 600 }}>
-                                                {u.name.substring(0, 2).toUpperCase()}
-                                            </Avatar>
-                                            <Typography variant="body2" fontWeight={600} color="#0F172A">{u.name}</Typography>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{u.email}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{u.role.replace('_', ' ')}</Typography></TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" fontWeight={600} color={u.ecoScore >= 90 ? '#059669' : (u.ecoScore >= 70 ? '#D97706' : '#DC2626')}>
-                                            {u.ecoScore}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell><Typography variant="body2" color="text.secondary">{u.createdAt.toLocaleDateString()}</Typography></TableCell>
-                                    <TableCell>{getStatusChip(u)}</TableCell>
-                                    <TableCell align="right">
-                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, u); }}>
-                                            <MoreVertIcon fontSize="small" />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
             </Paper>
+
+            {/* High Density Table */}
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <TableContainer>
+                            <Table>
+                                <TableHead sx={{ bgcolor: '#F8F9FA' }}>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>NAME</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>EMAIL</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ROLE</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ECO SCORE</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>JOIN DATE</TableCell>
+                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 800, color: '#3F4941' }}>ACTIONS</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {filteredUsers.map((u) => (
+                                        <TableRow key={u.id} hover onClick={() => openDrawer(u)} sx={{ cursor: 'pointer' }}>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: '#e0f2f1', color: '#004d40', fontSize: '0.85rem', fontWeight: 800 }}>
+                                                        {u.name.substring(0, 2).toUpperCase()}
+                                                    </Avatar>
+                                                    <Typography variant="body2" fontWeight={800} color="#0F172A">{u.name}</Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary" fontWeight={500}>{u.email}</Typography></TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }} fontWeight={600}>{u.role.replace('_', ' ')}</Typography></TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" fontWeight={800} color={u.ecoScore >= 90 ? '#059669' : (u.ecoScore >= 70 ? '#D97706' : '#DC2626')}>
+                                                    {u.ecoScore}/100
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary" fontWeight={500}>{u.createdAt.toLocaleDateString()}</Typography></TableCell>
+                                            <TableCell>{getStatusChip(u)}</TableCell>
+                                            <TableCell align="right">
+                                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, u); }}>
+                                                    <MoreVertIcon fontSize="small" />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </Grid>
+            </Grid>
 
             {/* Actions Menu */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { minWidth: 150, borderRadius: 2, border: '1px solid #E2E8F0' } }}>

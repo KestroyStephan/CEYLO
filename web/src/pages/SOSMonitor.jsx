@@ -278,8 +278,27 @@ function SOSMonitor() {
                 </Stack>
             </Box>
 
-            {/* Three-column top grid workspace */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            {subTab === 'feed' ? (
+                <Box sx={{ mt: 4 }}>
+                    <Paper sx={{ p: 5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', textAlign: 'center', bgcolor: '#FFF' }}>
+                        <Box sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: '#E8F5E9', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+                            <WarningIcon sx={{ color: '#006A3B', fontSize: 32 }} />
+                        </Box>
+                        <Typography variant="h5" fontWeight={800} color="#181D19" gutterBottom>
+                            Global Incident Feed
+                        </Typography>
+                        <Typography variant="body1" color="#5C6E64" sx={{ maxWidth: 500, mx: 'auto', mb: 4 }}>
+                            The Global Feed aggregates all system events (Emergency Triggers, User Reports, System Anomalies) into a single chronological stream. The live integration for this feed is currently being provisioned.
+                        </Typography>
+                        <Button variant="contained" onClick={() => setSubTab('alerts')} sx={{ bgcolor: '#006A3B', color: '#FFF', borderRadius: 8, px: 4, fontWeight: 700, '&:hover': { bgcolor: '#004A29' }}}>
+                            Switch to Live Alerts Monitor
+                        </Button>
+                    </Paper>
+                </Box>
+            ) : (
+                <Box>
+                    {/* Three-column top grid workspace */}
+                    <Grid container spacing={3} sx={{ mb: 4 }}>
                 
                 {/* Column 1: Active SOS list */}
                 <Grid size={{ xs: 12, md: 3 }}>
@@ -748,6 +767,8 @@ function SOSMonitor() {
                     </Table>
                 </TableContainer>
             </Paper>
+            </Box>
+            )}
 
             <Snackbar
                 open={snackbar.open}

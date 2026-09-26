@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { 
     Grid, Paper, Typography, Box, Chip, Button, 
-    Divider, Stack, Avatar, List, ListItem, ListItemIcon, ListItemText, IconButton,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+    Divider, Stack, Avatar, List, ListItem, ListItemIcon, ListItemText,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment,
+    Menu, MenuItem, Snackbar, Alert
 } from '@mui/material';
 import { collection, onSnapshot, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -13,9 +14,12 @@ import StoreIcon from '@mui/icons-material/Store';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import MapIcon from '@mui/icons-material/Map';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import { useNavigate } from 'react-router-dom';
 import KPICard from '../components/KPICard';
 
@@ -25,8 +29,13 @@ export default function Dashboard() {
     const [activeSosCount, setActiveSosCount] = useState(0);
     const [pendingVendors, setPendingVendors] = useState([]);
     const [liveActivities, setLiveActivities] = useState([]);
-    const navigate = useNavigate();
+    
+    // Filter States
+    const [dateFilter, setDateFilter] = useState(new Date().toISOString().slice(0,10));
+    const [filterAnchor, setFilterAnchor] = useState(null);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
+    const navigate = useNavigate();
     const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     useEffect(() => {
@@ -47,7 +56,7 @@ export default function Dashboard() {
                     title: `New Booking: ${doc.data().service || 'Service'}`,
                     subtitle: `ID: CE-${doc.id.substring(0,5).toUpperCase()}`,
                     timeText: 'Recent', icon: <ShoppingCartIcon sx={{ color: '#0F172A', fontSize: 18 }} />,
-                    bgColor: '#F1F5F9', timestamp: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+                    bgColor: '#F1F8F6', timestamp: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
                 }));
 
                 const emergencySnap = await getDocs(query(collection(db, "EmergencyLogs"), orderBy("resolvedAt", "desc"), limit(3)));
@@ -55,8 +64,8 @@ export default function Dashboard() {
                     id: doc.id, type: 'sos',
                     title: `SOS Resolved: ${doc.data().userName || 'Tourist'}`,
                     subtitle: 'Case closed successfully',
-                    timeText: 'Recent', icon: <CheckCircleIcon sx={{ color: '#10B981', fontSize: 18 }} />,
-                    bgColor: '#D1FAE5', timestamp: doc.data().resolvedAt?.toDate ? doc.data().resolvedAt.toDate() : new Date()
+                    timeText: 'Recent', icon: <CheckCircleIcon sx={{ color: '#006A3B', fontSize: 18 }} />,
+                    bgColor: '#E8F5E9', timestamp: doc.data().resolvedAt?.toDate ? doc.data().resolvedAt.toDate() : new Date()
                 }));
 
                 const combined = [...emergencies, ...bookings].sort((a,b) => b.timestamp - a.timestamp).slice(0, 6);
@@ -84,24 +93,86 @@ export default function Dashboard() {
 
     return (
         <Box>
-            {/* Operations Header */}
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            {/* Operations Header with Filters */}
+            <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { md: 'flex-end' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={700} color="#0F172A" gutterBottom>
+                    <Typography variant="h4" fontWeight={800} color="#006A3B" gutterBottom>
                         CEYLO Operations
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
                         {todayDate} — Control Center
                     </Typography>
                 </Box>
-                <Stack direction="row" spacing={2}>
-                    <Button variant="outlined" size="small" sx={{ borderColor: '#E2E8F0', color: '#0F172A', '&:hover': { borderColor: '#CBD5E1' } }}>
-                        Export Report
+                
+                {/* Advanced Filter Bar */}
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField 
+                        type="date" 
+                        size="small" 
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        sx={{ 
+                            bgcolor: '#FFF', 
+                            minWidth: 160, 
+                            '& .MuiOutlinedInput-root': { 
+                                borderRadius: 8, 
+                                '& fieldset': { borderColor: '#EBEFE8' },
+                                '&:hover fieldset': { borderColor: '#006A3B' }
+                            } 
+                        }}
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start"><CalendarMonthIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment>
+                        }}
+                    />
+                    <Button 
+                        variant="outlined" 
+                        size="small" 
+                        startIcon={<FilterListIcon />} 
+                        onClick={(e) => setFilterAnchor(e.currentTarget)}
+                        sx={{ 
+                            borderColor: '#EBEFE8', 
+                            color: '#181D19', 
+                            bgcolor: '#FFF',
+                            borderRadius: 8,
+                            px: 2,
+                            fontWeight: 600,
+                            '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6' }
+                        }}
+                    >
+                        More Filters
                     </Button>
-                    <Button variant="contained" size="small" startIcon={<AddIcon />}>
+                    <Menu
+                        anchorEl={filterAnchor}
+                        open={Boolean(filterAnchor)}
+                        onClose={() => setFilterAnchor(null)}
+                        PaperProps={{
+                            sx: { mt: 1, borderRadius: 3, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #EBEFE8' }
+                        }}
+                    >
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>View: Weekly Stats</Typography></MenuItem>
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>View: Monthly Stats</Typography></MenuItem>
+                        <Divider />
+                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" color="error" fontWeight={600}>Clear Filters</Typography></MenuItem>
+                    </Menu>
+
+                    <Button 
+                        variant="contained" 
+                        size="small" 
+                        startIcon={<AddIcon />} 
+                        onClick={() => setSnackbar({ open: true, message: 'Opening Quick Action Modal...' })}
+                        sx={{ 
+                            bgcolor: '#006A3B', 
+                            color: '#FFF',
+                            borderRadius: 8,
+                            px: 2,
+                            fontWeight: 600,
+                            boxShadow: 'none',
+                            '&:hover': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.2)' }
+                        }}
+                    >
                         New Action
                     </Button>
-                </Stack>
+                </Box>
             </Box>
 
             {/* High-value KPI Blocks */}
@@ -110,7 +181,7 @@ export default function Dashboard() {
                     <KPICard title="Active Travelers" value={activeUsersCount.toLocaleString()} icon={<PeopleIcon fontSize="small" />} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard title="Platform Revenue" value={`$${revenueToday.toLocaleString()}`} icon={<CurrencyLkrIcon fontSize="small" />} />
+                    <KPICard title="Platform Revenue" value={`LKR ${revenueToday.toLocaleString()}`} icon={<CurrencyLkrIcon fontSize="small" />} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <KPICard 
@@ -134,12 +205,12 @@ export default function Dashboard() {
                     
                     {/* SECTION 2: Needs Attention (Operational Queue) */}
                     <Paper sx={{ mb: 4, overflow: 'hidden' }}>
-                        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0' }}>
+                        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EBEFE8', bgcolor: '#F4F7F6' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <ErrorOutlineIcon sx={{ color: '#F59E0B' }} />
-                                <Typography variant="h6" color="#0F172A">Needs Attention</Typography>
+                                <ErrorOutlineIcon sx={{ color: '#F57C00' }} />
+                                <Typography variant="h6" color="#181D19">Needs Attention</Typography>
                             </Box>
-                            <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/vendors')} sx={{ color: '#3B82F6' }}>
+                            <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/vendors')} sx={{ color: '#006A3B' }}>
                                 View Queue
                             </Button>
                         </Box>
@@ -157,7 +228,7 @@ export default function Dashboard() {
                                 <TableBody>
                                     {pendingVendors.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748B' }}>
+                                            <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#5C6E64' }}>
                                                 Queue is clear. Excellent work.
                                             </TableCell>
                                         </TableRow>
@@ -165,17 +236,17 @@ export default function Dashboard() {
                                         pendingVendors.slice(0, 5).map(vendor => (
                                             <TableRow key={vendor.id} hover>
                                                 <TableCell>
-                                                    <Typography variant="body2" fontWeight={600} color="#0F172A">
+                                                    <Typography variant="body2" fontWeight={700} color="#181D19">
                                                         {vendor.businessName || 'Unknown Vendor'}
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary">
                                                         {vendor.email}
                                                     </Typography>
                                                 </TableCell>
-                                                <TableCell><Chip label="Vendor Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706' }} /></TableCell>
-                                                <TableCell sx={{ color: '#64748B' }}>Recent</TableCell>
+                                                <TableCell><Chip label="Vendor Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 700 }} /></TableCell>
+                                                <TableCell sx={{ color: '#5C6E64' }}>Recent</TableCell>
                                                 <TableCell align="right">
-                                                    <Button size="small" variant="outlined" sx={{ borderColor: '#E2E8F0', color: '#0F172A', minWidth: 60 }}>
+                                                    <Button size="small" variant="outlined" sx={{ borderColor: '#EBEFE8', color: '#006A3B', minWidth: 60 }}>
                                                         Review
                                                     </Button>
                                                 </TableCell>
@@ -189,9 +260,9 @@ export default function Dashboard() {
 
                     {/* Quick Analytics / Map Stub */}
                     <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" color="#0F172A" sx={{ mb: 2 }}>Geographic Activity</Typography>
-                        <Box sx={{ width: '100%', height: 280, bgcolor: '#F8F9FA', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
-                            <Typography variant="body2" color="#94A3B8">Live Map Visualization (Active)</Typography>
+                        <Typography variant="h6" color="#181D19" sx={{ mb: 2 }}>Geographic Activity</Typography>
+                        <Box sx={{ width: '100%', height: 280, bgcolor: '#F4F7F6', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #EBEFE8' }}>
+                            <Typography variant="body2" color="#8B9B92" fontWeight={600}>Live Map Visualization (Active)</Typography>
                         </Box>
                     </Paper>
 
@@ -200,27 +271,90 @@ export default function Dashboard() {
                 {/* Right Column: Recent Activity & Quick Actions */}
                 <Grid size={{ xs: 12, md: 4 }}>
                     
+                    {/* Quick Actions (Moved to Top) */}
+                    <Paper sx={{ p: 3, mb: 4, background: 'linear-gradient(180deg, #FFFFFF 0%, #F8F9FA 100%)' }}>
+                        <Typography variant="subtitle2" fontWeight={800} color="#006A3B" sx={{ mb: 2.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Quick Actions
+                        </Typography>
+                        <Stack spacing={1.5}>
+                            <Button 
+                                variant="outlined" 
+                                fullWidth 
+                                startIcon={<MapIcon sx={{ color: '#006A3B' }}/>}
+                                onClick={() => navigate('/destinations')}
+                                sx={{ 
+                                    justifyContent: 'flex-start', 
+                                    color: '#181D19', 
+                                    borderColor: '#EBEFE8', 
+                                    py: 1.5, px: 2,
+                                    bgcolor: '#FFF',
+                                    fontWeight: 700,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,106,59,0.05)' }
+                                }}
+                            >
+                                Add New Destination
+                            </Button>
+                            <Button 
+                                variant="outlined" 
+                                fullWidth 
+                                startIcon={<WarningIcon sx={{ color: '#F57C00' }}/>}
+                                onClick={() => navigate('/sos')}
+                                sx={{ 
+                                    justifyContent: 'flex-start', 
+                                    color: '#181D19', 
+                                    borderColor: '#EBEFE8', 
+                                    py: 1.5, px: 2,
+                                    bgcolor: '#FFF',
+                                    fontWeight: 700,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { borderColor: '#F57C00', bgcolor: '#FFF3E0', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(245,124,0,0.05)' }
+                                }}
+                            >
+                                Broadcast Emergency
+                            </Button>
+                            <Button 
+                                variant="outlined" 
+                                fullWidth 
+                                startIcon={<AssessmentIcon sx={{ color: '#1976D2' }}/>}
+                                onClick={() => navigate('/reports')}
+                                sx={{ 
+                                    justifyContent: 'flex-start', 
+                                    color: '#181D19', 
+                                    borderColor: '#EBEFE8', 
+                                    py: 1.5, px: 2,
+                                    bgcolor: '#FFF',
+                                    fontWeight: 700,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { borderColor: '#1976D2', bgcolor: '#E3F2FD', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(25,118,210,0.05)' }
+                                }}
+                            >
+                                Generate KPI Report
+                            </Button>
+                        </Stack>
+                    </Paper>
+
                     {/* SECTION 4: Recent Activity */}
                     <Paper sx={{ mb: 4, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ p: 2.5, borderBottom: '1px solid #E2E8F0' }}>
-                            <Typography variant="h6" color="#0F172A">Activity Feed</Typography>
+                        <Box sx={{ p: 2.5, borderBottom: '1px solid #EBEFE8', bgcolor: '#F4F7F6' }}>
+                            <Typography variant="h6" color="#181D19">Activity Feed</Typography>
                         </Box>
                         
                         <List sx={{ p: 0 }}>
                             {liveActivities.map((act, index) => (
                                 <Box key={act.id}>
                                     <ListItem sx={{ py: 2, px: 2.5 }}>
-                                        <ListItemIcon sx={{ minWidth: 40 }}>
-                                            <Avatar sx={{ bgcolor: act.bgColor, width: 32, height: 32 }}>
+                                        <ListItemIcon sx={{ minWidth: 44 }}>
+                                            <Avatar sx={{ bgcolor: act.bgColor, width: 34, height: 34 }}>
                                                 {act.icon}
                                             </Avatar>
                                         </ListItemIcon>
                                         <ListItemText 
-                                            primary={<Typography variant="body2" fontWeight={600} color="#0F172A">{act.title}</Typography>}
+                                            primary={<Typography variant="body2" fontWeight={700} color="#181D19">{act.title}</Typography>}
                                             secondary={
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                                                     <Typography variant="caption" color="text.secondary">{act.subtitle}</Typography>
-                                                    <Typography variant="caption" color="#94A3B8">{act.timeText}</Typography>
+                                                    <Typography variant="caption" color="#5C6E64" fontWeight={600}>{act.timeText}</Typography>
                                                 </Box>
                                             }
                                         />
@@ -231,26 +365,20 @@ export default function Dashboard() {
                         </List>
                     </Paper>
 
-                    {/* Quick Actions */}
-                    <Paper sx={{ p: 2.5 }}>
-                        <Typography variant="subtitle2" fontWeight={600} color="#64748B" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Quick Actions
-                        </Typography>
-                        <Stack spacing={1}>
-                            <Button variant="outlined" fullWidth sx={{ justifyContent: 'flex-start', color: '#0F172A', borderColor: '#E2E8F0' }}>
-                                + Add Destination
-                            </Button>
-                            <Button variant="outlined" fullWidth sx={{ justifyContent: 'flex-start', color: '#0F172A', borderColor: '#E2E8F0' }}>
-                                + Broadcast Announcement
-                            </Button>
-                            <Button variant="outlined" fullWidth sx={{ justifyContent: 'flex-start', color: '#0F172A', borderColor: '#E2E8F0' }}>
-                                + Generate Report
-                            </Button>
-                        </Stack>
-                    </Paper>
-
                 </Grid>
             </Grid>
+
+            {/* Snackbar for interactions */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity="success" sx={{ width: '100%', borderRadius: 2 }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
