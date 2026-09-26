@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import KPICard from '../components/KPICard';
 
 // Icons
 import BlockIcon from '@mui/icons-material/Block';
@@ -163,8 +164,13 @@ export default function Users() {
     const totalActiveCount = users.filter(u => !u.isBanned).length;
     const touristsCount = users.filter(u => u.role === 'tourist').length;
     const driversGuidesCount = users.filter(u => u.role === 'driver' || u.role === 'guide').length;
-    const touristRatio = users.length > 0 ? Math.round((touristsCount / users.length) * 100) : 65;
-    const driverRatio = users.length > 0 ? Math.round((driversGuidesCount / users.length) * 100) : 35;
+    const newSignupsCount = users.filter(u => {
+        const diffTime = Math.abs(new Date() - u.createdAt);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 1;
+    }).length;
+    const touristRatio = users.length > 0 ? Math.round((touristsCount / users.length) * 100) : 0;
+    const driverRatio = users.length > 0 ? Math.round((driversGuidesCount / users.length) * 100) : 0;
 
     const getEcoScoreDetails = (score) => {
         if (score >= 90) return { tier: 'HERITAGE GOLD', color: '#2E7D32', trend: 'up' };
@@ -177,6 +183,24 @@ export default function Users() {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const handleExportCSV = () => {
+        const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Join Date', 'Eco Score'];
+        const csvContent = [
+            headers.join(','),
+            ...filteredUsers.map(u => 
+                `"${u.id}","${u.name}","${u.email}","${u.role}","${u.isBanned ? 'Banned' : u.flagged ? 'Flagged' : 'Active'}","${formatJoinDate(u.createdAt)}","${u.ecoScore}"`
+            )
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', 'ceylo_users_export.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
             
@@ -187,13 +211,23 @@ export default function Users() {
                         User Management
                     </Typography>
                 </Box>
-                <TextField 
-                    placeholder="Search system users..." 
-                    size="small"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ bgcolor: '#FFF', width: 280, '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <TextField 
+                        placeholder="Search system users..." 
+                        size="small"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        sx={{ bgcolor: '#FFF', width: 280, '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                    />
+                    <Button 
+                        variant="outlined" 
+                        startIcon={<FileDownloadIcon />}
+                        onClick={handleExportCSV}
+                        sx={{ borderRadius: 3, fontWeight: 800, color: '#006A3B', borderColor: '#BECABE', '&:hover': { bgcolor: '#E8F5E9' } }}
+                    >
+                        Export CSV
+                    </Button>
+                </Box>
             </Box>
 
             {/* KPI Cards row */}
@@ -201,37 +235,22 @@ export default function Users() {
                 
                 {/* Total Active Users */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', position: 'relative' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                            <Avatar sx={{ bgcolor: '#E8F5E9', color: '#2E7D32' }}><GroupIcon /></Avatar>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#2E7D32' }}>
-                                <TrendingUpIcon fontSize="small" />
-                                <Typography variant="caption" fontWeight={900}>+12%</Typography>
-                            </Box>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" fontWeight={900} sx={{ display: 'block', mb: 0.5 }}>
-                            TOTAL ACTIVE USERS
-                        </Typography>
-                        <Typography variant="h4" fontWeight={950} color="#181D19">
-                            {totalActiveCount.toLocaleString()}
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="TOTAL ACTIVE USERS" 
+                        value={totalActiveCount.toLocaleString()} 
+                        icon={<GroupIcon />} 
+                    />
                 </Grid>
 
                 {/* New Signups */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                            <Avatar sx={{ bgcolor: '#E0F7FA', color: '#00838F' }}><PersonAddIcon /></Avatar>
-                            <Typography variant="caption" color="text.secondary" fontWeight={800}>Last 24h</Typography>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" fontWeight={900} sx={{ display: 'block', mb: 0.5 }}>
-                            NEW SIGNUPS
-                        </Typography>
-                        <Typography variant="h4" fontWeight={950} color="#181D19">
-                            156
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="NEW SIGNUPS (Last 24h)" 
+                        value={newSignupsCount.toLocaleString()} 
+                        icon={<PersonAddIcon />} 
+                        iconBgColor="#E0F7FA" 
+                        iconColor="#00838F" 
+                    />
                 </Grid>
 
                 {/* Role Distribution progress */}

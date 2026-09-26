@@ -36,7 +36,7 @@ function Layout() {
     const [anchorEl, setAnchorEl] = useState(null);
     const [notifAnchorEl, setNotifAnchorEl] = useState(null);
     const [pendingItems, setPendingItems] = useState([]);
-    const { logout } = useAuth();
+    const { logout, currentUser, userRole } = useAuth();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
 
@@ -148,18 +148,24 @@ function Layout() {
     };
 
     const menuItems = [
-        { text: t('dashboard'), icon: <DashboardIcon />, path: '/' },
-        { text: 'Guides', icon: <MapIcon />, path: '/guides' },
-        { text: t('vendors'), icon: <StoreIcon />, path: '/vendors' },
-        { text: t('reports'), icon: <AssessmentIcon />, path: '/reports' },
-        { text: t('sos_monitor'), icon: <WarningIcon />, path: '/sos' },
-        { text: t('notifications'), icon: <NotificationsActiveIcon />, path: '/notifications' },
-        { text: t('system_health'), icon: <HealthAndSafetyIcon />, path: '/health' },
-        { text: t('destinations'), icon: <TravelExploreIcon />, path: '/destinations' },
-        { text: t('cultural_events'), icon: <EventIcon />, path: '/events' },
-        { text: t('users'), icon: <PeopleIcon />, path: '/users' },
-        { text: t('bookings'), icon: <BookOnlineIcon />, path: '/bookings' },
+        { text: t('dashboard'), icon: <DashboardIcon />, path: '/', allowedRoles: ['all'] },
+        { text: 'Guides', icon: <MapIcon />, path: '/guides', allowedRoles: ['guide_manager', 'manager'] },
+        { text: t('vendors'), icon: <StoreIcon />, path: '/vendors', allowedRoles: ['vendor_manager', 'manager'] },
+        { text: t('reports'), icon: <AssessmentIcon />, path: '/reports', allowedRoles: ['finance', 'vendor_manager', 'manager'] },
+        { text: t('sos_monitor'), icon: <WarningIcon />, path: '/sos', allowedRoles: ['support', 'manager'] },
+        { text: t('notifications'), icon: <NotificationsActiveIcon />, path: '/notifications', allowedRoles: ['support', 'content_manager', 'manager'] },
+        { text: t('system_health'), icon: <HealthAndSafetyIcon />, path: '/health', allowedRoles: ['manager'] },
+        { text: t('destinations'), icon: <TravelExploreIcon />, path: '/destinations', allowedRoles: ['content_manager', 'manager'] },
+        { text: t('cultural_events'), icon: <EventIcon />, path: '/events', allowedRoles: ['content_manager', 'manager'] },
+        { text: t('users'), icon: <PeopleIcon />, path: '/users', allowedRoles: ['support', 'manager'] },
+        { text: t('bookings'), icon: <BookOnlineIcon />, path: '/bookings', allowedRoles: ['finance', 'support', 'vendor_manager', 'manager'] },
     ];
+
+    const filteredMenu = menuItems.filter(item => 
+        item.allowedRoles.includes('all') || 
+        (userRole && item.allowedRoles.includes(userRole)) ||
+        userRole === 'admin' || userRole === 'super_admin'
+    );
 
     const handleLogout = async () => {
         try {
@@ -186,7 +192,7 @@ function Layout() {
 
             {/* Menu Items List */}
             <List sx={{ px: 0, flexGrow: 1, overflowY: 'auto', pr: 0.5, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#CCD4CD', borderRadius: 2 } }}>
-                {menuItems.map((item) => (
+                {filteredMenu.map((item) => (
                     <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                         <ListItemButton
                             component={NavLink}
@@ -248,11 +254,11 @@ function Layout() {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, py: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Avatar sx={{ width: 36, height: 36, bgcolor: '#006A3B', color: '#FFF', fontWeight: 850, fontSize: '0.85rem' }}>
-                            AD
+                            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : (currentUser?.email ? currentUser.email.substring(0, 2).toUpperCase() : 'U')}
                         </Avatar>
                         <Box>
-                            <Typography variant="body2" fontWeight={850} color="#181D19">Admin User</Typography>
-                            <Typography variant="caption" color="text.secondary" fontWeight={750} sx={{ display: 'block', fontSize: '0.68rem', mt: -0.2 }}>Financial Lead</Typography>
+                            <Typography variant="body2" fontWeight={850} color="#181D19">{currentUser?.displayName || currentUser?.email || 'User'}</Typography>
+                            <Typography variant="caption" color="text.secondary" fontWeight={750} sx={{ display: 'block', fontSize: '0.68rem', mt: -0.2 }}>{userRole ? userRole.replace('_', ' ').toUpperCase() : 'USER'}</Typography>
                         </Box>
                     </Box>
                     <IconButton onClick={handleLogout} sx={{ color: '#555', p: 0.5 }}>

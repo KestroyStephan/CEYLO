@@ -327,52 +327,67 @@ export default function Vendors() {
                                                 DECISION MANAGEMENT
                                             </Typography>
                                             
-                                            <TextField
-                                                placeholder="Reason for rejection (Required if rejecting)..."
-                                                multiline
-                                                rows={3}
-                                                fullWidth
-                                                value={rejectionReason}
-                                                onChange={(e) => setRejectionReason(e.target.value)}
-                                                sx={{ mb: 2.5 }}
-                                                inputProps={{ style: { fontSize: '0.85rem' } }}
-                                            />
+                                            {selectedVendor.status === 'pending_verification' ? (
+                                                <>
+                                                    <TextField
+                                                        placeholder="Reason for rejection (Required if rejecting)..."
+                                                        multiline
+                                                        rows={3}
+                                                        fullWidth
+                                                        value={rejectionReason}
+                                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                                        sx={{ mb: 2.5 }}
+                                                        inputProps={{ style: { fontSize: '0.85rem' } }}
+                                                    />
 
-                                            <Stack spacing={1.5}>
-                                                <Button
-                                                    fullWidth
-                                                    variant="contained"
-                                                    startIcon={<CheckCircleIcon />}
-                                                    onClick={handleApprove}
-                                                    sx={{ 
-                                                        bgcolor: '#006A3B', 
-                                                        '&:hover': { bgcolor: '#004D2C' },
-                                                        py: 1.5, 
-                                                        borderRadius: 2, 
-                                                        fontWeight: 800,
-                                                        textTransform: 'none'
-                                                    }}
-                                                >
-                                                    Approve Application
-                                                </Button>
-                                                <Button
-                                                    fullWidth
-                                                    variant="outlined"
-                                                    startIcon={<HighlightOffIcon />}
-                                                    onClick={handleReject}
-                                                    sx={{ 
-                                                        color: '#BA1A1A', 
-                                                        borderColor: '#BA1A1A',
-                                                        '&:hover': { bgcolor: '#FFEBEE', borderColor: '#BA1A1A' },
-                                                        py: 1.5, 
-                                                        borderRadius: 2, 
-                                                        fontWeight: 800,
-                                                        textTransform: 'none'
-                                                    }}
-                                                >
-                                                    Reject Application
-                                                </Button>
-                                            </Stack>
+                                                    <Stack spacing={1.5}>
+                                                        <Button
+                                                            fullWidth
+                                                            variant="contained"
+                                                            startIcon={<CheckCircleIcon />}
+                                                            onClick={handleApprove}
+                                                            sx={{ 
+                                                                bgcolor: '#006A3B', 
+                                                                '&:hover': { bgcolor: '#004D2C' },
+                                                                py: 1.5, 
+                                                                borderRadius: 2, 
+                                                                fontWeight: 800,
+                                                                textTransform: 'none'
+                                                            }}
+                                                        >
+                                                            Approve Application
+                                                        </Button>
+                                                        <Button
+                                                            fullWidth
+                                                            variant="outlined"
+                                                            startIcon={<HighlightOffIcon />}
+                                                            onClick={handleReject}
+                                                            sx={{ 
+                                                                color: '#BA1A1A', 
+                                                                borderColor: '#BA1A1A',
+                                                                '&:hover': { bgcolor: '#FFEBEE', borderColor: '#BA1A1A' },
+                                                                py: 1.5, 
+                                                                borderRadius: 2, 
+                                                                fontWeight: 800,
+                                                                textTransform: 'none'
+                                                            }}
+                                                        >
+                                                            Reject Application
+                                                        </Button>
+                                                    </Stack>
+                                                </>
+                                            ) : (
+                                                <Box sx={{ p: 2, bgcolor: selectedVendor.status === 'approved' ? '#E8F5E9' : '#FFEBEB', borderRadius: 2, textAlign: 'center' }}>
+                                                    <Typography variant="subtitle2" fontWeight={900} color={selectedVendor.status === 'approved' ? '#2E7D32' : '#BA1A1A'} sx={{ mb: 1 }}>
+                                                        {selectedVendor.status === 'approved' ? 'APPLICATION APPROVED' : 'APPLICATION REJECTED'}
+                                                    </Typography>
+                                                    {selectedVendor.status === 'rejected' && selectedVendor.rejectionReason && (
+                                                        <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                                            Reason: {selectedVendor.rejectionReason}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            )}
                                         </Paper>
                                     </Grid>
 

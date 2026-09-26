@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { 
     Typography, Box, Chip, Paper, Grid, Card, CardContent, 
-    Tabs, Tab, Stack, IconButton, Tooltip, Snackbar, Alert 
+    Tabs, Tab, Stack, IconButton, Tooltip, Snackbar, Alert,
+    Drawer, Divider, Avatar
 } from '@mui/material';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -12,8 +13,10 @@ import BookOnlineIcon from '@mui/icons-material/BookOnline';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import BlockIcon from '@mui/icons-material/Block';
+import KPICard from '../components/KPICard';
 
 function Bookings() {
+    const [selectedBooking, setSelectedBooking] = useState(null);
     const [rows, setRows] = useState([]);
     const [filteredRows, setFilteredRows] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -145,24 +148,6 @@ function Bookings() {
         .filter(r => r.status === 'confirmed')
         .reduce((sum, r) => sum + (parseFloat(r.price) || parseFloat(r.cost) || 0), 0);
 
-    const StatCard = ({ title, value, icon, color }) => (
-        <Card sx={{ borderRadius: 4, height: '100%' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3 }}>
-                <Box>
-                    <Typography variant="subtitle2" color="text.secondary" fontWeight={600} gutterBottom>
-                        {title}
-                    </Typography>
-                    <Typography variant="h4" fontWeight={900}>
-                        {value}
-                    </Typography>
-                </Box>
-                <Box sx={{ bgcolor: `${color}15`, p: 2, borderRadius: 3, display: 'flex', color }}>
-                    {icon}
-                </Box>
-            </CardContent>
-        </Card>
-    );
-
     return (
         <Box>
             <Box sx={{ mb: 4 }}>
@@ -177,35 +162,39 @@ function Bookings() {
             {/* Metrics cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <StatCard 
-                        title="Total Reservations" 
+                    <KPICard 
+                        title="TOTAL RESERVATIONS" 
                         value={totalBookings.toLocaleString()} 
-                        icon={<BookOnlineIcon fontSize="large" />} 
-                        color="#00695c" 
+                        icon={<BookOnlineIcon fontSize="small" />} 
+                        iconBgColor="#E0F2F1"
+                        iconColor="#00695c"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <StatCard 
-                        title="Awaiting Review" 
+                    <KPICard 
+                        title="AWAITING REVIEW" 
                         value={pendingBookings.toLocaleString()} 
-                        icon={<PendingActionsIcon fontSize="large" />} 
-                        color="#ef6c00" 
+                        icon={<PendingActionsIcon fontSize="small" />} 
+                        iconBgColor="#FFF3E0"
+                        iconColor="#ef6c00"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <StatCard 
-                        title="Confirmed Orders" 
+                    <KPICard 
+                        title="CONFIRMED ORDERS" 
                         value={confirmedBookings.toLocaleString()} 
-                        icon={<CheckCircleOutlineIcon fontSize="large" />} 
-                        color="#2e7d32" 
+                        icon={<CheckCircleOutlineIcon fontSize="small" />} 
+                        iconBgColor="#E8F5E9"
+                        iconColor="#2e7d32"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <StatCard 
-                        title="Total Revenue (LKR)" 
+                    <KPICard 
+                        title="TOTAL REVENUE (LKR)" 
                         value={`Rs. ${totalRevenue.toLocaleString()}`} 
-                        icon={<BlockIcon fontSize="large" sx={{ transform: 'rotate(135deg)' }} />} 
-                        color="#0288d1" 
+                        icon={<BlockIcon fontSize="small" sx={{ transform: 'rotate(135deg)' }} />} 
+                        iconBgColor="#E1F5FE"
+                        iconColor="#0288d1"
                     />
                 </Grid>
             </Grid>
@@ -236,6 +225,7 @@ function Bookings() {
                             },
                         }}
                         pageSizeOptions={[10, 25, 50]}
+                        onRowClick={(params) => setSelectedBooking(params.row)}
                         disableRowSelectionOnClick
                         loading={loading}
                         sx={{
@@ -248,6 +238,65 @@ function Bookings() {
                     />
                 </Box>
             </Paper>
+
+            {/* Detailed Booking Drawer */}
+            <Drawer anchor="right" open={Boolean(selectedBooking)} onClose={() => setSelectedBooking(null)}>
+                {selectedBooking && (
+                    <Box sx={{ width: 400, p: 3, display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#F8F9FA' }}>
+                        <Typography variant="h5" fontWeight={900} gutterBottom>
+                            Booking Details
+                        </Typography>
+                        <Chip 
+                            label={selectedBooking.status ? selectedBooking.status.toUpperCase() : 'PENDING'} 
+                            color={selectedBooking.status === 'confirmed' ? 'success' : selectedBooking.status === 'cancelled' ? 'error' : 'warning'} 
+                            sx={{ fontWeight: 800, alignSelf: 'flex-start', mb: 3 }} 
+                        />
+
+                        <Paper sx={{ p: 2, borderRadius: 3, mb: 3, boxShadow: 'none', border: '1px solid #EBEFE8' }}>
+                            <Typography variant="caption" fontWeight={900} color="text.secondary" gutterBottom>TOURIST INFORMATION</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                                <Avatar>{selectedBooking.userName ? selectedBooking.userName.charAt(0).toUpperCase() : 'T'}</Avatar>
+                                <Box>
+                                    <Typography variant="body1" fontWeight={800}>{selectedBooking.userName || 'Unknown Tourist'}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{selectedBooking.touristId}</Typography>
+                                </Box>
+                            </Box>
+                        </Paper>
+
+                        <Paper sx={{ p: 2, borderRadius: 3, mb: 3, boxShadow: 'none', border: '1px solid #EBEFE8' }}>
+                            <Typography variant="caption" fontWeight={900} color="text.secondary" gutterBottom>VENDOR & SERVICE</Typography>
+                            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" color="text.secondary">Provider:</Typography>
+                                    <Typography variant="body2" fontWeight={800}>{selectedBooking.vendorName}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" color="text.secondary">Service:</Typography>
+                                    <Typography variant="body2" fontWeight={800}>{selectedBooking.service || selectedBooking.serviceName}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" color="text.secondary">Date:</Typography>
+                                    <Typography variant="body2" fontWeight={800}>
+                                        {selectedBooking.date?.toDate ? selectedBooking.date.toDate().toLocaleDateString() : new Date(selectedBooking.date).toLocaleDateString()}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Paper>
+
+                        <Paper sx={{ p: 2, borderRadius: 3, boxShadow: 'none', border: '1px solid #EBEFE8' }}>
+                            <Typography variant="caption" fontWeight={900} color="text.secondary" gutterBottom>FINANCIAL BREAKDOWN</Typography>
+                            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #BECABE', pb: 1, mb: 1 }}>
+                                <Typography variant="body2">Subtotal</Typography>
+                                <Typography variant="body2" fontWeight={800}>LKR {(selectedBooking.price || selectedBooking.cost || 0).toLocaleString()}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body1" fontWeight={900} color="#00695c">Total Paid</Typography>
+                                <Typography variant="body1" fontWeight={900} color="#00695c">LKR {(selectedBooking.price || selectedBooking.cost || 0).toLocaleString()}</Typography>
+                            </Box>
+                        </Paper>
+                    </Box>
+                )}
+            </Drawer>
 
             <Snackbar
                 open={snackbar.open}

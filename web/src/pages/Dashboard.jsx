@@ -15,6 +15,7 @@ import BackupIcon from '@mui/icons-material/Backup';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useNavigate } from 'react-router-dom';
+import KPICard from '../components/KPICard';
 
 export default function Dashboard() {
     const [activeUsersCount, setActiveUsersCount] = useState(0);
@@ -170,72 +171,46 @@ export default function Dashboard() {
                 
                 {/* Active Users */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', position: 'relative' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Avatar sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', width: 36, height: 36 }}><PeopleIcon fontSize="small" /></Avatar>
-
-                        </Box>
-                        <Typography variant="caption" fontWeight={700} color="text.secondary">Active Users</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#181D19" sx={{ mt: 0.5 }}>
-                            {activeUsersCount.toLocaleString()}
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="Active Users" 
+                        value={activeUsersCount.toLocaleString()} 
+                        icon={<PeopleIcon fontSize="small" />} 
+                    />
                 </Grid>
 
                 {/* Revenue Today */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Avatar sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', width: 36, height: 36 }}><CurrencyLkrIcon fontSize="small" /></Avatar>
-
-                        </Box>
-                        <Typography variant="caption" fontWeight={700} color="text.secondary">Revenue Today</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#181D19" sx={{ mt: 0.5 }}>
-                            LKR {revenueToday.toLocaleString()}
-                        </Typography>
-                    </Paper>
+                    <KPICard 
+                        title="Revenue Today" 
+                        value={`LKR ${revenueToday.toLocaleString()}`} 
+                        icon={<CurrencyLkrIcon fontSize="small" />} 
+                    />
                 </Grid>
 
                 {/* Active SOS Alerts */}
-                <Grid 
-                    size={{ xs: 12, sm: 6, md: 3 }}
-                    onClick={() => navigate('/sos')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    <Paper sx={{ 
-                        p: 2.5, 
-                        borderRadius: 4, 
-                        border: '1px solid #FFCDD2', 
-                        bgcolor: '#FFEBEE',
-                        boxShadow: 'none' 
-                    }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Avatar sx={{ bgcolor: '#BA1A1A', color: '#FFF', width: 36, height: 36 }}><WarningIcon fontSize="small" /></Avatar>
-                            <Chip label="CRITICAL" size="small" sx={{ fontWeight: 900, fontSize: '0.6rem', bgcolor: '#BA1A1A', color: '#FFF' }} />
-                        </Box>
-                        <Typography variant="caption" fontWeight={700} color="#BA1A1A">Active SOS Alerts</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#BA1A1A" sx={{ mt: 0.5 }}>
-                            {activeSosCount}
-                        </Typography>
-                    </Paper>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <KPICard 
+                        title="Active SOS Alerts" 
+                        value={activeSosCount} 
+                        icon={<WarningIcon fontSize="small" />} 
+                        iconBgColor="#BA1A1A"
+                        iconColor="#FFF"
+                        cardBgColor="#FFEBEE"
+                        borderColor="#FFCDD2"
+                        onClick={() => navigate('/sos')}
+                    />
                 </Grid>
 
                 {/* Vendor Approvals */}
-                <Grid 
-                    size={{ xs: 12, sm: 6, md: 3 }}
-                    onClick={() => navigate('/vendors')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Avatar sx={{ bgcolor: '#FFF3E0', color: '#E65100', width: 36, height: 36 }}><StoreIcon fontSize="small" /></Avatar>
-                            <Typography variant="caption" color="text.secondary" fontWeight={850}>Pending</Typography>
-                        </Box>
-                        <Typography variant="caption" fontWeight={700} color="text.secondary">Vendor Approvals</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#181D19" sx={{ mt: 0.5 }}>
-                            {pendingVendorsCount}
-                        </Typography>
-                    </Paper>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <KPICard 
+                        title="Vendor Approvals" 
+                        value={pendingVendorsCount} 
+                        icon={<StoreIcon fontSize="small" />} 
+                        iconBgColor="#FFF3E0"
+                        iconColor="#E65100"
+                        onClick={() => navigate('/vendors')}
+                    />
                 </Grid>
             </Grid>
 
