@@ -1,45 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Box, Typography, Button, Paper, Grid, Card, CardContent,
-    TextField, Chip, IconButton, Tooltip, Avatar, List, ListItem,
-    Divider, Stack, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Select, MenuItem, FormControl, InputLabel,
-    CircularProgress, Snackbar, Alert, Pagination, Dialog,
-    DialogTitle, DialogContent, DialogActions, LinearProgress
+    Box, Typography, Button, Paper, Grid, TextField, Chip, IconButton, Avatar, 
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Drawer, 
+    Divider, InputAdornment, Menu, MenuItem, Stack, Snackbar, Alert, Dialog,
+    DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import KPICard from '../components/KPICard';
 
-// Icons
-import BlockIcon from '@mui/icons-material/Block';
-import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
+import GroupIcon from '@mui/icons-material/Group';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import EditIcon from '@mui/icons-material/Edit';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import AddAlertIcon from '@mui/icons-material/AddAlert';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import GroupIcon from '@mui/icons-material/Group';
-import PieChartIcon from '@mui/icons-material/PieChart';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-
 
 export default function Users() {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [filterRole, setFilterRole] = useState('All');
-    const [filterStatus, setFilterStatus] = useState('All');
-    const [filterScoreTier, setFilterScoreTier] = useState('All');
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [page, setPage] = useState(1);
-    
-    // Broadcast dialog
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [menuUser, setMenuUser] = useState(null);
     const [broadcastOpen, setBroadcastOpen] = useState(false);
     const [broadcastMsg, setBroadcastMsg] = useState({ title: '', body: '', target: 'all' });
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -48,8 +33,6 @@ export default function Users() {
         const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
             const firebaseUsers = snapshot.docs.map(doc => {
                 const data = doc.data();
-                
-                // Determine clean role name
                 let mappedRole = data.role || 'tourist';
                 if (mappedRole.includes('driver')) mappedRole = 'driver';
                 if (mappedRole.includes('guide')) mappedRole = 'guide';
@@ -67,547 +50,220 @@ export default function Users() {
                     flagged: data.status === 'rejected' || data.flagged || false
                 };
             });
-
             setUsers(firebaseUsers);
-        }, (err) => {
-            console.error("Users listen error:", err);
-            setUsers([]);
-        });
+        }, (err) => console.error("Users listen error:", err));
 
-        return () => {
-            setTimeout(() => {
-                if (typeof unsubscribe === 'function') unsubscribe();
-            }, 0);
-        };
+        return () => unsubscribe();
     }, []);
 
-    // Reset page on filter changes
-    useEffect(() => {
-        setPage(1);
-    }, [searchQuery, filterRole, filterStatus, filterScoreTier]);
+    const handleMenuClick = (event, user) => {
+        setAnchorEl(event.currentTarget);
+        setMenuUser(user);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setMenuUser(null);
+    };
+
+    const openDrawer = (user) => {
+        setSelectedUser(user);
+        setDrawerOpen(true);
+        handleMenuClose();
+    };
 
     const handleBanUser = async (id, currentBan) => {
         try {
             await updateDoc(doc(db, "users", id), { isBanned: !currentBan });
-            setSnackbar({
-                open: true,
-                message: `User accounts successfully ${!currentBan ? 'banned' : 'unbanned'}!`,
-                severity: 'success'
-            });
+            setSnackbar({ open: true, message: `User successfully ${!currentBan ? 'banned' : 'unbanned'}.`, severity: 'success' });
+            setDrawerOpen(false);
+            handleMenuClose();
         } catch (e) {
-            console.error("Error toggling ban state:", e);
-            setSnackbar({ open: true, message: 'Failed to update user status: ' + e.message, severity: 'error' });
+            setSnackbar({ open: true, message: 'Failed to update user status.', severity: 'error' });
         }
     };
 
     const handleDeleteUser = async (id) => {
-        if (window.confirm("Are you sure you want to permanently delete this user profile?")) {
+        if (window.confirm("Permanently delete this user profile?")) {
             try {
                 await deleteDoc(doc(db, "users", id));
                 setSnackbar({ open: true, message: 'User profile permanently deleted.', severity: 'info' });
+                setDrawerOpen(false);
+                handleMenuClose();
             } catch (e) {
-                console.error("Error deleting user:", e);
-                setSnackbar({ open: true, message: 'Failed to delete user: ' + e.message, severity: 'error' });
+                setSnackbar({ open: true, message: 'Failed to delete user.', severity: 'error' });
             }
         }
     };
 
     const handleSendBroadcast = async () => {
-        if (!broadcastMsg.title || !broadcastMsg.body) {
-            setSnackbar({ open: true, message: 'Please enter broadcast title and description.', severity: 'warning' });
-            return;
-        }
-
+        if (!broadcastMsg.title || !broadcastMsg.body) return;
         try {
-            // Write notification broadcast queue
             await addDoc(collection(db, "notifications"), {
-                title: broadcastMsg.title,
-                message: broadcastMsg.body,
-                target: broadcastMsg.target,
-                type: 'broadcast',
-                sentAt: new Date()
+                title: broadcastMsg.title, message: broadcastMsg.body, target: broadcastMsg.target, type: 'broadcast', sentAt: new Date()
             });
-
-            setSnackbar({ open: true, message: 'System broadcast notification queued successfully!', severity: 'success' });
+            setSnackbar({ open: true, message: 'Broadcast sent successfully!', severity: 'success' });
             setBroadcastOpen(false);
             setBroadcastMsg({ title: '', body: '', target: 'all' });
-        } catch (e) {
-            console.error("Error posting broadcast:", e);
-            setSnackbar({ open: true, message: 'Broadcast failed: ' + e.message, severity: 'error' });
-        }
-    };
-
-    // Filters logic
-    const filteredUsers = users
-        .filter(u => filterRole === 'All' || u.role.toLowerCase() === filterRole.toLowerCase())
-        .filter(u => {
-            if (filterStatus === 'All') return true;
-            if (filterStatus === 'Banned') return u.isBanned;
-            if (filterStatus === 'Flagged') return u.flagged;
-            if (filterStatus === 'Active') return !u.isBanned && !u.flagged;
-            return true;
-        })
-        .filter(u => {
-            if (filterScoreTier === 'All') return true;
-            if (filterScoreTier === 'Gold') return u.ecoScore >= 90;
-            if (filterScoreTier === 'Green') return u.ecoScore >= 70 && u.ecoScore < 90;
-            if (filterScoreTier === 'Teal') return u.ecoScore < 70;
-            return true;
-        })
-        .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const rowsPerPage = 7;
-    const startIndex = (page - 1) * rowsPerPage;
-    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + rowsPerPage);
-
-    // KPI Metrics calculation
-    const totalActiveCount = users.filter(u => !u.isBanned).length;
-    const touristsCount = users.filter(u => u.role === 'tourist').length;
-    const driversGuidesCount = users.filter(u => u.role === 'driver' || u.role === 'guide').length;
-    const newSignupsCount = users.filter(u => {
-        const diffTime = Math.abs(new Date() - u.createdAt);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays <= 1;
-    }).length;
-    const touristRatio = users.length > 0 ? Math.round((touristsCount / users.length) * 100) : 0;
-    const driverRatio = users.length > 0 ? Math.round((driversGuidesCount / users.length) * 100) : 0;
-
-    const getEcoScoreDetails = (score) => {
-        if (score >= 90) return { tier: 'HERITAGE GOLD', color: '#2E7D32', trend: 'up' };
-        if (score >= 70) return { tier: 'CEYLON GREEN', color: '#F57C00', trend: 'up' };
-        return { tier: 'OCEAN TEAL', color: '#00838F', trend: 'down' };
-    };
-
-    const formatJoinDate = (date) => {
-        if (!date) return 'Oct 12, 2023';
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } catch (e) {}
     };
 
     const handleExportCSV = () => {
-        const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Join Date', 'Eco Score'];
-        const csvContent = [
-            headers.join(','),
-            ...filteredUsers.map(u => 
-                `"${u.id}","${u.name}","${u.email}","${u.role}","${u.isBanned ? 'Banned' : u.flagged ? 'Flagged' : 'Active'}","${formatJoinDate(u.createdAt)}","${u.ecoScore}"`
-            )
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = "ID,Name,Email,Role,Status,Join Date,Eco Score\n" + 
+            filteredUsers.map(u => `"${u.id}","${u.name}","${u.email}","${u.role}","${u.isBanned ? 'Banned' : u.flagged ? 'Flagged' : 'Active'}","${u.createdAt.toLocaleDateString()}","${u.ecoScore}"`).join('\n');
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', 'ceylo_users_export.csv');
+        link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv' }));
+        link.setAttribute('download', 'ceylo_users.csv');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
+    const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    const newSignups = users.filter(u => (new Date() - u.createdAt) / (1000 * 60 * 60 * 24) <= 1).length;
+
+    const getStatusChip = (user) => {
+        if (user.isBanned) return <Chip label="Banned" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 600 }} />;
+        if (user.flagged) return <Chip label="Flagged" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 600 }} />;
+        return <Chip label="Active" size="small" sx={{ bgcolor: '#D1FAE5', color: '#059669', fontWeight: 600 }} />;
+    };
+
     return (
-        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            
-            {/* Header section */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Typography variant="h5" fontWeight={950} color="#006A3B">
-                        User Management
-                    </Typography>
-                </Box>
+        <Box>
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h4" fontWeight={700} color="#0F172A">Users</Typography>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField 
-                        placeholder="Search system users..." 
-                        size="small"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ bgcolor: '#FFF', width: 280, '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                    />
-                    <Button 
-                        variant="outlined" 
-                        startIcon={<FileDownloadIcon />}
-                        onClick={handleExportCSV}
-                        sx={{ borderRadius: 3, fontWeight: 800, color: '#006A3B', borderColor: '#BECABE', '&:hover': { bgcolor: '#E8F5E9' } }}
-                    >
-                        Export CSV
-                    </Button>
+                    <Button variant="outlined" onClick={() => setBroadcastOpen(true)} sx={{ borderColor: '#E2E8F0', color: '#0F172A' }}>Broadcast Alert</Button>
+                    <Button variant="contained" onClick={handleExportCSV} startIcon={<FileDownloadIcon />} sx={{ bgcolor: '#0F172A', color: '#FFF' }}>Export CSV</Button>
                 </Box>
             </Box>
 
-            {/* KPI Cards row */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                
-                {/* Total Active Users */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <KPICard 
-                        title="TOTAL ACTIVE USERS" 
-                        value={totalActiveCount.toLocaleString()} 
-                        icon={<GroupIcon />} 
-                    />
+                    <KPICard title="Total Users" value={users.length.toLocaleString()} icon={<GroupIcon />} />
                 </Grid>
-
-                {/* New Signups */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <KPICard 
-                        title="NEW SIGNUPS (Last 24h)" 
-                        value={newSignupsCount.toLocaleString()} 
-                        icon={<PersonAddIcon />} 
-                        iconBgColor="#E0F7FA" 
-                        iconColor="#00838F" 
-                    />
+                    <KPICard title="New Signups (24h)" value={newSignups.toLocaleString()} icon={<PersonAddIcon />} iconBgColor="#D1FAE5" iconColor="#059669" />
                 </Grid>
-
-                {/* Role Distribution progress */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" color="text.secondary" fontWeight={900}>ROLE DISTRIBUTION</Typography>
-                            <PieChartIcon sx={{ color: '#777' }} />
-                        </Stack>
-                        <Stack spacing={1.5}>
-                            <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                    <Typography variant="caption" fontWeight={800}>Tourists</Typography>
-                                    <Typography variant="caption" fontWeight={900} color="#2E7D32">{touristsCount.toLocaleString()}</Typography>
-                                </Box>
-                                <LinearProgress variant="determinate" value={touristRatio} sx={{ height: 6, borderRadius: 2, bgcolor: '#E8F5E9', '& .MuiLinearProgress-bar': { bgcolor: '#2E7D32' } }} />
-                            </Box>
-                            <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                    <Typography variant="caption" fontWeight={800}>Drivers/Guides</Typography>
-                                    <Typography variant="caption" fontWeight={900} color="#00838F">{driversGuidesCount.toLocaleString()}</Typography>
-                                </Box>
-                                <LinearProgress variant="determinate" value={driverRatio} sx={{ height: 6, borderRadius: 2, bgcolor: '#E0F7FA', '& .MuiLinearProgress-bar': { bgcolor: '#00838F' } }} />
-                            </Box>
-                        </Stack>
-                    </Paper>
+                    <KPICard title="Administrators" value={users.filter(u => u.role === 'admin' || u.role === 'super_admin').length} icon={<AdminPanelSettingsIcon />} iconBgColor="#FEF3C7" iconColor="#D97706" />
                 </Grid>
-
             </Grid>
 
-            {/* Filter and Table Panel */}
-            <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', mb: 4 }}>
-                
-                {/* Filter header row */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Stack direction="row" spacing={2}>
-                        <FormControl size="small" sx={{ width: 140 }}>
-                            <InputLabel id="role-select">User Role</InputLabel>
-                            <Select
-                                labelId="role-select"
-                                value={filterRole}
-                                label="User Role"
-                                onChange={(e) => setFilterRole(e.target.value)}
-                                sx={{ borderRadius: 3 }}
-                            >
-                                <MenuItem value="All">All Roles</MenuItem>
-                                <MenuItem value="Tourist">Tourist</MenuItem>
-                                <MenuItem value="Driver">Driver</MenuItem>
-                                <MenuItem value="Guide">Guide</MenuItem>
-                                <MenuItem value="Admin">Admin</MenuItem>
-                            </Select>
-                        </FormControl>
+            <Box sx={{ mb: 3, display: 'flex' }}>
+                <TextField placeholder="Search users..." size="small" sx={{ width: 300, bgcolor: '#FFF' }}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+                    onChange={e => setSearchQuery(e.target.value)}
+                />
+            </Box>
 
-                        <FormControl size="small" sx={{ width: 140 }}>
-                            <InputLabel id="status-select">Account Status</InputLabel>
-                            <Select
-                                labelId="status-select"
-                                value={filterStatus}
-                                label="Account Status"
-                                onChange={(e) => setFilterStatus(e.target.value)}
-                                sx={{ borderRadius: 3 }}
-                            >
-                                <MenuItem value="All">All Status</MenuItem>
-                                <MenuItem value="Active">Active</MenuItem>
-                                <MenuItem value="Flagged">Flagged</MenuItem>
-                                <MenuItem value="Banned">Banned</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        <FormControl size="small" sx={{ width: 150 }}>
-                            <InputLabel id="tier-select">Eco-Score Tier</InputLabel>
-                            <Select
-                                labelId="tier-select"
-                                value={filterScoreTier}
-                                label="Eco-Score Tier"
-                                onChange={(e) => setFilterScoreTier(e.target.value)}
-                                sx={{ borderRadius: 3 }}
-                            >
-                                <MenuItem value="All">Any Score</MenuItem>
-                                <MenuItem value="Gold">Heritage Gold (90+)</MenuItem>
-                                <MenuItem value="Green">Ceylon Green (70-89)</MenuItem>
-                                <MenuItem value="Teal">Ocean Teal (&lt;70)</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Stack>
-
-                    <Stack direction="row" spacing={1.5}>
-                        <Button 
-                            variant="outlined" 
-                            size="small" 
-                            startIcon={<FilterListIcon />}
-                            sx={{ borderColor: '#BECABE', color: '#181D19', fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                        >
-                            Filters
-                        </Button>
-                        <Button 
-                            variant="contained" 
-                            size="small" 
-                            startIcon={<FileDownloadIcon />}
-                            sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                        >
-                            Export CSV
-                        </Button>
-                    </Stack>
-                </Box>
-
-                {/* Users Registry Table */}
-                <TableContainer>
-                    <Table>
-                        <TableHead sx={{ bgcolor: '#F8F9FA' }}>
+            <Paper sx={{ overflow: 'hidden' }}>
+                <TableContainer sx={{ maxHeight: 600 }}>
+                    <Table size="small" stickyHeader>
+                        <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>USER</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ROLE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>JOIN DATE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>LAST ACTIVITY</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ECO-SCORE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ACTIONS</TableCell>
+                                <TableCell>Name</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Role</TableCell>
+                                <TableCell>Eco Score</TableCell>
+                                <TableCell>Join Date</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {paginatedUsers.map((u) => {
-                                const eco = getEcoScoreDetails(u.ecoScore);
-                                return (
-                                    <TableRow key={u.id} hover>
-                                        
-                                        {/* Profile name and email */}
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                <Avatar sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', fontWeight: 800 }}>
-                                                    {u.name.split(' ').map(n => n[0]).join('')}
-                                                </Avatar>
-                                                <Box>
-                                                    <Typography variant="body2" fontWeight={800}>{u.name}</Typography>
-                                                    <Typography variant="caption" color="text.secondary">{u.email}</Typography>
-                                                </Box>
-                                            </Box>
-                                        </TableCell>
-
-                                        {/* Mapped roles chips */}
-                                        <TableCell>
-                                            <Chip 
-                                                label={u.role.toUpperCase()} 
-                                                size="small"
-                                                sx={{ 
-                                                    fontWeight: 900, fontSize: '0.65rem',
-                                                    bgcolor: u.role === 'admin' ? '#F3E5F5' : u.role === 'driver' ? '#E0F7FA' : u.role === 'guide' ? '#FFF8E1' : '#E8F5E9',
-                                                    color: u.role === 'admin' ? '#7B1FA2' : u.role === 'driver' ? '#00838F' : u.role === 'guide' ? '#F57F17' : '#2E7D32'
-                                                }}
-                                            />
-                                        </TableCell>
-
-                                        {/* Join Date */}
-                                        <TableCell sx={{ fontWeight: 650, color: '#555' }}>
-                                            {formatJoinDate(u.createdAt)}
-                                        </TableCell>
-
-                                        {/* Last Activity */}
-                                        <TableCell sx={{ fontWeight: 550, color: '#777' }}>
-                                            {u.lastActivity}
-                                        </TableCell>
-
-                                        {/* Eco passport metrics */}
-                                        <TableCell>
-                                            <Box>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                    <Typography variant="body2" fontWeight={900} color={eco.color}>
-                                                        {u.ecoScore}
-                                                    </Typography>
-                                                    {eco.trend === 'up' ? (
-                                                        <ArrowUpwardIcon sx={{ color: '#2E7D32', fontSize: 12 }} />
-                                                    ) : (
-                                                        <ArrowDownwardIcon sx={{ color: '#BA1A1A', fontSize: 12 }} />
-                                                    )}
-                                                </Box>
-                                                <Typography variant="caption" fontSize="0.55rem" fontWeight={900} color="text.secondary" sx={{ display: 'block' }}>
-                                                    {eco.tier}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-
-                                        {/* Mapped Status */}
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Box sx={{ 
-                                                    width: 8, height: 8, borderRadius: '50%',
-                                                    bgcolor: u.isBanned ? '#F57C00' : u.flagged ? '#BA1A1A' : '#2E7D32' 
-                                                }} />
-                                                <Typography variant="caption" fontWeight={850} color={u.isBanned ? '#F57C00' : u.flagged ? '#BA1A1A' : '#2E7D32'}>
-                                                    {u.isBanned ? 'Banned' : u.flagged ? 'Flagged' : 'Active'}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-
-                                        {/* Action buttons */}
-                                        <TableCell>
-                                            <Stack direction="row" spacing={0.5}>
-                                                <IconButton 
-                                                    size="small" 
-                                                    onClick={() => setSelectedUser(u)}
-                                                    sx={{ color: '#555' }}
-                                                >
-                                                    <VisibilityIcon fontSize="small" />
-                                                </IconButton>
-                                                <IconButton 
-                                                    size="small" 
-                                                    onClick={() => handleBanUser(u.id, u.isBanned)}
-                                                    color={u.isBanned ? 'success' : 'warning'}
-                                                >
-                                                    <BlockIcon fontSize="small" />
-                                                </IconButton>
-                                                <IconButton 
-                                                    size="small" 
-                                                    onClick={() => handleDeleteUser(u.id)}
-                                                    color="error"
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Stack>
-                                        </TableCell>
-
-                                    </TableRow>
-                                );
-                            })}
+                            {filteredUsers.map((u) => (
+                                <TableRow key={u.id} hover onClick={() => openDrawer(u)} sx={{ cursor: 'pointer' }}>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Avatar sx={{ width: 28, height: 28, bgcolor: '#F1F5F9', color: '#0F172A', fontSize: '0.75rem', fontWeight: 600 }}>
+                                                {u.name.substring(0, 2).toUpperCase()}
+                                            </Avatar>
+                                            <Typography variant="body2" fontWeight={600} color="#0F172A">{u.name}</Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary">{u.email}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{u.role.replace('_', ' ')}</Typography></TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight={600} color={u.ecoScore >= 90 ? '#059669' : (u.ecoScore >= 70 ? '#D97706' : '#DC2626')}>
+                                            {u.ecoScore}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary">{u.createdAt.toLocaleDateString()}</Typography></TableCell>
+                                    <TableCell>{getStatusChip(u)}</TableCell>
+                                    <TableCell align="right">
+                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, u); }}>
+                                            <MoreVertIcon fontSize="small" />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                {/* Footer Pagination */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                        Showing {startIndex + 1}-{Math.min(startIndex + rowsPerPage, filteredUsers.length)} of {filteredUsers.length} users
-                    </Typography>
-                    <Pagination 
-                        count={Math.ceil(filteredUsers.length / rowsPerPage)} 
-                        page={page} 
-                        onChange={(e, p) => setPage(p)} 
-                        size="small" 
-                        color="primary" 
-                    />
-                </Box>
-
             </Paper>
 
-            {/* Quick Broadcast Notification Dialog */}
-            <Dialog open={broadcastOpen} onClose={() => setBroadcastOpen(false)} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
-                <DialogTitle sx={{ fontWeight: 900 }}>Create New Alert Broadcast</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2.5, minWidth: 400 }}>
-                        <TextField 
-                            label="BROADCAST TITLE" 
-                            fullWidth
-                            value={broadcastMsg.title}
-                            onChange={(e) => setBroadcastMsg({ ...broadcastMsg, title: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                        />
-                        <TextField 
-                            label="MESSAGE CONTENT" 
-                            fullWidth
-                            multiline
-                            rows={4}
-                            value={broadcastMsg.body}
-                            onChange={(e) => setBroadcastMsg({ ...broadcastMsg, body: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                        />
-                        <FormControl fullWidth>
-                            <InputLabel id="dialog-target-label">TARGET AUDIENCE</InputLabel>
-                            <Select
-                                labelId="dialog-target-label"
-                                value={broadcastMsg.target}
-                                label="TARGET AUDIENCE"
-                                onChange={(e) => setBroadcastMsg({ ...broadcastMsg, target: e.target.value })}
-                                sx={{ borderRadius: 3 }}
-                            >
-                                <MenuItem value="all">All Users</MenuItem>
-                                <MenuItem value="tourist">Tourists Only</MenuItem>
-                                <MenuItem value="driver">Drivers Only</MenuItem>
-                                <MenuItem value="guide">Guides Only</MenuItem>
-                            </Select>
-                        </FormControl>
+            {/* Actions Menu */}
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { minWidth: 150, borderRadius: 2, border: '1px solid #E2E8F0' } }}>
+                <MenuItem onClick={() => openDrawer(menuUser)} sx={{ fontSize: '0.8125rem' }}>View Profile</MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem onClick={() => handleBanUser(menuUser?.id, menuUser?.isBanned)} sx={{ fontSize: '0.8125rem', color: menuUser?.isBanned ? 'success.main' : 'warning.main' }}>
+                    {menuUser?.isBanned ? 'Unban User' : 'Ban User'}
+                </MenuItem>
+                <MenuItem onClick={() => handleDeleteUser(menuUser?.id)} sx={{ fontSize: '0.8125rem', color: 'error.main' }}>Delete Data</MenuItem>
+            </Menu>
+
+            {/* Side Drawer */}
+            <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)} PaperProps={{ sx: { width: { xs: '100%', sm: 400 } } }}>
+                {selectedUser && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <Box sx={{ p: 3, borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Avatar sx={{ width: 48, height: 48, bgcolor: '#0F172A' }}>{selectedUser.name.substring(0,2).toUpperCase()}</Avatar>
+                                <Box>
+                                    <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ lineHeight: 1.2 }}>{selectedUser.name}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{selectedUser.email}</Typography>
+                                </Box>
+                            </Box>
+                            <IconButton onClick={() => setDrawerOpen(false)} size="small"><CloseIcon /></IconButton>
+                        </Box>
+                        <Box sx={{ p: 3, flexGrow: 1 }}>
+                            <Box sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #E2E8F0', bgcolor: '#F8F9FA', display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {getStatusChip(selectedUser)}
+                                <Typography variant="caption" color="text.secondary">Joined {selectedUser.createdAt.toLocaleDateString()}</Typography>
+                            </Box>
+                            <Typography variant="subtitle2" color="#64748B" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>User Details</Typography>
+                            <Stack spacing={2}>
+                                <Box><Typography variant="caption" color="text.secondary" display="block">Role</Typography><Typography variant="body2" fontWeight={500} sx={{ textTransform: 'capitalize' }}>{selectedUser.role.replace('_', ' ')}</Typography></Box>
+                                <Box><Typography variant="caption" color="text.secondary" display="block">Eco Score</Typography><Typography variant="body2" fontWeight={600} color="#0F172A">{selectedUser.ecoScore}/100</Typography></Box>
+                                <Box><Typography variant="caption" color="text.secondary" display="block">Last Activity</Typography><Typography variant="body2" fontWeight={500}>{selectedUser.lastActivity}</Typography></Box>
+                                <Box><Typography variant="caption" color="text.secondary" display="block">User ID</Typography><Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{selectedUser.id}</Typography></Box>
+                            </Stack>
+                        </Box>
+                        <Box sx={{ p: 3, borderTop: '1px solid #E2E8F0', bgcolor: '#F8F9FA' }}>
+                            <Button variant="outlined" color="error" fullWidth onClick={() => handleBanUser(selectedUser.id, selectedUser.isBanned)} sx={{ mb: 1 }}>
+                                {selectedUser.isBanned ? 'Unban User' : 'Suspend Account'}
+                            </Button>
+                        </Box>
                     </Box>
+                )}
+            </Drawer>
+
+            <Dialog open={broadcastOpen} onClose={() => setBroadcastOpen(false)} PaperProps={{ sx: { borderRadius: 2, width: 400 } }}>
+                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Broadcast Notification</DialogTitle>
+                <DialogContent>
+                    <TextField fullWidth label="Title" size="small" margin="normal" value={broadcastMsg.title} onChange={e => setBroadcastMsg({...broadcastMsg, title: e.target.value})} />
+                    <TextField fullWidth multiline rows={3} label="Message" size="small" margin="normal" value={broadcastMsg.body} onChange={e => setBroadcastMsg({...broadcastMsg, body: e.target.value})} />
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setBroadcastOpen(false)} sx={{ fontWeight: 800 }}>Cancel</Button>
-                    <Button onClick={handleSendBroadcast} variant="contained" sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2 }}>Send Broadcast</Button>
+                <DialogActions sx={{ p: 2, pt: 0 }}>
+                    <Button onClick={() => setBroadcastOpen(false)} sx={{ color: '#64748B' }}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSendBroadcast} sx={{ bgcolor: '#0F172A' }}>Send</Button>
                 </DialogActions>
             </Dialog>
 
-            {/* User View Details sheet dialog */}
-            {selectedUser && (
-                <Dialog open={Boolean(selectedUser)} onClose={() => setSelectedUser(null)} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
-                    <DialogTitle sx={{ fontWeight: 900 }}>User Profile Sheet</DialogTitle>
-                    <DialogContent>
-                        <Stack spacing={2.5} sx={{ minWidth: 320, pt: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar sx={{ width: 56, height: 56, bgcolor: '#E8F5E9', color: '#2E7D32', fontWeight: 800 }}>
-                                    {selectedUser.name.split(' ').map(n => n[0]).join('')}
-                                </Avatar>
-                                <Box>
-                                    <Typography variant="subtitle1" fontWeight={900}>{selectedUser.name}</Typography>
-                                    <Typography variant="caption" color="text.secondary">{selectedUser.email}</Typography>
-                                </Box>
-                            </Box>
-                            <Divider />
-                            <Box>
-                                <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>SYSTEM ACCOUNT ROLE</Typography>
-                                <Chip label={selectedUser.role.toUpperCase()} size="small" sx={{ fontWeight: 800 }} />
-                            </Box>
-                            <Grid container spacing={2}>
-                                <Grid size={{ xs: 6 }}>
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>JOIN DATE</Typography>
-                                    <Typography variant="body2" fontWeight={700}>{formatJoinDate(selectedUser.createdAt)}</Typography>
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>STATUS</Typography>
-                                    <Typography variant="body2" fontWeight={700} color={selectedUser.isBanned ? '#F57C00' : selectedUser.flagged ? '#BA1A1A' : '#2E7D32'}>
-                                        {selectedUser.isBanned ? 'Banned' : selectedUser.flagged ? 'Flagged' : 'Active'}
-                                    </Typography>
-                                </Grid>
-                            </Grid>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F9FBF9', p: 1.5, borderRadius: 2, border: '1px solid #EBEFE8' }}>
-                                <Box>
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary">ECO-PASSPORT SCORE</Typography>
-                                    <Typography variant="body2" fontWeight={850} color="#006A3B">{getEcoScoreDetails(selectedUser.ecoScore).tier}</Typography>
-                                </Box>
-                                <Typography variant="h5" fontWeight={950} color="#006A3B">{selectedUser.ecoScore}%</Typography>
-                            </Box>
-                        </Stack>
-                    </DialogContent>
-                    <DialogActions sx={{ p: 2 }}>
-                        <Button onClick={() => setSelectedUser(null)} variant="outlined" sx={{ borderRadius: 2, fontWeight: 800 }}>Close</Button>
-                    </DialogActions>
-                </Dialog>
-            )}
-
-            {/* Custom Floating Alert Broadcast Button */}
-            <Tooltip title="New Broadcast Alert">
-                <Button 
-                    onClick={() => setBroadcastOpen(true)}
-                    sx={{ 
-                        position: 'fixed', bottom: 24, right: 24, 
-                        width: 56, height: 56, borderRadius: '50%', 
-                        bgcolor: '#FF5252', '&:hover': { bgcolor: '#FF1744' },
-                        boxShadow: 3, minWidth: 0, color: '#FFF'
-                    }}
-                >
-                    <AddAlertIcon />
-                </Button>
-            </Tooltip>
-
-            {/* Custom Toast Alert */}
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-                <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })} sx={{ borderRadius: 3 }}>
-                    {snackbar.message}
-                </Alert>
+                <Alert severity={snackbar.severity} sx={{ borderRadius: 2 }}>{snackbar.message}</Alert>
             </Snackbar>
-
         </Box>
     );
 }

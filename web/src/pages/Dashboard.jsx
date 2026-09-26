@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { 
     Grid, Paper, Typography, Box, Chip, Button, 
-    Divider, Stack, Avatar, List, ListItem, ListItemIcon, ListItemText, TextField, IconButton
+    Divider, Stack, Avatar, List, ListItem, ListItemIcon, ListItemText, IconButton,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import { collection, onSnapshot, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import PeopleIcon from '@mui/icons-material/People';
-import CurrencyLkrIcon from '@mui/icons-material/MonetizationOn'; // Fallback for LKR
+import CurrencyLkrIcon from '@mui/icons-material/MonetizationOn';
 import WarningIcon from '@mui/icons-material/Warning';
 import StoreIcon from '@mui/icons-material/Store';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import BackupIcon from '@mui/icons-material/Backup';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
 import KPICard from '../components/KPICard';
 
@@ -21,293 +23,234 @@ export default function Dashboard() {
     const [activeUsersCount, setActiveUsersCount] = useState(0);
     const [revenueToday, setRevenueToday] = useState(0);
     const [activeSosCount, setActiveSosCount] = useState(0);
-    const [pendingVendorsCount, setPendingVendorsCount] = useState(0);
+    const [pendingVendors, setPendingVendors] = useState([]);
     const [liveActivities, setLiveActivities] = useState([]);
     const navigate = useNavigate();
 
+    const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
     useEffect(() => {
-        // 1. Real-time active SOS Alerts count
         const sosQuery = query(collection(db, "sos_alerts"), where("status", "in", ["active", "investigating"]));
-        const unsubSos = onSnapshot(sosQuery, (snap) => {
-            setActiveSosCount(snap.size);
-        }, (err) => {
-            console.error("Dashboard SOS listen error:", err);
-            setActiveSosCount(0); // Ensure it defaults to 0 on error
-        });
+        const unsubSos = onSnapshot(sosQuery, (snap) => setActiveSosCount(snap.size), () => setActiveSosCount(0));
 
-        // 2. Real-time pending Vendor Approvals count
-        const vendorQuery = query(collection(db, "vendors"), where("status", "==", "pending_verification"));
+        const vendorQuery = query(collection(db, "vendors"), where("verificationStatus", "==", "pending"));
         const unsubVendors = onSnapshot(vendorQuery, (snap) => {
-            setPendingVendorsCount(snap.size);
-        }, (err) => {
-            console.error("Dashboard Vendors listen error:", err);
-            setPendingVendorsCount(0); // Ensure it defaults to 0 on error
-        });
+            const vendors = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setPendingVendors(vendors);
+        }, () => setPendingVendors([]));
 
-        // 3. Build live activity feed from bookings, SOS resolved alerts, and vendor signups
         const fetchActivities = async () => {
             try {
-                // Fetch recent bookings
-                const bookingsSnap = await getDocs(query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(2)));
-                const bookings = bookingsSnap.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        type: 'booking',
-                        title: `New Luxury Booking: ${data.service || 'Accommodation'}`,
-                        subtitle: `Booking ID: CE-${doc.id.substring(0,5).toUpperCase()} • Amount: LKR ${(data.price || data.cost || 45000).toLocaleString()}`,
-                        timeText: '15 mins ago',
-                        icon: <ShoppingCartIcon sx={{ color: '#00695c' }} />,
-                        bgColor: '#e0f2f1',
-                        timestamp: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
-                    };
-                });
+                const bookingsSnap = await getDocs(query(collection(db, "bookings"), orderBy("createdAt", "desc"), limit(4)));
+                const bookings = bookingsSnap.docs.map(doc => ({
+                    id: doc.id, type: 'booking',
+                    title: `New Booking: ${doc.data().service || 'Service'}`,
+                    subtitle: `ID: CE-${doc.id.substring(0,5).toUpperCase()}`,
+                    timeText: 'Recent', icon: <ShoppingCartIcon sx={{ color: '#0F172A', fontSize: 18 }} />,
+                    bgColor: '#F1F5F9', timestamp: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+                }));
 
-                // Fetch recent emergency logs
-                const emergencySnap = await getDocs(query(collection(db, "EmergencyLogs"), orderBy("resolvedAt", "desc"), limit(2)));
-                const emergencies = emergencySnap.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        type: 'sos',
-                        title: `SOS Resolved: ${data.userName || 'Tourist Request'}`,
-                        subtitle: data.notes || `Medical emergency handled by Ranger Team Alpha.`,
-                        timeText: '2 mins ago',
-                        icon: <CheckCircleIcon sx={{ color: '#2e7d32' }} />,
-                        bgColor: '#e8f5e9',
-                        timestamp: data.resolvedAt?.toDate ? data.resolvedAt.toDate() : new Date()
-                    };
-                });
+                const emergencySnap = await getDocs(query(collection(db, "EmergencyLogs"), orderBy("resolvedAt", "desc"), limit(3)));
+                const emergencies = emergencySnap.docs.map(doc => ({
+                    id: doc.id, type: 'sos',
+                    title: `SOS Resolved: ${doc.data().userName || 'Tourist'}`,
+                    subtitle: 'Case closed successfully',
+                    timeText: 'Recent', icon: <CheckCircleIcon sx={{ color: '#10B981', fontSize: 18 }} />,
+                    bgColor: '#D1FAE5', timestamp: doc.data().resolvedAt?.toDate ? doc.data().resolvedAt.toDate() : new Date()
+                }));
 
-                // Combine activities
-                let combined = [...emergencies, ...bookings];
-
+                const combined = [...emergencies, ...bookings].sort((a,b) => b.timestamp - a.timestamp).slice(0, 6);
                 setLiveActivities(combined);
-            } catch (err) {
-                console.error("Activities load failed:", err);
-            }
+            } catch (err) { console.error("Activities load failed:", err); }
         };
 
-            const fetchUsersCount = async () => {
-                try {
-                    const snap = await getDocs(collection(db, "users"));
-                    setActiveUsersCount(snap.size);
-                } catch (err) {
-                    console.error("Error fetching users count:", err);
-                }
-            };
-
-            const fetchRevenue = async () => {
-                try {
-                    const qBookings = query(collection(db, "bookings"), where("status", "==", "confirmed"));
-                    const snap = await getDocs(qBookings);
-                    const total = snap.docs.reduce((sum, doc) => {
-                        const data = doc.data();
-                        return sum + (parseFloat(data.price) || parseFloat(data.cost) || 0);
-                    }, 0);
-                    setRevenueToday(total);
-                } catch (err) {
-                    console.error("Error fetching revenue:", err);
-                }
-            };
-
-            fetchUsersCount();
-            fetchRevenue();
-            fetchActivities();
-            const activityInterval = setInterval(() => {
-                fetchUsersCount();
-                fetchRevenue();
-                fetchActivities();
-            }, 15000);
-
-        return () => {
-            setTimeout(() => {
-                if (typeof unsubSos === 'function') unsubSos();
-            }, 0);
-            setTimeout(() => {
-                if (typeof unsubVendors === 'function') unsubVendors();
-            }, 10);
-            clearInterval(activityInterval);
+        const fetchStats = async () => {
+            try {
+                const snapUsers = await getDocs(collection(db, "users"));
+                setActiveUsersCount(snapUsers.size);
+                
+                const qBookings = query(collection(db, "bookings"), where("status", "==", "confirmed"));
+                const snapBookings = await getDocs(qBookings);
+                const total = snapBookings.docs.reduce((sum, doc) => sum + (parseFloat(doc.data().price) || 0), 0);
+                setRevenueToday(total);
+            } catch (err) {}
         };
+
+        fetchStats();
+        fetchActivities();
+
+        return () => { unsubSos(); unsubVendors(); };
     }, []);
 
     return (
-        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            
-            {/* Top Navigation Row */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Typography variant="h5" fontWeight={900} color="#006A3B" sx={{ letterSpacing: 0.5 }}>
-                        Ceylo Admin Portal
+        <Box>
+            {/* Operations Header */}
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <Box>
+                    <Typography variant="h4" fontWeight={700} color="#0F172A" gutterBottom>
+                        CEYLO Operations
                     </Typography>
-                    <Stack direction="row" spacing={3}>
-                        <Typography variant="body2" fontWeight={700} sx={{ color: '#006A3B', borderBottom: '2.5px solid #006A3B', pb: 0.5, cursor: 'pointer' }}>
-                            Global Feed
-                        </Typography>
-                        <Typography variant="body2" fontWeight={700} sx={{ color: '#777', cursor: 'pointer' }}>
-                            Alerts
-                        </Typography>
-                    </Stack>
+                    <Typography variant="body2" color="text.secondary">
+                        {todayDate} — Control Center
+                    </Typography>
                 </Box>
-                
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <TextField 
-                        placeholder="Search events..." 
-                        size="small"
-                        sx={{ bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                    />
-                    <Button 
-                        variant="contained" 
-                        onClick={() => navigate('/events')}
-                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                    >
-                        Create New Event
+                <Stack direction="row" spacing={2}>
+                    <Button variant="outlined" size="small" sx={{ borderColor: '#E2E8F0', color: '#0F172A', '&:hover': { borderColor: '#CBD5E1' } }}>
+                        Export Report
                     </Button>
-                </Box>
+                    <Button variant="contained" size="small" startIcon={<AddIcon />}>
+                        New Action
+                    </Button>
+                </Stack>
             </Box>
 
-            {/* Metrics cards row */}
+            {/* High-value KPI Blocks */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                
-                {/* Active Users */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="Active Users" 
-                        value={activeUsersCount.toLocaleString()} 
-                        icon={<PeopleIcon fontSize="small" />} 
-                    />
+                    <KPICard title="Active Travelers" value={activeUsersCount.toLocaleString()} icon={<PeopleIcon fontSize="small" />} />
                 </Grid>
-
-                {/* Revenue Today */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="Revenue Today" 
-                        value={`LKR ${revenueToday.toLocaleString()}`} 
-                        icon={<CurrencyLkrIcon fontSize="small" />} 
-                    />
+                    <KPICard title="Platform Revenue" value={`$${revenueToday.toLocaleString()}`} icon={<CurrencyLkrIcon fontSize="small" />} />
                 </Grid>
-
-                {/* Active SOS Alerts */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <KPICard 
-                        title="Active SOS Alerts" 
-                        value={activeSosCount} 
-                        icon={<WarningIcon fontSize="small" />} 
-                        iconBgColor="#BA1A1A"
-                        iconColor="#FFF"
-                        cardBgColor="#FFEBEE"
-                        borderColor="#FFCDD2"
-                        onClick={() => navigate('/sos')}
-                    />
-                </Grid>
-
-                {/* Vendor Approvals */}
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="Vendor Approvals" 
-                        value={pendingVendorsCount} 
-                        icon={<StoreIcon fontSize="small" />} 
-                        iconBgColor="#FFF3E0"
-                        iconColor="#E65100"
+                        title="Pending Vendors" value={pendingVendors.length} 
+                        icon={<StoreIcon fontSize="small" />} iconBgColor="#FEF3C7" iconColor="#D97706" 
                         onClick={() => navigate('/vendors')}
                     />
                 </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <KPICard 
+                        title="Open SOS Cases" value={activeSosCount} 
+                        icon={<WarningIcon fontSize="small" />} iconBgColor="#FEE2E2" iconColor="#DC2626" 
+                        onClick={() => navigate('/sos')}
+                    />
+                </Grid>
             </Grid>
 
-            {/* Middle Section Map & Timeline */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                
-                {/* Column 1: Live Movements Map */}
+            <Grid container spacing={4}>
+                {/* Left Column: Needs Attention & Analytics */}
                 <Grid size={{ xs: 12, md: 8 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    
+                    {/* SECTION 2: Needs Attention (Operational Queue) */}
+                    <Paper sx={{ mb: 4, overflow: 'hidden' }}>
+                        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Typography variant="subtitle1" fontWeight={900} color="#181D19">
-                                    Live Tourist Movements
-                                </Typography>
-                                <Chip label="Real-time Grid" size="small" color="success" variant="outlined" sx={{ fontWeight: 800, fontSize: '0.65rem' }} />
+                                <ErrorOutlineIcon sx={{ color: '#F59E0B' }} />
+                                <Typography variant="h6" color="#0F172A">Needs Attention</Typography>
                             </Box>
-                            <Stack direction="row" spacing={1}>
-                                <IconButton sx={{ border: '1px solid #BECABE', borderRadius: 2 }}><FilterListIcon fontSize="small" /></IconButton>
-                                <IconButton sx={{ border: '1px solid #BECABE', borderRadius: 2 }}><SearchIcon fontSize="small" /></IconButton>
-                            </Stack>
+                            <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/vendors')} sx={{ color: '#3B82F6' }}>
+                                View Queue
+                            </Button>
                         </Box>
+                        
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Priority Item</TableCell>
+                                        <TableCell>Type</TableCell>
+                                        <TableCell>Submitted</TableCell>
+                                        <TableCell align="right">Action</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {pendingVendors.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#64748B' }}>
+                                                Queue is clear. Excellent work.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        pendingVendors.slice(0, 5).map(vendor => (
+                                            <TableRow key={vendor.id} hover>
+                                                <TableCell>
+                                                    <Typography variant="body2" fontWeight={600} color="#0F172A">
+                                                        {vendor.businessName || 'Unknown Vendor'}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {vendor.email}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell><Chip label="Vendor Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706' }} /></TableCell>
+                                                <TableCell sx={{ color: '#64748B' }}>Recent</TableCell>
+                                                <TableCell align="right">
+                                                    <Button size="small" variant="outlined" sx={{ borderColor: '#E2E8F0', color: '#0F172A', minWidth: 60 }}>
+                                                        Review
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
 
-                        <Box sx={{ position: 'relative', width: '100%', height: 420, borderRadius: 3, overflow: 'hidden', border: '1px solid #BECABE' }}>
-                            <iframe 
-                                title="Live Movements Map"
-                                src="https://maps.google.com/maps?q=7.9573,80.7603&t=&z=11&ie=UTF8&iwloc=&output=embed"
-                                style={{ width: '100%', height: '100%', border: 'none', filter: 'contrast(1.05)' }}
-                            />
-
-
+                    {/* Quick Analytics / Map Stub */}
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" color="#0F172A" sx={{ mb: 2 }}>Geographic Activity</Typography>
+                        <Box sx={{ width: '100%', height: 280, bgcolor: '#F8F9FA', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
+                            <Typography variant="body2" color="#94A3B8">Live Map Visualization (Active)</Typography>
                         </Box>
                     </Paper>
+
                 </Grid>
 
-                {/* Column 2: Live Activity Feed */}
+                {/* Right Column: Recent Activity & Quick Actions */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="subtitle1" fontWeight={900} color="#181D19">
-                                Live Activity
-                            </Typography>
-                            <Button size="small" onClick={() => navigate('/bookings')} sx={{ fontWeight: 800, textTransform: 'none', color: '#006A3B' }}>View All</Button>
+                    
+                    {/* SECTION 4: Recent Activity */}
+                    <Paper sx={{ mb: 4, display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ p: 2.5, borderBottom: '1px solid #E2E8F0' }}>
+                            <Typography variant="h6" color="#0F172A">Activity Feed</Typography>
                         </Box>
-
-                        <List sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {liveActivities.map((act) => (
-                                <ListItem 
-                                    key={act.id} 
-                                    disablePadding 
-                                    sx={{ 
-                                        p: 2, 
-                                        borderRadius: 3, 
-                                        border: '1px solid #BECABE', 
-                                        bgcolor: '#FFF',
-                                        alignItems: 'flex-start'
-                                    }}
-                                >
-                                    <ListItemIcon sx={{ minWidth: 44 }}>
-                                        <Avatar sx={{ bgcolor: act.bgColor, width: 36, height: 36 }}>
-                                            {act.icon}
-                                        </Avatar>
-                                    </ListItemIcon>
-                                    <ListItemText 
-                                        primary={
-                                            <Typography variant="body2" fontWeight={850} color="#181D19">
-                                                {act.title}
-                                            </Typography>
-                                        }
-                                        secondary={
-                                            <Box sx={{ mt: 0.5 }}>
-                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.3 }}>
-                                                    {act.subtitle}
-                                                </Typography>
-                                                <Chip 
-                                                    label={act.timeText} 
-                                                    size="small" 
-                                                    sx={{ 
-                                                        height: 20, 
-                                                        fontSize: '0.6rem', 
-                                                        fontWeight: 700, 
-                                                        mt: 1, 
-                                                        bgcolor: '#f5f5f5' 
-                                                    }} 
-                                                />
-                                            </Box>
-                                        }
-                                    />
-                                </ListItem>
+                        
+                        <List sx={{ p: 0 }}>
+                            {liveActivities.map((act, index) => (
+                                <Box key={act.id}>
+                                    <ListItem sx={{ py: 2, px: 2.5 }}>
+                                        <ListItemIcon sx={{ minWidth: 40 }}>
+                                            <Avatar sx={{ bgcolor: act.bgColor, width: 32, height: 32 }}>
+                                                {act.icon}
+                                            </Avatar>
+                                        </ListItemIcon>
+                                        <ListItemText 
+                                            primary={<Typography variant="body2" fontWeight={600} color="#0F172A">{act.title}</Typography>}
+                                            secondary={
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                                                    <Typography variant="caption" color="text.secondary">{act.subtitle}</Typography>
+                                                    <Typography variant="caption" color="#94A3B8">{act.timeText}</Typography>
+                                                </Box>
+                                            }
+                                        />
+                                    </ListItem>
+                                    {index < liveActivities.length - 1 && <Divider component="li" />}
+                                </Box>
                             ))}
                         </List>
                     </Paper>
+
+                    {/* Quick Actions */}
+                    <Paper sx={{ p: 2.5 }}>
+                        <Typography variant="subtitle2" fontWeight={600} color="#64748B" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Quick Actions
+                        </Typography>
+                        <Stack spacing={1}>
+                            <Button variant="outlined" fullWidth sx={{ justifyContent: 'flex-start', color: '#0F172A', borderColor: '#E2E8F0' }}>
+                                + Add Destination
+                            </Button>
+                            <Button variant="outlined" fullWidth sx={{ justifyContent: 'flex-start', color: '#0F172A', borderColor: '#E2E8F0' }}>
+                                + Broadcast Announcement
+                            </Button>
+                            <Button variant="outlined" fullWidth sx={{ justifyContent: 'flex-start', color: '#0F172A', borderColor: '#E2E8F0' }}>
+                                + Generate Report
+                            </Button>
+                        </Stack>
+                    </Paper>
+
                 </Grid>
-
             </Grid>
-
-
-
         </Box>
     );
 }

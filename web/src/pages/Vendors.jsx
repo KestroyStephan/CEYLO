@@ -1,419 +1,241 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Grid, Paper, Typography, Box, Chip, Button, 
-    TextField, Snackbar, Alert, Stack, Avatar, List,
-    Link, Divider
+    Box, Typography, Button, TextField, Snackbar, Alert, Stack, Avatar,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+    Chip, IconButton, Drawer, Divider, InputAdornment, Menu, MenuItem
 } from '@mui/material';
-import {
-    collection, query, onSnapshot, orderBy,
-    doc, updateDoc, serverTimestamp, addDoc
-} from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import SearchIcon from '@mui/icons-material/Search';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseIcon from '@mui/icons-material/Close';
 import StoreIcon from '@mui/icons-material/Store';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import CategoryIcon from '@mui/icons-material/Category';
-
+import VerifiedIcon from '@mui/icons-material/Verified';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 export default function Vendors() {
     const [vendors, setVendors] = useState([]);
     const [selectedVendor, setSelectedVendor] = useState(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
-    const [loading, setLoading] = useState(true);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [menuVendor, setMenuVendor] = useState(null);
 
     useEffect(() => {
         const q = query(collection(db, 'vendors'), orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const firebaseVendors = snapshot.docs.map((doc) => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    bankAccount: data.bankAccount || '**** ' + Math.floor(1000 + Math.random() * 9000),
-                    subStatus: data.status === 'pending_verification' ? 'PENDING' : data.status?.toUpperCase(),
-                    kycStatus: data.status === 'pending_verification' ? 'KYC Documents Uploaded' : 'Verification Complete'
-                };
-            });
-
-            setVendors(firebaseVendors);
-            setLoading(false);
-        }, (error) => {
-            console.error('Vendors fetch error:', error);
-            setLoading(false);
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setVendors(data);
         });
-
         return () => unsubscribe();
     }, []);
 
-    // Set first vendor as selected on load
-    useEffect(() => {
-        if (vendors.length > 0 && !selectedVendor) {
-            setSelectedVendor(vendors[0]);
-        }
-    }, [vendors, selectedVendor]);
-
-    const handleApprove = async () => {
-        if (!selectedVendor) return;
-
-        try {
-            await updateDoc(doc(db, 'vendors', selectedVendor.id), {
-                status: 'approved',
-                approvedAt: serverTimestamp(),
-                rejectionReason: '',
-            });
-
-            await updateDoc(doc(db, 'users', selectedVendor.id), {
-                role: 'vendor_active',
-                status: 'approved',
-            });
-
-            setSnackbar({
-                open: true,
-                message: `${selectedVendor.businessName} has been approved!`,
-                severity: 'success',
-            });
-            // Update local state copy to immediately reflect change
-            setSelectedVendor(prev => ({ ...prev, status: 'approved', subStatus: 'APPROVED' }));
-        } catch (error) {
-            setSnackbar({
-                open: true,
-                message: 'Error approving vendor: ' + error.message,
-                severity: 'error',
-            });
-        }
+    const handleMenuClick = (event, vendor) => {
+        setAnchorEl(event.currentTarget);
+        setMenuVendor(vendor);
     };
 
-    const handleReject = async () => {
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setMenuVendor(null);
+    };
+
+    const openDrawer = (vendor) => {
+        setSelectedVendor(vendor);
+        setRejectionReason(vendor.rejectionReason || '');
+        setDrawerOpen(true);
+        handleMenuClose();
+    };
+
+    const handleAction = async (status) => {
         if (!selectedVendor) return;
-        if (!rejectionReason.trim()) {
-            setSnackbar({ open: true, message: 'Please provide a reason for rejection.', severity: 'warning' });
+        if (status === 'rejected' && !rejectionReason.trim()) {
+            setSnackbar({ open: true, message: 'Please provide a rejection reason.', severity: 'warning' });
             return;
         }
 
         try {
             await updateDoc(doc(db, 'vendors', selectedVendor.id), {
-                status: 'rejected',
-                rejectionReason: rejectionReason,
-                rejectedAt: serverTimestamp(),
+                verificationStatus: status,
+                status: status, // some fields in the DB might use status instead of verificationStatus
+                ...(status === 'rejected' ? { rejectionReason, rejectedAt: serverTimestamp() } : { rejectionReason: '', approvedAt: serverTimestamp() })
             });
 
             await updateDoc(doc(db, 'users', selectedVendor.id), {
-                role: 'vendor_rejected',
-                status: 'rejected',
+                role: status === 'approved' ? 'vendor_active' : 'vendor_pending',
+                status: status
             });
 
-            setSnackbar({
-                open: true,
-                message: `${selectedVendor.businessName} registration rejected.`,
-                severity: 'info',
-            });
-            setSelectedVendor(prev => ({ ...prev, status: 'rejected', subStatus: 'REJECTED', rejectionReason: rejectionReason }));
-            setRejectionReason('');
+            setSnackbar({ open: true, message: `Vendor ${status} successfully.`, severity: 'success' });
+            setDrawerOpen(false);
         } catch (error) {
-            setSnackbar({
-                open: true,
-                message: 'Error rejecting vendor: ' + error.message,
-                severity: 'error',
-            });
+            setSnackbar({ open: true, message: 'Error processing action.', severity: 'error' });
         }
     };
 
-    const pendingCount = vendors.filter(v => v.status === 'pending_verification').length;
+    const getStatusChip = (status) => {
+        const s = (status || 'pending').toLowerCase();
+        if (s.includes('approve')) return <Chip label="Approved" size="small" sx={{ bgcolor: '#D1FAE5', color: '#059669', fontWeight: 600 }} />;
+        if (s.includes('reject')) return <Chip label="Rejected" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 600 }} />;
+        return <Chip label="Pending" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 600 }} />;
+    };
 
     return (
-        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            
-            {/* Header info */}
+        <Box>
+            {/* Header */}
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                    <Typography variant="h5" fontWeight={950} color="#006A3B">
-                        Partner Verification
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Audit business registrations and verify legal KYC documents for partner sign-ups.
-                    </Typography>
-                </Box>
-                <Chip 
-                    label="KYC Compliance" 
-                    color="primary" 
-                    sx={{ fontWeight: 800, bgcolor: '#006A6A', color: '#FFF' }}
-                />
+                <Typography variant="h4" fontWeight={700} color="#0F172A">Vendors</Typography>
+                <Button variant="contained" sx={{ bgcolor: '#0F172A', color: '#FFF' }}>+ Add Vendor</Button>
             </Box>
 
-            <Grid container spacing={3}>
-                
-                {/* Column 1: Vendor Queue List */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="subtitle1" fontWeight={900} color="#181D19" sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            Vendor Queue 
-                            <Chip label={`${pendingCount} Pending`} size="small" sx={{ fontWeight: 800, bgcolor: '#FFEBEB', color: '#BA1A1A' }} />
-                        </Typography>
+            {/* Filter Bar */}
+            <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+                <TextField
+                    placeholder="Search vendors..."
+                    size="small"
+                    sx={{ width: 300, bgcolor: '#FFF' }}
+                    InputProps={{
+                        startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+                    }}
+                />
+                <Button variant="outlined" size="small" sx={{ borderColor: '#E2E8F0', color: '#64748B' }}>Filter by Status</Button>
+            </Box>
 
-                        <List sx={{ p: 0 }}>
-                            {vendors.map((vendor) => {
-                                const isSelected = selectedVendor?.id === vendor.id;
-                                const isPending = vendor.status === 'pending_verification';
-                                const isFlagged = vendor.status === 'flagged';
-                                const isApproved = vendor.status === 'approved';
-
-                                // Color definitions matching mockup
-                                let statusLabel = "PENDING";
-                                let tagBg = "#f5f5f5";
-                                let tagColor = "#555";
-                                if (isPending) {
-                                    statusLabel = vendor.subStatus || "PENDING";
-                                    tagBg = isSelected ? '#EBEFE8' : '#FFFDE7';
-                                    tagColor = '#735C00';
-                                } else if (isFlagged) {
-                                    statusLabel = "FLAGGED";
-                                    tagBg = '#FFEBEB';
-                                    tagColor = '#BA1A1A';
-                                } else if (isApproved) {
-                                    statusLabel = "APPROVED";
-                                    tagBg = '#E8F5E9';
-                                    tagColor = '#2E7D32';
-                                }
-
-                                return (
-                                    <Paper
-                                        key={vendor.id}
-                                        onClick={() => setSelectedVendor(vendor)}
-                                        sx={{
-                                            p: 2,
-                                            mb: 2,
-                                            cursor: 'pointer',
-                                            borderRadius: 4,
-                                            border: isSelected ? '2px solid #006A3B' : '1px solid #BECABE',
-                                            bgcolor: isSelected ? '#EBEFE8' : '#FFF',
-                                            boxShadow: 'none',
-                                            '&:hover': { border: '2px solid #006A3B' }
-                                        }}
-                                    >
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                            <Chip 
-                                                label={statusLabel} 
-                                                size="small" 
-                                                sx={{ 
-                                                    fontWeight: 900, 
-                                                    fontSize: '0.65rem',
-                                                    color: tagColor, 
-                                                    bgcolor: tagBg 
-                                                }} 
-                                            />
-                                            <Typography variant="caption" color="text.secondary">
-                                                2h ago
+            {/* High Density Table */}
+            <Paper sx={{ overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table size="small" sx={{ minWidth: 800 }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Business</TableCell>
+                                <TableCell>Category</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Location</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {vendors.map((v) => (
+                                <TableRow key={v.id} hover onClick={() => openDrawer(v)} sx={{ cursor: 'pointer' }}>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Avatar sx={{ width: 28, height: 28, bgcolor: '#F1F5F9', color: '#64748B' }}><StoreIcon fontSize="small" /></Avatar>
+                                            <Typography variant="body2" fontWeight={600} color="#0F172A">
+                                                {v.businessName || 'Unnamed Vendor'}
                                             </Typography>
                                         </Box>
+                                    </TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary">{v.businessType || 'General'}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary">{v.email}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" color="text.secondary">{v.address || 'Not provided'}</Typography></TableCell>
+                                    <TableCell>{getStatusChip(v.verificationStatus || v.status)}</TableCell>
+                                    <TableCell align="right">
+                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, v); }}>
+                                            <MoreVertIcon fontSize="small" />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
 
-                                        <Typography variant="body2" fontWeight={800} color="#181D19">
-                                            {vendor.businessName}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                                            {vendor.businessType}
-                                        </Typography>
+            {/* 3-Dot Action Menu */}
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} PaperProps={{ sx: { minWidth: 150, borderRadius: 2, border: '1px solid #E2E8F0' } }}>
+                <MenuItem onClick={() => openDrawer(menuVendor)} sx={{ fontSize: '0.8125rem' }}>View Details</MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem sx={{ fontSize: '0.8125rem', color: 'error.main' }}>Suspend Vendor</MenuItem>
+            </Menu>
 
-                                        <Stack direction="row" spacing={0.5} alignItems="center">
-                                            <Box sx={{ width: 6, height: 6, bgcolor: isApproved ? 'success.main' : isFlagged ? 'error.main' : 'warning.main', borderRadius: '50%' }} />
-                                            <Typography variant="caption" fontWeight={600} color="text.secondary">
-                                                {vendor.kycStatus}
-                                            </Typography>
-                                        </Stack>
-                                    </Paper>
-                                );
-                            })}
-                        </List>
-                    </Paper>
-                </Grid>
+            {/* Sliding Detail Drawer */}
+            <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)} PaperProps={{ sx: { width: { xs: '100%', sm: 450 } } }}>
+                {selectedVendor && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        
+                        {/* Drawer Header */}
+                        <Box sx={{ p: 3, borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box>
+                                <Typography variant="h5" fontWeight={700} color="#0F172A">{selectedVendor.businessName}</Typography>
+                                <Typography variant="body2" color="text.secondary">{selectedVendor.email}</Typography>
+                            </Box>
+                            <IconButton onClick={() => setDrawerOpen(false)} size="small"><CloseIcon /></IconButton>
+                        </Box>
 
-                {/* Column 2: Document Viewers & Verification forms */}
-                <Grid size={{ xs: 12, md: 8 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', minHeight: 600 }}>
-                        {selectedVendor ? (
-                            <Stack spacing={3.5}>
-                                
-                                {/* Top document viewers row */}
-                                <Grid container spacing={3}>
-                                    <Grid size={{ xs: 6 }}>
-                                        <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #BECABE', bgcolor: '#FFF', boxShadow: 'none' }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                                                <Typography variant="subtitle2" fontWeight={800} color="#3F4941">
-                                                    NIC / Identity Card
-                                                </Typography>
-                                                {selectedVendor.nicFrontUrl && (
-                                                    <Link href={selectedVendor.nicFrontUrl} target="_blank" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', color: '#006A3B' }}>
-                                                        <FullscreenIcon fontSize="small" /> Fullscreen
-                                                    </Link>
-                                                )}
-                                            </Box>
-                                            <Box sx={{ height: 180, bgcolor: '#f5f5f5', borderRadius: 2, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                {selectedVendor.nicFrontUrl ? (
-                                                    <img src={selectedVendor.nicFrontUrl} alt="NIC front preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                ) : (
-                                                    <StoreIcon sx={{ fontSize: 60, color: '#ccc' }} />
-                                                )}
-                                            </Box>
-                                        </Paper>
-                                    </Grid>
-
-                                    <Grid size={{ xs: 6 }}>
-                                        <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #BECABE', bgcolor: '#FFF', boxShadow: 'none' }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                                                <Typography variant="subtitle2" fontWeight={800} color="#3F4941">
-                                                    Business Registration
-                                                </Typography>
-                                                {selectedVendor.businessCertUrl && (
-                                                    <Link href={selectedVendor.businessCertUrl} target="_blank" sx={{ display: 'flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', color: '#006A3B' }}>
-                                                        <FullscreenIcon fontSize="small" /> Fullscreen
-                                                    </Link>
-                                                )}
-                                            </Box>
-                                            <Box sx={{ height: 180, bgcolor: '#f5f5f5', borderRadius: 2, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                {selectedVendor.businessCertUrl ? (
-                                                    <img src={selectedVendor.businessCertUrl} alt="Registration cert preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                ) : (
-                                                    <StoreIcon sx={{ fontSize: 60, color: '#ccc' }} />
-                                                )}
-                                            </Box>
-                                        </Paper>
-                                    </Grid>
-                                </Grid>
-
-                                <Divider />
-
-                                {/* Details & Actions Block */}
-                                <Grid container spacing={4}>
-                                    
-                                    {/* Left: Info details */}
-                                    <Grid size={{ xs: 12, md: 7 }}>
-                                        <Typography variant="h5" fontWeight={900} color="#181D19" gutterBottom>
-                                            {selectedVendor.businessName}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                            {selectedVendor.description || 'No description uploaded.'}
-                                        </Typography>
-
-                                        <Grid container spacing={2}>
-                                            <Grid size={{ xs: 6 }}>
-                                                <Stack spacing={0.5}>
-                                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <CategoryIcon fontSize="inherit" /> BUSINESS CATEGORY
-                                                    </Typography>
-                                                    <Typography variant="body2" fontWeight={750} color="#006A3B">
-                                                        {selectedVendor.businessType}
-                                                    </Typography>
-                                                </Stack>
-                                            </Grid>
-                                            <Grid size={{ xs: 6 }}>
-                                                <Stack spacing={0.5}>
-                                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <AccountBalanceIcon fontSize="inherit" /> BANK ACCOUNT (BOC)
-                                                    </Typography>
-                                                    <Typography variant="body2" fontWeight={750} color="#006A3B">
-                                                        {selectedVendor.bankAccount}
-                                                    </Typography>
-                                                </Stack>
-                                            </Grid>
-                                        </Grid>
-                                    </Grid>
-
-                                    {/* Right: Decision management form */}
-                                    <Grid size={{ xs: 12, md: 5 }}>
-                                        <Paper sx={{ p: 2.5, borderRadius: 3, border: '1px solid #BECABE', bgcolor: '#FFF', boxShadow: 'none' }}>
-                                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 2 }}>
-                                                DECISION MANAGEMENT
-                                            </Typography>
-                                            
-                                            {selectedVendor.status === 'pending_verification' ? (
-                                                <>
-                                                    <TextField
-                                                        placeholder="Reason for rejection (Required if rejecting)..."
-                                                        multiline
-                                                        rows={3}
-                                                        fullWidth
-                                                        value={rejectionReason}
-                                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                                        sx={{ mb: 2.5 }}
-                                                        inputProps={{ style: { fontSize: '0.85rem' } }}
-                                                    />
-
-                                                    <Stack spacing={1.5}>
-                                                        <Button
-                                                            fullWidth
-                                                            variant="contained"
-                                                            startIcon={<CheckCircleIcon />}
-                                                            onClick={handleApprove}
-                                                            sx={{ 
-                                                                bgcolor: '#006A3B', 
-                                                                '&:hover': { bgcolor: '#004D2C' },
-                                                                py: 1.5, 
-                                                                borderRadius: 2, 
-                                                                fontWeight: 800,
-                                                                textTransform: 'none'
-                                                            }}
-                                                        >
-                                                            Approve Application
-                                                        </Button>
-                                                        <Button
-                                                            fullWidth
-                                                            variant="outlined"
-                                                            startIcon={<HighlightOffIcon />}
-                                                            onClick={handleReject}
-                                                            sx={{ 
-                                                                color: '#BA1A1A', 
-                                                                borderColor: '#BA1A1A',
-                                                                '&:hover': { bgcolor: '#FFEBEE', borderColor: '#BA1A1A' },
-                                                                py: 1.5, 
-                                                                borderRadius: 2, 
-                                                                fontWeight: 800,
-                                                                textTransform: 'none'
-                                                            }}
-                                                        >
-                                                            Reject Application
-                                                        </Button>
-                                                    </Stack>
-                                                </>
-                                            ) : (
-                                                <Box sx={{ p: 2, bgcolor: selectedVendor.status === 'approved' ? '#E8F5E9' : '#FFEBEB', borderRadius: 2, textAlign: 'center' }}>
-                                                    <Typography variant="subtitle2" fontWeight={900} color={selectedVendor.status === 'approved' ? '#2E7D32' : '#BA1A1A'} sx={{ mb: 1 }}>
-                                                        {selectedVendor.status === 'approved' ? 'APPLICATION APPROVED' : 'APPLICATION REJECTED'}
-                                                    </Typography>
-                                                    {selectedVendor.status === 'rejected' && selectedVendor.rejectionReason && (
-                                                        <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                                                            Reason: {selectedVendor.rejectionReason}
-                                                        </Typography>
-                                                    )}
-                                                </Box>
-                                            )}
-                                        </Paper>
-                                    </Grid>
-
-                                </Grid>
-
-                            </Stack>
-                        ) : (
-                            <Box sx={{ p: 4, textAlign: 'center', my: 'auto' }}>
-                                <Typography variant="h6" color="text.secondary">
-                                    Select a partner application to view files
+                        {/* Drawer Content */}
+                        <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
+                            
+                            {/* Status Banner */}
+                            <Box sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #E2E8F0', bgcolor: '#F8F9FA', display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {getStatusChip(selectedVendor.verificationStatus || selectedVendor.status)}
+                                <Typography variant="caption" color="text.secondary">
+                                    Submitted: {selectedVendor.createdAt?.toDate ? selectedVendor.createdAt.toDate().toLocaleDateString() : 'N/A'}
                                 </Typography>
                             </Box>
-                        )}
-                    </Paper>
-                </Grid>
 
-            </Grid>
+                            <Typography variant="subtitle2" color="#64748B" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Business Details</Typography>
+                            
+                            <Stack spacing={2} sx={{ mb: 4 }}>
+                                <Box>
+                                    <Typography variant="caption" color="text.secondary" display="block">Business Type</Typography>
+                                    <Typography variant="body2" fontWeight={500}>{selectedVendor.businessType}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="caption" color="text.secondary" display="block">Phone</Typography>
+                                    <Typography variant="body2" fontWeight={500}>{selectedVendor.phone}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="caption" color="text.secondary" display="block">Address</Typography>
+                                    <Typography variant="body2" fontWeight={500}>{selectedVendor.address}</Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="caption" color="text.secondary" display="block">Bank Account</Typography>
+                                    <Typography variant="body2" fontWeight={500} sx={{ fontFamily: 'monospace' }}>{selectedVendor.bankAccount || '**** **** ****'}</Typography>
+                                </Box>
+                            </Stack>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={4000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-            >
-                <Alert severity={snackbar.severity}>
-                    {snackbar.message}
-                </Alert>
+                            <Typography variant="subtitle2" color="#64748B" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>KYC Documents</Typography>
+                            <Button variant="outlined" fullWidth startIcon={<DescriptionIcon />} sx={{ justifyContent: 'flex-start', mb: 1, color: '#0F172A', borderColor: '#E2E8F0' }}>
+                                Business_Registration.pdf
+                            </Button>
+                            <Button variant="outlined" fullWidth startIcon={<DescriptionIcon />} sx={{ justifyContent: 'flex-start', mb: 3, color: '#0F172A', borderColor: '#E2E8F0' }}>
+                                Owner_ID.jpg
+                            </Button>
+
+                            {/* Rejection Field */}
+                            {(selectedVendor.verificationStatus === 'pending' || selectedVendor.status === 'pending_verification') && (
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={3}
+                                    label="Rejection Reason (if applicable)"
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    sx={{ mb: 2 }}
+                                />
+                            )}
+                        </Box>
+
+                        {/* Drawer Actions */}
+                        <Box sx={{ p: 3, borderTop: '1px solid #E2E8F0', display: 'flex', gap: 2, bgcolor: '#F8F9FA' }}>
+                            {(selectedVendor.verificationStatus === 'pending' || selectedVendor.status === 'pending_verification') ? (
+                                <>
+                                    <Button variant="outlined" color="error" fullWidth onClick={() => handleAction('rejected')}>Reject</Button>
+                                    <Button variant="contained" sx={{ bgcolor: '#10B981', '&:hover': { bgcolor: '#059669' } }} fullWidth onClick={() => handleAction('approved')}>Approve</Button>
+                                </>
+                            ) : (
+                                <Button variant="outlined" fullWidth onClick={() => setDrawerOpen(false)} sx={{ color: '#0F172A', borderColor: '#E2E8F0' }}>Close</Button>
+                            )}
+                        </Box>
+
+                    </Box>
+                )}
+            </Drawer>
+
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+                <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2 }}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
     );
