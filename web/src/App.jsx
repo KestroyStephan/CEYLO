@@ -24,6 +24,7 @@ const AICenter = lazy(() => import('./pages/AICenter'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const SystemHealth = lazy(() => import('./pages/SystemHealth'));
 const Reports = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 import { ThemeProvider } from '@mui/material/styles';
 import { CircularProgress, Box } from '@mui/material';
@@ -106,6 +107,7 @@ function App() {
                 <Route path="notifications" element={<PrivateRoute allowedRoles={['support', 'content_manager', 'manager']}><Notifications /></PrivateRoute>} />
                 <Route path="health" element={<PrivateRoute allowedRoles={['manager']}><SystemHealth /></PrivateRoute>} />
                 <Route path="reports" element={<PrivateRoute allowedRoles={['finance', 'vendor_manager', 'manager']}><Reports /></PrivateRoute>} />
+                <Route path="settings" element={<PrivateRoute allowedRoles={['super_admin', 'manager', 'admin']}><Settings /></PrivateRoute>} />
               </Route>
 
               <Route path="/unauthorized" element={<Unauthorized />} />

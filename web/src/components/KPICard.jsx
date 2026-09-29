@@ -5,52 +5,54 @@ export default function KPICard({
     title, 
     value, 
     icon, 
-    iconBgColor = '#E8F5E9', 
-    iconColor = '#2E7D32',
+    iconBgColor = '#F1F5F9', // Light Slate
+    iconColor = '#64748B',   // Slate 500
     trend,
     trendUp = true,
     onClick,
     cardBgColor = '#FFFFFF',
-    borderColor = '#EBEFE8'
+    borderColor = '#E2E8F0' // Slate 200
 }) {
     return (
         <Paper 
             onClick={onClick}
             sx={{ 
                 p: 2.5, 
-                borderRadius: 4, 
+                borderRadius: 2, 
                 border: `1px solid ${borderColor}`, 
                 bgcolor: cardBgColor,
-                boxShadow: 'none', 
+                boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.02)', // Minimal shadow
                 position: 'relative',
                 cursor: onClick ? 'pointer' : 'default',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                transition: 'border-color 0.2s',
                 '&:hover': onClick ? {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    borderColor: '#CBD5E1', // Hover state border
                 } : {}
             }}
         >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: iconBgColor, color: iconColor, width: 36, height: 36 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                    {title}
+                </Typography>
+                <Avatar sx={{ bgcolor: iconBgColor, color: iconColor, width: 32, height: 32, borderRadius: 1.5 }}>
                     {icon}
                 </Avatar>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                <Typography variant="h5" fontWeight={700} color={cardBgColor !== '#FFFFFF' ? iconColor : '#0F172A'}>
+                    {value}
+                </Typography>
                 {trend && (
                     <Typography 
                         variant="caption" 
-                        fontWeight={900} 
-                        color={trendUp ? '#2E7D32' : '#D32F2F'}
+                        fontWeight={600} 
+                        color={trendUp ? '#10B981' : '#EF4444'}
                     >
-                        {trendUp ? '📈 ' : '📉 '} {trend}
+                        {trendUp ? '↑ ' : '↓ '} {trend}
                     </Typography>
                 )}
             </Box>
-            <Typography variant="caption" fontWeight={700} color="text.secondary">
-                {title}
-            </Typography>
-            <Typography variant="h4" fontWeight={950} color={cardBgColor !== '#FFFFFF' ? iconColor : '#181D19'} sx={{ mt: 0.5 }}>
-                {value}
-            </Typography>
         </Paper>
     );
 }

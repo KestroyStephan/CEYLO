@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Box, Typography, Button, Paper, Grid, Card, CardContent,
-    TextField, Chip, IconButton, Tooltip, Avatar, List, ListItem,
-    Divider, Stack, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Select, MenuItem, FormControl, InputLabel,
-    CircularProgress, Snackbar, Alert, Pagination, LinearProgress
+    Box, Typography, Button, Paper, Grid, TextField, Chip, IconButton, Avatar, 
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Menu, MenuItem, 
+    InputAdornment, Stack, Snackbar, Alert
 } from '@mui/material';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -12,547 +10,272 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import KPICard from '../components/KPICard';
 
-// Icons
+import SearchIcon from '@mui/icons-material/Search';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LocalAtmIcon from '@mui/icons-material/LocalAtm';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
+const mockLedgerData = [
+    { id: '1', name: 'Sigiriya Adventures', role: 'Tour Operator', period: 'Sept 2026', gross: 450000, fees: 67500, net: 382500, status: 'Cleared' },
+    { id: '2', name: 'Galle Fort Heritage Stays', role: 'Accommodation', period: 'Sept 2026', gross: 820000, fees: 123000, net: 697000, status: 'Pending Approval' },
+    { id: '3', name: 'Ella Scenic Trains', role: 'Transport', period: 'Sept 2026', gross: 120000, fees: 18000, net: 102000, status: 'Cleared' },
+    { id: '4', name: 'Yala Safari Rangers', role: 'Tour Operator', period: 'Sept 2026', gross: 550000, fees: 82500, net: 467500, status: 'Processing' },
+    { id: '5', name: 'Mirissa Blue Whale Tours', role: 'Tour Operator', period: 'Sept 2026', gross: 340000, fees: 51000, net: 289000, status: 'Cleared' }
+];
 
 export default function Reports() {
-    const [revenue, setRevenue] = useState(142850.00);
-    const [bookingsCount, setBookingsCount] = useState(42);
-    const [ledger, setLedger] = useState([]);
+    const [revenue, setRevenue] = useState(2280000);
+    const [bookingsCount, setBookingsCount] = useState(145);
+    const [ledger, setLedger] = useState(mockLedgerData);
+    
+    // Filters
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    
+    // UI State
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [selectedRowId, setSelectedRowId] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
-        // Query confirmed bookings for real-time revenue aggregates
-        const q = query(collection(db, "bookings"), where("status", "==", "confirmed"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            let total = 0;
-            snapshot.docs.forEach(doc => {
-                const data = doc.data();
-                const price = parseFloat(data.price || data.totalPrice || data.amount || 0);
-                total += price;
-            });
-
-            if (total > 0) {
-                setRevenue(total);
-                setBookingsCount(snapshot.docs.length);
+        const qBookings = query(collection(db, "bookings"), where("status", "==", "confirmed"));
+        const unsubBookings = onSnapshot(qBookings, (snapshot) => {
+            if (snapshot.docs.length > 0) {
+                let total = 0;
+                snapshot.docs.forEach(doc => { total += parseFloat(doc.data().price || doc.data().cost || 0); });
+                setRevenue(prev => total > 0 ? total : prev);
+                setBookingsCount(prev => snapshot.docs.length > 0 ? snapshot.docs.length : prev);
             }
-        }, (err) => {
-            console.error("Revenue aggregator error:", err);
         });
 
-        // Listen to real payouts from Firestore
-        const payoutsUnsub = onSnapshot(collection(db, "payouts"), (snapshot) => {
-            const realPayouts = snapshot.docs.map(doc => {
-                const d = doc.data();
-                const gross = parseFloat(d.gross || d.amount || 0);
-                const fees = parseFloat(d.fees || gross * 0.15);
-                return {
-                    id: doc.id,
-                    name: d.name || d.partnerName || 'Partner',
-                    role: d.role || d.type || 'Vendor',
-                    period: d.period || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString() : 'N/A'),
-                    gross,
-                    fees,
-                    net: gross - fees,
-                    status: d.status || 'Pending Approval'
-                };
-            });
-            setLedger(realPayouts);
-        }, (err) => {
-            console.error("Payouts listener error:", err);
-            setLedger([]);
+        const unsubPayouts = onSnapshot(collection(db, "payouts"), (snapshot) => {
+            if (snapshot.docs.length > 0) {
+                const realPayouts = snapshot.docs.map(doc => {
+                    const d = doc.data();
+                    const gross = parseFloat(d.gross || d.amount || 0);
+                    const fees = gross * 0.15;
+                    return {
+                        id: doc.id,
+                        name: d.name || d.partnerName || 'Partner',
+                        role: d.role || d.type || 'Vendor',
+                        period: d.period || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()),
+                        gross, fees, net: gross - fees,
+                        status: d.status || 'Pending'
+                    };
+                });
+                setLedger(realPayouts);
+            }
         });
 
-        return () => {
-            setTimeout(() => {
-                if (typeof unsubscribe === 'function') unsubscribe();
-                if (typeof payoutsUnsub === 'function') payoutsUnsub();
-            }, 0);
-        };
+        return () => { unsubBookings(); unsubPayouts(); };
     }, []);
 
-    // Export PDF Report function using jspdf-autotable
     const handleExportPDF = () => {
-        try {
-            const doc = new jsPDF();
-            doc.text('CEYLO PLATFORM FINANCIAL STATEMENT', 14, 15);
-            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 23);
-            doc.text(`Total Aggregated Revenue: $${revenue.toFixed(2)}`, 14, 31);
-            doc.text(`Platform Fees Collected (15%): $${(revenue * 0.15).toFixed(2)}`, 14, 39);
-            
-            doc.autoTable({
-                startY: 47,
-                head: [['Partner/Vendor', 'Role', 'Period', 'Gross Revenue', 'Platform Fee (15%)', 'Net Disbursed', 'Status']],
-                body: ledger.map(item => [
-                    item.name,
-                    item.role,
-                    item.period,
-                    `$${item.gross.toFixed(2)}`,
-                    `-$${item.fees.toFixed(2)}`,
-                    `$${item.net.toFixed(2)}`,
-                    item.status
-                ]),
-            });
-            doc.save('CEYLO_Financial_Report.pdf');
-            setSnackbar({ open: true, message: 'PDF report downloaded successfully!', severity: 'success' });
-        } catch (e) {
-            console.error("PDF generation failed:", e);
-            setSnackbar({ open: true, message: 'Export failed: ' + e.message, severity: 'error' });
-        }
+        const doc = new jsPDF();
+        doc.text('CEYLO PLATFORM FINANCIAL STATEMENT', 14, 15);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 23);
+        doc.text(`Total Gross Revenue: LKR ${revenue.toFixed(2)}`, 14, 31);
+        doc.text(`Platform Fees Collected (15%): LKR ${(revenue * 0.15).toFixed(2)}`, 14, 39);
+        
+        doc.autoTable({
+            startY: 47,
+            head: [['Partner/Vendor', 'Role', 'Period', 'Gross (LKR)', 'Fee (LKR)', 'Net (LKR)', 'Status']],
+            body: ledger.map(item => [item.name, item.role, item.period, item.gross.toFixed(2), item.fees.toFixed(2), item.net.toFixed(2), item.status]),
+            theme: 'grid', headStyles: { fillColor: [0, 106, 59] } // Ceylo Green
+        });
+        doc.save(`Ceylo_Financial_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+        setSnackbar({ open: true, message: 'PDF Report downloaded successfully!', severity: 'success' });
     };
 
-    // Export CSV Report function
-    const handleExportCSV = () => {
-        try {
-            const headers = ['Partner Name', 'Role', 'Payout Period', 'Gross Amount', 'Platform Fee (15%)', 'Net Payout', 'Payout Status'];
-            const rows = ledger.map(item => [
-                item.name,
-                item.role,
-                item.period,
-                item.gross,
-                item.fees,
-                item.net,
-                item.status
-            ]);
-            
-            const csvContent = [
-                headers.join(','),
-                ...rows.map(r => r.join(','))
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', 'CEYLO_Payout_Registry.csv');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            setSnackbar({ open: true, message: 'CSV ledger exported successfully!', severity: 'success' });
-        } catch (e) {
-            console.error("CSV generation failed:", e);
-            setSnackbar({ open: true, message: 'Export failed: ' + e.message, severity: 'error' });
-        }
+    const handleMenuOpen = (e, id) => {
+        setAnchorEl(e.currentTarget);
+        setSelectedRowId(id);
     };
 
-    // Filter Ledger Rows
-    const filteredLedger = ledger.filter(item => 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.role.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleApprovePayout = () => {
+        if (selectedRowId) {
+            setLedger(ledger.map(item => item.id === selectedRowId ? { ...item, status: 'Cleared' } : item));
+            setSnackbar({ open: true, message: 'Payout approved and funds scheduled for transfer.', severity: 'success' });
+        }
+        setAnchorEl(null);
+    };
 
-    // Compute derived metrics
-    const pendingTransactionsCount = ledger.filter(l => l.status.toLowerCase() !== 'disbursed').length;
-    const pendingPayoutsValue = ledger.filter(l => l.status.toLowerCase() !== 'disbursed').reduce((sum, item) => sum + item.net, 0);
-    const completedPayoutsValue = ledger.filter(l => l.status.toLowerCase() === 'disbursed').reduce((sum, item) => sum + item.net, 0);
+    const filteredLedger = ledger.filter(item => {
+        const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.role.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchStatus = statusFilter === 'All' || item.status.includes(statusFilter);
+        return matchSearch && matchStatus;
+    });
+    
+    const platformFee = revenue * 0.15;
+
+    const getStatusChip = (status) => {
+        const s = (status || 'pending').toLowerCase();
+        if (s.includes('clear') || s.includes('paid')) return <Chip label="Cleared" size="small" sx={{ bgcolor: '#E8F5E9', color: '#006A3B', fontWeight: 800 }} />;
+        if (s.includes('process')) return <Chip label="Processing" size="small" sx={{ bgcolor: '#E3F2FD', color: '#1976D2', fontWeight: 800 }} />;
+        return <Chip label="Pending Approval" size="small" sx={{ bgcolor: '#FFF8E1', color: '#F57F17', fontWeight: 800, border: '1px solid #FFECB3' }} />;
+    };
 
     return (
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            
-            {/* Header section matching screenshot */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Typography variant="h5" fontWeight={950} color="#006A3B">
-                        Financial Reports & Payouts
+            {/* Header */}
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #EBEFE8', pb: 2 }}>
+                <Box>
+                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Financial Reports
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                        Enterprise ledger, automated platform fees, and partner disbursement controls.
                     </Typography>
                 </Box>
-                
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <TextField 
-                        placeholder="Search transactions..." 
-                        size="small"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ bgcolor: '#FFF', width: 280, '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                    />
-                    <Button
-                        variant="contained"
-                        startIcon={<FileDownloadIcon />}
-                        onClick={handleExportPDF}
-                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                    >
-                        Export Report
-                    </Button>
-                </Box>
+                <Button 
+                    variant="contained" 
+                    onClick={handleExportPDF} 
+                    startIcon={<FileDownloadIcon />} 
+                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 4, py: 1.2, textTransform: 'none' }}
+                >
+                    Export Statement
+                </Button>
             </Box>
 
-            {/* Metrics cards row */}
+            {/* Metrics */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                
-                {/* Total Revenue */}
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="TOTAL REVENUE" 
-                        value={`$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                        icon={<LocalAtmIcon fontSize="small" />} 
-                        iconBgColor="#E8F5E9"
-                        iconColor="#2E7D32"
-                    />
-                </Grid>
-
-                {/* Platform Fees */}
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="PLATFORM FEES (15%)" 
-                        value={`$${(revenue * 0.15).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                        icon={<AccountBalanceWalletIcon fontSize="small" />} 
-                        iconBgColor="#E0F7FA"
-                        iconColor="#00838F"
-                    />
-                </Grid>
-
-                {/* Pending Payouts */}
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="PENDING PAYOUTS" 
-                        value={`$${pendingPayoutsValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                        icon={<PendingActionsIcon fontSize="small" />} 
-                        iconBgColor="#FFF3E0"
-                        iconColor="#E65100"
-                    />
-                </Grid>
-
-                {/* Completed Payouts */}
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <KPICard 
-                        title="COMPLETED PAYOUTS" 
-                        value={`$${completedPayoutsValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                        icon={<CheckCircleOutlineIcon fontSize="small" />} 
-                        iconBgColor="#E8F5E9"
-                        iconColor="#2E7D32"
-                    />
-            </Grid>
-
-            {/* Split row: Revenue Trends & Payout Split */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                
-                {/* Revenue trends Chart */}
-                <Grid size={{ xs: 12, md: 7 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                            <Typography variant="subtitle1" fontWeight={900}>
-                                Revenue Trends
-                            </Typography>
-                            <Chip label="Last 6 Months" size="small" sx={{ fontWeight: 800, bgcolor: '#F5F5F5' }} />
-                        </Box>
-                        
-                        {/* Custom SVG/CSS Bar Chart representing Jan-Jun */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: 200, px: 2, pt: 2 }}>
-                            {[
-                                { m: 'JAN', h: '35%' },
-                                { m: 'FEB', h: '55%' },
-                                { m: 'MAR', h: '40%' },
-                                { m: 'APR', h: '75%' },
-                                { m: 'MAY', h: '85%' },
-                                { m: 'JUN', h: '95%' }
-                            ].map((bar, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '12%', height: '100%', justifyContent: 'flex-end' }}>
-                                    <Box sx={{ 
-                                        width: '100%', 
-                                        height: bar.h, 
-                                        bgcolor: '#E0EAE2', 
-                                        borderRadius: '6px 6px 0 0',
-                                        '&:hover': { bgcolor: '#006A3B' },
-                                        transition: 'background-color 0.2s ease-in-out'
-                                    }} />
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ mt: 1.5, fontSize: '0.65rem' }}>
-                                        {bar.m}
-                                    </Typography>
-                                </Box>
-                            ))}
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* Payout Split indicators */}
-                <Grid size={{ xs: 12, md: 5 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ width: 56, height: 56, bgcolor: '#F6FBF3', color: '#006A3B', border: '1px solid #EBEFE8' }}>
+                            <LocalAtmIcon />
+                        </Avatar>
                         <Box>
-                            <Typography variant="subtitle1" fontWeight={900} sx={{ mb: 3 }}>
-                                Payout Split
-                            </Typography>
-                            <Stack spacing={2}>
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                        <Typography variant="caption" fontWeight={850}>Luxury Hotels</Typography>
-                                        <Typography variant="caption" fontWeight={900}>62%</Typography>
-                                    </Box>
-                                    <LinearProgress variant="determinate" value={62} sx={{ height: 6, borderRadius: 2, bgcolor: '#E8F5E9', '& .MuiLinearProgress-bar': { bgcolor: '#2E7D32' } }} />
-                                </Box>
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                        <Typography variant="caption" fontWeight={850}>Field Guides</Typography>
-                                        <Typography variant="caption" fontWeight={900}>28%</Typography>
-                                    </Box>
-                                    <LinearProgress variant="determinate" value={28} sx={{ height: 6, borderRadius: 2, bgcolor: '#E0F7FA', '& .MuiLinearProgress-bar': { bgcolor: '#00838F' } }} />
-                                </Box>
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                        <Typography variant="caption" fontWeight={850}>Transport</Typography>
-                                        <Typography variant="caption" fontWeight={900}>10%</Typography>
-                                    </Box>
-                                    <LinearProgress variant="determinate" value={10} sx={{ height: 6, borderRadius: 2, bgcolor: '#FFF3E0', '& .MuiLinearProgress-bar': { bgcolor: '#E65100' } }} />
-                                </Box>
-                            </Stack>
-                        </Box>
-
-                        <Box sx={{ bgcolor: '#F8F9FA', p: 1.5, borderRadius: 3, border: '1px solid #EBEFE8', mt: 3 }}>
-                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.4 }}>
-                                Average net margin for Ceylo Ecosystem is currently 14.8%, aligned with Q3 sustainability targets.
-                            </Typography>
+                            <Typography variant="caption" fontWeight={800} color="text.secondary">GROSS VOLUME (LKR)</Typography>
+                            <Typography variant="h5" fontWeight={900} color="#181D19">{revenue.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
                         </Box>
                     </Paper>
                 </Grid>
-
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ width: 56, height: 56, bgcolor: '#E8F5E9', color: '#006A3B' }}>
+                            <AccountBalanceWalletIcon />
+                        </Avatar>
+                        <Box>
+                            <Typography variant="caption" fontWeight={800} color="text.secondary">PLATFORM FEES YIELD (15%)</Typography>
+                            <Typography variant="h5" fontWeight={900} color="#006A3B">+{platformFee.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
+                        </Box>
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ width: 56, height: 56, bgcolor: '#E3F2FD', color: '#1976D2' }}>
+                            <AssessmentIcon />
+                        </Avatar>
+                        <Box>
+                            <Typography variant="caption" fontWeight={800} color="text.secondary">TOTAL TRANSACTIONS</Typography>
+                            <Typography variant="h5" fontWeight={900} color="#181D19">{bookingsCount.toLocaleString()}</Typography>
+                        </Box>
+                    </Paper>
+                </Grid>
             </Grid>
 
-            {/* Payout ledger table panel */}
-            <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', mb: 4 }}>
-                
-                {/* Ledger control header */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="subtitle1" fontWeight={900}>
-                        Payout Ledger
-                    </Typography>
-                    <Stack direction="row" spacing={1.5}>
-                        <Button 
-                            variant="outlined" 
-                            size="small" 
-                            startIcon={<FilterListIcon />}
-                            sx={{ borderColor: '#BECABE', color: '#181D19', fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                        >
-                            Filters
-                        </Button>
-                        <Button 
-                            variant="outlined" 
-                            size="small" 
-                            startIcon={<CalendarMonthIcon />}
-                            sx={{ borderColor: '#BECABE', color: '#181D19', fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                        >
-                            Date Range
-                        </Button>
-                    </Stack>
+            {/* Modern Controls Section */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {/* Segmented Control for Status */}
+                    <Box sx={{ display: 'flex', bgcolor: '#EBEFE8', p: 0.5, borderRadius: '50px' }}>
+                        {['All', 'Cleared', 'Pending'].map((status) => (
+                            <Button 
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                sx={{ 
+                                    borderRadius: '50px', px: 3, py: 0.8, textTransform: 'none', fontWeight: 800,
+                                    bgcolor: statusFilter === status ? '#FFF' : 'transparent',
+                                    color: statusFilter === status ? '#006A3B' : '#5C6E64',
+                                    boxShadow: statusFilter === status ? '0 2px 8px rgba(0,106,59,0.1)' : 'none',
+                                    '&:hover': { bgcolor: statusFilter === status ? '#FFF' : 'rgba(0,0,0,0.02)' }
+                                }}
+                            >
+                                {status}
+                            </Button>
+                        ))}
+                    </Box>
+
+                    <Button variant="outlined" startIcon={<FilterListIcon />} sx={{ color: '#3F4941', borderColor: '#BECABE', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}>
+                        More Filters
+                    </Button>
                 </Box>
 
-                {/* Ledger Table */}
-                <TableContainer>
-                    <Table>
-                        <TableHead sx={{ bgcolor: '#F8F9FA' }}>
+                <TextField 
+                    placeholder="Search partner or vendor..." 
+                    size="small" 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)}
+                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 8 } }} 
+                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
+                />
+            </Box>
+
+            {/* Data Table */}
+            <Paper sx={{ borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                <TableContainer sx={{ maxHeight: 600 }}>
+                    <Table size="small" stickyHeader>
+                        <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>VENDOR / GUIDE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ROLE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>PERIOD</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>GROSS</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>FEES (15%)</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>NET PAYOUT</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Partner / Entity</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Entity Type</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Period</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Gross (LKR)</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Platform Fee (15%)</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Net Payout</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Payout Status</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', py: 2 }} align="right"></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {filteredLedger.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} sx={{ textAlign: 'center', py: 6 }}>
-                                        <Typography color="text.secondary" fontWeight={700}>
-                                            No payout records found. Payouts will appear here once processed.
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : filteredLedger.map((item) => (
-                                <TableRow key={item.id} hover>
-                                    
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Avatar sx={{ bgcolor: '#E0F2F1', color: '#004D40', fontWeight: 800 }}>
-                                                {item.name.split(' ').map(n => n[0]).join('')}
+                                <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6, color: '#777', fontWeight: 600 }}>No matching ledger entries found.</TableCell></TableRow>
+                            ) : filteredLedger.map((row) => (
+                                <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                    <TableCell sx={{ py: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar sx={{ width: 36, height: 36, bgcolor: '#EBEFE8', color: '#006A3B', fontSize: '1rem', fontWeight: 900 }}>
+                                                {row.name.substring(0, 2).toUpperCase()}
                                             </Avatar>
-                                            <Box>
-                                                <Typography variant="body2" fontWeight={800}>{item.name}</Typography>
-                                                <Typography variant="caption" color="text.secondary">{item.role}</Typography>
-                                            </Box>
+                                            <Typography variant="body2" fontWeight={800} color="#181D19">{row.name}</Typography>
                                         </Box>
                                     </TableCell>
-
-                                    <TableCell>
-                                        <Chip 
-                                            label={item.role.toUpperCase()} 
-                                            size="small"
-                                            sx={{ 
-                                                fontWeight: 900, fontSize: '0.65rem',
-                                                bgcolor: item.role.includes('Guide') ? '#E8F5E9' : item.role.includes('Resort') ? '#F3E5F5' : '#E0F7FA',
-                                                color: item.role.includes('Guide') ? '#2E7D32' : item.role.includes('Resort') ? '#7B1FA2' : '#00838F'
-                                            }}
-                                        />
-                                    </TableCell>
-
-                                    <TableCell sx={{ fontWeight: 650, color: '#555' }}>{item.period}</TableCell>
-                                    
-                                    <TableCell sx={{ fontWeight: 700 }}>${item.gross.toFixed(2)}</TableCell>
-                                    
-                                    <TableCell sx={{ fontWeight: 700, color: '#BA1A1A' }}>-${item.fees.toFixed(2)}</TableCell>
-                                    
-                                    <TableCell sx={{ fontWeight: 800, color: '#2E7D32' }}>${item.net.toFixed(2)}</TableCell>
-
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Box sx={{ 
-                                                width: 8, height: 8, borderRadius: '50%',
-                                                bgcolor: item.status === 'Completed' ? '#2E7D32' : item.status === 'Processing' ? '#F57C00' : '#777' 
-                                            }} />
-                                            <Typography variant="caption" fontWeight={850} color={item.status === 'Completed' ? '#2E7D32' : item.status === 'Processing' ? '#F57C00' : '#777'}>
-                                                {item.status.toUpperCase()}
-                                            </Typography>
+                                    <TableCell><Typography variant="body2" fontWeight={600} color="#5C6E64">{row.role}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" fontWeight={600} color="#5C6E64">{row.period}</Typography></TableCell>
+                                    <TableCell align="right"><Typography variant="body2" fontWeight={700} color="#5C6E64">{row.gross.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography></TableCell>
+                                    <TableCell align="right">
+                                        <Box sx={{ display: 'inline-flex', bgcolor: 'rgba(220, 38, 38, 0.08)', px: 1, py: 0.2, borderRadius: 1 }}>
+                                            <Typography variant="caption" fontWeight={800} color="#DC2626">-{row.fees.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
                                         </Box>
                                     </TableCell>
-
+                                    <TableCell align="right"><Typography variant="body2" fontWeight={900} color="#181D19">{row.net.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography></TableCell>
+                                    <TableCell>{getStatusChip(row.status)}</TableCell>
+                                    <TableCell align="right">
+                                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, row.id)}><MoreVertIcon /></IconButton>
+                                    </TableCell>
                                 </TableRow>
                             ))}
-
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                        Showing {filteredLedger.length} of 58 payout records
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                        <IconButton disabled size="small"><ArrowForwardIosIcon fontSize="inherit" sx={{ transform: 'rotate(180deg)' }} /></IconButton>
-                        <IconButton size="small"><ArrowForwardIosIcon fontSize="inherit" /></IconButton>
-                    </Stack>
-                </Box>
-
             </Paper>
 
-            {/* Bottom Section splits: Financial Documents & Emergency Support */}
-            <Grid container spacing={3} sx={{ mb: 2 }}>
-                
-                {/* Financial Documents */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%' }}>
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3 }}>
-                            <AssessmentIcon sx={{ color: '#006A3B' }} />
-                            <Typography variant="subtitle1" fontWeight={900}>
-                                Financial Documents
-                            </Typography>
-                        </Box>
+            <Menu 
+                anchorEl={anchorEl} 
+                open={Boolean(anchorEl)} 
+                onClose={() => setAnchorEl(null)} 
+                PaperProps={{ sx: { minWidth: 180, borderRadius: 3, border: '1px solid #EBEFE8', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' } }}
+            >
+                <MenuItem onClick={() => setAnchorEl(null)} sx={{ fontSize: '0.875rem', fontWeight: 600, py: 1.5 }}>View Invoice Document</MenuItem>
+                <MenuItem onClick={handleApprovePayout} sx={{ fontSize: '0.875rem', fontWeight: 800, color: '#006A3B', py: 1.5 }}>Approve Payout Transfer</MenuItem>
+            </Menu>
 
-                        <Stack spacing={2} sx={{ mb: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F8F9FA', p: 2, borderRadius: 3, border: '1px solid #EBEFE8' }}>
-                                <Box>
-                                    <Typography variant="body2" fontWeight={800}>September 2023 Tax Summary</Typography>
-                                    <Typography variant="caption" color="text.secondary">VAT & TOURISM LEVY COMPLIANCE</Typography>
-                                </Box>
-                                <IconButton onClick={handleExportPDF}><FileDownloadIcon /></IconButton>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F8F9FA', p: 2, borderRadius: 3, border: '1px solid #EBEFE8' }}>
-                                <Box>
-                                    <Typography variant="body2" fontWeight={800}>Vendor Payout History Q3</Typography>
-                                    <Typography variant="caption" color="text.secondary">CSV EXPORT - RECONCILIATION READY</Typography>
-                                </Box>
-                                <IconButton onClick={handleExportCSV}><FileDownloadIcon /></IconButton>
-                            </Box>
-                        </Stack>
-
-                        <Button 
-                            variant="outlined" 
-                            fullWidth
-                            sx={{ borderStyle: 'dashed', borderRadius: 3, py: 1.5, borderColor: '#BECABE', color: '#181D19', fontWeight: 800, textTransform: 'none' }}
-                        >
-                            Request Custom Audit Report
-                        </Button>
-                    </Paper>
-                </Grid>
-
-                {/* Emergency Support Hub */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <Box>
-                            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 2 }}>
-                                <Avatar sx={{ bgcolor: '#E8F5E9', color: '#2E7D32' }}>*</Avatar>
-                                <Box>
-                                    <Typography variant="subtitle2" fontWeight={900}>Emergency Support Hub</Typography>
-                                    <Typography variant="caption" color="text.secondary">Direct line for financial discrepancies & urgent vendor payouts.</Typography>
-                                </Box>
-                            </Box>
-
-                            <Grid container spacing={2} sx={{ mt: 1 }}>
-                                <Grid size={{ xs: 6 }}>
-                                    <Button 
-                                        fullWidth 
-                                        variant="outlined" 
-                                        startIcon={<PhoneInTalkIcon />}
-                                        sx={{ borderRadius: 3, py: 1.5, fontWeight: 800, textTransform: 'none', borderColor: '#BECABE', color: '#181D19' }}
-                                    >
-                                        Direct Support
-                                    </Button>
-                                </Grid>
-                                <Grid size={{ xs: 6 }}>
-                                    <Button 
-                                        fullWidth 
-                                        variant="outlined" 
-                                        startIcon={<ChatBubbleOutlineIcon />}
-                                        sx={{ borderRadius: 3, py: 1.5, fontWeight: 800, textTransform: 'none', borderColor: '#BECABE', color: '#181D19' }}
-                                    >
-                                        Dispute Center
-                                    </Button>
-                                </Grid>
-                            </Grid>
-                        </Box>
-
-                        <Box sx={{ bgcolor: '#FFF', p: 2, borderRadius: 3, border: '1px solid #EBEFE8', mt: 3 }}>
-                            <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 1 }}>SYSTEM STATUS</Typography>
-                            <Stack spacing={1}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#2E7D32' }} />
-                                    <Typography variant="caption" fontWeight={800} color="text.secondary">Payout Processing Engine: Operational</Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#2E7D32' }} />
-                                    <Typography variant="caption" fontWeight={800} color="text.secondary">External Bank API: 12ms Latency</Typography>
-                                </Box>
-                            </Stack>
-                        </Box>
-                    </Paper>
-                </Grid>
-
-            </Grid>
-
-            {/* Custom Toast Alert */}
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-                <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })} sx={{ borderRadius: 3 }}>
-                    {snackbar.message}
-                </Alert>
+                <Alert severity={snackbar.severity} sx={{ fontWeight: 700, borderRadius: 2 }}>{snackbar.message}</Alert>
             </Snackbar>
-
-            {/* Floating Action Button (orange button with ledger-plus icon) */}
-            <Tooltip title="Create Payout Request">
-                <Button 
-                    onClick={() => setSnackbar({ open: true, message: 'Initiating new vendor payout cycle...', severity: 'info' })}
-                    sx={{ 
-                        position: 'fixed', bottom: 24, right: 24, 
-                        width: 56, height: 56, borderRadius: '50%', 
-                        bgcolor: '#FF7043', '&:hover': { bgcolor: '#F4511E' },
-                        boxShadow: 3, minWidth: 0, color: '#FFF'
-                    }}
-                >
-                    <ReceiptLongIcon />
-                </Button>
-            </Tooltip>
-
         </Box>
     );
 }

@@ -5,10 +5,12 @@ import {
     Divider, Stack, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Select, MenuItem, FormControl, InputLabel,
     CircularProgress, Snackbar, Alert, Pagination, Drawer, Dialog,
-    DialogTitle, DialogContent, DialogActions
+    DialogTitle, DialogContent, DialogActions, InputAdornment
 } from '@mui/material';
 import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Icons
 import AddIcon from '@mui/icons-material/Add';
@@ -25,6 +27,9 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import HikingIcon from '@mui/icons-material/Hiking';
 import ExploreIcon from '@mui/icons-material/Explore';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 
 export default function Guides() {
@@ -183,6 +188,48 @@ export default function Guides() {
         .filter(g => filterRegion === 'All' || g.region.toLowerCase() === filterRegion.toLowerCase())
         .filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()) || g.guideLicense.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    const handleExportPDF = () => {
+        try {
+            const doc = new jsPDF();
+            doc.setFontSize(18);
+            doc.setTextColor(0, 106, 59); // Ceylo Green
+            doc.text('Ceylon Tourism - Guide Registry', 14, 22);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+            
+            const tableColumn = ["License", "Name", "Specialization", "Region", "Eco-Score", "Status"];
+            const tableRows = [];
+
+            filteredGuides.forEach(guide => {
+                const guideData = [
+                    guide.guideLicense,
+                    guide.name,
+                    guide.specializations,
+                    guide.region,
+                    `${guide.ecoScore}/100`,
+                    guide.status
+                ];
+                tableRows.push(guideData);
+            });
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [0, 106, 59] }
+            });
+
+            doc.save('Ceylon_Tourism_Guide_Registry.pdf');
+            setSnackbar({ open: true, message: 'Registry exported as PDF successfully!', severity: 'success' });
+        } catch (err) {
+            console.error("Export failed:", err);
+            setSnackbar({ open: true, message: 'Failed to generate PDF.', severity: 'error' });
+        }
+    };
+
     const rowsPerPage = 6;
     const startIndex = (page - 1) * rowsPerPage;
     const paginatedGuides = filteredGuides.slice(startIndex, startIndex + rowsPerPage);
@@ -203,183 +250,127 @@ export default function Guides() {
     return (
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
             
-            {/* Header row */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Typography variant="h5" fontWeight={900} color="#006A3B">
-                        Ceylon Tourism
-                    </Typography>
-                    <Typography variant="body2" fontWeight={800} color="#777">
-                        Management / Guide Management
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <TextField 
-                        placeholder="Search guides, licenses, or regions..." 
-                        size="small"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ bgcolor: '#FFF', width: 280, '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-                    />
-                </Box>
-            </Box>
-
-            {/* Title description segment */}
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            {/* Header segment */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#181D19" sx={{ mb: 0.5 }}>
-                        Guide Management
+                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        CMS: Guide Registry
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
                         Supervise, verify, and monitor tour operators across the island.
                     </Typography>
                 </Box>
-
-                <Stack direction="row" spacing={3} alignItems="center">
-                    {/* Active guides card */}
-                    <Paper sx={{ p: 1.5, px: 2.5, borderRadius: 3, border: '1px solid #EBEFE8', bgcolor: '#F1F8F6', display: 'flex', alignItems: 'center', gap: 2, boxShadow: 'none' }}>
-                        <Avatar sx={{ bgcolor: '#006A3B', color: '#FFF', width: 32, height: 32 }}><CheckCircleIcon fontSize="small" /></Avatar>
-                        <Box>
-                            <Typography variant="caption" sx={{ display: 'block', opacity: 0.8, fontWeight: 700 }} color="text.secondary">Total Active Guides</Typography>
-                            <Typography variant="h6" fontWeight={950} color="#006A3B">{activeGuidesCount.toLocaleString()}</Typography>
-                        </Box>
-                    </Paper>
-
-                    {/* Onboard Guide CTA */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button 
+                        variant="outlined" 
+                        onClick={handleExportPDF}
+                        startIcon={<FileDownloadIcon />} 
+                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                    >
+                        Export Registry
+                    </Button>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => setOpenOnboardDialog(true)}
-                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 3, py: 1.5, px: 2.5, textTransform: 'none' }}
+                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, px: 3, textTransform: 'none' }}
                     >
                         Onboard New Guide
                     </Button>
-                </Stack>
+                </Box>
             </Box>
 
-            {/* Split layout: cards section & filters */}
+            {/* KPI Banners */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL ACTIVE GUIDES</Typography>
+                        <Typography variant="h4" fontWeight={950} color="#006A3B">{activeGuidesCount}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Verified Operators</Typography>
+                    </Paper>
+                </Grid>
                 
-                {/* Left Alert Card */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper 
-                        sx={{ 
-                            p: 2.5, 
-                            borderRadius: 4, 
-                            border: '1px solid #FFCDD2', 
-                            bgcolor: '#FFF5F5',
-                            position: 'relative',
-                            boxShadow: 'none',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            height: '100%'
-                        }}
-                    >
-                        <Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                                <Chip label="HIGH PRIORITY" size="small" sx={{ fontWeight: 900, fontSize: '0.65rem', bgcolor: '#BA1A1A', color: '#FFF' }} />
-                                <ErrorOutlineIcon sx={{ color: '#BA1A1A' }} />
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #FFCDD2', bgcolor: '#FFF5F5', boxShadow: 'none' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Box>
+                                <Typography variant="caption" fontWeight={900} color="#BA1A1A">NEW APPLICATIONS</Typography>
+                                <Typography variant="h4" fontWeight={950} color="#BA1A1A">{pendingReviewCount}</Typography>
+                                <Typography variant="caption" color="#BA1A1A" fontWeight={750}>Awaiting Verification</Typography>
                             </Box>
-                            <Typography variant="subtitle2" fontWeight={850} color="#BA1A1A" gutterBottom>
-                                New Applications
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
-                                {pendingReviewCount} guides are awaiting document verification.
-                            </Typography>
-                        </Box>
-                        <Button 
-                            variant="contained" 
-                            size="small"
-                            onClick={() => setFilterStatus('Pending')}
-                            sx={{ bgcolor: '#BA1A1A', '&:hover': { bgcolor: '#8C1111' }, fontWeight: 800, borderRadius: 2, textTransform: 'none', py: 1 }}
-                        >
-                            Review Pending
-                        </Button>
-                    </Paper>
-                </Grid>
-
-                {/* Right Filters Panel */}
-                <Grid size={{ xs: 12, md: 8 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <Grid container spacing={2} alignItems="center">
-                            
-                            <Grid size={{ xs: 4 }}>
-                                <FormControl size="small" fullWidth>
-                                    <InputLabel id="expertise-label">EXPERTISE</InputLabel>
-                                    <Select
-                                        labelId="expertise-label"
-                                        value={filterExpertise}
-                                        label="EXPERTISE"
-                                        onChange={(e) => setFilterExpertise(e.target.value)}
-                                        sx={{ borderRadius: 3 }}
-                                    >
-                                        <MenuItem value="All">All Specializations</MenuItem>
-                                        <MenuItem value="Wildlife">Wildlife</MenuItem>
-                                        <MenuItem value="Cultural">Cultural</MenuItem>
-                                        <MenuItem value="Heritage">Heritage</MenuItem>
-                                        <MenuItem value="Adventure">Adventure</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid size={{ xs: 4 }}>
-                                <FormControl size="small" fullWidth>
-                                    <InputLabel id="status-label">STATUS</InputLabel>
-                                    <Select
-                                        labelId="status-label"
-                                        value={filterStatus}
-                                        label="STATUS"
-                                        onChange={(e) => setFilterStatus(e.target.value)}
-                                        sx={{ borderRadius: 3 }}
-                                    >
-                                        <MenuItem value="All">All Statuses</MenuItem>
-                                        <MenuItem value="Verified">Verified</MenuItem>
-                                        <MenuItem value="Pending">Pending</MenuItem>
-                                        <MenuItem value="Under Review">Under Review</MenuItem>
-                                        <MenuItem value="Rejected">Rejected</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid size={{ xs: 4 }}>
-                                <FormControl size="small" fullWidth>
-                                    <InputLabel id="region-label">REGION</InputLabel>
-                                    <Select
-                                        labelId="region-label"
-                                        value={filterRegion}
-                                        label="REGION"
-                                        onChange={(e) => setFilterRegion(e.target.value)}
-                                        sx={{ borderRadius: 3 }}
-                                    >
-                                        <MenuItem value="All">All Regions</MenuItem>
-                                        <MenuItem value="Central Province">Central</MenuItem>
-                                        <MenuItem value="Southern Province">Southern</MenuItem>
-                                        <MenuItem value="North Central Province">North Central</MenuItem>
-                                        <MenuItem value="Western Province">Western</MenuItem>
-                                        <MenuItem value="Uva Province">Uva</MenuItem>
-                                        <MenuItem value="Northern Province">Northern</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                        </Grid>
-
-                        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                            <Button 
-                                variant="outlined" 
-                                size="small" 
-                                startIcon={<FileDownloadIcon />}
-                                sx={{ borderColor: '#BECABE', color: '#181D19', fontWeight: 800, borderRadius: 2, textTransform: 'none' }}
-                            >
-                                Export Registry
-                            </Button>
+                            <ErrorOutlineIcon sx={{ color: '#BA1A1A' }} />
                         </Box>
                     </Paper>
                 </Grid>
-
+                
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
+                         <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ fontStyle: 'italic' }}>
+                            "To ensure highest quality tours, prioritize processing pending applications within 48 hours. Ensure language proficiencies match required operational zones."
+                         </Typography>
+                    </Paper>
+                </Grid>
             </Grid>
+
+            {/* Premium Controls Toolbar */}
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
+                        <FilterListIcon sx={{ color: '#006A3B' }} />
+                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                    </Box>
+                    <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
+                    <TextField
+                        select
+                        size="small"
+                        value={filterRegion}
+                        onChange={(e) => setFilterRegion(e.target.value)}
+                        sx={{ width: 220, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment> }}
+                    >
+                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Regions</MenuItem>
+                        <MenuItem value="Central Province">Central</MenuItem>
+                        <MenuItem value="Southern Province">Southern</MenuItem>
+                        <MenuItem value="North Central Province">North Central</MenuItem>
+                        <MenuItem value="Western Province">Western</MenuItem>
+                        <MenuItem value="Uva Province">Uva</MenuItem>
+                        <MenuItem value="Northern Province">Northern</MenuItem>
+                    </TextField>
+                    <TextField
+                        select
+                        size="small"
+                        value={filterExpertise}
+                        onChange={(e) => setFilterExpertise(e.target.value)}
+                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    >
+                        <MenuItem value="All">All Expertise</MenuItem>
+                        <MenuItem value="Wildlife">Wildlife</MenuItem>
+                        <MenuItem value="Cultural">Cultural</MenuItem>
+                        <MenuItem value="Heritage">Heritage</MenuItem>
+                        <MenuItem value="Adventure">Adventure</MenuItem>
+                    </TextField>
+                    <TextField
+                        select
+                        size="small"
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    >
+                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Statuses</MenuItem>
+                        <MenuItem value="Verified" sx={{ fontWeight: 700, color: '#006A3B' }}>Verified</MenuItem>
+                        <MenuItem value="Pending" sx={{ fontWeight: 700, color: '#BA1A1A' }}>Pending</MenuItem>
+                        <MenuItem value="Rejected" sx={{ fontWeight: 700, color: '#777' }}>Rejected</MenuItem>
+                    </TextField>
+                </Box>
+                <TextField 
+                    placeholder="Search guides, licenses, or regions..." 
+                    size="small"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
+                />
+            </Paper>
 
             {/* Split layout workspace */}
             <Grid container spacing={3}>

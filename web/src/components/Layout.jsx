@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
     AppBar, Toolbar, Typography, Drawer, List, ListItem, 
     ListItemIcon, ListItemText, IconButton, Box, ListItemButton, 
-    Badge, Popover, Divider, Avatar, Stack, Chip, Button
+    Badge, Popover, Avatar, Stack, Chip, InputBase
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
@@ -14,18 +14,16 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import EventIcon from '@mui/icons-material/Event';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import MapIcon from '@mui/icons-material/Map';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LanguageIcon from '@mui/icons-material/Language';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CampaignIcon from '@mui/icons-material/Campaign';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import SearchIcon from '@mui/icons-material/Search';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -40,314 +38,172 @@ function Layout() {
     const [pendingItems, setPendingItems] = useState([]);
     const { logout, currentUser, userRole } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const { t, i18n } = useTranslation();
 
     useEffect(() => {
-        const pendingList = {
-            drivers: [],
-            guides: [],
-            vendors: [],
-            sos: []
-        };
-        
+        const pendingList = { vendors: [], sos: [] };
         const updatePending = () => {
             const items = [];
-            pendingList.sos.forEach(s => {
-                items.push({
-                    id: s.id,
-                    title: `ACTIVE SOS ALERT!`,
-                    subtitle: `Tourist: ${s.userName || 'Unknown'}`,
-                    type: 'sos',
-                    path: '/sos',
-                    isUrgent: true
-                });
-            });
-            pendingList.drivers.forEach(d => {
-                items.push({
-                    id: d.id,
-                    title: `Driver Pending: ${d.name || 'Unknown'}`,
-                    subtitle: d.email || 'No email',
-                    type: 'driver',
-                    path: '/users'
-                });
-            });
-            pendingList.guides.forEach(g => {
-                items.push({
-                    id: g.id,
-                    title: `Guide Pending: ${g.name || 'Unknown'}`,
-                    subtitle: `License: ${g.guideLicense || 'N/A'}`,
-                    type: 'guide',
-                    path: '/guides'
-                });
-            });
-            pendingList.vendors.forEach(v => {
-                items.push({
-                    id: v.id,
-                    title: `Vendor Pending: ${v.businessName || 'Unknown'}`,
-                    subtitle: `${v.businessType || 'Vendor'} • ${v.phone || ''}`,
-                    type: 'vendor',
-                    path: '/vendors'
-                });
-            });
+            pendingList.sos.forEach(s => items.push({ id: s.id, title: `ACTIVE SOS ALERT!`, subtitle: `Tourist: ${s.userName || 'Unknown'}`, type: 'sos', path: '/sos', isUrgent: true }));
+            pendingList.vendors.forEach(v => items.push({ id: v.id, title: `Vendor Pending: ${v.businessName || 'Unknown'}`, subtitle: `${v.businessType || 'Vendor'}`, type: 'vendor', path: '/vendors' }));
             setPendingItems(items);
         };
-
-        const qDrivers = query(collection(db, "users"), where("role", "==", "driver_pending"));
-        const unsubDrivers = onSnapshot(qDrivers, (snap) => {
-            pendingList.drivers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updatePending();
-        }, (err) => console.error("Drivers listener error:", err));
-
-        const qGuides = query(collection(db, "users"), where("role", "==", "guide_pending"));
-        const unsubGuides = onSnapshot(qGuides, (snap) => {
-            pendingList.guides = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updatePending();
-        }, (err) => console.error("Guides listener error:", err));
-
-        const qVendors = query(collection(db, "vendors"), where("status", "==", "pending_verification"));
-        const unsubVendors = onSnapshot(qVendors, (snap) => {
-            pendingList.vendors = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updatePending();
-        }, (err) => console.error("Vendors listener error:", err));
-
-        const qSos = query(collection(db, "sos_alerts"), where("status", "==", "active"));
-        const unsubSos = onSnapshot(qSos, (snap) => {
-            pendingList.sos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updatePending();
-        }, (err) => console.error("SOS listener error:", err));
-
-        return () => {
-            setTimeout(() => {
-                if (typeof unsubDrivers === 'function') unsubDrivers();
-            }, 0);
-            setTimeout(() => {
-                if (typeof unsubGuides === 'function') unsubGuides();
-            }, 10);
-            setTimeout(() => {
-                if (typeof unsubVendors === 'function') unsubVendors();
-            }, 20);
-            setTimeout(() => {
-                if (typeof unsubSos === 'function') unsubSos();
-            }, 30);
-        };
+        const qVendors = query(collection(db, "vendors"), where("verificationStatus", "==", "pending"));
+        const unsubVendors = onSnapshot(qVendors, (snap) => { pendingList.vendors = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); updatePending(); });
+        const qSOS = query(collection(db, "sos_alerts"), where("status", "==", "active"));
+        const unsubSOS = onSnapshot(qSOS, (snap) => { pendingList.sos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); updatePending(); });
+        return () => { unsubVendors(); unsubSOS(); };
     }, []);
 
-    const handleDrawerToggle = () => {
-        setMobileOpen(!mobileOpen);
-    };
+    const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+    const handleLangClick = (e) => setAnchorEl(e.currentTarget);
+    const handleLangClose = () => setAnchorEl(null);
+    const changeLanguage = (lang) => { i18n.changeLanguage(lang); handleLangClose(); };
+    const handleLogout = async () => { try { await logout(); window.location.href = '/login'; } catch (error) {} };
 
-    const handleLangClick = (event) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleLangClose = () => {
-        setAnchorEl(null);
-    };
-
-    const changeLanguage = (lng) => {
-        i18n.changeLanguage(lng);
-        handleLangClose();
-    };
-
+    // Flat list without groups as requested
     const menuItems = [
-        { text: t('dashboard'), icon: <DashboardIcon />, path: '/', allowedRoles: ['all'] },
-        { text: 'Guides', icon: <MapIcon />, path: '/guides', allowedRoles: ['guide_manager', 'manager'] },
-        { text: t('vendors'), icon: <StoreIcon />, path: '/vendors', allowedRoles: ['vendor_manager', 'manager'] },
-        { text: t('reports'), icon: <AssessmentIcon />, path: '/reports', allowedRoles: ['finance', 'vendor_manager', 'manager'] },
-        { text: t('sos_monitor'), icon: <WarningIcon />, path: '/sos', allowedRoles: ['support', 'manager'] },
-        { text: t('notifications'), icon: <NotificationsActiveIcon />, path: '/notifications', allowedRoles: ['support', 'content_manager', 'manager'] },
-        { text: t('system_health'), icon: <HealthAndSafetyIcon />, path: '/health', allowedRoles: ['manager'] },
-        { text: t('destinations'), icon: <TravelExploreIcon />, path: '/destinations', allowedRoles: ['content_manager', 'manager'] },
-        { text: t('cultural_events'), icon: <EventIcon />, path: '/events', allowedRoles: ['content_manager', 'manager'] },
-        { text: t('ai_center'), icon: <PsychologyIcon />, path: '/ai-center', allowedRoles: ['manager'] },
-        { text: 'Marketing & SEO', icon: <CampaignIcon />, path: '/marketing', allowedRoles: ['content_manager', 'manager'] },
-        { text: t('users'), icon: <PeopleIcon />, path: '/users', allowedRoles: ['support', 'manager'] },
-        { text: t('bookings'), icon: <BookOnlineIcon />, path: '/bookings', allowedRoles: ['finance', 'support', 'vendor_manager', 'manager'] },
+        { text: t('dashboard'), icon: <DashboardIcon sx={{ fontSize: 22 }}/>, path: '/' },
+        { text: t('bookings'), icon: <BookOnlineIcon sx={{ fontSize: 22 }}/>, path: '/bookings' },
+        { text: t('sos_monitor'), icon: <WarningIcon sx={{ fontSize: 22 }}/>, path: '/sos' },
+        { text: t('cultural_events'), icon: <EventIcon sx={{ fontSize: 22 }}/>, path: '/events' },
+        { text: t('destinations'), icon: <TravelExploreIcon sx={{ fontSize: 22 }}/>, path: '/destinations' },
+        { text: 'Guides', icon: <MapIcon sx={{ fontSize: 22 }}/>, path: '/guides' },
+        { text: t('vendors'), icon: <StoreIcon sx={{ fontSize: 22 }}/>, path: '/vendors' },
+        { text: t('users'), icon: <PeopleIcon sx={{ fontSize: 22 }}/>, path: '/users' },
+        { text: t('ai_center'), icon: <AutoAwesomeIcon sx={{ fontSize: 22 }}/>, path: '/ai-center' },
+        { text: t('reports'), icon: <AssessmentIcon sx={{ fontSize: 22 }}/>, path: '/reports' },
+        { text: t('system_health'), icon: <HealthAndSafetyIcon sx={{ fontSize: 22 }}/>, path: '/health' },
+        { text: 'Settings', icon: <SettingsIcon sx={{ fontSize: 22 }}/>, path: '/settings' },
     ];
 
-    const filteredMenu = menuItems.filter(item => 
-        item.allowedRoles.includes('all') || 
-        (userRole && item.allowedRoles.includes(userRole)) ||
-        userRole === 'admin' || userRole === 'super_admin'
-    );
-
-    const handleLogout = async () => {
-        try {
-            await logout();
-            // Force full page reload to ensure strict session/state clearing
-            window.location.href = '/login';
-        } catch (error) {
-            console.error("Failed to log out", error);
-        }
-    };
-
     const drawer = (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#F4F6F4', p: 1.5 }}>
-            
-            {/* Branding Logo */}
-            <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
-                <Typography variant="h5" sx={{ fontWeight: 950, color: '#006A3B', letterSpacing: 0.5 }}>
-                    Ceylo
-                </Typography>
-                <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.secondary', fontSize: '0.62rem', letterSpacing: '0.05em' }}>
-                    ECO-LUXURY ADMIN
-                </Typography>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#FFFFFF', borderRight: '1px solid #EBEFE8' }}>
+            {/* Attractive Brand Header */}
+            <Box sx={{ px: 3, py: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ width: 42, height: 42, borderRadius: '12px', background: 'linear-gradient(135deg, #006A3B 0%, #004A29 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0, 106, 59, 0.3)' }}>
+                    <Typography variant="h5" fontWeight={900} color="#FFF">C</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#006A3B', letterSpacing: '-0.5px', lineHeight: 1 }}>CEYLO</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#5C6E64', fontSize: '0.7rem', letterSpacing: '0.05em' }}>ADMIN PORTAL</Typography>
+                </Box>
             </Box>
 
-            {/* Menu Items List */}
-            <List sx={{ px: 0, flexGrow: 1, overflowY: 'auto', pr: 0.5, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#CCD4CD', borderRadius: 2 } }}>
-                {filteredMenu.map((item) => (
-                    <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-                        <ListItemButton
-                            component={NavLink}
-                            to={item.path}
-                            sx={{
-                                borderRadius: '10px',
-                                py: 1,
-                                px: 1.5,
-                                color: '#555',
-                                '&.active': {
-                                    bgcolor: '#E8F5E9',
-                                    color: '#006A3B',
-                                    '& .MuiListItemIcon-root': { color: '#006A3B' }
-                                },
-                                '&:hover': {
-                                    bgcolor: '#EBEFE8'
-                                }
-                            }}
-                        >
-                            <ListItemIcon sx={{ minWidth: 32, color: '#555' }}>{item.icon}</ListItemIcon>
-                            <ListItemText 
-                                primary={item.text} 
-                                primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 800 }} 
-                            />
-                        </ListItemButton>
-                    </ListItem>
-                ))}
-            </List>
+            {/* Menu List */}
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 2, '&::-webkit-scrollbar': { display: 'none' } }}>
+                <List disablePadding>
+                    {menuItems.map((item) => {
+                        const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                        return (
+                            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                                <ListItemButton
+                                    component={NavLink}
+                                    to={item.path}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        py: 1.2,
+                                        px: 2,
+                                        color: isActive ? '#006A3B' : '#5C6E64',
+                                        bgcolor: isActive ? '#E8F5E9' : 'transparent',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: isActive ? '#E8F5E9' : '#F4F7F6',
+                                            color: '#006A3B',
+                                            transform: 'translateX(4px)'
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 36, color: isActive ? '#006A3B' : '#8B9B92' }}>
+                                        {item.icon}
+                                    </ListItemIcon>
+                                    <ListItemText 
+                                        primary={item.text} 
+                                        primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: isActive ? 800 : 600 }} 
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
+                </List>
+            </Box>
 
-            {/* Bottom Actions and Profile */}
-            <Box sx={{ pt: 1.5, borderTop: '1px solid #E2E8E2' }}>
-                
-                {/* Settings menu item */}
-                <ListItem disablePadding sx={{ mb: 1.5 }}>
-                    <ListItemButton 
-                        onClick={() => navigate('/settings')}
-                        sx={{ borderRadius: '10px', py: 0.8, color: '#555', '&:hover': { bgcolor: '#EBEFE8' } }}
-                    >
-                        <ListItemIcon sx={{ minWidth: 32, color: '#555' }}><SettingsIcon fontSize="small" /></ListItemIcon>
-                        <ListItemText primary="Settings" primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 800 }} />
-                    </ListItemButton>
-                </ListItem>
-
-                {/* Support Portal CTA Card */}
-                <Button 
-                    fullWidth 
-                    variant="contained" 
-                    endIcon={<ArrowForwardIcon />}
-                    onClick={() => window.open('https://support.ceylo.com', '_blank')}
-                    sx={{ 
-                        bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' },
-                        borderRadius: 3, textTransform: 'none', fontWeight: 850, py: 1.2, mb: 2, fontSize: '0.85rem'
-                    }}
-                >
-                    Support Portal
-                </Button>
-
-                {/* User Profile Info section */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, py: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 36, height: 36, bgcolor: '#006A3B', color: '#FFF', fontWeight: 850, fontSize: '0.85rem' }}>
-                            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : (currentUser?.email ? currentUser.email.substring(0, 2).toUpperCase() : 'U')}
+            {/* Profile Footer */}
+            <Box sx={{ p: 2, m: 2, bgcolor: '#F4F7F6', borderRadius: 3, border: '1px solid #EBEFE8' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar sx={{ width: 38, height: 38, bgcolor: '#006A3B', color: '#FFF', fontWeight: 700 }}>
+                            {currentUser?.displayName ? currentUser.displayName.substring(0, 2).toUpperCase() : (currentUser?.email ? currentUser.email.substring(0, 2).toUpperCase() : 'AD')}
                         </Avatar>
                         <Box>
-                            <Typography variant="body2" fontWeight={850} color="#181D19">{currentUser?.displayName || currentUser?.email || 'User'}</Typography>
-                            <Typography variant="caption" color="text.secondary" fontWeight={750} sx={{ display: 'block', fontSize: '0.68rem', mt: -0.2 }}>{userRole ? userRole.replace('_', ' ').toUpperCase() : 'USER'}</Typography>
+                            <Typography variant="body2" fontWeight={800} color="#181D19" sx={{ lineHeight: 1.2 }}>
+                                {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Administrator'}
+                            </Typography>
+                            <Typography variant="caption" color="#5C6E64" fontWeight={600}>
+                                {userRole ? userRole.replace('_', ' ').toUpperCase() : 'ADMIN'}
+                            </Typography>
                         </Box>
                     </Box>
-                    <IconButton onClick={handleLogout} sx={{ color: '#555', p: 0.5 }}>
-                        <LogoutIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <IconButton component={NavLink} to="/settings" sx={{ color: '#5C6E64', '&:hover': { color: '#006A3B', bgcolor: '#E8F5E9' } }}>
+                            <SettingsIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                        <IconButton onClick={handleLogout} sx={{ color: '#5C6E64', '&:hover': { color: '#D32F2F', bgcolor: '#FFEBEE' } }}>
+                            <LogoutIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                    </Box>
                 </Box>
-
             </Box>
         </Box>
     );
 
     return (
-        <Box sx={{ display: 'flex' }}>
-            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#00695c' }}>
-                <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        edge="start"
-                        onClick={handleDrawerToggle}
-                        sx={{ mr: 2, display: { sm: 'none' } }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        CEYLO Admin Portal
-                    </Typography>
+        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F4F7F6' }}>
+            <AppBar position="fixed" elevation={0} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #EBEFE8', width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}>
+                <Toolbar sx={{ minHeight: '72px !important', px: { xs: 2, sm: 4 } }}>
+                    <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' }, color: '#006A3B' }}><MenuIcon /></IconButton>
                     
-                    <IconButton 
-                        color="inherit" 
-                        onClick={(e) => setNotifAnchorEl(e.currentTarget)} 
-                        sx={{ mr: 2 }}
-                        id="header-notif-bell"
-                    >
-                        <Badge badgeContent={pendingItems.length} color="error">
-                            <NotificationsIcon />
-                        </Badge>
-                    </IconButton>
-                    <Popover
-                        open={Boolean(notifAnchorEl)}
-                        anchorEl={notifAnchorEl}
-                        onClose={() => setNotifAnchorEl(null)}
-                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                        PaperProps={{
-                            sx: { width: 320, maxHeight: 400, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }
-                        }}
-                    >
-                        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="subtitle1" fontWeight={800}>Tasks & Alerts</Typography>
-                            <Chip label={pendingItems.length} color="primary" size="small" sx={{ fontWeight: 700 }} />
+                    {/* Attractive Top Search Bar */}
+                    <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ 
+                            display: { xs: 'none', md: 'flex' }, alignItems: 'center', 
+                            bgcolor: '#F4F7F6', borderRadius: '12px', px: 2, py: 1, width: 400,
+                            border: '1px solid #EBEFE8', transition: 'all 0.3s',
+                            '&:hover': { borderColor: '#006A3B', bgcolor: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,106,59,0.05)' }
+                        }}>
+                            <SearchIcon sx={{ color: '#006A3B', fontSize: 22, mr: 1.5 }} />
+                            <InputBase placeholder="Search anything in CEYLO..." sx={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, color: '#181D19' }} />
                         </Box>
-                        <Divider />
+                    </Box>
+                    
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <IconButton onClick={handleLangClick} sx={{ color: '#006A3B', bgcolor: '#E8F5E9', '&:hover': { bgcolor: '#C8E6C9' } }}>
+                            <LanguageIcon sx={{ fontSize: 22 }} />
+                        </IconButton>
+                        <IconButton onClick={(e) => setNotifAnchorEl(e.currentTarget)} sx={{ color: '#006A3B', bgcolor: '#E8F5E9', '&:hover': { bgcolor: '#C8E6C9' } }}>
+                            <Badge badgeContent={pendingItems.length} color="error" sx={{ '& .MuiBadge-badge': { height: 20, minWidth: 20, fontWeight: 800, border: '2px solid #FFF' } }}>
+                                <NotificationsIcon sx={{ fontSize: 22 }} />
+                            </Badge>
+                        </IconButton>
+                    </Stack>
+
+                    {/* Notification Popover */}
+                    <Popover open={Boolean(notifAnchorEl)} anchorEl={notifAnchorEl} onClose={() => setNotifAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} PaperProps={{ sx: { width: 360, mt: 1.5, borderRadius: 3, boxShadow: '0 12px 24px rgba(0,106,59,0.1)' } }}>
+                        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EBEFE8', bgcolor: '#F8F9FA' }}>
+                            <Typography variant="subtitle1" fontWeight={800} color="#006A3B">Alerts & Notifications</Typography>
+                            <Chip label={`${pendingItems.length} New`} size="small" sx={{ height: 24, fontSize: '0.75rem', fontWeight: 800, bgcolor: '#006A3B', color: '#FFF' }} />
+                        </Box>
                         <List sx={{ p: 0 }}>
                             {pendingItems.length === 0 ? (
-                                <Box sx={{ p: 3, textAlign: 'center' }}>
-                                    <Typography variant="body2" color="text.secondary">All clear! No action items.</Typography>
-                                </Box>
+                                <Box sx={{ p: 4, textAlign: 'center' }}><Typography variant="body2" color="text.secondary" fontWeight={600}>You're all caught up!</Typography></Box>
                             ) : (
                                 pendingItems.map((item) => (
-                                    <ListItem 
-                                        key={item.id} 
-                                        disablePadding 
-                                        divider
-                                    >
-                                        <ListItemButton 
-                                            onClick={() => {
-                                                setNotifAnchorEl(null);
-                                                navigate(item.path);
-                                            }}
-                                            sx={{
-                                                bgcolor: item.isUrgent ? '#ffebee' : 'inherit',
-                                                '&:hover': { bgcolor: item.isUrgent ? '#ffcdd2' : '#f5f5f5' }
-                                            }}
-                                        >
-                                            <Stack spacing={0.5} sx={{ width: '100%' }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    {item.isUrgent && <ErrorOutlineIcon color="error" sx={{ fontSize: 18 }} />}
-                                                    <Typography variant="body2" fontWeight={700} color={item.isUrgent ? 'error.main' : 'text.primary'}>
-                                                        {item.title}
-                                                    </Typography>
-                                                </Box>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {item.subtitle}
-                                                </Typography>
+                                    <ListItem key={item.id} disablePadding divider sx={{ borderColor: '#EBEFE8' }}>
+                                        <ListItemButton onClick={() => { setNotifAnchorEl(null); navigate(item.path); }} sx={{ py: 2, '&:hover': { bgcolor: '#F4F7F6' } }}>
+                                            <Stack spacing={0.5}>
+                                                <Typography variant="body2" fontWeight={800} color={item.isUrgent ? '#D32F2F' : '#181D19'}>{item.title}</Typography>
+                                                <Typography variant="caption" color="#5C6E64" fontWeight={600}>{item.subtitle}</Typography>
                                             </Stack>
                                         </ListItemButton>
                                     </ListItem>
@@ -355,69 +211,20 @@ function Layout() {
                             )}
                         </List>
                     </Popover>
-
-                    <IconButton color="inherit" onClick={handleLangClick} sx={{ mr: 2 }} id="header-lang-btn">
-                        <LanguageIcon />
-                        <Typography variant="body2" sx={{ ml: 1, fontWeight: 700 }}>{i18n.language.toUpperCase()}</Typography>
-                    </IconButton>
-                    <Popover
-                        open={Boolean(anchorEl)}
-                        anchorEl={anchorEl}
-                        onClose={handleLangClose}
-                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                    >
-                        <List sx={{ p: 1 }}>
-                            <ListItem disablePadding>
-                                <ListItemButton onClick={() => changeLanguage('en')} sx={{ borderRadius: 1 }}>
-                                    <ListItemText primary="English (EN)" />
-                                </ListItemButton>
-                            </ListItem>
-                            <ListItem disablePadding>
-                                <ListItemButton onClick={() => changeLanguage('si')} sx={{ borderRadius: 1 }}>
-                                    <ListItemText primary="සිංහල (SI)" />
-                                </ListItemButton>
-                            </ListItem>
-                        </List>
-                    </Popover>
                 </Toolbar>
             </AppBar>
-            <Box
-                component="nav"
-                sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-                aria-label="mailbox folders"
-            >
-                {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
-                <Drawer
 
-                    variant="temporary"
-                    open={mobileOpen}
-                    onClose={handleDrawerToggle}
-                    ModalProps={{
-                        keepMounted: true, // Better open performance on mobile.
-                    }}
-                    sx={{
-                        display: { xs: 'block', sm: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-                    }}
-                >
+            <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+                <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: 'none' } }}>
                     {drawer}
                 </Drawer>
-                <Drawer
-                    variant="permanent"
-                    sx={{
-                        display: { xs: 'none', sm: 'block' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-                    }}
-                    open
-                >
+                <Drawer variant="permanent" sx={{ display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: 'none', boxShadow: '0px 0px 40px rgba(0, 106, 59, 0.03)' } }} open>
                     {drawer}
                 </Drawer>
             </Box>
-            <Box
-                component="main"
-                sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
-            >
-                <Toolbar />
+            
+            {/* REMOVED maxWidth: 1600 and mx: 'auto' to ensure the content stretches fully, fixing the left/right whitespace issue */}
+            <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 }, width: { sm: `calc(100% - ${drawerWidth}px)` }, pt: '96px !important' }}>
                 <Outlet />
             </Box>
         </Box>
