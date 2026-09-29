@@ -1,6 +1,7 @@
-{
+﻿{
   "cli": {
-    "version": ">= 14.1.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -14,40 +15,13 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyACNB5L3HjIjZIwuYA4T-f6cUFt-G4NOk8",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ceylo-app.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ceylo-app",
-        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "ceylo-app.firebasestorage.app",
-        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "8889588910",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:8889588910:android:ce17460e21616d075ea13f",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8",
-        "EXPO_PUBLIC_GEMINI_API_KEY": "YOUR_GEMINI_API_KEY",
-        "EXPO_PUBLIC_OPENAI_API_KEY": "YOUR_OPENAI_API_KEY",
-        "EXPO_PUBLIC_GITHUB_TOKEN": "YOUR_GITHUB_TOKEN",
-        "EXPO_PUBLIC_GROQ_API_KEY": "YOUR_GROQ_API_KEY"
       }
     },
-    "preview-debug": {
-      "distribution": "internal",
+    "production": {
+      "distribution": "store",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
-      },
-      "env": {
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyACNB5L3HjIjZIwuYA4T-f6cUFt-G4NOk8",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ceylo-app.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ceylo-app",
-        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "ceylo-app.firebasestorage.app",
-        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "8889588910",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:8889588910:android:ce17460e21616d075ea13f",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
+        "buildType": "app-bundle"
       }
-    },
-    "production": {}
-  },
-  "submit": {
-    "production": {}
+    }
   }
 }

@@ -28,7 +28,17 @@
         "googleMaps": {
           "apiKey": "AIzaSyBP2yJgqV6r8X3UowvOiz8gOgkye5Y93i8"
         }
-      }
+      },
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,12 +55,16 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-location",
+      "expo-camera",
+      "expo-image-picker"
     ],
     "extra": {
       "eas": {
-        "projectId": "eb3f0379-5016-4e76-9265-0c220b522aa0"
+        "projectId": "f1b074de-0edc-4bba-999f-280f0b8e6998"
       }
-    }
+    },
+    "owner": "alen1228"
   }
 }
