@@ -136,7 +136,15 @@ export default function VendorServiceListingScreen() {
             <View style={styles.serviceCard}>
               <View style={styles.serviceCardTop}>
                 {item.photoUrl
-                  ? <Image source={{ uri:item.photoUrl }} style={styles.serviceThumb} />
+                  ? <Image 
+                    source={
+                      item.photoUrl && item.photoUrl.startsWith('http') 
+                        ? { uri: item.photoUrl } 
+                        : require('../../assets/icon.png')
+                    }
+                    style={styles.serviceThumb}
+                    onError={(e) => console.log('Service image error:', e.nativeEvent.error)}
+                  />
                   : <View style={[styles.serviceThumb, { backgroundColor:SURFACE_C, alignItems:'center', justifyContent:'center' }]}>
                       <Ionicons name="image-outline" size={28} color={OUTLINE_V} />
                     </View>}

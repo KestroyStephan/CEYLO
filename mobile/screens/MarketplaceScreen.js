@@ -130,7 +130,15 @@ export default function MarketplaceScreen({ navigation }) {
               return (
                 <Surface key={item.id || index} style={styles.hcCard} elevation={2}>
                   <View style={styles.hcImageContainer}>
-                    <Image source={{ uri: imgUri }} style={styles.hcImage} />
+                    <Image 
+                      source={
+                        imgUri && imgUri.startsWith('http') 
+                          ? { uri: imgUri } 
+                          : require('../assets/icon.png')
+                      }
+                      style={styles.hcImage}
+                      onError={(e) => console.log('Marketplace image error:', e.nativeEvent.error)}
+                    />
                     {item.isEcoFriendly && (
                       <View style={styles.ecoBadge}>
                         <MaterialCommunityIcons name="leaf" size={12} color="#FFF" />

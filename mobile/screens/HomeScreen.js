@@ -534,7 +534,15 @@ export default function HomeScreen({ navigation }) {
                       navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: item.guideName });
                     }}
                   >
-                    <Image source={{ uri: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }} style={styles.chatAvatar} />
+                    <Image 
+                      source={
+                        'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' && 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100'.startsWith('http') 
+                          ? { uri: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }
+                          : require('../assets/icon.png')
+                      }
+                      style={styles.chatAvatar}
+                      onError={(e) => console.log('Image error:', e.nativeEvent.error)}
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.chatName}>{item.guideName}</Text>
                       <Text style={styles.chatDesc} numberOfLines={1}>Tap to view messages</Text>

@@ -1,6 +1,6 @@
 # CEYLO — Project Structure & Codebase Reference
 
-> **AI Context Document** — Last updated 2026-06-30. This file is the authoritative reference for AI-assisted development on the CEYLO platform. Read this before making changes or adding new features.
+> **AI Context Document** — Last updated 2026-09-26. This file is the authoritative reference for AI-assisted development on the CEYLO platform. Read this before making changes or adding new features.
 
 ---
 
@@ -161,12 +161,19 @@
 |
 |-- ai_models/                          # Trained ML model artifacts
 |   |-- eco_scorer_model.pkl            # Trained RandomForest eco scorer (1.9MB) — READY
+|   |-- tests/                          # Tests for model logic
 |   |-- training/
 |   |   |-- train_eco_scorer.py         # Train RandomForest on destinations.csv → eco_scorer_model.pkl
 |   |   |-- train_recommender.py        # Train Two-Tower NCF on interactions.csv → recommender_model.keras
 |   |   `-- train_demand_forecast.py    # Train LSTM on time_series_demand.csv → demand_lstm_model.keras
 |   |-- recommender_model.keras         # [NOT YET GENERATED — run train_recommender.py]
 |   `-- demand_lstm_model.keras         # [NOT YET GENERATED — run train_demand_forecast.py]
+|
+|-- backend/                            # Node.js backend API
+|   |-- datasets/                       # CSV datasets
+|   |-- tests/                          # Server tests
+|   |-- server.js                       # Express API entry
+|   `-- package.json                    # Backend dependencies
 |
 |-- mobile/                             # React Native / Expo mobile app
 |   |-- App.js                          # Root: auth state, role-based navigation, session management, onboarding check
@@ -200,6 +207,19 @@
 |   |
 |   |-- screens/
 |   |   |-- ChatbotScreen.js            # AI concierge: waterfall API calls (Groq→Gemini→OpenAI), HUD, TTS, itinerary save
+|   |   |-- ConfirmBookingScreen.js     # Confirm transport/guide bookings
+|   |   |-- DriverDashboard.js          # Unified Driver Dashboard
+|   |   |-- EditProfileScreen.js        # User profile editor
+|   |   |-- GuideAvailabilityScreen.js  # Guide schedule manager
+|   |   |-- GuideBookingsScreen.js      # Guide bookings list
+|   |   |-- GuideDiscoverScreen.js      # Guide finding screen
+|   |   |-- GuideProfileScreen.js       # Guide profile
+|   |   |-- GuideServicesScreen.js      # Guide service configuration
+|   |   |-- GuidesListScreen.js         # Guides directory
+|   |   |-- MapScreen.js                # Unified Map Screen
+|   |   |-- MessageScreen.js            # Individual chat messages
+|   |   |-- TransportScreen.js          # Unified Transport Screen
+|   |   |-- WaitingApprovalScreen.js    # Generic waiting for admin approval
 |   |   |-- CulturalEventsScreen.js     # [NEW] Live Firestore events list: type filter chips, list/calendar view
 |   |   |-- DestinationDetailScreen.js  # Place detail: AI-powered insights (history, tips, nearby) via Groq, tabbed UI
 |   |   |-- DriverDashboard.native.js   # [SPLIT] Native: live map, real-time bookings, online toggle, eco optimizer
@@ -277,7 +297,8 @@
             |-- Destinations.jsx        # CRUD for destinations collection
             |-- Login.jsx               # Web admin login (MUI form)
             |-- Notifications.jsx       # Push notification management UI
-            |-- Placeholders.jsx        # Placeholder components for unbuilt pages
+            |-- AICenter.jsx            # AI configurations and stats
+            |-- Marketing.jsx           # Marketing dashboard
             |-- ProviderRegister.jsx    # Public provider self-registration (3-step MUI Stepper)
             |-- Reports.jsx             # Report generation with jsPDF
             |-- SOSAlerts.jsx           # SOS alert list view
@@ -1014,6 +1035,10 @@ VITE_FIREBASE_MEASUREMENT_ID=
 ---
 
 ## 17. Changelog from Previous STRUCTURE.md Version
+
+| Change | Details |
+|---|---|
+| Major pull update (2026-09-26) | Added `backend` Node.js express API, Unified `.native`/`.web` screen files to single `.js` for Map, Transport, DriverDashboard. Added `Guide` specific screens (`GuideBookingsScreen`, `GuideAvailabilityScreen` etc.). Added `AICenter` and `Marketing` to web. Added `ConfirmBookingScreen`, `MessageScreen`, `WaitingApprovalScreen` to mobile. |
 
 | Change | Details |
 |---|---|

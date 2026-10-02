@@ -7,7 +7,7 @@ import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../componen
 import { Text, Surface, Button, Avatar, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { doc, addDoc, collection, onSnapshot, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, addDoc, collection, onSnapshot, getDoc, serverTimestamp, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { calculateDistance, estimateFare, estimateAllFares } from '../utils/fareCalculator';
 
@@ -43,6 +43,7 @@ export default function TransportScreen({ route, navigation }) {
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [canTouristCancel, setCanTouristCancel] = useState(true);
+  const [routeInfo, setRouteInfo] = useState(null);
 
   const mapRef = useRef(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -292,6 +293,115 @@ export default function TransportScreen({ route, navigation }) {
     }
   };
 
+  // --- NEW SEARCH IMPLEMENTATION (SECTION 1) ---
+  const searchDestination = async (text) => {
+    setDropAddress(text);
+    
+    if (!text || text.length < 2) {
+      setDestinationSuggestions([]);
+      return;
+    }
+
+    try {
+      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${apiKey}&components=country:lk&language=en&types=geocode|establishment`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      console.log('=== TRANSPORT SEARCH DEBUG ===');
+      console.log('Query:', text);
+      console.log('URL:', url);
+      console.log('Response status:', data.status);
+      console.log('Error message:', data.error_message || 'none');
+      console.log('Results count:', data.predictions?.length || 0);
+      console.log('==============================');
+      
+      if (data.status === 'OK' && data.predictions?.length > 0) {
+        setDestinationSuggestions(data.predictions);
+      } else if (data.status === 'ZERO_RESULTS') {
+        setDestinationSuggestions([]);
+      } else {
+        console.log('Places API status:', data.status);
+        console.log('Error message:', data.error_message);
+        setDestinationSuggestions([]);
+      }
+    } catch (error) {
+      console.error('Destination search error:', error);
+      setDestinationSuggestions([]);
+    }
+  };
+
+  const selectDestination = async (placeId, description) => {
+    setDropAddress(description);
+    setDestinationSuggestions([]);
+    
+    try {
+      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=${apiKey}`;
+      
+      const response = await fetch(detailsUrl);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.result?.geometry?.location) {
+        const { lat, lng } = data.result.geometry.location;
+        const coords = { latitude: lat, longitude: lng };
+        
+        setDropoffCoords(coords);
+        
+        if (pickupCoords) {
+          await calculateRoute(pickupCoords, coords);
+        }
+        
+        if (mapRef?.current) {
+          mapRef.current.fitToCoordinates(
+            [pickupCoords, coords],
+            {
+              edgePadding: { top: 80, right: 40, bottom: 200, left: 40 },
+              animated: true,
+            }
+          );
+        }
+      } else {
+        console.log('Place details error:', data.status);
+        Alert.alert('Location Error', 'Could not get coordinates for this location.', [{ text: 'OK' }]);
+      }
+    } catch (error) {
+      console.error('Place details error:', error);
+      Alert.alert('Error', 'Could not load location details.');
+    }
+  };
+
+  const calculateRoute = async (origin, destination) => {
+    try {
+      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${apiKey}&mode=driving&region=lk`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.routes?.length > 0) {
+        const leg = data.routes[0].legs[0];
+        setRouteInfo({
+          distance: leg.distance.text,
+          duration: leg.duration.text,
+          distanceValue: leg.distance.value,
+        });
+        
+        const distanceKm = leg.distance.value / 1000;
+        if (typeof estimateAllFares === 'function') {
+          const fares = estimateAllFares(distanceKm);
+          setEstimatedFares(fares);
+        }
+      } else {
+        console.log('Directions API status:', data.status);
+      }
+    } catch (error) {
+      console.error('Route calculation error:', error);
+    }
+  };
+  // --- END NEW SEARCH IMPLEMENTATION ---
+
   const calculateFares = (pCoords, dCoords) => {
     const distance = calculateDistance(
       pCoords.latitude,
@@ -431,6 +541,88 @@ export default function TransportScreen({ route, navigation }) {
     );
   };
 
+  const handleFindRide = async () => {
+    try {
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 10000 });
+      const currentLat = loc.coords.latitude;
+      const currentLng = loc.coords.longitude;
+      setPickupCoords({ latitude: currentLat, longitude: currentLng });
+      const pickupStr = `${currentLat},${currentLng}`;
+
+      let destLat, destLng;
+      if (dropoffCoords) {
+        destLat = dropoffCoords.latitude;
+        destLng = dropoffCoords.longitude;
+      } else {
+        const response = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(dropAddress)}&key=${GOOGLE_API_KEY}`);
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          destLat = data.results[0].geometry.location.lat;
+          destLng = data.results[0].geometry.location.lng;
+          setDropoffCoords({ latitude: destLat, longitude: destLng });
+        } else {
+          Alert.alert('Error', 'Could not find destination. Please try another address.');
+          return;
+        }
+      }
+
+      const dirRes = await fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${currentLat},${currentLng}&destination=${destLat},${destLng}&key=${GOOGLE_API_KEY}`);
+      const dirData = await dirRes.json();
+      let distanceKm = 0;
+      let durationMins = 0;
+      if (dirData.routes && dirData.routes.length > 0) {
+        const leg = dirData.routes[0].legs[0];
+        distanceKm = leg.distance.value / 1000;
+        durationMins = Math.ceil(leg.duration.value / 60);
+        setRouteInfo({ distance: distanceKm.toFixed(1), duration: durationMins });
+      }
+
+      const price = Math.round((150 + distanceKm * 80) / 50) * 50;
+      const bookingRef = await addDoc(collection(db, 'bookings'), {
+        userId: auth.currentUser.uid,
+        userName: auth.currentUser.displayName || auth.currentUser.email || 'Tourist',
+        pickup: pickupStr,
+        dropoff: dropAddress,
+        pickupLat: currentLat,
+        pickupLng: currentLng,
+        dropoffLat: destLat,
+        dropoffLng: destLng,
+        status: 'pending',
+        price: price,
+        createdAt: serverTimestamp(),
+        driverId: null,
+      });
+      setActiveBookingId(bookingRef.id);
+      
+      const q = query(collection(db, 'users'), where('role', '==', 'driver'), where('isOnline', '==', true));
+      const querySnapshot = await getDocs(q);
+      const messages = [];
+      querySnapshot.forEach((docSnap) => {
+        const token = docSnap.data().expoPushToken;
+        if (token) {
+          messages.push({
+            to: token,
+            sound: 'default',
+            title: 'New Ride Request',
+            body: `Pickup nearby to ${dropAddress}`,
+          });
+        }
+      });
+      if (messages.length > 0) {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(messages),
+        });
+      }
+
+      setBookingStep('searching');
+    } catch (error) {
+      console.error('Find Ride Error:', error);
+      Alert.alert('Error', 'Failed to request ride.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.mainHeading}>Let's Ride</Text>
@@ -447,17 +639,42 @@ export default function TransportScreen({ route, navigation }) {
         }}
         showsUserLocation
       >
-        {pickupCoords && <Marker coordinate={pickupCoords} title="Pickup" pinColor="#006A3B" />}
-        {dropoffCoords && <Marker coordinate={dropoffCoords} title="Dropoff" pinColor="#BA1A1A" />}
-
         {pickupCoords && dropoffCoords && (
           <MapViewDirections
             origin={pickupCoords}
             destination={dropoffCoords}
-            apikey={GOOGLE_API_KEY}
+            apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
             strokeWidth={4}
             strokeColor="#006A3B"
+            onError={(errorMessage) => {
+              console.log('Directions error:', errorMessage);
+            }}
+            onReady={(result) => {
+              setRouteInfo({
+                distance: `${result.distance.toFixed(1)} km`,
+                duration: `${Math.ceil(result.duration)} mins`,
+                distanceValue: result.distance * 1000,
+              });
+            }}
           />
+        )}
+
+        {/* Pickup marker */}
+        {pickupCoords && (
+          <Marker coordinate={pickupCoords} title="Pickup">
+            <View style={styles.pickupMarker}>
+              <Ionicons name="ellipse" size={12} color="#006A3B" />
+            </View>
+          </Marker>
+        )}
+
+        {/* Destination marker */}
+        {dropoffCoords && (
+          <Marker coordinate={dropoffCoords} title="Destination">
+            <View style={styles.destinationMarker}>
+              <Ionicons name="location" size={20} color="#BA1A1A" />
+            </View>
+          </Marker>
         )}
 
         {/* Driver live tracking marker */}
@@ -514,32 +731,67 @@ export default function TransportScreen({ route, navigation }) {
                 placeholderTextColor="#6F7A70"
                 value={dropAddress}
                 onFocus={() => setFocusedField('drop')}
-                onChangeText={(text) => {
-                  setFocusedField('drop');
-                  searchPlaces(text, 'drop');
-                }}
+                onChangeText={searchDestination}
               />
               {searchingPlaces && <ActivityIndicator size="small" color="#006A3B" style={{ marginRight: 8 }} />}
             </View>
 
             {/* Auto Suggestions List */}
             {destinationSuggestions.length > 0 && (
-              <View style={styles.suggestionsBox}>
-                <FlatList
-                  data={destinationSuggestions}
-                  keyExtractor={(item) => item.place_id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.suggestionItem}
-                      onPress={() => selectPlace(item.place_id, item.description, focusedField)}
-                    >
-                      <Ionicons name="map-outline" size={18} color="#6F7A70" />
-                      <Text style={styles.suggestionText} numberOfLines={1}>{item.description}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
+              <View style={styles.suggestionsContainer}>
+                {destinationSuggestions.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion.place_id}
+                    style={styles.suggestionItem}
+                    onPress={() => selectDestination(
+                      suggestion.place_id,
+                      suggestion.description
+                    )}
+                  >
+                    <Ionicons 
+                      name="location-outline" 
+                      size={16} 
+                      color="#006A3B" 
+                    />
+                    <View style={styles.suggestionTextContainer}>
+                      <Text style={styles.suggestionMain} numberOfLines={1}>
+                        {suggestion.structured_formatting?.main_text || 
+                         suggestion.description}
+                      </Text>
+                      <Text style={styles.suggestionSecondary} numberOfLines={1}>
+                        {suggestion.structured_formatting?.secondary_text || ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
+
+            {/* ADD route info card when route is calculated */}
+            {routeInfo && (
+              <View style={styles.routeInfoCard}>
+                <View style={styles.routeInfoItem}>
+                  <Ionicons name="navigate-outline" size={18} color="#006A3B" />
+                  <Text style={styles.routeInfoText}>{routeInfo.distance}</Text>
+                </View>
+                <View style={styles.routeInfoDivider} />
+                <View style={styles.routeInfoItem}>
+                  <Ionicons name="time-outline" size={18} color="#006A6A" />
+                  <Text style={styles.routeInfoText}>{routeInfo.duration}</Text>
+                </View>
+              </View>
+            )}
+
+            <Button
+              mode="contained"
+              buttonColor="#00695C"
+              disabled={!pickupCoords || !dropAddress}
+              style={{ marginTop: 15, borderRadius: 12, height: 50, justifyContent: 'center' }}
+              labelStyle={{ fontSize: 16, fontFamily: 'Outfit-Bold' }}
+              onPress={handleFindRide}
+            >
+              Find Ride
+            </Button>
           </View>
         )}
 
@@ -566,6 +818,12 @@ export default function TransportScreen({ route, navigation }) {
 
         {bookingStep === 'searching' && (
           <View style={styles.loadingArea}>
+            {routeInfo && (
+              <View style={{ backgroundColor: '#F8F9FA', padding: 15, borderRadius: 12, width: '100%', marginBottom: 10 }}>
+                <Text style={{ fontSize: 16, fontFamily: 'Outfit-Bold', color: '#181D19', marginBottom: 4 }}>{dropAddress}</Text>
+                <Text style={{ fontSize: 14, color: '#6F7A70' }}>{routeInfo.distance} km - {routeInfo.duration} mins</Text>
+              </View>
+            )}
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
               <View style={styles.pulseIndicator}>
                 <Ionicons name="radio" size={48} color="#006A3B" />
@@ -651,7 +909,8 @@ const styles = StyleSheet.create({
   mainHeading: {
     fontSize: 28, fontWeight: '800', color: '#181D19',
     fontFamily: 'Outfit-Bold',
-    paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12,
+    textAlign: 'center',
+    paddingTop: 60, paddingBottom: 12,
   },
   map: { flex: 1 },
   backBtn: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
@@ -678,6 +937,77 @@ const styles = StyleSheet.create({
   vPrice: { fontSize: 10, fontFamily: 'Outfit-Bold', color: '#666' },
   bookBtn: { marginTop: 10, borderRadius: 15, height: 55, justifyContent: 'center' },
   loadingArea: { height: 300, justifyContent: 'center', alignItems: 'center', gap: 20 },
+
+  suggestionsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 4,
+    shadowColor: '#181D19',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    zIndex: 1000,
+    maxHeight: 220,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F5EE',
+    gap: 10,
+  },
+  suggestionTextContainer: {
+    flex: 1,
+  },
+  suggestionMain: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#181D19',
+  },
+  suggestionSecondary: {
+    fontSize: 11,
+    color: '#6F7A70',
+    marginTop: 2,
+  },
+  routeInfoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F5EE',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  routeInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  routeInfoText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#181D19',
+  },
+  routeInfoDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#BECABE',
+  },
+  pickupMarker: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 4,
+    borderWidth: 2,
+    borderColor: '#006A3B',
+  },
+  destinationMarker: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 2,
+  },
   pulseIndicator: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(0,106,59,0.12)', alignItems: 'center', justifyContent: 'center' },
   loadingText: { fontFamily: 'Outfit-Medium', color: '#006A3B', fontSize: 16 },
   cancelBtn: { borderRadius: 15, borderColor: '#BA1A1A', width: '100%' },

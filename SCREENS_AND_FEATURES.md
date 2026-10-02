@@ -72,6 +72,21 @@ This document provides a comprehensive inventory of all screens and features in 
     - Select budget tier ($ Standard to $$$ Luxury)
     - Trigger itinerary generation
 
+
+- **TransportScreen** (`mobile/screens/TransportScreen.js`)
+  - **Route Name:** `Transport`
+  - **User Role:** Tourist
+  - **Features:**
+    - Request rides (Tuk/Car/Van)
+    - Set pickup and dropoff locations on a live map
+    - Simulated matching with drivers
+
+- **ConfirmBookingScreen** (`mobile/screens/ConfirmBookingScreen.js`)
+  - **Features**: Finalize and confirm a pending booking with pricing details.
+
+- **MessageScreen** (`mobile/screens/MessageScreen.js`)
+  - **Features**: 1-on-1 real-time chat with a guide or driver.
+
 ## Tourist — SOS & Emergency
 - **SOSScreen** (`mobile/screens/SOSScreen.js`)
   - **Route Name:** `SOS`
@@ -170,6 +185,23 @@ This document provides a comprehensive inventory of all screens and features in 
     - Automatically redirect to vendor portal upon approval
     - Sign out
 
+
+## Guide Portal
+- **GuideDashboard** (`mobile/screens/GuideDashboard.js`)
+  - **Features**: View active guests, upcoming tours, and schedule overview.
+- **GuideAvailabilityScreen** (`mobile/screens/GuideAvailabilityScreen.js`)
+  - **Features**: Manage working hours, days off, and availability calendar.
+- **GuideBookingsScreen** (`mobile/screens/GuideBookingsScreen.js`)
+  - **Features**: List and manage all assigned tour bookings.
+- **GuideDiscoverScreen** (`mobile/screens/GuideDiscoverScreen.js`)
+  - **Features**: Find new tour opportunities and browse destinations.
+- **GuideServicesScreen** (`mobile/screens/GuideServicesScreen.js`)
+  - **Features**: Configure offered services and pricing.
+
+## Driver Portal
+- **DriverDashboard** (`mobile/screens/DriverDashboard.js`)
+  - **Features**: Live map with current location, accept/reject incoming ride requests, eco optimizer, and earnings summary.
+
 ## Shared / Common
 - **ProfileScreen** (`mobile/screens/ProfileScreen.js`)
   - **Route Name:** `Profile`
@@ -190,13 +222,24 @@ This document provides a comprehensive inventory of all screens and features in 
   - **Route Name:** `LanguageSelect`
   - **User Role:** All
   - **Features:**
-    - `[Needs Review]` (Likely handles app language selection during onboarding)
+    - First-run language selection (English, Sinhala, Tamil)
 
 - **MoodSelectScreen** (`mobile/screens/onboarding/MoodSelectScreen.js`)
   - **Route Name:** `MoodSelect`
   - **User Role:** Tourist
   - **Features:**
-    - `[Needs Review]` (Likely allows tourists to select trip focus or mood during onboarding)
+    - Allows new tourists to select a travel mood (e.g., Adventure, Relax, Culture) to tailor AI recommendations
 
-## Admin Panel
-*No dedicated admin panel screens were found in the `mobile/screens` directory during this review. Admin features may be managed via a separate web dashboard or Firebase Console.*
+
+- **WaitingApprovalScreen** (`mobile/screens/WaitingApprovalScreen.js`)
+  - **Features**: Generic holding screen for users (e.g., Guides/Drivers) waiting for admin verification.
+
+## Web Admin Portal (`web/src/pages/`)
+- **Dashboard** (`Dashboard.jsx`): Real-time metrics, live stats, and charts for overall system health.
+- **AICenter** (`AICenter.jsx`): Configure AI models and view AI integration stats.
+- **Marketing** (`Marketing.jsx`): Marketing campaign overview and metrics.
+- **Users / Vendors** (`Users.jsx`, `Vendors.jsx`): Approve/reject vendors, manage users.
+- **SOSMonitor** (`SOSMonitor.jsx`): Real-time map view of SOS alerts with mock CCTV and AI insights.
+- **Destinations / CulturalEvents**: CRUD operations for places and events.
+- **SystemHealth / Analytics / Reports**: System monitoring and jsPDF report generation.
+
