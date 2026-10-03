@@ -7,9 +7,9 @@ Tester: ______________ Device / Android version: ______________ Date: __________
 
 ## Before you start
 - [ ] Firestore rules and indexes deployed: `firebase deploy --only firestore`
-- [ ] Render backend has `GROQ_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` and `/api/health` shows them as `true`
-- [ ] `mobile/.env` has `EXPO_PUBLIC_BACKEND_URL` (or uses the Render URL) and `EXPO_PUBLIC_SOS_SMS_NUMBER`
-- [ ] `web/.env` has `VITE_BACKEND_URL`
+- [ ] https://ceylo.onrender.com/api/health shows `operational` and four trained models (no AI keys needed)
+- [ ] `mobile/.env` has `EXPO_PUBLIC_SOS_SMS_NUMBER` (the backend defaults to the Render URL)
+- [ ] Admin portal https://ceylo-theta.vercel.app/ is deployed from the latest commit
 - [ ] App SHA-1 added in Firebase console (needed for Google sign-in)
 
 ## Accounts and onboarding
@@ -30,6 +30,8 @@ Tester: ______________ Device / Android version: ______________ Date: __________
 - [ ] Itinerary: "Start Multi-Stop Route" opens Google Maps with all stops; Export PDF works
 - [ ] Chatbot answers and remembers the destination from an earlier message
 - [ ] Chatbot shows destination cards (e.g. type "Kandy") without crashing
+- [ ] Chatbot answers "Is tap water safe?" and "festivals in August" from the trained model
+- [ ] Destination detail: Overview, Sustainability (eco breakdown) and nearby places load
 - [ ] Explore map opens without a crash; region chips move the map and load places
 - [ ] Offline Maps: download "Colombo & Western", turn on airplane mode → the map still shows that area
 - [ ] Cultural events: list loads, filters show results, "Near Me" works, tapping opens the event
@@ -56,5 +58,6 @@ Tester: ______________ Device / Android version: ______________ Date: __________
 - [ ] Staff login lands on the dashboard; Drivers, Notifications, Marketing, Analytics in the menu
 - [ ] Broadcast notification reaches a phone
 - [ ] System Health shows measured response time and availability (no random numbers)
+- [ ] AI Model Monitor shows model metrics; "Run model", "Classify" and "Predict" work; forecast chart loads
 - [ ] Reports shows real totals (0 when there are no paid bookings)
 - [ ] Delete a destination works

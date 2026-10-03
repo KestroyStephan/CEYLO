@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Grid, Paper, LinearProgress,
-    Stack, Chip, Divider, List, ListItem, ListItemText, ListItemIcon,
+    Stack, Chip, List, ListItem, ListItemText, ListItemIcon,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -10,10 +10,10 @@ import StorageIcon from '@mui/icons-material/Storage';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
-import KeyIcon from '@mui/icons-material/Key';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { BACKEND_URL } from '../config';
 
 const HealthMetric = ({ label, value, status, icon, progressVal }) => (
     <Paper sx={{ p: 3, borderRadius: 4, height: '100%' }}>
@@ -47,14 +47,17 @@ function SystemHealth() {
     const [checks, setChecks] = useState({ ok: 0, total: 0 });
     const uptime = checks.total ? (checks.ok / checks.total) * 100 : null;
     const [aiEngineStatus, setAiEngineStatus] = useState('operational');
+    // Share of timed recommendation requests that succeeded since this page was opened
+    const [apiCalls, setApiCalls] = useState({ ok: 0, total: 0 });
+    const apiSuccess = apiCalls.total ? (apiCalls.ok / apiCalls.total) * 100 : null;
+    const [models, setModels] = useState(null);
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
     const services = [
         { name: 'Firebase Alpha (Auth/DB)', status: 'operational', version: 'v12.9.0' },
         { name: 'SOS Real-time WebSocket', status: 'operational', version: 'v2.4.1' },
         { name: 'Google Maps API Core', status: 'operational', version: 'v3.54' },
-        { name: 'CEYLO AI RAG Engine', status: aiEngineStatus, version: 'v1.0.0-node' },
+        { name: 'CEYLO trained models (Render)', status: aiEngineStatus, version: BACKEND_URL.replace(/^https?:\/\//, '') },
         { name: 'Notification Service', status: 'operational', version: 'v3.0.0' },
     ];
 
@@ -74,7 +77,7 @@ function SystemHealth() {
 
         const checkBackendHealth = async () => {
             try {
-                const res = await fetch(`${backendUrl}/api/health`);
+                const res = await fetch(`${BACKEND_URL}/api/health`);
                 setChecks(c => ({ ok: c.ok + (res.ok ? 1 : 0), total: c.total + 1 }));
                 if (res.ok) {
                     const data = await res.json();
@@ -84,7 +87,7 @@ function SystemHealth() {
                 } else {
                     setAiEngineStatus('degraded');
                 }
-            } catch (err) {
+            } catch {
                 setChecks(c => ({ ok: c.ok, total: c.total + 1 }));
                 setAiEngineStatus('degraded');
             }
@@ -101,14 +104,22 @@ function SystemHealth() {
         const checkInference = async () => {
             try {
                 const start = performance.now();
-                const res = await fetch(`${backendUrl}/api/recommend`, {
+                const res = await fetch(`${BACKEND_URL}/api/recommend`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ mood: 'eco', days: 5 }),
                 });
                 if (res.ok) setInferenceTime(Math.round(performance.now() - start));
-            } catch (err) {
+                setApiCalls(c => ({ ok: c.ok + (res.ok ? 1 : 0), total: c.total + 1 }));
+            } catch {
                 setInferenceTime(null);
+                setApiCalls(c => ({ ok: c.ok, total: c.total + 1 }));
+            }
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/models`);
+                if (res.ok) setModels(await res.json());
+            } catch {
+                setModels(null);
             }
         };
         checkInference();
@@ -144,9 +155,9 @@ function SystemHealth() {
                     <HealthMetric
                         label="Global Uptime"
                         value={uptime == null ? 'Checking…' : `${uptime.toFixed(1)}%`}
-                        status="operational"
+                        status={uptime == null || uptime >= 95 ? 'operational' : 'degraded'}
                         icon={<SpeedIcon />}
-                        progressVal={98}
+                        progressVal={uptime ?? 0}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -161,10 +172,10 @@ function SystemHealth() {
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <HealthMetric
                         label="API Success"
-                        value="99.99%"
-                        status="operational"
+                        value={apiSuccess == null ? 'Checking…' : `${apiSuccess.toFixed(1)}%`}
+                        status={apiSuccess == null || apiSuccess >= 95 ? 'operational' : 'degraded'}
                         icon={<LanIcon />}
-                        progressVal={99}
+                        progressVal={apiSuccess ?? 0}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -215,140 +226,68 @@ function SystemHealth() {
                             <SecurityIcon sx={{ mr: 1 }} /> Security Hardening
                         </Typography>
                         <Stack spacing={2}>
-                            <Box>
-                                <Typography variant="caption" sx={{ opacity: 0.8 }}>Firewall Status</Typography>
-                                <Typography variant="body1" fontWeight={700}>SHIELD ACTIVE</Typography>
-                                <LinearProgress variant="determinate" value={100} sx={{ mt: 0.5, bgcolor: 'rgba(255,255,255,0.2)', '& .MuiLinearProgress-bar': { bgcolor: '#fff' } }} />
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" sx={{ opacity: 0.8 }}>Failed Auth Attempts (24h)</Typography>
-                                <Typography variant="body1" fontWeight={700}>1,402 Blocks</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" sx={{ opacity: 0.8 }}>SSL Certificate</Typography>
-                                <Typography variant="body1" fontWeight={700}>Expires in 284 days</Typography>
-                            </Box>
+                            {[
+                                ['Database access', 'Firestore security rules (28 emulator tests)'],
+                                ['Backend rate limit', '60 requests/min, chatbot 20/min per IP'],
+                                ['Broadcast push', 'Staff-only, verified Firebase ID token'],
+                                ['AI services', 'Trained in-house models, no third-party AI keys'],
+                            ].map(([label, value]) => (
+                                <Box key={label}>
+                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>{label}</Typography>
+                                    <Typography variant="body1" fontWeight={700}>{value}</Typography>
+                                </Box>
+                            ))}
                         </Stack>
                     </Paper>
                 </Grid>
             </Grid>
 
-            {/* AI Infrastructure & API Keys Section */}
-            <Grid container spacing={3}>
-                {/* AI Models & Training Stats */}
-                <Grid size={{ xs: 12, lg: 6 }}>
-                    <Paper sx={{ borderRadius: 4, overflow: 'hidden', height: '100%' }}>
-                        <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PsychologyIcon sx={{ color: '#00695c' }} />
-                            <Typography variant="subtitle1" fontWeight={800}>AI Core Model & Training Diagnostics</Typography>
-                        </Box>
-                        <Box sx={{ p: 3 }}>
-                            <Stack spacing={2.5}>
-                                <Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                        <Typography variant="body2" fontWeight={800}>Active Model Instance</Typography>
-                                        <Chip label="Ceylo-Vision-v1.4 (Trained)" size="small" sx={{ fontWeight: 800, bgcolor: '#E0F2F1', color: '#004D40' }} />
-                                    </Box>
-                                    <Typography variant="caption" color="text.secondary">Trained on 48,200 travel/SOS scenarios. Fine-tuned with custom Sri Lanka geo-data.</Typography>
-                                </Box>
-
-                                <Divider />
-
-                                <Grid container spacing={2}>
-                                    <Grid size={{ xs: 6 }}>
-                                        <Typography variant="caption" color="text.secondary">Prediction Accuracy</Typography>
-                                        <Typography variant="h6" fontWeight={800} color="#006A3B">98.42%</Typography>
-                                    </Grid>
-                                    <Grid size={{ xs: 6 }}>
-                                        <Typography variant="caption" color="text.secondary">SOS Threat False Positives</Typography>
-                                        <Typography variant="h6" fontWeight={800} color="#BA1A1A">0.08%</Typography>
-                                    </Grid>
-                                    <Grid size={{ xs: 6 }}>
-                                        <Typography variant="caption" color="text.secondary">Suggestion Latency</Typography>
-                                        <Typography variant="h6" fontWeight={800}>142ms</Typography>
-                                    </Grid>
-                                    <Grid size={{ xs: 6 }}>
-                                        <Typography variant="caption" color="text.secondary">Epochs / Training Loss</Typography>
-                                        <Typography variant="h6" fontWeight={800}>250 Epochs / 0.014</Typography>
-                                    </Grid>
-                                </Grid>
-
-                                <Divider />
-
-                                <Box>
-                                    <Typography variant="body2" fontWeight={800} sx={{ mb: 1 }}>Model Inference Load & Capacity</Typography>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                        <Typography variant="caption" color="text.secondary">Daily Active Tokens (Inference limit)</Typography>
-                                        <Typography variant="caption" fontWeight={700}>4.8M / 10.0M tokens</Typography>
-                                    </Box>
-                                    <LinearProgress variant="determinate" value={48} sx={{ height: 6, borderRadius: 2, bgcolor: '#eee', '& .MuiLinearProgress-bar': { bgcolor: '#00695c' } }} />
-                                </Box>
-                            </Stack>
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* API Key Health & Limit Monitoring */}
-                <Grid size={{ xs: 12, lg: 6 }}>
-                    <Paper sx={{ borderRadius: 4, overflow: 'hidden', height: '100%' }}>
-                        <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <KeyIcon sx={{ color: '#00695c' }} />
-                            <Typography variant="subtitle1" fontWeight={800}>External API Keys & Usage Limits</Typography>
-                        </Box>
-                        <Box sx={{ p: 2 }}>
-                            <TableContainer>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{ fontWeight: 800 }}>API Service</TableCell>
-                                            <TableCell sx={{ fontWeight: 800 }}>Key Status</TableCell>
-                                            <TableCell sx={{ fontWeight: 800 }}>Usage (Limit)</TableCell>
-                                            <TableCell sx={{ fontWeight: 800 }} align="right">Latency</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {[
-                                            { name: 'Google Gemini Pro API', key: 'AI_GEMINI_...4F8x', status: 'Working', usage: '62,403 / 100K requests', progress: 62.4, color: 'success', latency: '210ms' },
-                                            { name: 'OpenAI GPT-4o Vision API', key: 'OPENAI_KEY_...9xKL', status: 'Working', usage: '8,410 / 50K requests', progress: 16.8, color: 'success', latency: '482ms' },
-                                            { name: 'Google Places & Maps API', key: 'MAPS_GEOC_...2A4b', status: 'Working', usage: '214,190 / 500K requests', progress: 42.8, color: 'success', latency: '42ms' },
-                                            { name: 'Firebase Admin API SDK', key: 'FIREBASE_S...9dM2', status: 'Working', usage: 'Unlimited', progress: 10, color: 'success', latency: '24ms' },
-                                            { name: 'Fallback OpenAI API Key', key: 'OPENAI_ERR_...1s8P', status: 'Rate Limited', usage: '10,000 / 10K requests', progress: 100, color: 'warning', latency: '---' },
-                                            { name: 'Expired Test Gemini Key', key: 'GEMINI_TST_...8fG3', status: 'Invalid / Revoked', usage: '0 / 0 requests', progress: 0, color: 'error', latency: '---' },
-                                        ].map((row, idx) => (
-                                            <TableRow key={idx} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Typography variant="body2" fontWeight={700}>{row.name}</Typography>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'monospace' }}>{row.key}</Typography>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={row.status}
-                                                        size="small"
-                                                        color={row.color}
-                                                        sx={{ fontWeight: 800, fontSize: '0.65rem' }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell sx={{ minWidth: 150 }}>
-                                                    <Typography variant="caption" color="text.secondary">{row.usage}</Typography>
-                                                    {row.progress > 0 && (
-                                                        <LinearProgress
-                                                            variant="determinate"
-                                                            value={row.progress}
-                                                            color={row.color}
-                                                            sx={{ height: 3, borderRadius: 1, mt: 0.5, bgcolor: '#eee' }}
-                                                        />
-                                                    )}
-                                                </TableCell>
-                                                <TableCell align="right" sx={{ fontWeight: 800 }}>{row.latency}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
+            {/* Trained models served by the backend */}
+            <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PsychologyIcon sx={{ color: '#00695c' }} />
+                    <Typography variant="subtitle1" fontWeight={800}>Trained AI Models</Typography>
+                </Box>
+                {!models ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ p: 3 }}>Model metrics unavailable: the backend could not be reached.</Typography>
+                ) : (
+                    <TableContainer>
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 800 }}>Model</TableCell>
+                                    <TableCell sx={{ fontWeight: 800 }}>Evaluation</TableCell>
+                                    <TableCell sx={{ fontWeight: 800 }}>Trained</TableCell>
+                                    <TableCell sx={{ fontWeight: 800 }} align="right">Avg latency</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {Object.entries(models.models).map(([key, m]) => (
+                                    <TableRow key={key}>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Typography variant="body2" fontWeight={700}>{m.name}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{m.algorithm}</Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant="body2" fontWeight={700}>
+                                                {m.accuracy != null && `Accuracy ${(m.accuracy * 100).toFixed(1)}%`}
+                                                {m.r2 != null && `R² ${m.r2} · MAE ${m.mae}`}
+                                                {m.mape != null && `MAPE ${m.mape}% · MAE ${m.mae}`}
+                                                {m.precisionAt10 != null && `Precision@10 ${m.precisionAt10} · MAE ${m.mae}`}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">{m.metric}</Typography>
+                                        </TableCell>
+                                        <TableCell>{m.trained}</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 800 }}>
+                                            {models.latency?.[key] ? `${models.latency[key].avgMs} ms` : '—'}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
+            </Paper>
         </Box>
     );
 }
