@@ -52,7 +52,7 @@ const defaultDestinations = destinationsData.map((d, index) => {
         latitude: parseFloat(d.lat || 6.9271),
         longitude: parseFloat(d.lon || 79.8612),
         imageUrl: d.image || "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a",
-        isHiddenGem: d.hidden_gem === true || d.hidden_gem === "true" || Math.random() > 0.8
+        isHiddenGem: d.hidden_gem === true || d.hidden_gem === "true" || d.hidden_gem === "True"
     };
 });
 

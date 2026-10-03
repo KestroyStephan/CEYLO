@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Typography, Button, Paper, Grid, TextField, Chip, IconButton, Avatar, 
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Menu, MenuItem, 
+import {
+    Box, Typography, Button, Paper, Grid, TextField, Chip, IconButton, Avatar,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Menu, MenuItem,
     InputAdornment, Stack, Snackbar, Alert
 } from '@mui/material';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -18,41 +18,34 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import FilterListIcon from '@mui/icons-material/FilterList';
 
-const mockLedgerData = [
-    { id: '1', name: 'Sigiriya Adventures', role: 'Tour Operator', period: 'Sept 2026', gross: 450000, fees: 67500, net: 382500, status: 'Cleared' },
-    { id: '2', name: 'Galle Fort Heritage Stays', role: 'Accommodation', period: 'Sept 2026', gross: 820000, fees: 123000, net: 697000, status: 'Pending Approval' },
-    { id: '3', name: 'Ella Scenic Trains', role: 'Transport', period: 'Sept 2026', gross: 120000, fees: 18000, net: 102000, status: 'Cleared' },
-    { id: '4', name: 'Yala Safari Rangers', role: 'Tour Operator', period: 'Sept 2026', gross: 550000, fees: 82500, net: 467500, status: 'Processing' },
-    { id: '5', name: 'Mirissa Blue Whale Tours', role: 'Tour Operator', period: 'Sept 2026', gross: 340000, fees: 51000, net: 289000, status: 'Cleared' }
-];
 
 export default function Reports() {
-    const [revenue, setRevenue] = useState(2280000);
-    const [bookingsCount, setBookingsCount] = useState(145);
-    const [ledger, setLedger] = useState(mockLedgerData);
-    
+    const [revenue, setRevenue] = useState(0);
+    const [bookingsCount, setBookingsCount] = useState(0);
+    const [ledger, setLedger] = useState([]);
+
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
-    
+
     // UI State
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedRowId, setSelectedRowId] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
-        const qBookings = query(collection(db, "bookings"), where("status", "==", "confirmed"));
+        // Guide bookings use lower-case statuses, rides use capitalised ones
+        const PAID = ['confirmed', 'accepted', 'completed', 'Confirmed', 'Arrived', 'InProgress', 'Completed'];
+        const qBookings = query(collection(db, "bookings"), where("status", "in", PAID));
         const unsubBookings = onSnapshot(qBookings, (snapshot) => {
-            if (snapshot.docs.length > 0) {
-                let total = 0;
-                snapshot.docs.forEach(doc => { total += parseFloat(doc.data().price || doc.data().cost || 0); });
-                setRevenue(prev => total > 0 ? total : prev);
-                setBookingsCount(prev => snapshot.docs.length > 0 ? snapshot.docs.length : prev);
-            }
-        });
+            let total = 0;
+            snapshot.docs.forEach(doc => { total += parseFloat(doc.data().price || doc.data().totalPrice || doc.data().cost || 0) || 0; });
+            setRevenue(total);
+            setBookingsCount(snapshot.docs.length);
+        }, (err) => console.error("Bookings listen error:", err));
 
         const unsubPayouts = onSnapshot(collection(db, "payouts"), (snapshot) => {
-            if (snapshot.docs.length > 0) {
+            {
                 const realPayouts = snapshot.docs.map(doc => {
                     const d = doc.data();
                     const gross = parseFloat(d.gross || d.amount || 0);
@@ -79,7 +72,7 @@ export default function Reports() {
         doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 23);
         doc.text(`Total Gross Revenue: LKR ${revenue.toFixed(2)}`, 14, 31);
         doc.text(`Platform Fees Collected (15%): LKR ${(revenue * 0.15).toFixed(2)}`, 14, 39);
-        
+
         doc.autoTable({
             startY: 47,
             head: [['Partner/Vendor', 'Role', 'Period', 'Gross (LKR)', 'Fee (LKR)', 'Net (LKR)', 'Status']],
@@ -108,7 +101,7 @@ export default function Reports() {
         const matchStatus = statusFilter === 'All' || item.status.includes(statusFilter);
         return matchSearch && matchStatus;
     });
-    
+
     const platformFee = revenue * 0.15;
 
     const getStatusChip = (status) => {
@@ -130,10 +123,10 @@ export default function Reports() {
                         Enterprise ledger, automated platform fees, and partner disbursement controls.
                     </Typography>
                 </Box>
-                <Button 
-                    variant="contained" 
-                    onClick={handleExportPDF} 
-                    startIcon={<FileDownloadIcon />} 
+                <Button
+                    variant="contained"
+                    onClick={handleExportPDF}
+                    startIcon={<FileDownloadIcon />}
                     sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 4, py: 1.2, textTransform: 'none' }}
                 >
                     Export Statement
@@ -183,10 +176,10 @@ export default function Reports() {
                     {/* Segmented Control for Status */}
                     <Box sx={{ display: 'flex', bgcolor: '#EBEFE8', p: 0.5, borderRadius: '50px' }}>
                         {['All', 'Cleared', 'Pending'].map((status) => (
-                            <Button 
+                            <Button
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
-                                sx={{ 
+                                sx={{
                                     borderRadius: '50px', px: 3, py: 0.8, textTransform: 'none', fontWeight: 800,
                                     bgcolor: statusFilter === status ? '#FFF' : 'transparent',
                                     color: statusFilter === status ? '#006A3B' : '#5C6E64',
@@ -204,12 +197,12 @@ export default function Reports() {
                     </Button>
                 </Box>
 
-                <TextField 
-                    placeholder="Search partner or vendor..." 
-                    size="small" 
-                    value={searchQuery} 
+                <TextField
+                    placeholder="Search partner or vendor..."
+                    size="small"
+                    value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 8 } }} 
+                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 8 } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
             </Box>
@@ -263,10 +256,10 @@ export default function Reports() {
                 </TableContainer>
             </Paper>
 
-            <Menu 
-                anchorEl={anchorEl} 
-                open={Boolean(anchorEl)} 
-                onClose={() => setAnchorEl(null)} 
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
                 PaperProps={{ sx: { minWidth: 180, borderRadius: 3, border: '1px solid #EBEFE8', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' } }}
             >
                 <MenuItem onClick={() => setAnchorEl(null)} sx={{ fontSize: '0.875rem', fontWeight: 600, py: 1.5 }}>View Invoice Document</MenuItem>

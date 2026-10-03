@@ -1,4 +1,5 @@
 import React from 'react';
+import { SUSTAINABLE_ROUTES } from '../utils/destinations';
 import { View, StyleSheet, FlatList, TouchableOpacity, ImageBackground } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,73 +17,12 @@ const COLORS = {
 };
 
 // Route data (same as HomeScreen to ensure consistency)
-const ROUTES = [
-  {
-      id: 'route_1',
-      title: 'Central Eco-Trail',
-      subtitle: 'Knuckles & Horton Plains',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Knuckles_mountain_range_Sri_Lanka.jpg/800px-Knuckles_mountain_range_Sri_Lanka.jpg',
-      duration: '3 Days',
-      cost: 'LKR 15k',
-      ecoScore: 92,
-      type: 'Nature'
-  },
-  {
-      id: 'route_2',
-      title: 'Southern Heritage',
-      subtitle: 'Galle Fort & Marine Life',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Galle_Fort_Lighthouse_Sri_Lanka.jpg/800px-Galle_Fort_Lighthouse_Sri_Lanka.jpg',
-      duration: '2 Days',
-      cost: 'LKR 12k',
-      ecoScore: 85,
-      type: 'Culture'
-  },
-  {
-      id: 'route_3',
-      title: 'Northern Peninsula',
-      subtitle: 'Jaffna & Delft Island',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Nallur_Kandaswamy_Temple_Jaffna.jpg/800px-Nallur_Kandaswamy_Temple_Jaffna.jpg',
-      duration: '4 Days',
-      cost: 'LKR 20k',
-      ecoScore: 95,
-      type: 'Untouched'
-  },
-  {
-      id: 'route_4',
-      title: 'Eastern Safari',
-      subtitle: 'Arugam Bay & Kumana',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Elephant_at_Yala_National_Park_Sri_Lanka.jpg/800px-Elephant_at_Yala_National_Park_Sri_Lanka.jpg',
-      duration: '3 Days',
-      cost: 'LKR 18k',
-      ecoScore: 88,
-      type: 'Wildlife'
-  },
-  {
-      id: 'route_5',
-      title: 'Cultural Triangle',
-      subtitle: 'Sigiriya to Polonnaruwa',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Sigiriya_rock_fortress.jpg/800px-Sigiriya_rock_fortress.jpg',
-      duration: '3 Days',
-      cost: 'LKR 25k',
-      ecoScore: 80,
-      type: 'Heritage'
-  },
-  {
-      id: 'route_6',
-      title: 'Tea Country Train',
-      subtitle: 'Kandy to Ella Scenic',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Nine_Arch_Bridge%2C_Demodara.jpg/800px-Nine_Arch_Bridge%2C_Demodara.jpg',
-      duration: '1 Day',
-      cost: 'LKR 5k',
-      ecoScore: 98,
-      type: 'Scenic'
-  }
-];
+const ROUTES = SUSTAINABLE_ROUTES;
 
 export default function SustainableRoutesListScreen({ navigation }) {
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      activeOpacity={0.9} 
+    <TouchableOpacity
+      activeOpacity={0.9}
       onPress={() => navigation.navigate('ItineraryDetail', { routeData: item })}
       style={styles.cardContainer}
     >
