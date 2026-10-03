@@ -41,7 +41,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
   const fetchInsights = async () => {
     try {
       setLoading(true);
-      const prompt = `Analyze the Sri Lankan destination: ${place.name || 'Sigiriya'} (${place.province || 'Central Province'}). Category: ${place.category || 'Heritage'}. 
+      const prompt = `Analyze the Sri Lankan destination: ${place.name || 'Sigiriya'} (${place.province || 'Central Province'}). Category: ${place.category || 'Heritage'}.
 Provide a JSON response with the following strictly formatted keys:
 {
   "translation": "The Sinhala and Tamil names (e.g., වික්ටෝරියා උද්‍යානය • விக்டோரியா பூங்கா)",
@@ -91,7 +91,7 @@ Only output the raw JSON string without markdown wrapping.`;
         <View style={styles.imageContainer}>
           <ProgressiveImage source={{ uri: place.image }} style={styles.heroImage} resizeMode="cover" />
           <LinearGradient colors={['rgba(0,0,0,0.5)', 'transparent']} style={styles.topGradient} />
-          
+
           <IconButton icon="arrow-left" iconColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
           <IconButton icon="share-variant" iconColor="#FFF" style={styles.shareBtn} />
           <IconButton icon="heart-outline" iconColor="#FFF" style={styles.favBtn} />
@@ -110,7 +110,7 @@ Only output the raw JSON string without markdown wrapping.`;
               <Text style={styles.subTitle}>{aiData?.translation || '...'}</Text>
             </View>
             <Surface style={styles.ecoRing} elevation={2}>
-              <Text style={styles.ecoValue}>{place.ecoScore || 80}</Text>
+              <Text style={styles.ecoValue}>{place.ecoScore ?? '—'}</Text>
               <Text style={styles.ecoLabel}>ECO</Text>
             </Surface>
           </View>

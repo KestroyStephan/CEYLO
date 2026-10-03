@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loadEcoStats } from '../utils/ecoStats';
+import { ecoScoreFor, SUSTAINABLE_ROUTES } from '../utils/destinations';
 import { loadEvents, eventsNear } from '../utils/events';
 import { NotificationService } from '../services/NotificationService';
 
@@ -35,7 +36,7 @@ export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
   const [userName, setUserName] = useState('Traveler');
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Dynamic State
   const [aiPicks, setAIPicks] = useState([]);
   const [hiddenGems, setHiddenGems] = useState([]);
@@ -43,7 +44,7 @@ export default function HomeScreen({ navigation }) {
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [trendingRoutes, setTrendingRoutes] = useState([]);
   const [ecoPoints, setEcoPoints] = useState(0);
-  
+
   // Chat Notifications State
   const [activeChats, setActiveChats] = useState([]);
   const [showChatModal, setShowChatModal] = useState(false);
@@ -83,91 +84,24 @@ export default function HomeScreen({ navigation }) {
       return () => unsub();
     }
   }, []);
-  
+
   const loadAIData = () => {
     const hidden = destinationsData.filter(d => d.hidden_gem === true || d.hidden_gem === "True" || d.hidden_gem === "true");
     const shuffledHidden = hidden.sort(() => 0.5 - Math.random());
     setHiddenGems(shuffledHidden.slice(0, 3));
-    
+
     const famous = destinationsData.filter(d => (d.hidden_gem === false || d.hidden_gem === "False") && parseFloat(d.avg_rating) >= 4.5);
     const sortedEco = famous.sort((a, b) => b.eco_score - a.eco_score);
     setAIPicks(sortedEco.slice(0, 5));
-    
+
     loadEvents().then(events => {
       if (events.length > 0) setFeaturedEvent(events[0]);
     });
-    
+
     const centralPlaces = destinationsData.filter(d => d.province === 'Central Province').slice(0, 3);
     const southernPlaces = destinationsData.filter(d => d.province === 'Southern Province').slice(0, 3);
-    
-    setTrendingRoutes([
-        {
-            id: 'route_1',
-            province: 'Central Province',
-            title: 'Central Eco-Trail',
-            subtitle: 'Knuckles & Horton Plains',
-            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Knuckles_mountain_range_Sri_Lanka.jpg/800px-Knuckles_mountain_range_Sri_Lanka.jpg',
-            duration: '3 Days',
-            cost: 'LKR 15k',
-            ecoScore: 92,
-            type: 'Nature'
-        },
-        {
-            id: 'route_2',
-            province: 'Southern Province',
-            title: 'Southern Heritage',
-            subtitle: 'Galle Fort & Marine Life',
-            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Galle_Fort_Lighthouse_Sri_Lanka.jpg/800px-Galle_Fort_Lighthouse_Sri_Lanka.jpg',
-            duration: '2 Days',
-            cost: 'LKR 12k',
-            ecoScore: 85,
-            type: 'Culture'
-        },
-        {
-            id: 'route_3',
-            province: 'Northern Province',
-            title: 'Northern Peninsula',
-            subtitle: 'Jaffna & Delft Island',
-            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Nallur_Kandaswamy_Temple_Jaffna.jpg/800px-Nallur_Kandaswamy_Temple_Jaffna.jpg',
-            duration: '4 Days',
-            cost: 'LKR 20k',
-            ecoScore: 95,
-            type: 'Untouched'
-        },
-        {
-            id: 'route_4',
-            province: 'Eastern Province',
-            title: 'Eastern Safari',
-            subtitle: 'Arugam Bay & Kumana',
-            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Elephant_at_Yala_National_Park_Sri_Lanka.jpg/800px-Elephant_at_Yala_National_Park_Sri_Lanka.jpg',
-            duration: '3 Days',
-            cost: 'LKR 18k',
-            ecoScore: 88,
-            type: 'Wildlife'
-        },
-        {
-            id: 'route_5',
-            province: 'North Central Province',
-            title: 'Cultural Triangle',
-            subtitle: 'Sigiriya to Polonnaruwa',
-            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Sigiriya_rock_fortress.jpg/800px-Sigiriya_rock_fortress.jpg',
-            duration: '3 Days',
-            cost: 'LKR 25k',
-            ecoScore: 80,
-            type: 'Heritage'
-        },
-        {
-            id: 'route_6',
-            province: 'Uva Province',
-            title: 'Tea Country Train',
-            subtitle: 'Kandy to Ella Scenic',
-            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Nine_Arch_Bridge%2C_Demodara.jpg/800px-Nine_Arch_Bridge%2C_Demodara.jpg',
-            duration: '1 Day',
-            cost: 'LKR 5k',
-            ecoScore: 98,
-            type: 'Scenic'
-        }
-    ]);
+
+    setTrendingRoutes(SUSTAINABLE_ROUTES);
   };
 
   const fetchRealNearbyGems = async () => {
@@ -176,7 +110,7 @@ export default function HomeScreen({ navigation }) {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      
+
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
       notifyNearbyEvents(loc.coords);
@@ -185,12 +119,12 @@ export default function HomeScreen({ navigation }) {
       const aiUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(aiQuery)}&location=${lat},${lng}&radius=20000&key=${GOOGLE_API_KEY}`;
       const aiRes = await fetch(aiUrl);
       const aiData = await aiRes.json();
-      
+
       if(aiData.results && aiData.results.length > 0) {
         const places = aiData.results.slice(0, 5).map(p => {
           let dist = 9999;
           if (p.geometry && p.geometry.location) {
-             const R = 6371; 
+             const R = 6371;
              const dLatRad = (p.geometry.location.lat - lat) * Math.PI / 180;
              const dLonRad = (p.geometry.location.lng - lng) * Math.PI / 180;
              const a = Math.sin(dLatRad/2) * Math.sin(dLatRad/2) + Math.cos(lat * Math.PI / 180) * Math.cos(p.geometry.location.lat * Math.PI / 180) * Math.sin(dLonRad/2) * Math.sin(dLonRad/2);
@@ -202,7 +136,7 @@ export default function HomeScreen({ navigation }) {
             name: p.name,
             category: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Heritage',
             province: 'Nearby',
-            eco_score: 85 + Math.random() * 10,
+            eco_score: ecoScoreFor(p.name),
             image: p.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${p.photos[0].photo_reference}&key=${GOOGLE_API_KEY}` : null,
             dist: dist,
             coords: { latitude: p.geometry?.location?.lat, longitude: p.geometry?.location?.lng }
@@ -211,19 +145,19 @@ export default function HomeScreen({ navigation }) {
         places.sort((a, b) => a.dist - b.dist);
         setAIPicks(places);
       }
-      
+
       const query = 'waterfall OR nature reserve OR beach OR viewpoint OR hidden gem';
       const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=15000&key=${GOOGLE_API_KEY}`;
       const res = await fetch(url);
       const data = await res.json();
-      
+
       if(data.results && data.results.length > 0) {
         const places = data.results.slice(0, 3).map(p => ({
           destination_id: p.place_id,
           name: p.name,
           category: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Nature',
           province: 'Nearby',
-          eco_score: 90,
+          eco_score: ecoScoreFor(p.name),
           image: p.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${p.photos[0].photo_reference}&key=${GOOGLE_API_KEY}` : null,
           description: `A beautiful spot located near your current location.`,
           coords: { latitude: p.geometry.location.lat, longitude: p.geometry.location.lng }
@@ -282,7 +216,7 @@ export default function HomeScreen({ navigation }) {
             )}
           </View>
         </TouchableOpacity>
-        
+
         <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
           <View style={styles.ecoPointsBadge}>
             <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
@@ -351,17 +285,17 @@ export default function HomeScreen({ navigation }) {
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
         {aiPicks.map((item) => (
-          <TouchableOpacity 
-            key={item.destination_id} 
-            activeOpacity={0.9} 
-            onPress={() => navigation.navigate('DestinationDetail', { 
-              place: { 
+          <TouchableOpacity
+            key={item.destination_id}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('DestinationDetail', {
+              place: {
                 ...item,
-                name: item.name, 
+                name: item.name,
                 image: item.image || 'https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a',
-                ecoScore: Math.round(item.eco_score || 80),
+                ecoScore: item.eco_score != null ? Math.round(item.eco_score) : null,
                 description: item.description || `Explore the natural beauty of ${item.name} in ${item.province} Province.`
-              } 
+              }
             })}
           >
             <View style={styles.pickCard}>
@@ -369,7 +303,7 @@ export default function HomeScreen({ navigation }) {
               <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.pickOverlay}>
                 <View style={styles.ecoBadgeRow}>
                   <MaterialCommunityIcons name="leaf" size={14} color={COLORS.ecoGreen} />
-                  <Text style={styles.ecoBadgeTextEco}>{Math.round(item.eco_score)} Eco Score</Text>
+                  <Text style={styles.ecoBadgeTextEco}>{item.eco_score != null ? `${Math.round(item.eco_score)} Eco Score` : 'Eco score n/a'}</Text>
                 </View>
                 <Text style={styles.pickName} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.pickLocation}>{item.dist ? `${item.dist.toFixed(1)} km away` : item.province.replace(' Province', '')}</Text>
@@ -395,18 +329,18 @@ export default function HomeScreen({ navigation }) {
           <Text style={{ fontFamily: 'Outfit-Regular', color: '#666' }}>Locating nearby gems...</Text>
         </View>
       ) : hiddenGems.map((gem) => (
-        <TouchableOpacity 
-          key={gem.destination_id} 
-          activeOpacity={0.8} 
+        <TouchableOpacity
+          key={gem.destination_id}
+          activeOpacity={0.8}
           style={{ marginBottom: 12 }}
-          onPress={() => navigation.navigate('DestinationDetail', { 
-              place: { 
+          onPress={() => navigation.navigate('DestinationDetail', {
+              place: {
                 ...gem,
-                name: gem.name, 
+                name: gem.name,
                 image: gem.image || 'https://images.unsplash.com/photo-1563290231-155097486e9b',
-                ecoScore: Math.round(gem.eco_score || 80),
+                ecoScore: gem.eco_score != null ? Math.round(gem.eco_score) : null,
                 description: gem.description || `Discover the hidden beauty of ${gem.name}.`
-              } 
+              }
           })}
         >
           <Surface style={styles.gemCard} elevation={2}>
@@ -442,7 +376,7 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate('CulturalEvents')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
         </View>
         <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('CulturalEvents')}>
-          <ImageBackground 
+          <ImageBackground
             source={{ uri: featuredEvent.imageUrl || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa' }}
             style={styles.eventCard}
             imageStyle={{ borderRadius: 20 }}
@@ -503,8 +437,8 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         contentContainerStyle={{ paddingBottom: 120 }}
@@ -512,7 +446,7 @@ export default function HomeScreen({ navigation }) {
         <Header />
         <WelcomeSection />
         <QuickActions />
-        
+
         {/* Banner */}
         <Surface style={styles.bannerContainer} elevation={0}>
           <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.bannerGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
@@ -529,11 +463,11 @@ export default function HomeScreen({ navigation }) {
         <CulturalEvents />
         <TrendingRoutes />
       </ScrollView>
-      
+
       {/* Floating SOS Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fabSOS}
-        activeOpacity={0.8} 
+        activeOpacity={0.8}
         onPress={() => navigation.navigate('SOSScreen')}
       >
         <MaterialCommunityIcons name="phone-in-talk" size={24} color="#FFF" />
@@ -549,7 +483,7 @@ export default function HomeScreen({ navigation }) {
                 <MaterialCommunityIcons name="close" size={24} color={COLORS.dark} />
               </TouchableOpacity>
             </View>
-            
+
             {activeChats.length === 0 ? (
               <Text style={{ padding: 20, textAlign: 'center', color: COLORS.sub, fontFamily: 'Outfit-Regular' }}>
                 No active conversations right now. Book a guide to start chatting!
@@ -560,8 +494,8 @@ export default function HomeScreen({ navigation }) {
                 keyExtractor={item => item.id}
                 contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
                 renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={styles.chatListItem} 
+                  <TouchableOpacity
+                    style={styles.chatListItem}
                     onPress={() => {
                       setShowChatModal(false);
                       const combinedChatId = `${item.touristId}_${item.guideId}`;
@@ -569,9 +503,9 @@ export default function HomeScreen({ navigation }) {
                       navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: item.guideName });
                     }}
                   >
-                    <Image 
+                    <Image
                       source={
-                        'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' && 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100'.startsWith('http') 
+                        'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' && 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100'.startsWith('http')
                           ? { uri: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }
                           : require('../assets/icon.png')
                       }
@@ -603,12 +537,12 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontFamily: 'Outfit-Bold', color: COLORS.dark, letterSpacing: 1 },
   ecoPointsBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.ecoGreen, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 4, elevation: 3 },
   ecoPointsText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 },
-  
+
   welcomeSection: { marginBottom: 30 },
   greeting: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: COLORS.primary, letterSpacing: 1.5 },
   name: { fontSize: 32, fontFamily: 'Outfit-Bold', color: COLORS.text, marginTop: 4 },
   subtitle: { fontSize: 14, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 4 },
-  
+
   quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
   actionItem: { alignItems: 'center', gap: 10 },
   actionIconBg: { width: 56, height: 56, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 1 },
@@ -624,9 +558,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: COLORS.text },
   sectionSubtitle: { fontSize: 13, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 2 },
   seeAll: { color: COLORS.primary, fontFamily: 'Outfit-Bold', fontSize: 13, marginBottom: 4 },
-  
+
   horizontalScroll: { gap: 16, paddingRight: 20, paddingBottom: 10 },
-  
+
   pickCard: { width: 200, height: 260, borderRadius: 20, overflow: 'hidden', backgroundColor: '#EEE', elevation: 4 },
   pickImage: { width: '100%', height: '100%', position: 'absolute' },
   pickOverlay: { flex: 1, padding: 16, justifyContent: 'flex-end' },
@@ -666,7 +600,7 @@ const styles = StyleSheet.create({
   routeSubtitle: { color: 'rgba(255,255,255,0.8)', fontFamily: 'Outfit-Regular', fontSize: 12 },
 
   fabSOS: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#D32F2F', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#D32F2F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6 },
-  
+
   badgeCount: { position: 'absolute', top: -5, right: -5, backgroundColor: '#D32F2F', width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   chatModalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, maxHeight: '60%', overflow: 'hidden' },

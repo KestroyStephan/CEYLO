@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Typography, Grid, Paper, LinearProgress, 
+import {
+    Box, Typography, Grid, Paper, LinearProgress,
     Stack, Chip, Divider, List, ListItem, ListItemText, ListItemIcon,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
@@ -24,17 +24,17 @@ const HealthMetric = ({ label, value, status, icon, progressVal }) => (
             <Typography variant="body2" fontWeight={700} color="text.secondary">{label}</Typography>
         </Box>
         <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>{value}</Typography>
-        <Chip 
-            label={status.toUpperCase()} 
-            size="small" 
-            color={status === 'operational' ? 'success' : 'warning'} 
-            sx={{ fontWeight: 700, fontSize: '0.6rem' }} 
+        <Chip
+            label={status.toUpperCase()}
+            size="small"
+            color={status === 'operational' ? 'success' : 'warning'}
+            sx={{ fontWeight: 700, fontSize: '0.6rem' }}
         />
         <Box sx={{ mt: 2 }}>
-            <LinearProgress 
-                variant="determinate" 
-                value={progressVal || (status === 'operational' ? 95 : 40)} 
-                sx={{ height: 4, borderRadius: 1, bgcolor: '#eee' }} 
+            <LinearProgress
+                variant="determinate"
+                value={progressVal || (status === 'operational' ? 95 : 40)}
+                sx={{ height: 4, borderRadius: 1, bgcolor: '#eee' }}
             />
         </Box>
     </Paper>
@@ -42,8 +42,10 @@ const HealthMetric = ({ label, value, status, icon, progressVal }) => (
 
 function SystemHealth() {
     const [dbLatency, setDbLatency] = useState(24);
-    const [inferenceTime, setInferenceTime] = useState(482);
-    const [uptime, setUptime] = useState(99.982);
+    const [inferenceTime, setInferenceTime] = useState(null);
+    // Share of health checks the backend answered since this page was opened
+    const [checks, setChecks] = useState({ ok: 0, total: 0 });
+    const uptime = checks.total ? (checks.ok / checks.total) * 100 : null;
     const [aiEngineStatus, setAiEngineStatus] = useState('operational');
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -73,6 +75,7 @@ function SystemHealth() {
         const checkBackendHealth = async () => {
             try {
                 const res = await fetch(`${backendUrl}/api/health`);
+                setChecks(c => ({ ok: c.ok + (res.ok ? 1 : 0), total: c.total + 1 }));
                 if (res.ok) {
                     const data = await res.json();
                     if (data.status === 'operational') {
@@ -82,6 +85,7 @@ function SystemHealth() {
                     setAiEngineStatus('degraded');
                 }
             } catch (err) {
+                setChecks(c => ({ ok: c.ok, total: c.total + 1 }));
                 setAiEngineStatus('degraded');
             }
         };
@@ -93,17 +97,22 @@ function SystemHealth() {
             checkBackendHealth();
         }, 8000);
 
-        // Fluctuate stats slightly to simulate active dashboard monitoring
-        const statsInterval = setInterval(() => {
-            setInferenceTime(prev => {
-                const change = Math.floor(Math.random() * 21) - 10;
-                return Math.max(300, Math.min(600, prev + change));
-            });
-            setUptime(prev => {
-                const change = (Math.random() * 0.002) - 0.001;
-                return Math.max(99.95, Math.min(99.999, prev + change));
-            });
-        }, 5000);
+        // Time a real recommendation request (NFR-001 target: under 3 s)
+        const checkInference = async () => {
+            try {
+                const start = performance.now();
+                const res = await fetch(`${backendUrl}/api/recommend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mood: 'eco', days: 5 }),
+                });
+                if (res.ok) setInferenceTime(Math.round(performance.now() - start));
+            } catch (err) {
+                setInferenceTime(null);
+            }
+        };
+        checkInference();
+        const statsInterval = setInterval(checkInference, 30000);
 
         return () => {
             clearInterval(latencyInterval);
@@ -132,39 +141,39 @@ function SystemHealth() {
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <HealthMetric 
-                        label="Global Uptime" 
-                        value={`${uptime.toFixed(3)}%`} 
-                        status="operational" 
-                        icon={<SpeedIcon />} 
-                        progressVal={98} 
+                    <HealthMetric
+                        label="Global Uptime"
+                        value={uptime == null ? 'Checking…' : `${uptime.toFixed(1)}%`}
+                        status="operational"
+                        icon={<SpeedIcon />}
+                        progressVal={98}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <HealthMetric 
-                        label="DB Latency (Live)" 
-                        value={dbLatency === -1 ? 'Timed Out' : `${dbLatency}ms`} 
-                        status={latencyStatus.text} 
-                        icon={<StorageIcon />} 
-                        progressVal={latencyStatus.progress} 
+                    <HealthMetric
+                        label="DB Latency (Live)"
+                        value={dbLatency === -1 ? 'Timed Out' : `${dbLatency}ms`}
+                        status={latencyStatus.text}
+                        icon={<StorageIcon />}
+                        progressVal={latencyStatus.progress}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <HealthMetric 
-                        label="API Success" 
-                        value="99.99%" 
-                        status="operational" 
-                        icon={<LanIcon />} 
-                        progressVal={99} 
+                    <HealthMetric
+                        label="API Success"
+                        value="99.99%"
+                        status="operational"
+                        icon={<LanIcon />}
+                        progressVal={99}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <HealthMetric 
-                        label="AI Inference" 
-                        value={`${inferenceTime}ms`} 
-                        status={inferenceTime > 500 ? "performance_degrade" : "operational"} 
-                        icon={<CloudQueueIcon />} 
-                        progressVal={inferenceTime > 500 ? 45 : 85} 
+                    <HealthMetric
+                        label="AI Inference"
+                        value={inferenceTime == null ? 'Unavailable' : `${inferenceTime}ms`}
+                        status={inferenceTime == null || inferenceTime > 3000 ? "performance_degrade" : "operational"}
+                        icon={<CloudQueueIcon />}
+                        progressVal={inferenceTime == null ? 0 : Math.max(5, 100 - Math.round(inferenceTime / 30))}
                     />
                 </Grid>
             </Grid>
@@ -183,14 +192,14 @@ function SystemHealth() {
                                         <ListItemIcon sx={{ minWidth: 40, color: isOperational ? 'success.main' : 'warning.main' }}>
                                             <CheckCircleIcon />
                                         </ListItemIcon>
-                                        <ListItemText 
+                                        <ListItemText
                                             primary={<Typography fontWeight={600}>{service.name}</Typography>}
                                             secondary={service.version}
                                         />
-                                        <Chip 
-                                            label={isOperational ? 'ACTIVE' : 'DEGRADED'} 
-                                            size="small" 
-                                            color={isOperational ? 'success' : 'warning'} 
+                                        <Chip
+                                            label={isOperational ? 'ACTIVE' : 'DEGRADED'}
+                                            size="small"
+                                            color={isOperational ? 'success' : 'warning'}
                                             variant="outlined"
                                             sx={{ fontWeight: 800 }}
                                         />
@@ -312,21 +321,21 @@ function SystemHealth() {
                                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'monospace' }}>{row.key}</Typography>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Chip 
-                                                        label={row.status} 
-                                                        size="small" 
+                                                    <Chip
+                                                        label={row.status}
+                                                        size="small"
                                                         color={row.color}
-                                                        sx={{ fontWeight: 800, fontSize: '0.65rem' }} 
+                                                        sx={{ fontWeight: 800, fontSize: '0.65rem' }}
                                                     />
                                                 </TableCell>
                                                 <TableCell sx={{ minWidth: 150 }}>
                                                     <Typography variant="caption" color="text.secondary">{row.usage}</Typography>
                                                     {row.progress > 0 && (
-                                                        <LinearProgress 
-                                                            variant="determinate" 
-                                                            value={row.progress} 
-                                                            color={row.color} 
-                                                            sx={{ height: 3, borderRadius: 1, mt: 0.5, bgcolor: '#eee' }} 
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={row.progress}
+                                                            color={row.color}
+                                                            sx={{ height: 3, borderRadius: 1, mt: 0.5, bgcolor: '#eee' }}
                                                         />
                                                     )}
                                                 </TableCell>

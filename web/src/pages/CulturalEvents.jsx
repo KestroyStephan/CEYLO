@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Typography, Button, Paper, 
-    TextField, Chip, IconButton, Avatar, 
+import {
+    Box, Typography, Button, Paper,
+    TextField, Chip, IconButton, Avatar,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
     Dialog, DialogTitle, DialogContent, DialogActions,
     Grid, Stack, Slider, MenuItem, Snackbar, Alert, InputAdornment
@@ -31,7 +31,7 @@ const aiPickedActivities = [
     { name: 'Ella Scenic Train Journey', category: 'Adventure', occurrence_month: 'December', location: 'Ella, Uva Province', image: 'https://images.unsplash.com/photo-1559828551-24b52e008d5b' },
     { name: 'Galle Fort Heritage Walk', category: 'Cultural', occurrence_month: 'March', location: 'Galle, Southern Province', image: 'https://images.unsplash.com/photo-1585257904090-f2038e1a1795' },
     { name: 'Adam\'s Peak Pilgrimage', category: 'Religious', occurrence_month: 'April', location: 'Hatton, Central Province', image: 'https://images.unsplash.com/photo-1577967965452-9443b7fc1f2d' },
-    
+
     // New Highly Diverse Events added based on AI tracking
     { name: 'Unawatuna Beach Full Moon Party', category: 'Nightlife', occurrence_month: 'January', location: 'Unawatuna, Southern Province', image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7' },
     { name: 'Hikkaduwa DJ Fest 2026', category: 'Nightlife', occurrence_month: 'December', location: 'Hikkaduwa, Southern Province', image: 'https://images.unsplash.com/photo-1470229722913-7c092bba1d19' },
@@ -55,8 +55,12 @@ const aiPickedActivities = [
 
 const defaultEvents = aiPickedActivities.map((e, index) => {
     const months = { "January": "01", "February": "02", "March": "03", "April": "04", "May": "05", "June": "06", "July": "07", "August": "08", "September": "09", "October": "10", "November": "11", "December": "12" };
-    const mm = months[e.occurrence_month] || "08";
-    const dateStr = `2026-${mm}-15`;
+    const mm = months[e.occurrence_month];
+    const now = new Date();
+    // Next time this yearly event happens; "All Year" events show from the current month
+    const monthIdx = mm ? parseInt(mm, 10) - 1 : now.getMonth();
+    const year = monthIdx < now.getMonth() ? now.getFullYear() + 1 : now.getFullYear();
+    const dateStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}-15`;
 
     let cat = "Festival";
     if (e.category.includes("Religious")) cat = "Religious";
@@ -77,8 +81,8 @@ const defaultEvents = aiPickedActivities.map((e, index) => {
         imageUrl: e.image || "",
         aiSuggested: true,
         approvalStatus: 'waiting', // waiting, approved, declined
-        rating: (4.2 + Math.random() * 0.7).toFixed(1),
-        isRare: e.name.includes('Rare') || Math.random() > 0.85
+        rating: null,
+        isRare: e.name.includes('Rare')
     };
 });
 
@@ -88,20 +92,20 @@ export default function CulturalEvents() {
     const [rowsPerPage, setRowsPerPage] = useState(10); // Changed default to 10 rows
     const [searchQuery, setSearchQuery] = useState('');
     const [timeFilter, setTimeFilter] = useState('all');
-    
+
     // Editor State
     const [openDialog, setOpenDialog] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [formData, setFormData] = useState({});
-    
+
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
         const q = query(collection(db, "cultural_events"), orderBy("date", "asc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const firebaseEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
+
             let merged = [...firebaseEvents];
             defaultEvents.forEach(mock => {
                 if (!merged.some(e => e.id === mock.id || e.title === mock.title)) {
@@ -126,8 +130,8 @@ export default function CulturalEvents() {
             setIsCreating(true);
             setSelectedEvent(null);
             setFormData({
-                title: '', titleLocal: '', date: new Date().toISOString().split('T')[0], endDate: '', 
-                location: 'Colombo', description: '', category: 'Religious', geofenceRadius: 3.5, 
+                title: '', titleLocal: '', date: new Date().toISOString().split('T')[0], endDate: '',
+                location: 'Colombo', description: '', category: 'Religious', geofenceRadius: 3.5,
                 imageUrl: '', aiSuggested: false, approvalStatus: 'approved'
             });
         }
@@ -177,13 +181,13 @@ export default function CulturalEvents() {
     // Filter and Pagination
     const filteredEvents = events.filter(e => {
         const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || e.category.toLowerCase().includes(searchQuery.toLowerCase());
-        
+
         let matchesTime = true;
         if (timeFilter !== 'all') {
             const eventDate = new Date(e.date).getTime();
             const today = new Date().getTime();
             const twoWeeks = 14 * 24 * 60 * 60 * 1000;
-            
+
             if (timeFilter === 'finished') {
                 matchesTime = eventDate < today - twoWeeks;
             } else if (timeFilter === 'happening_now') {
@@ -192,7 +196,7 @@ export default function CulturalEvents() {
                 matchesTime = eventDate > today + twoWeeks;
             }
         }
-        
+
         return matchesSearch && matchesTime;
     });
     const displayedEvents = filteredEvents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -209,8 +213,8 @@ export default function CulturalEvents() {
                         Review AI-predicted events, approve tourist activities, and manage geofenced broadcasts.
                     </Typography>
                 </Box>
-                <Button 
-                    variant="contained" 
+                <Button
+                    variant="contained"
                     onClick={() => handleOpenEditor()}
                     startIcon={<AddIcon />}
                     sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, px: 3 }}
@@ -221,7 +225,7 @@ export default function CulturalEvents() {
 
             {/* Controls */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <TextField 
+                <TextField
                     placeholder="Search events or categories..."
                     size="small"
                     value={searchQuery}
@@ -277,7 +281,7 @@ export default function CulturalEvents() {
                                                         </Box>
                                                     )}
                                                     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#FFF8E1', color: '#F57F17', px: 1, py: 0.2, borderRadius: 1, border: '1px solid #FFECB3' }}>
-                                                        <Typography variant="caption" fontWeight={800}>★ {row.rating || '4.5'}</Typography>
+                                                        <Typography variant="caption" fontWeight={800}>{row.rating ? `★ ${row.rating}` : 'Rare'}</Typography>
                                                     </Box>
                                                 </Box>
                                             </Box>

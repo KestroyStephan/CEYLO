@@ -8,9 +8,11 @@ import * as Location from 'expo-location';
 import { IconButton, Text, Surface, Chip, Avatar } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ecoScoreFor } from '../utils/destinations';
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+
 
 export default function MapScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -288,7 +290,7 @@ export default function MapScreen({ navigation }) {
                   name: marker.title,
                   image: getPhotoUrl(marker.photo_reference),
                   category: marker.categoryText,
-                  ecoScore: 85,
+                  ecoScore: ecoScoreFor(marker.title),
                   coords: marker.coords
                 }
               });
