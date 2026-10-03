@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Button, Card, IconButton, ActivityIndicator } from 'react-native-paper';
+import { Text, Button, Card, IconButton, ActivityIndicator, Switch } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from '../firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
@@ -13,6 +13,7 @@ export default function ItineraryScreen({ navigation }) {
     const [focus, setFocus] = useState('Nature/Eco');
     const [days, setDays] = useState(5);
     const [budget, setBudget] = useState('$$ Standard');
+    const [avoidCrowds, setAvoidCrowds] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleGenerate = async () => {
@@ -24,12 +25,15 @@ export default function ItineraryScreen({ navigation }) {
         setLoading(true);
         try {
             // FR-010: preferences saved locally and on the server
-            const preferences = { focus, days, budget, updatedAt: new Date().toISOString() };
+            const preferences = { focus, days, budget, avoidCrowds, updatedAt: new Date().toISOString() };
             await AsyncStorage.setItem('travelPreferences', JSON.stringify(preferences)).catch(() => {});
             setDoc(doc(db, 'users', auth.currentUser.uid), { travelPreferences: preferences }, { merge: true })
                 .catch(e => console.log('Preference sync failed:', e.message));
 
-            const itinerary = await generateItinerary({ mood: FOCUS_TO_MOOD[focus], days, budget });
+            const itinerary = await generateItinerary({
+                mood: FOCUS_TO_MOOD[focus], days, budget, avoidCrowds,
+                ecoInterest: focus === 'Nature/Eco' ? 80 : 50,
+            });
             navigation.navigate('ItineraryDetail', { routeData: itinerary });
         } catch (error) {
             console.error("Error generating itinerary:", error);
@@ -85,6 +89,16 @@ export default function ItineraryScreen({ navigation }) {
                         </Button>
                     </View>
 
+                    <View style={styles.spacer} />
+
+                    <View style={styles.crowdRow}>
+                        <View style={{ flex: 1 }}>
+                            <Text variant="titleMedium" style={styles.label}>Fewer crowds</Text>
+                            <Text variant="bodySmall" style={{ color: '#666' }}>Favour quieter places for this month, based on our demand data.</Text>
+                        </View>
+                        <Switch value={avoidCrowds} onValueChange={setAvoidCrowds} color="#00695c" />
+                    </View>
+
                     <Button mode="contained" style={styles.generateBtn} buttonColor="#00695c" onPress={handleGenerate} disabled={loading}>
                         {loading ? <ActivityIndicator color="white" /> : "Generate Itinerary"}
                     </Button>
@@ -114,6 +128,11 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: 'white',
         elevation: 2,
+    },
+    crowdRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     label: {
         fontWeight: 'bold',

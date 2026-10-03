@@ -1,12 +1,18 @@
 /**
  * ItineraryService.js
- * Builds an eco-cultural itinerary from the backend recommender, falling back to the
- * bundled destination dataset when the backend is unreachable (offline mode).
+ * Builds an eco-cultural itinerary from the backend recommender. When the backend is
+ * unreachable (offline mode) the same trained recommender runs on the phone over the bundled
+ * destination dataset. Every generated itinerary is logged to recommendation_records
+ * (model version, inputs, results, strategy) for the evaluation.
  */
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import * as Location from 'expo-location';
 import { auth, db } from '../firebaseConfig';
 import { recommendDestinations } from './aiClient';
 import localDestinations from '../assets/data/ai_destinations.json';
+import contentModel from '../assets/data/content_recommender.json';
+import crowdIndex from '../assets/data/crowd_index.json';
+import { profileFromApp, scoreDestinations, inSeasonMonth } from '../utils/recommenderModel';
 
 // Rough per-day spend (stay + food + local transport) in LKR for each budget tier
 const DAILY_COST_LKR = { budget: 6000, standard: 15000, luxury: 40000 };
@@ -45,31 +51,68 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Seasonal availability values in the dataset: "Year-Round", "Nov-April", "May-Oct"
-function inSeason(availability, month = new Date().getMonth()) {
-  if (!availability || availability === 'Year-Round') return true;
-  if (availability.startsWith('Nov')) return month >= 10 || month <= 3;
-  if (availability.startsWith('May')) return month >= 4 && month <= 9;
-  return true;
-}
-
-function localRecommendations({ mood, days, destination }) {
+// On-device ranking with the trained content-based model (offline mode). Mirrors the
+// backend's balanced strategy: model 50%, eco score 30%, mood category 20%.
+function localRecommendations({ mood, days, destination, budget, ecoInterest, avoidCrowds, month }) {
   const categories = MOOD_CATEGORIES[moodKey(mood)];
   const place = String(destination || '').toLowerCase();
-  let candidates = localDestinations.filter(d =>
-    categories.includes(d.category) && inSeason(d.seasonal_availability));
+  let candidates = localDestinations.filter(d => inSeasonMonth(d.seasonal_availability, month));
   if (place) {
     const local = candidates.filter(d =>
       d.name.toLowerCase().includes(place) || d.province.toLowerCase().includes(place));
     if (local.length >= days) candidates = local;
   }
-  return [...candidates]
-    .sort((a, b) => b.eco_score - a.eco_score)
+  const profile = profileFromApp({ mood, budget, days, ecoInterest });
+  const raw = scoreDestinations(contentModel, profile, candidates, month);
+  const lo = Math.min(...raw);
+  const hi = Math.max(...raw);
+  return candidates
+    .map((d, i) => {
+      const model = hi > lo ? (raw[i] - lo) / (hi - lo) : 0.5;
+      const crowd = crowdIndex[d.destination_id]?.[month - 1] || 0;
+      let score = 0.5 * model + 0.3 * (d.eco_score / 100) + 0.2 * (categories.includes(d.category) ? 1 : 0);
+      if (avoidCrowds) score -= 0.15 * crowd;
+      return { d, score };
+    })
+    .sort((a, b) => b.score - a.score)
     .slice(0, days)
-    .map(d => ({
+    .map(({ d, score }) => ({
       id: d.destination_id, name: d.name, category: d.category, province: d.province,
       lat: parseFloat(d.lat), lon: parseFloat(d.lon), ecoScore: Math.round(d.eco_score),
+      matchScore: Math.round(score * 100),
     }));
+}
+
+// RQ3: each traveller is assigned one recommendation strategy, kept on their profile
+const STRATEGIES = ['mood', 'location', 'seasonal'];
+async function getStrategy(uid) {
+  if (!uid) return 'balanced';
+  try {
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? snap.data().recStrategy : null;
+    if (STRATEGIES.includes(existing)) return existing;
+    // Stable assignment from the user id, so it never changes between sessions
+    const hash = [...uid].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const strategy = STRATEGIES[hash % STRATEGIES.length];
+    await setDoc(ref, { recStrategy: strategy }, { merge: true });
+    return strategy;
+  } catch (e) {
+    console.log('Could not read recommendation strategy:', e.message);
+    return 'balanced';
+  }
+}
+
+// Last known position, without prompting (used by the location strategy)
+async function knownPosition() {
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
+    const pos = await Location.getLastKnownPositionAsync();
+    return pos ? { lat: pos.coords.latitude, lon: pos.coords.longitude } : null;
+  } catch {
+    return null;
+  }
 }
 
 // Order stops so each leg goes to the nearest unvisited destination
@@ -142,38 +185,74 @@ export function summarizePlan(plan, budget) {
  * Generate, save and return an itinerary.
  * @returns {Promise<{id: string, offline: boolean, ...itinerary}>}
  */
-export async function generateItinerary({ mood, days, budget, destination }) {
+export async function generateItinerary({ mood, days, budget, destination, ecoInterest, avoidCrowds = false }) {
+  const started = Date.now();
   const dayCount = Math.min(14, Math.max(1, parseInt(days, 10) || 5));
   // FR-011: 5-10 recommended locations per itinerary
   const stopCount = Math.min(10, Math.max(5, dayCount));
+  const month = new Date().getMonth() + 1;
+  const uid = auth.currentUser?.uid;
+  const [strategy, position] = await Promise.all([getStrategy(uid), knownPosition()]);
+
   let stops;
   let offline = false;
+  let modelVersion = contentModel.version;
+  let rainyShare = null;
   try {
-    const matches = await recommendDestinations({ mood: moodKey(mood), days: stopCount, destination });
-    stops = matches.map(d => ({
+    const result = await recommendDestinations({
+      mood: moodKey(mood), days: stopCount, destination, budget, ecoInterest, month, strategy,
+      lat: position?.lat, lon: position?.lon, avoidCrowds,
+    });
+    stops = (result.top_matches || []).map(d => ({
       id: d.id, name: d.name, category: d.category, province: d.province,
-      lat: d.lat, lon: d.lon, ecoScore: d.ecoScore,
+      lat: d.lat, lon: d.lon, ecoScore: d.ecoScore, matchScore: d.matchScore, reason: d.reason,
     }));
+    modelVersion = result.modelVersion || modelVersion;
+    rainyShare = result.weather ? result.weather.rainyShare : null;
     if (stops.length === 0) throw new Error('No recommendations returned');
   } catch (e) {
-    console.warn('Recommendation backend unavailable, using on-device dataset:', e.message);
-    stops = localRecommendations({ mood, days: stopCount, destination });
+    console.warn('Recommendation backend unavailable, using the on-device model:', e.message);
+    stops = localRecommendations({ mood, days: stopCount, destination, budget, ecoInterest, avoidCrowds, month });
     offline = true;
   }
 
   const plan = buildPlan(stops, budget, dayCount);
   const itinerary = {
     title: `Your ${mood || 'Eco'} trip to ${destination || 'Sri Lanka'}`,
-    userId: auth.currentUser?.uid,
+    userId: uid,
     createdAt: new Date().toISOString(),
+    startDate: new Date().toISOString().slice(0, 10),
     mood: mood || null,
     budget: budget || 'Standard',
     destination: destination || null,
     source: offline ? 'on-device' : 'backend',
+    modelVersion,
+    strategy,
     plan,
     ...summarizePlan(plan, budget),
   };
 
   const docRef = await addDoc(collection(db, 'itineraries'), itinerary);
-  return { id: docRef.id, offline, ...itinerary };
+  const latencyMs = Date.now() - started;
+
+  // Design section 4.4: one record per generated itinerary, for the evaluation (RQ2, RQ3, NFR-001)
+  if (uid) {
+    addDoc(collection(db, 'recommendation_records'), {
+      userId: uid,
+      itineraryId: docRef.id,
+      createdAt: serverTimestamp(),
+      modelVersion,
+      strategy,
+      source: itinerary.source,
+      latencyMs,
+      inputs: {
+        mood: mood || null, days: dayCount, budget: budget || null, destination: destination || null,
+        ecoInterest: ecoInterest ?? null, month, avoidCrowds, hasLocation: Boolean(position),
+      },
+      rainyShare,
+      results: stops.map(s => ({ id: s.id, name: s.name, matchScore: s.matchScore ?? null })),
+    }).catch(e => console.log('Could not log recommendation record:', e.message));
+  }
+
+  return { id: docRef.id, offline, latencyMs, ...itinerary };
 }

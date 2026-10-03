@@ -10,6 +10,8 @@ import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loadEcoStats } from '../utils/ecoStats';
+import { getWeather } from '../services/aiClient';
+import WeatherChip from '../components/WeatherChip';
 import { ecoScoreFor, SUSTAINABLE_ROUTES } from '../utils/destinations';
 import { loadEvents, eventsNear } from '../utils/events';
 import { NotificationService } from '../services/NotificationService';
@@ -44,6 +46,7 @@ export default function HomeScreen({ navigation }) {
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [trendingRoutes, setTrendingRoutes] = useState([]);
   const [ecoPoints, setEcoPoints] = useState(0);
+  const [weatherNow, setWeatherNow] = useState(null);
 
   // Chat Notifications State
   const [activeChats, setActiveChats] = useState([]);
@@ -114,6 +117,9 @@ export default function HomeScreen({ navigation }) {
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
       notifyNearbyEvents(loc.coords);
+      getWeather({ lat, lon: lng })
+        .then(w => setWeatherNow(w.current))
+        .catch(e => console.log('Weather unavailable:', e.message));
 
       const aiQuery = 'popular tourist attraction OR heritage site OR famous landmark';
       const aiUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(aiQuery)}&location=${lat},${lng}&radius=20000&key=${GOOGLE_API_KEY}`;
@@ -233,6 +239,7 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.greeting}>AYUBOWAN,</Text>
         <Text style={styles.name}>{userName}</Text>
         <Text style={styles.subtitle}>Ready for a sustainable journey?</Text>
+        <WeatherChip weather={weatherNow} style={{ marginTop: 8 }} />
       </View>
     </View>
   );

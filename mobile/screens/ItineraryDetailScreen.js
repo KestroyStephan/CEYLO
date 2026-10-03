@@ -8,6 +8,8 @@ import * as Sharing from 'expo-sharing';
 import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { buildPlan, summarizePlan, distanceKm } from '../services/ItineraryService';
+import { getWeather } from '../services/aiClient';
+import WeatherChip from '../components/WeatherChip';
 import destinationsData from '../assets/data/ai_destinations.json';
 
 const { width } = Dimensions.get('window');
@@ -65,6 +67,26 @@ export default function ItineraryDetailScreen({ route, navigation }) {
       fetchItin();
     }
   }, [incomingData]);
+
+  // Forecast for the trip area, matched to each day when the trip starts within the forecast window
+  const [forecast, setForecast] = useState(null);
+  const firstStop = plan[0];
+  useEffect(() => {
+    if (!firstStop?.lat || !firstStop?.lon) return;
+    getWeather({ lat: firstStop.lat, lon: firstStop.lon })
+      .then(w => setForecast(w.daily))
+      .catch(e => console.log('Forecast unavailable:', e.message));
+  }, [firstStop?.lat, firstStop?.lon]);
+
+  const startDate = data?.startDate || new Date().toISOString().slice(0, 10);
+  const weatherForDay = (day) => {
+    if (!forecast) return null;
+    const date = new Date(`${startDate}T00:00:00`);
+    date.setDate(date.getDate() + (day || 1) - 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return forecast.find(f => f.date === key) || null;
+  };
+  const firstOfDay = new Set(plan.filter((p, i) => i === 0 || plan[i - 1].day !== p.day).map(p => p.id));
 
   const summary = summarizePlan(plan, data?.budget);
   const duration = data?.duration || summary.duration;
@@ -175,6 +197,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         <Surface style={styles.card} elevation={1}>
           <View style={styles.timeLine}>
             <Text style={styles.timeText}>{item.time || 'Day ' + item.day}</Text>
+            {firstOfDay.has(item.id) && <WeatherChip weather={weatherForDay(item.day)} compact style={{ marginTop: 2 }} />}
             <View style={[styles.dot, { backgroundColor: (item.eco || 80) >= 90 ? '#4CAF50' : '#FF9800' }]} />
             <View style={styles.line}>
               {/* Transport mode visual arc indicator */}
@@ -183,22 +206,22 @@ export default function ItineraryDetailScreen({ route, navigation }) {
               </View>
             </View>
           </View>
-          
+
           <View style={styles.details}>
             <View style={styles.cardHeader}>
               <Text style={styles.itemTitle}>{item.title || item.activity}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <IconButton 
-                  icon="sparkles" 
-                  iconColor="#FF7043" 
-                  size={16} 
+                <IconButton
+                  icon="sparkles"
+                  iconColor="#FF7043"
+                  size={16}
                   style={{ margin: 0 }}
-                  onPress={() => handleSwapAlternative(item)} 
+                  onPress={() => handleSwapAlternative(item)}
                 />
                 <MaterialCommunityIcons name="drag-vertical" size={20} color="#999" />
               </View>
             </View>
-            
+
             {item.distanceKm > 0 && (
               <Text style={styles.legText}>{item.distanceKm} km • ~{item.travelMinutes} min by {item.transport}</Text>
             )}
@@ -223,7 +246,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           <Text style={styles.title}>{title}</Text>
           <IconButton icon="share-variant" onPress={exportToPDF} />
         </View>
-        
+
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryVal}>{duration}</Text>
@@ -266,10 +289,10 @@ export default function ItineraryDetailScreen({ route, navigation }) {
       />
 
       <Surface style={styles.footer} elevation={8}>
-        <Button 
-          mode="contained" 
-          icon="navigation" 
-          style={styles.startBtn} 
+        <Button
+          mode="contained"
+          icon="navigation"
+          style={styles.startBtn}
           buttonColor="#00695C"
           onPress={startRoute}
         >

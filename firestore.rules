@@ -219,6 +219,14 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
+    // One record per generated itinerary (model version, inputs, results, strategy) for the
+    // evaluation. Written by the traveller, read by staff, never edited afterwards.
+    match /recommendation_records/{id} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if false;
+    }
+
     // Per-user traveller history
     match /visited_places/{id} {
       allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;

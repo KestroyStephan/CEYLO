@@ -197,7 +197,7 @@ function reply(message, state = {}) {
         const names = rec.top_matches.map(m => m.name).join(', ');
         const q = nextQuestion(next);
         return out(
-            `Our recommender's top picks for ${rec.cohort === 'all' ? 'you' : `${rec.vibe} travellers`}${next.destination ? ` around ${next.destination}` : ''}: ${names}.` +
+            `Our recommender's top picks for ${rec.vibe === 'All travellers' ? 'you' : `${rec.vibe} travellers`}${next.destination ? ` around ${next.destination}` : ''}: ${names}.` +
                 (q ? `\n\n${q.text}` : ''),
             q ? q.options : ['Generate my itinerary'],
             { recommendations: toCards(rec.top_matches) },

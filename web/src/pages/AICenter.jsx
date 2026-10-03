@@ -5,7 +5,7 @@ import {
     TextField, Button, MenuItem, CircularProgress
 } from '@mui/material';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { collection, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, updateDoc, doc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { BACKEND_URL } from '../config';
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -22,6 +22,32 @@ const MOODS = [
     ['eco', 'Eco Explorer'], ['culture', 'Culture Seeker'], ['adventurer', 'Adventurer'],
     ['family', 'Family'], ['spiritual', 'Spiritual'], ['relaxed', 'Relaxed'],
 ];
+
+const STRATEGY_OPTIONS = [
+    ['balanced', 'Balanced'], ['mood', 'Mood-based'], ['location', 'Location-based'], ['seasonal', 'Seasonal'],
+];
+
+const BASELINE_LABEL = { ncf: 'Two-tower NCF (old)', rule: 'Eco score + popularity rule', popularity: 'Popularity' };
+
+// Usage statistics per strategy from the logged recommendation records (RQ3, NFR-001)
+function recordStats(records) {
+    const by = {};
+    for (const r of records) {
+        const key = r.strategy || 'unknown';
+        (by[key] = by[key] || []).push(r);
+    }
+    return Object.entries(by).map(([strategy, rows]) => {
+        const lat = rows.map(r => r.latencyMs).filter(Number.isFinite).sort((a, b) => a - b);
+        return {
+            strategy,
+            count: rows.length,
+            offline: rows.filter(r => r.source === 'on-device').length,
+            avgMs: lat.length ? Math.round(lat.reduce((a, b) => a + b, 0) / lat.length) : null,
+            p95Ms: lat.length ? lat[Math.min(lat.length - 1, Math.floor(lat.length * 0.95))] : null,
+            under3s: lat.length ? lat.filter(x => x < 3000).length / lat.length : null,
+        };
+    }).sort((a, b) => b.count - a.count);
+}
 
 const ECO_FIELDS = [
     ['carbon_footprint_index', 'Carbon footprint (0-100)', 30],
@@ -63,6 +89,9 @@ export default function AICenter() {
 
     const [mood, setMood] = useState('eco');
     const [place, setPlace] = useState('');
+    const [strategy, setStrategy] = useState('balanced');
+    const [avoidCrowds, setAvoidCrowds] = useState(false);
+    const [records, setRecords] = useState([]);
     const [recs, setRecs] = useState(null);
     const [recsLoading, setRecsLoading] = useState(false);
 
@@ -78,6 +107,13 @@ export default function AICenter() {
             setDestinations(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
         });
 
+        // Most recent generated itineraries (staff can read every record)
+        const unsubRecords = onSnapshot(
+            query(collection(db, 'recommendation_records'), orderBy('createdAt', 'desc'), limit(500)),
+            (snap) => setRecords(snap.docs.map(d => d.data())),
+            (e) => console.error('Recommendation records unavailable:', e),
+        );
+
         const loadModels = () => api('/api/models').then(m => { setModels(m); setOnline(true); }).catch(() => setOnline(false));
         loadModels();
         const interval = setInterval(loadModels, 30000);
@@ -89,7 +125,7 @@ export default function AICenter() {
             ]);
         }).catch(() => setForecast([]));
 
-        return () => { unsubDestinations(); clearInterval(interval); };
+        return () => { unsubDestinations(); unsubRecords(); clearInterval(interval); };
     }, []);
 
     const toggleSafetyBlock = async (id, currentStatus) => {
@@ -99,7 +135,7 @@ export default function AICenter() {
 
     const runRecommender = async () => {
         setRecsLoading(true); setError('');
-        try { setRecs(await api('/api/recommend', { mood, days: 5, destination: place || undefined })); }
+        try { setRecs(await api('/api/recommend', { mood, days: 5, destination: place || undefined, strategy, avoidCrowds })); }
         catch (e) { setError(`Recommender: ${e.message}`); }
         finally { setRecsLoading(false); }
     };
@@ -148,9 +184,9 @@ export default function AICenter() {
                         caption={m ? `${m.chatbot.intents} intents, ${m.chatbot.metric}` : 'Loading…'} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Kpi label="RECOMMENDER PRECISION@10" color="#0F172A" icon={<AnalyticsIcon sx={{ color: '#0F172A', fontSize: 28 }} />}
-                        value={m ? m.recommender.precisionAt10.toFixed(2) : '—'}
-                        caption={m ? `MAE ${m.recommender.mae} on ${m.recommender.metric}` : 'Loading…'} />
+                    <Kpi label="RECOMMENDER NDCG@5" color="#0F172A" icon={<AnalyticsIcon sx={{ color: '#0F172A', fontSize: 28 }} />}
+                        value={m?.recommender?.ndcgAt5 != null ? m.recommender.ndcgAt5.toFixed(3) : '—'}
+                        caption={m?.recommender ? `Precision@5 ${m.recommender.precisionAt5}, content-based model` : 'Loading…'} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Kpi label="ECO MODEL R²" color="#059669" icon={<EcoIcon sx={{ color: '#059669', fontSize: 28 }} />}
@@ -177,6 +213,11 @@ export default function AICenter() {
                                     {MOODS.map(([v, l]) => <MenuItem key={v} value={v}>{l}</MenuItem>)}
                                 </TextField>
                                 <TextField size="small" label="Place (optional)" placeholder="Kandy, the south…" value={place} onChange={e => setPlace(e.target.value)} />
+                                <TextField select size="small" label="Strategy" value={strategy} onChange={e => setStrategy(e.target.value)} sx={{ minWidth: 150 }}>
+                                    {STRATEGY_OPTIONS.map(([v, l]) => <MenuItem key={v} value={v}>{l}</MenuItem>)}
+                                </TextField>
+                                <FormControlLabel control={<Switch checked={avoidCrowds} onChange={e => setAvoidCrowds(e.target.checked)} />}
+                                    label={<Typography variant="body2">Fewer crowds</Typography>} />
                                 <Button variant="contained" onClick={runRecommender} disabled={recsLoading} sx={{ bgcolor: '#006A3B', fontWeight: 800 }}>
                                     {recsLoading ? <CircularProgress size={20} color="inherit" /> : 'Run model'}
                                 </Button>
@@ -192,6 +233,13 @@ export default function AICenter() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
+                                    {recs?.weather && (
+                                        <TableRow><TableCell colSpan={3}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Weather for {place}: rain likely on {Math.round(recs.weather.rainyShare * 100)}% of the trip days; outdoor places are down-ranked accordingly. Model {recs.modelVersion}.
+                                            </Typography>
+                                        </TableCell></TableRow>
+                                    )}
                                     {!recs && (
                                         <TableRow><TableCell colSpan={3}><Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>Pick a mood and run the recommender to see its ranked picks.</Typography></TableCell></TableRow>
                                     )}
@@ -244,6 +292,77 @@ export default function AICenter() {
                                 ))
                             )}
                         </Stack>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                {/* Offline evaluation against baselines */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ ...card, height: '100%' }}>
+                        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 0.5 }}>Recommender vs baselines</Typography>
+                        <Typography variant="caption" color="text.secondary">{m?.recommender?.metric || 'Loading…'}</Typography>
+                        <Table size="small" sx={{ mt: 1 }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 800 }}>Ranker</TableCell>
+                                    <TableCell sx={{ fontWeight: 800 }} align="right">Precision@5</TableCell>
+                                    <TableCell sx={{ fontWeight: 800 }} align="right">NDCG@5</TableCell>
+                                    <TableCell sx={{ fontWeight: 800 }} align="right">Hit@5</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {m?.recommender && [['Content-based model (live)', m.recommender], ...Object.entries(m.recommender.baselines || {}).map(([k, v]) => [BASELINE_LABEL[k] || k, v])].map(([label, v], i) => (
+                                    <TableRow key={label}>
+                                        <TableCell sx={{ fontWeight: i === 0 ? 800 : 500 }}>{label}</TableCell>
+                                        <TableCell align="right">{v.precisionAt5.toFixed(3)}</TableCell>
+                                        <TableCell align="right">{v.ndcgAt5.toFixed(3)}</TableCell>
+                                        <TableCell align="right">{v.hitRateAt5.toFixed(3)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </Paper>
+                </Grid>
+
+                {/* Live usage by strategy */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ ...card, height: '100%' }}>
+                        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 0.5 }}>Generated itineraries by strategy</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Last {records.length} itineraries from recommendation_records. NFR-001 target: 95% under 3 s.
+                        </Typography>
+                        {records.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>No itineraries generated yet.</Typography>
+                        ) : (
+                            <Table size="small" sx={{ mt: 1 }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 800 }}>Strategy</TableCell>
+                                        <TableCell sx={{ fontWeight: 800 }} align="right">Itineraries</TableCell>
+                                        <TableCell sx={{ fontWeight: 800 }} align="right">Offline</TableCell>
+                                        <TableCell sx={{ fontWeight: 800 }} align="right">p95</TableCell>
+                                        <TableCell sx={{ fontWeight: 800 }} align="right">Under 3 s</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {recordStats(records).map(r => (
+                                        <TableRow key={r.strategy}>
+                                            <TableCell sx={{ fontWeight: 700, textTransform: 'capitalize' }}>{r.strategy}</TableCell>
+                                            <TableCell align="right">{r.count}</TableCell>
+                                            <TableCell align="right">{r.offline}</TableCell>
+                                            <TableCell align="right">{r.p95Ms != null ? `${(r.p95Ms / 1000).toFixed(1)} s` : '—'}</TableCell>
+                                            <TableCell align="right">
+                                                {r.under3s != null && (
+                                                    <Chip size="small" label={`${Math.round(r.under3s * 100)}%`}
+                                                        sx={{ fontWeight: 800, bgcolor: r.under3s >= 0.95 ? '#D1FAE5' : '#FEF3C7', color: r.under3s >= 0.95 ? '#059669' : '#D97706' }} />
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
                     </Paper>
                 </Grid>
             </Grid>
