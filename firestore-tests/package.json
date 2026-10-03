@@ -1,0 +1,13 @@
+{
+  "name": "ceylo-firestore-rules-tests",
+  "private": true,
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-ceylo \"node node_modules/jest/bin/jest.js --runInBand\"",
+    "test:only": "jest --runInBand"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0",
+    "jest": "^30.5.2"
+  }
+}
