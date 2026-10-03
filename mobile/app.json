@@ -71,7 +71,8 @@
         }
       ],
       "expo-camera",
-      "expo-image-picker"
+      "expo-image-picker",
+      "react-native-fast-tflite"
     ],
     "extra": {
       "eas": {

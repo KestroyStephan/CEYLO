@@ -103,4 +103,31 @@ function scoreDestinations(model, profile, destinations, month) {
   return destinations.map(d => forward(model, u.concat(destinationFeatures(model, d, month))));
 }
 
-module.exports = { profileFromApp, moodKeyOf, scoreDestinations, userFeatures, destinationFeatures, forward, inSeasonMonth, MOOD_PROFILES };
+/**
+ * Input for the TensorFlow Lite model: a Float32Array of model.tflite.batch rows x features,
+ * one row per destination, zero-padded when there are fewer destinations than the batch.
+ */
+function tfliteInput(model, profile, destinations, month) {
+  const { batch, features } = model.tflite;
+  const input = new Float32Array(batch * features);
+  const u = userFeatures(model, profile, month);
+  destinations.slice(0, batch).forEach((d, i) => input.set(u.concat(destinationFeatures(model, d, month)), i * features));
+  return input;
+}
+
+/**
+ * Forecast crowd level (0-1) of a destination for a month, from the per-destination LSTM.
+ * Beyond the forecast horizon it uses the same calendar month of the latest forecast year.
+ */
+function crowdFor(forecast, year, month) {
+  if (!forecast) return 0;
+  const mm = String(month).padStart(2, '0');
+  if (forecast[`${year}-${mm}`] != null) return forecast[`${year}-${mm}`];
+  const keys = Object.keys(forecast).filter(k => k.endsWith(`-${mm}`)).sort();
+  return keys.length ? forecast[keys[keys.length - 1]] : 0;
+}
+
+module.exports = {
+  profileFromApp, moodKeyOf, scoreDestinations, userFeatures, destinationFeatures, forward, inSeasonMonth,
+  tfliteInput, crowdFor, MOOD_PROFILES,
+};

@@ -94,7 +94,7 @@ export default function ItineraryScreen({ navigation }) {
                     <View style={styles.crowdRow}>
                         <View style={{ flex: 1 }}>
                             <Text variant="titleMedium" style={styles.label}>Fewer crowds</Text>
-                            <Text variant="bodySmall" style={{ color: '#666' }}>Favour quieter places for this month, based on our demand data.</Text>
+                            <Text variant="bodySmall" style={{ color: '#666' }}>Favour places our crowd forecast model expects to be quiet this month.</Text>
                         </View>
                         <Switch value={avoidCrowds} onValueChange={setAvoidCrowds} color="#00695c" />
                     </View>

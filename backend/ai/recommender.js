@@ -1,11 +1,12 @@
 /**
  * Destination recommender. Ranks the CEYLO destinations with the trained content-based model
  * (traveller profile + destination features + month), then applies context: the mood's
- * preferred categories, eco score, rain forecast, crowd levels and the recommendation strategy
+ * preferred categories, eco score, rain forecast, forecast crowd levels (per-destination LSTM)
+ * and the recommendation strategy
  * being tested for RQ3. Every pick carries a plain-language reason.
  */
 const contentModel = require('../models/content_recommender.json');
-const { profileFromApp, scoreDestinations, moodKeyOf, inSeasonMonth } = require('./recommenderModel');
+const { profileFromApp, scoreDestinations, moodKeyOf, inSeasonMonth, crowdFor } = require('./recommenderModel');
 const { destinations, resolvePlace, distanceKm } = require('./places');
 const { rainyShare } = require('./weather');
 
@@ -59,7 +60,10 @@ const pct = (x) => Math.round(x * 100);
 function recommend(opts = {}) {
     const { mood, days, destination, budget, ecoInterest, origin, weather, avoidCrowds } = opts;
     const n = opts.count || Math.min(10, Math.max(5, parseInt(days, 10) || 5));
-    const month = Math.min(12, Math.max(1, parseInt(opts.month, 10) || new Date().getMonth() + 1));
+    const now = new Date();
+    const month = Math.min(12, Math.max(1, parseInt(opts.month, 10) || now.getMonth() + 1));
+    // A month earlier than this one means the trip is next year
+    const year = month < now.getMonth() + 1 ? now.getFullYear() + 1 : now.getFullYear();
     const strategy = STRATEGIES[opts.strategy] ? opts.strategy : 'balanced';
     const w = STRATEGIES[strategy];
     const moodKey = moodKeyOf(mood);
@@ -94,7 +98,7 @@ function recommend(opts = {}) {
         const model = hi > lo ? (raw[i] - lo) / (hi - lo) : 0.5;
         const categoryMatch = categories.includes(d.category) ? 1 : 0;
         const eco = d.eco_score / 100;
-        const crowd = d.crowd_by_month ? d.crowd_by_month[month - 1] : 0;
+        const crowd = crowdFor(d.crowd_forecast, year, month);
         const km = anchor ? distanceKm(anchor.lat, anchor.lon, d.lat, d.lon) : null;
         const near = km == null ? 0 : 1 - Math.min(km, 200) / 200;
         const season = 1 - crowd;
@@ -111,7 +115,7 @@ function recommend(opts = {}) {
         }
         if (avoidCrowds) {
             score -= 0.15 * crowd;
-            if (crowd < 0.3) notes.push('usually quiet this month');
+            if (crowd < 0.3) notes.push('forecast to be quiet this month');
         }
         return { d, raw: raw[i], model, categoryMatch, crowd, km, score, notes };
     });

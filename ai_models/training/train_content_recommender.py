@@ -9,7 +9,10 @@ small enough to run on the phone offline.
     venv/Scripts/python train_content_recommender.py     (also called by export_models.py)
 
 Writes backend/models/content_recommender.json and mobile/assets/data/content_recommender.json
-and returns evaluation metrics (precision@5, NDCG@5, hit rate@5) against three baselines.
+(weights for the JavaScript fallback), ai_models/content_recommender_model.keras and
+mobile/assets/models/content_recommender.tflite (TensorFlow Lite, run on the phone with
+react-native-fast-tflite), and returns evaluation metrics (precision@5, NDCG@5, hit rate@5)
+against three baselines.
 """
 import datetime
 import json
@@ -224,12 +227,46 @@ def train_content_recommender(out_dirs=None):
             destination_features(dest_by_id[did], month, n_dest)
         checks.append({'profile': sample_profile, 'destinationId': did, 'month': month,
                        'score': round(float(model.predict(np.array([f], dtype=np.float32), verbose=0)[0, 0]), 6)})
+    # TensorFlow Lite for the phone: fixed batch of one row per destination (unused rows are zero)
+    model.save(os.path.join(MODELS, 'content_recommender_model.keras'))
+    n_features = X.shape[1]
+
+    # Converting the trained model directly yields NaNs (Dropout in a fixed-shape graph), so the
+    # Dense layers are copied into an identical inference-only network with a fixed batch
+    trained_dense = [l for l in model.layers if isinstance(l, keras.layers.Dense)]
+    fixed = keras.Sequential([keras.layers.Input(shape=(n_features,), batch_size=n_dest)] +
+                             [keras.layers.Dense(l.units, activation=l.get_config()['activation']) for l in trained_dense])
+    for src, dst in zip(trained_dense, fixed.layers):
+        dst.set_weights(src.get_weights())
+    converter = tf.lite.TFLiteConverter.from_keras_model(fixed)
+    tflite_bytes = converter.convert()
+    tflite_dir = os.path.join(ROOT, 'mobile', 'assets', 'models')
+    os.makedirs(tflite_dir, exist_ok=True)
+    tflite_path = os.path.join(tflite_dir, 'content_recommender.tflite')
+    with open(tflite_path, 'wb') as f:
+        f.write(tflite_bytes)
+
+    # The TFLite model must give the same scores as Keras
+    interp = tf.lite.Interpreter(model_content=tflite_bytes)
+    interp.allocate_tensors()
+    batch = np.zeros((n_dest, n_features), dtype=np.float32)
+    batch[:len(dests)] = [features(cases[0]['user'], d, cases[0]['month']) for d in dest_ids]
+    interp.set_tensor(interp.get_input_details()[0]['index'], batch)
+    interp.invoke()
+    lite = interp.get_tensor(interp.get_output_details()[0]['index']).flatten()
+    keras_out = model.predict(batch, verbose=0).flatten()
+    gap = float(np.max(np.abs(lite - keras_out)))
+    # XNNPACK float kernels round differently from TensorFlow; anything this small cannot change a ranking
+    assert gap < 1e-4, f'TFLite output differs from Keras by {gap}'
+    print(f'  wrote {os.path.relpath(tflite_path, ROOT)} ({len(tflite_bytes) // 1024} KB), max gap to Keras {gap:.2e}')
+
     payload = {
         'name': 'CEYLO content-based recommender',
         'version': f'content-{TODAY}',
         'trained': TODAY,
         'moods': MOODS, 'budgets': BUDGETS, 'categories': CATEGORIES, 'ecoFeatures': ECO_FEATURES,
         'destinationCount': n_dest,
+        'tflite': {'file': 'assets/models/content_recommender.tflite', 'batch': n_dest, 'features': int(n_features)},
         'layers': [{'w': r(l.get_weights()[0]), 'b': r(l.get_weights()[1]), 'activation': l.get_config()['activation']} for l in dense],
         'checks': checks,
     }

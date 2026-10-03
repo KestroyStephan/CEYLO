@@ -14,7 +14,7 @@ Writes to backend/models/ and backend/data/:
     eco_scorer.json   random forest trees from eco_scorer_model.pkl
     metrics.json      evaluation metrics shown in the admin AI Model Monitor
     backend/data/destinations.json  dataset + eco model batch scores + monthly crowd index
-    mobile/assets/data/crowd_index.json  monthly crowd index per destination (offline ranking)
+    mobile/assets/data/crowd_forecast.json  per-destination LSTM crowd forecast (offline ranking)
 Every model file carries a few reference predictions ("checks") that the backend tests
 compare against, so the JavaScript inference is proven to match Python.
 """
@@ -251,18 +251,8 @@ def eco_version():
 
 
 # ---------------------------------------------------------------- datasets the backend serves
-def monthly_crowd_index():
-    """Average daily bookings per destination per calendar month, scaled 0-1 by the busiest
-    destination-month in the demand series. High = crowded."""
-    df = pd.read_csv(os.path.join(DATASETS, 'time_series_demand.csv'))
-    df['month'] = pd.to_datetime(df['date']).dt.month
-    monthly = df.groupby(['destination_id', 'month'])['bookings_count'].mean().unstack(fill_value=0)
-    scaled = monthly / monthly.values.max()
-    return {d: [round(float(scaled.loc[d].get(m, 0)), 4) for m in range(1, 13)] for d in scaled.index}
-
-
-def copy_datasets(rf):
-    print('Copying datasets for the backend (with eco model scores and crowd index)...')
+def copy_datasets(rf, crowd):
+    print('Copying datasets for the backend (with eco model scores and crowd forecast)...')
     src = os.path.join(ROOT, 'mobile', 'assets', 'data')
     with open(os.path.join(src, 'ai_destinations.json'), encoding='utf-8') as f:
         dests = json.load(f)
@@ -273,17 +263,16 @@ def copy_datasets(rf):
     X = pd.DataFrame([{f: (1 if str(d[f]) == 'True' else 0) if f == 'carrying_capacity_adherence' else float(d[f])
                        for f in ECO_FEATURES} for d in dests])
     eco_scores = rf.predict(X[ECO_FEATURES])
-    crowd = monthly_crowd_index()
     version = eco_version()
     rows = []
     for d, score in zip(dests, eco_scores):
         row = {k: d.get(k) for k in keep}
         row['eco_model_score'] = round(float(score), 2)
         row['eco_model_version'] = version
-        row['crowd_by_month'] = crowd.get(d['destination_id'], [0] * 12)
+        row['crowd_forecast'] = crowd.get(d['destination_id'], {})
         rows.append(row)
     write_json(os.path.join(OUT_DATA, 'destinations.json'), rows)
-    write_json(os.path.join(src, 'crowd_index.json'), crowd)
+    write_json(os.path.join(src, 'crowd_forecast.json'), crowd)
     with open(os.path.join(src, 'ai_events.json'), encoding='utf-8') as f:
         write_json(os.path.join(OUT_DATA, 'events.json'), json.load(f))
 
@@ -292,13 +281,16 @@ if __name__ == '__main__':
     os.makedirs(OUT_MODELS, exist_ok=True)
     os.makedirs(OUT_DATA, exist_ok=True)
     from train_content_recommender import train_content_recommender
+    from train_crowd_forecast import train_crowd_forecast
     eco_metrics, rf = export_eco()
+    crowd_metrics, crowd = train_crowd_forecast()
     metrics = {'generated': TODAY, 'models': {
         'chatbot': train_chatbot(),
         'recommender': train_content_recommender([OUT_MODELS, os.path.join(ROOT, 'mobile', 'assets', 'data')]),
         'demand': export_demand(),
         'eco': eco_metrics,
+        'crowd': crowd_metrics,
     }}
     write_json(os.path.join(OUT_MODELS, 'metrics.json'), metrics)
-    copy_datasets(rf)
+    copy_datasets(rf, crowd)
     print('Done.')

@@ -2,7 +2,8 @@
  * ItineraryService.js
  * Builds an eco-cultural itinerary from the backend recommender. When the backend is
  * unreachable (offline mode) the same trained recommender runs on the phone over the bundled
- * destination dataset. Every generated itinerary is logged to recommendation_records
+ * destination dataset, as a TensorFlow Lite model (react-native-fast-tflite), or in plain
+ * JavaScript where the native module is missing (Expo Go, web). Every generated itinerary is logged to recommendation_records
  * (model version, inputs, results, strategy) for the evaluation.
  */
 import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -11,8 +12,43 @@ import { auth, db } from '../firebaseConfig';
 import { recommendDestinations } from './aiClient';
 import localDestinations from '../assets/data/ai_destinations.json';
 import contentModel from '../assets/data/content_recommender.json';
-import crowdIndex from '../assets/data/crowd_index.json';
-import { profileFromApp, scoreDestinations, inSeasonMonth } from '../utils/recommenderModel';
+import crowdForecast from '../assets/data/crowd_forecast.json';
+import { profileFromApp, scoreDestinations, inSeasonMonth, tfliteInput, crowdFor } from '../utils/recommenderModel';
+
+// The TFLite runtime is a native module; it is absent in Expo Go and on web
+let fastTflite = null;
+try {
+  fastTflite = require('react-native-fast-tflite');
+} catch (e) {
+  fastTflite = null;
+}
+
+let tfliteModel = null;
+async function loadTflite() {
+  if (!fastTflite) return null;
+  if (!tfliteModel) {
+    tfliteModel = fastTflite.loadTensorflowModel(require('../assets/models/content_recommender.tflite'))
+      .catch(e => {
+        console.log('TFLite model unavailable, using JavaScript inference:', e.message);
+        return null;
+      });
+  }
+  return tfliteModel;
+}
+
+/** Model scores for each candidate, plus which engine produced them. */
+async function modelScores(profile, candidates, month) {
+  const tfl = await loadTflite();
+  if (tfl) {
+    try {
+      const [out] = await tfl.run([tfliteInput(contentModel, profile, candidates, month)]);
+      return { scores: Array.from(out).slice(0, candidates.length), engine: 'tflite' };
+    } catch (e) {
+      console.log('TFLite inference failed, using JavaScript inference:', e.message);
+    }
+  }
+  return { scores: scoreDestinations(contentModel, profile, candidates, month), engine: 'js' };
+}
 
 // Rough per-day spend (stay + food + local transport) in LKR for each budget tier
 const DAILY_COST_LKR = { budget: 6000, standard: 15000, luxury: 40000 };
@@ -53,7 +89,7 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
 
 // On-device ranking with the trained content-based model (offline mode). Mirrors the
 // backend's balanced strategy: model 50%, eco score 30%, mood category 20%.
-function localRecommendations({ mood, days, destination, budget, ecoInterest, avoidCrowds, month }) {
+async function localRecommendations({ mood, days, destination, budget, ecoInterest, avoidCrowds, month, year }) {
   const categories = MOOD_CATEGORIES[moodKey(mood)];
   const place = String(destination || '').toLowerCase();
   let candidates = localDestinations.filter(d => inSeasonMonth(d.seasonal_availability, month));
@@ -63,13 +99,13 @@ function localRecommendations({ mood, days, destination, budget, ecoInterest, av
     if (local.length >= days) candidates = local;
   }
   const profile = profileFromApp({ mood, budget, days, ecoInterest });
-  const raw = scoreDestinations(contentModel, profile, candidates, month);
+  const { scores: raw, engine } = await modelScores(profile, candidates, month);
   const lo = Math.min(...raw);
   const hi = Math.max(...raw);
-  return candidates
+  const stops = candidates
     .map((d, i) => {
       const model = hi > lo ? (raw[i] - lo) / (hi - lo) : 0.5;
-      const crowd = crowdIndex[d.destination_id]?.[month - 1] || 0;
+      const crowd = crowdFor(crowdForecast[d.destination_id], year, month);
       let score = 0.5 * model + 0.3 * (d.eco_score / 100) + 0.2 * (categories.includes(d.category) ? 1 : 0);
       if (avoidCrowds) score -= 0.15 * crowd;
       return { d, score };
@@ -81,6 +117,7 @@ function localRecommendations({ mood, days, destination, budget, ecoInterest, av
       lat: parseFloat(d.lat), lon: parseFloat(d.lon), ecoScore: Math.round(d.eco_score),
       matchScore: Math.round(score * 100),
     }));
+  return { stops, engine };
 }
 
 // RQ3: each traveller is assigned one recommendation strategy, kept on their profile
@@ -191,6 +228,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
   // FR-011: 5-10 recommended locations per itinerary
   const stopCount = Math.min(10, Math.max(5, dayCount));
   const month = new Date().getMonth() + 1;
+  const year = new Date().getFullYear();
   const uid = auth.currentUser?.uid;
   const [strategy, position] = await Promise.all([getStrategy(uid), knownPosition()]);
 
@@ -198,6 +236,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
   let offline = false;
   let modelVersion = contentModel.version;
   let rainyShare = null;
+  let engine = 'backend';
   try {
     const result = await recommendDestinations({
       mood: moodKey(mood), days: stopCount, destination, budget, ecoInterest, month, strategy,
@@ -212,7 +251,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
     if (stops.length === 0) throw new Error('No recommendations returned');
   } catch (e) {
     console.warn('Recommendation backend unavailable, using the on-device model:', e.message);
-    stops = localRecommendations({ mood, days: stopCount, destination, budget, ecoInterest, avoidCrowds, month });
+    ({ stops, engine } = await localRecommendations({ mood, days: stopCount, destination, budget, ecoInterest, avoidCrowds, month, year }));
     offline = true;
   }
 
@@ -244,6 +283,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
       modelVersion,
       strategy,
       source: itinerary.source,
+      engine,
       latencyMs,
       inputs: {
         mood: mood || null, days: dayCount, budget: budget || null, destination: destination || null,

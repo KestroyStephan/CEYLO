@@ -94,6 +94,30 @@ describe('Context-aware ranking', () => {
         expect(meanKm(near)).toBeLessThan(meanKm(mood));
     });
 
+    it('looks up the LSTM crowd forecast by month, falling back to the same month of the last forecast year', () => {
+        const f = { '2026-08': 0.9, '2027-08': 0.8, '2027-01': 0.2 };
+        expect(recommenderModel.crowdFor(f, 2026, 8)).toBe(0.9);
+        expect(recommenderModel.crowdFor(f, 2030, 8)).toBe(0.8);
+        expect(recommenderModel.crowdFor(f, 2030, 3)).toBe(0);
+        expect(destinations.every(d => Object.keys(d.crowd_forecast).length === 24)).toBe(true);
+    });
+
+    it('phone and backend share the same crowd forecast', () => {
+        const mobile = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'mobile', 'assets', 'data', 'crowd_forecast.json'), 'utf-8'));
+        for (const d of destinations.slice(0, 20)) expect(mobile[d.destination_id]).toEqual(d.crowd_forecast);
+    });
+
+    it('builds TensorFlow Lite input with one zero-padded row per destination', () => {
+        const profile = recommenderModel.profileFromApp({ mood: 'culture', budget: 'Standard', days: 5 });
+        const input = recommenderModel.tfliteInput(contentModel, profile, destinations.slice(0, 3), 8);
+        const { batch, features } = contentModel.tflite;
+        expect(input.length).toBe(batch * features);
+        const row1 = recommenderModel.userFeatures(contentModel, profile, 8).concat(recommenderModel.destinationFeatures(contentModel, destinations[1], 8));
+        expect(Array.from(input.slice(features, 2 * features))).toEqual(row1.map(v => Math.fround(v)));
+        expect(input.slice(3 * features).every(v => v === 0)).toBe(true);
+        expect(fs.existsSync(path.join(__dirname, '..', '..', 'mobile', contentModel.tflite.file))).toBe(true);
+    });
+
     it('skips destinations out of season for the trip month', () => {
         const r = recommend({ mood: 'family', days: 10, month: 7, count: 275 });
         expect(r.top_matches.every(m => destinations.find(d => d.destination_id === m.id).seasonal_availability !== 'Nov-April')).toBe(true);
@@ -233,7 +257,7 @@ describe('Other model endpoints', () => {
 
     it('lists model metrics', async () => {
         const response = await request(app).get('/api/models');
-        expect(Object.keys(response.body.models)).toEqual(['chatbot', 'recommender', 'demand', 'eco']);
+        expect(Object.keys(response.body.models)).toEqual(['chatbot', 'recommender', 'demand', 'eco', 'crowd']);
     });
 
     it('reports models, not AI provider keys, in the health check', async () => {
