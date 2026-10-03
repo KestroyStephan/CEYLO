@@ -96,7 +96,7 @@ export default function GuideBookingsScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{ padding: 4, marginRight: 12 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home', { screen: 'EditProfile' })} style={{ padding: 4, marginRight: 12 }}>
           <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Bookings</Text>

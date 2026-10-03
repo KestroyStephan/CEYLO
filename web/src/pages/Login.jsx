@@ -1,15 +1,39 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Container, Box, Typography, TextField, Button, Alert, Card, CardContent } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 
 export default function Login() {
     const emailRef = useRef();
     const passwordRef = useRef();
-    const { login } = useAuth();
+    const { login, currentUser } = useAuth();
     const [error, setError] = useState('');
+    const [info, setInfo] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    // The profile/role is loaded asynchronously after sign-in; move on once it is ready
+    useEffect(() => {
+        if (currentUser) navigate('/', { replace: true });
+    }, [currentUser, navigate]);
+
+    async function handleForgotPassword() {
+        const email = emailRef.current.value.trim();
+        setError('');
+        setInfo('');
+        if (!email) {
+            setError('Enter your email address first, then click "Forgot Password?" again.');
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            setInfo('A password reset link has been sent to ' + email + '.');
+        } catch (err) {
+            setError('Could not send reset email: ' + err.message);
+        }
+    }
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -18,7 +42,6 @@ export default function Login() {
             setError('');
             setLoading(true);
             await login(emailRef.current.value, passwordRef.current.value);
-            navigate('/');
         } catch (err) {
             setError('Failed to log in: ' + err.message);
         } finally {
@@ -51,6 +74,7 @@ export default function Login() {
                         </Box>
 
                         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                        {info && <Alert severity="success" sx={{ mb: 2 }}>{info}</Alert>}
 
                         <form onSubmit={handleSubmit}>
                             <TextField
@@ -103,7 +127,7 @@ export default function Login() {
                                 fullWidth
                                 variant="text"
                                 size="small"
-                                onClick={() => alert('Password reset flow to be implemented')}
+                                onClick={handleForgotPassword}
                                 sx={{ color: '#00695c', mt: 1 }}
                             >
                                 Forgot Password?

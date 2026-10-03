@@ -4,7 +4,7 @@ import { Text, Surface, Button, IconButton, List, Searchbar } from 'react-native
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { db, auth, storage } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -12,8 +12,45 @@ import * as SMS from 'expo-sms';
 import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
 import { onSnapshot } from 'firebase/firestore';
+import { OfflineQueue } from '../services/OfflineQueue';
+import { SOS_SMS_NUMBER } from '../config';
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`;
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GPS_TIMEOUT_MS = 5000;
+
+// Never let a missing GPS fix block an emergency: last known position first, then a bounded wait
+async function getPositionFast() {
+  const last = await Location.getLastKnownPositionAsync({ maxAge: 60000 }).catch(() => null);
+  try {
+    return await Promise.race([
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('GPS timeout')), GPS_TIMEOUT_MS)),
+    ]);
+  } catch (e) {
+    return last || await Location.getLastKnownPositionAsync({}).catch(() => null);
+  }
+}
+
+// Nearest real facility of a type from Google Places, with its phone number
+async function findNearest(type, coords) {
+  const nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${coords.latitude},${coords.longitude}&rankby=distance&type=${type}&key=${GOOGLE_API_KEY}`;
+  const nearby = await (await fetch(nearbyUrl)).json();
+  const place = nearby.results?.[0];
+  if (!place) return null;
+  const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,international_phone_number&key=${GOOGLE_API_KEY}`;
+  const details = await (await fetch(detailsUrl)).json().catch(() => ({}));
+  const loc = place.geometry.location;
+  const R = 6371;
+  const dLat = (loc.lat - coords.latitude) * Math.PI / 180;
+  const dLon = (loc.lng - coords.longitude) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(coords.latitude * Math.PI / 180) * Math.cos(loc.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return {
+    name: place.name,
+    distance: km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`,
+    phone: details.result?.international_phone_number || details.result?.formatted_phone_number || null,
+  };
+}
 
 const { width } = Dimensions.get('window');
 
@@ -24,7 +61,7 @@ const EMBASSIES = [
   { country: 'China', phone: '+94 11 2688610', address: 'Vidya Mawatha, Colombo 07' },
 ];
 
-export default function SOSScreen() {
+export default function SOSScreen({ navigation }) {
   const [active, setActive] = useState(false);
   const [activeDocId, setActiveDocId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +71,8 @@ export default function SOSScreen() {
   // Camera States
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
+  const activeDocIdRef = useRef(null);
   const [capturedUri, setCapturedUri] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
@@ -87,29 +126,25 @@ export default function SOSScreen() {
         setAiLoading(false);
         return;
       }
-      let locCoords = { latitude: 6.9271, longitude: 79.8612 }; // Default Colombo
-      try {
-        // Use getLastKnownPositionAsync first for speed, then try current
-        let loc = await Location.getLastKnownPositionAsync({});
-        if (!loc) {
-          // Timeout after 3 seconds if GPS is hanging
-          loc = await Promise.race([
-            Location.getCurrentPositionAsync({}),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
-          ]);
-        }
-        if (loc && loc.coords) locCoords = loc.coords;
-      } catch (e) {
-        console.log("GPS fetch failed/timeout, using fallback location.");
+      const loc = await getPositionFast();
+      if (!loc?.coords) {
+        setAiLoading(false);
+        return;
       }
-      
-      setUserLoc(locCoords);
-      fetchAISuggestions(locCoords);
+      setUserLoc(loc.coords);
+      fetchAISuggestions(loc.coords);
 
       locSub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, timeInterval: 300000, distanceInterval: 50 },
+        { accuracy: Location.Accuracy.Balanced, timeInterval: 30000, distanceInterval: 50 },
         (loc) => {
-          setBreadcrumbs(prev => [...prev.slice(-5), { lat: loc.coords.latitude, lon: loc.coords.longitude }]);
+          const crumb = { lat: loc.coords.latitude, lon: loc.coords.longitude };
+          setBreadcrumbs(prev => [...prev.slice(-5), crumb]);
+          if (activeDocIdRef.current) {
+            updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), {
+              location: { latitude: crumb.lat, longitude: crumb.lon },
+              lastLocationAt: serverTimestamp(),
+            }).catch(() => {});
+          }
         }
       );
     };
@@ -119,21 +154,19 @@ export default function SOSScreen() {
 
   const fetchAISuggestions = async (coords) => {
     try {
-      const prompt = `I am in an emergency in Sri Lanka at coordinates Lat: ${coords.latitude}, Lon: ${coords.longitude}. Provide the 1 nearest hospital, 1 nearest police station, and 1 nearest pharmacy/first-aid center. Also provide a 1-sentence quick tip for what to do if I am lost or in an accident here. Return ONLY valid JSON format: {"hospital": {"name": "...", "distance": "...", "phone": "..."}, "police": {"name": "...", "distance": "...", "phone": "..."}, "pharmacy": {"name": "...", "distance": "...", "phone": "..."}, "tip": "..."}`;
-      
-      const res = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      });
-      
-      const data = await res.json();
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
-        const text = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-        setAiSuggestions(JSON.parse(text));
+      const [hospital, police, pharmacy] = await Promise.all([
+        findNearest('hospital', coords).catch(() => null),
+        findNearest('police', coords).catch(() => null),
+        findNearest('pharmacy', coords).catch(() => null),
+      ]);
+      if (hospital || police || pharmacy) {
+        setAiSuggestions({
+          hospital, police, pharmacy,
+          tip: 'Stay where you are if it is safe, keep your phone charged, and call 119 (Police) or 1990 (Suwa Seriya ambulance).',
+        });
       }
     } catch (e) {
-      console.error("AI Fetch error:", e);
+      console.error("Nearby facilities error:", e);
     } finally {
       setAiLoading(false);
     }
@@ -141,6 +174,7 @@ export default function SOSScreen() {
 
   // Walkie-Talkie & Admin Camera Request Listener
   useEffect(() => {
+    activeDocIdRef.current = activeDocId;
     let unsub = () => {};
     if (activeDocId) {
       unsub = onSnapshot(doc(db, "sos_alerts", activeDocId), async (snap) => {
@@ -164,7 +198,7 @@ export default function SOSScreen() {
           if (lastCameraRequestRef.current !== reqTime) {
             lastCameraRequestRef.current = reqTime;
             // Prevent showing camera if it's an old request from previous sessions
-            if (Date.now() - reqTime < 60000) { 
+            if (Date.now() - reqTime < 60000) {
               handleOptionalPhoto();
             }
           }
@@ -202,7 +236,7 @@ export default function SOSScreen() {
         cancelSOS();
         return;
       }
-      
+
       // Start 3 second countdown
       setCountdown(3);
       let count = 3;
@@ -218,54 +252,80 @@ export default function SOSScreen() {
     }
   };
 
+  const sendSmsFallback = async (location, alertData) => {
+    // Queue the log so the admin panel gets it as soon as the connection returns
+    await OfflineQueue.enqueue('sos', { ...alertData, channel: 'sms', queuedAt: new Date().toISOString() });
+    const isAvailable = await SMS.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert("No Connection", "No internet and SMS is unavailable. Please call 119 (Police) or 1990 (Ambulance).", [
+        { text: 'Call 119', onPress: () => Linking.openURL('tel:119') },
+        { text: 'OK' },
+      ]);
+      return;
+    }
+    const locStr = location
+      ? `https://maps.google.com/?q=${location.coords.latitude},${location.coords.longitude}`
+      : 'Location unavailable';
+    const { result } = await SMS.sendSMSAsync(
+      SOS_SMS_NUMBER ? [SOS_SMS_NUMBER] : [], // no configured number: the traveller picks a contact
+      `CEYLO SOS: ${alertData.userName} needs help. Location: ${locStr}`
+    );
+    if (result === 'cancelled') {
+      Alert.alert("SMS Not Sent", "The emergency SMS was cancelled. Your alert will be sent automatically when you are back online.");
+    } else {
+      Alert.alert("Offline SOS Sent", "No internet detected. An emergency SMS with your location was sent, and the alert will sync when you reconnect.");
+    }
+  };
+
   const submitEmergency = async () => {
     setLoading(true);
+    const user = auth.currentUser;
+    let location = null;
+    let alertData = null;
     try {
-      let location = null;
-      let { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+      const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
       if (locStatus === 'granted') {
-        location = await Location.getCurrentPositionAsync({});
+        location = await getPositionFast();
+      } else {
+        Alert.alert("Location access required", "Your alert will be sent without your location.");
       }
 
-      const netState = await NetInfo.fetch();
-      if (!netState.isConnected) {
-        // Offline Fallback Protocol
-        const isAvailable = await SMS.isAvailableAsync();
-        if (isAvailable) {
-          const locStr = location ? `Lat: ${location.coords.latitude}, Lon: ${location.coords.longitude}` : 'Unknown Location';
-          await SMS.sendSMSAsync(
-            ['+94770000000'], // Admin Emergency Number
-            `CEYLO OFFLINE SOS: Tourist in danger. Current GPS: ${locStr}. Please dispatch rescue team immediately.`
-          );
-          Alert.alert("Offline Fallback Sent", "No internet detected. An emergency SMS with your coordinates has been dispatched via cellular signal.");
-        } else {
-          Alert.alert("Critical Error", "No internet and SMS is unavailable on this device.");
-        }
-        setLoading(false);
-        return;
-      }
-
-      const user = auth.currentUser;
-      const alertData = {
+      alertData = {
         userId: user?.uid || 'anonymous',
         userName: user?.displayName || 'Tourist',
         phone: user?.phoneNumber || 'N/A',
         status: 'active',
-        timestamp: serverTimestamp(),
+        channel: 'online',
+        clientCreatedAt: new Date().toISOString(),
         photoUrl: null, // Photo can be added later
+        breadcrumbs,
         location: location ? {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         } : null
       };
 
-      const docRef = await addDoc(collection(db, "sos_alerts"), alertData);
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected || netState.isInternetReachable === false) {
+        await sendSmsFallback(location, alertData);
+        return;
+      }
+
+      // A Firestore write that never reaches the server must not hang the SOS button
+      const docRef = await Promise.race([
+        addDoc(collection(db, "sos_alerts"), { ...alertData, timestamp: serverTimestamp() }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SOS upload timed out')), 10000)),
+      ]);
       setActive(true);
       setActiveDocId(docRef.id);
       Alert.alert("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
     } catch (error) {
       console.error("Error sending SOS:", error);
-      Alert.alert("Failed", "Failed to send alert. Please call emergency services directly.");
+      if (alertData) {
+        await sendSmsFallback(location, alertData).catch(() => {});
+      } else {
+        Alert.alert("Failed", "Failed to send alert. Please call emergency services directly.");
+      }
     } finally {
       setLoading(false);
     }
@@ -296,6 +356,13 @@ export default function SOSScreen() {
           cameraRef.current.stopRecording();
           setIsRecordingVideo(false);
         } else {
+          if (!micPermission?.granted) {
+            const mic = await requestMicPermission();
+            if (!mic.granted) {
+              Alert.alert("Microphone Required", "Allow microphone access to record video evidence.");
+              return;
+            }
+          }
           setIsRecordingVideo(true);
           const video = await cameraRef.current.recordAsync({ maxDuration: 15 });
           setCapturedUri(video.uri);
@@ -317,7 +384,7 @@ export default function SOSScreen() {
       const blob = await res.blob();
       const ext = mediaType === 'video' ? 'mp4' : 'jpg';
       const r = ref(storage, `sos_alerts/${activeDocId}_evidence.${ext}`);
-      
+
       const evidenceUrl = await new Promise((resolve, reject) => {
         const task = uploadBytesResumable(r, blob);
         task.on('state_changed',
@@ -329,7 +396,7 @@ export default function SOSScreen() {
 
       const alertRef = doc(db, "sos_alerts", activeDocId);
       await updateDoc(alertRef, { evidenceUrl, mediaType });
-      
+
       setShowCamera(false);
       setCapturedUri(null);
       Alert.alert("Evidence Attached", "Photo has been sent to authorities.");
@@ -351,7 +418,7 @@ export default function SOSScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient colors={['#FF5252', '#D32F2F']} style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation?.canGoBack() && navigation.goBack()} style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Emergency Support</Text>
@@ -360,8 +427,8 @@ export default function SOSScreen() {
 
         <View style={styles.sosSection}>
           <Animated.View style={[styles.pulseCircle, { transform: [{ scale: pulseAnim }], opacity: active ? 0.4 : 0 }]} />
-          <TouchableOpacity 
-            activeOpacity={0.8} 
+          <TouchableOpacity
+            activeOpacity={0.8}
             style={[styles.sosBtn, active && { backgroundColor: '#B71C1C' }, countdown !== null && { backgroundColor: '#E65100' }]}
             onPress={handleSOSPress}
             disabled={loading}
@@ -428,10 +495,10 @@ export default function SOSScreen() {
         <View style={styles.aiSection}>
           <View style={styles.aiHeader}>
             <MaterialCommunityIcons name="robot-outline" size={24} color="#00695C" />
-            <Text style={styles.aiTitle}>AI Emergency Assistant</Text>
+            <Text style={styles.aiTitle}>Nearest Emergency Services</Text>
           </View>
           <Text style={styles.aiSubtitle}>Nearest facilities based on your live GPS</Text>
-          
+
           <Surface style={styles.aiCard} elevation={1}>
             {aiLoading ? (
               <View style={{ padding: 20, alignItems: 'center' }}>
@@ -443,26 +510,26 @@ export default function SOSScreen() {
                 <View style={styles.aiItem}>
                   <View style={styles.aiIconBox}><MaterialCommunityIcons name="hospital" size={20} color="#D32F2F" /></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.aiItemTitle}>{aiSuggestions.hospital?.name}</Text>
+                    <Text style={styles.aiItemTitle}>{aiSuggestions.hospital?.name || 'No hospital found nearby'}</Text>
                     <Text style={styles.aiItemSub}>{aiSuggestions.hospital?.distance} away</Text>
                   </View>
-                  <IconButton icon="phone" size={20} onPress={() => handleCall(aiSuggestions.hospital?.phone)} />
+                  <IconButton icon="phone" size={20} disabled={!aiSuggestions.hospital?.phone} onPress={() => handleCall(aiSuggestions.hospital?.phone)} />
                 </View>
                 <View style={styles.aiItem}>
                   <View style={[styles.aiIconBox, { backgroundColor: '#E3F2FD' }]}><MaterialCommunityIcons name="police-badge" size={20} color="#1976D2" /></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.aiItemTitle}>{aiSuggestions.police?.name}</Text>
+                    <Text style={styles.aiItemTitle}>{aiSuggestions.police?.name || 'No police station found nearby'}</Text>
                     <Text style={styles.aiItemSub}>{aiSuggestions.police?.distance} away</Text>
                   </View>
-                  <IconButton icon="phone" size={20} onPress={() => handleCall(aiSuggestions.police?.phone)} />
+                  <IconButton icon="phone" size={20} disabled={!aiSuggestions.police?.phone} onPress={() => handleCall(aiSuggestions.police?.phone)} />
                 </View>
                 <View style={styles.aiItem}>
                   <View style={[styles.aiIconBox, { backgroundColor: '#E8F5E9' }]}><MaterialCommunityIcons name="medical-bag" size={20} color="#2E7D32" /></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.aiItemTitle}>{aiSuggestions.pharmacy?.name}</Text>
+                    <Text style={styles.aiItemTitle}>{aiSuggestions.pharmacy?.name || 'No pharmacy found nearby'}</Text>
                     <Text style={styles.aiItemSub}>{aiSuggestions.pharmacy?.distance} away</Text>
                   </View>
-                  <IconButton icon="phone" size={20} onPress={() => handleCall(aiSuggestions.pharmacy?.phone)} />
+                  <IconButton icon="phone" size={20} disabled={!aiSuggestions.pharmacy?.phone} onPress={() => handleCall(aiSuggestions.pharmacy?.phone)} />
                 </View>
                 <View style={styles.aiTipBox}>
                   <MaterialCommunityIcons name="lightbulb-on" size={16} color="#F57F17" />

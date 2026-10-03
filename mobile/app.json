@@ -67,7 +67,7 @@
           "locationAlwaysAndWhenInUsePermission": "CEYLO needs your location to show nearby destinations and enable transport booking.",
           "locationWhenInUsePermission": "CEYLO needs your location to show nearby destinations and enable transport booking.",
           "isIosBackgroundLocationEnabled": false,
-          "isAndroidBackgroundLocationEnabled": false
+          "isAndroidBackgroundLocationEnabled": true
         }
       ],
       "expo-camera",

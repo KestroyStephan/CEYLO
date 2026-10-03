@@ -11,7 +11,7 @@ import Constants from 'expo-constants';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 import { auth, db } from '../firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 // Configure foreground notification behavior
 Notifications.setNotificationHandler({
@@ -24,24 +24,36 @@ Notifications.setNotificationHandler({
 });
 
 // Deep-link routing map: notification.data.type -> { screen, params }
+// Screens live in different navigators per role; only routes that exist for that role are used.
 const ROUTE_MAP = {
-  booking_confirmed: (data) => ({ screen: 'VendorTabs', params: { screen: 'VendorOrders' } }),
-  booking_rejected: (data) => ({ screen: 'VendorTabs', params: { screen: 'VendorDashboard' } }),
-  new_booking: (data) => ({ screen: 'VendorTabs', params: { screen: 'VendorDashboard' } }),
+  booking_confirmed: () => ({ screen: 'VendorTabs', params: { screen: 'VendorOrders' } }),
+  booking_rejected: () => ({ screen: 'VendorTabs', params: { screen: 'VendorHome' } }),
+  new_booking: () => ({ screen: 'VendorTabs', params: { screen: 'VendorHome' } }),
   chat_message: (data) => ({
     screen: 'VendorChat', params: { bookingId: data.bookingId, order: {} },
   }),
-  sos_update: (data) => ({ screen: 'VendorDashboard', params: {} }),
-  vendor_approved: (data) => ({ screen: 'VendorPortal', params: {} }),
+  sos_update: () => ({ screen: 'SOSScreen', params: {} }),
+  vendor_approved: () => ({ screen: 'VendorPortal', params: {} }),
+  geofence_enter: () => ({ screen: 'CulturalEvents', params: {} }),
+  event_reminder: () => ({ screen: 'CulturalEvents', params: {} }),
+  admin_broadcast: () => null,
 };
 
 class NotificationServiceClass {
   _responseSubscription = null;
   _foregroundSubscription = null;
   _navigation = null;
+  _initialized = false;
+  _tokenListener = null;
 
   async init(navigation) {
     this._navigation = navigation;
+    if (this._initialized) {
+      // Already listening; just make sure the signed-in user's token is stored
+      if (!isExpoGo) await this._registerToken();
+      return;
+    }
+    this._initialized = true;
     
     // Always request permission and set up handlers so local notifications work in Expo Go
     await this._requestPermission();
@@ -95,15 +107,16 @@ class NotificationServiceClass {
       const token = tokenData.data;
       const uid = auth.currentUser?.uid;
       if (uid && token) {
-        await updateDoc(doc(db, 'users', uid), { expoPushToken: token });
+        await setDoc(doc(db, 'users', uid), { expoPushToken: token }, { merge: true });
         console.log('[Notifications] Token registered:', token.slice(0, 20) + '...');
       }
 
-      // Handle token refresh
-      Notifications.addPushTokenListener(async ({ data: newToken }) => {
+      // Handle token refresh (registered once)
+      if (this._tokenListener) return;
+      this._tokenListener = Notifications.addPushTokenListener(async ({ data: newToken }) => {
         const currentUid = auth.currentUser?.uid;
         if (currentUid && newToken) {
-          await updateDoc(doc(db, 'users', currentUid), { expoPushToken: newToken });
+          await setDoc(doc(db, 'users', currentUid), { expoPushToken: newToken }, { merge: true });
         }
       });
     } catch (e) {
@@ -128,7 +141,9 @@ class NotificationServiceClass {
     if (!this._navigation || !data.type) return;
     const routeFn = ROUTE_MAP[data.type];
     if (!routeFn) return;
-    const { screen, params } = routeFn(data);
+    const target = routeFn(data);
+    if (!target) return;
+    const { screen, params } = target;
     try {
       this._navigation.navigate(screen, params);
     } catch (e) {

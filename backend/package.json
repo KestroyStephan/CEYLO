@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "node --env-file-if-exists=.env server.js",
     "test": "jest"
   },
   "keywords": [],

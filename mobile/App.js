@@ -3,7 +3,7 @@ import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import './i18n';
-import { View, ActivityIndicator, LogBox, Platform } from 'react-native';
+import { View, ActivityIndicator, LogBox, Platform, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
@@ -14,6 +14,8 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OfflineQueue } from './services/OfflineQueue';
 import { NotificationService } from './services/NotificationService';
+// Registers the background geofencing task; must run at start-up
+import './services/GeofenceService';
 
 // Suppress known unavoidable deprecation warnings
 LogBox.ignoreLogs([
@@ -41,6 +43,7 @@ import RideTrackingScreen from './screens/RideTrackingScreen';
 import GuideDashboard from './screens/GuideDashboard';
 import GuideNavigator from './navigation/GuideNavigator';
 import ChatbotScreen from './screens/ChatbotScreen';
+import ItineraryScreen from './screens/ItineraryScreen';
 import MapScreen from './screens/MapScreen';
 import DestinationDetailScreen from './screens/DestinationDetailScreen';
 import HiddenGemsListScreen from './screens/HiddenGemsListScreen';
@@ -137,7 +140,12 @@ export default function App() {
           unsubUser = onSnapshot(doc(db, 'users', currentUser.uid), (snap) => {
             if (snap.exists()) {
               const data = snap.data();
-              setUserRole(data.role);
+              if (data.isBanned) {
+                Alert.alert('Account Suspended', 'Your account has been suspended. Please contact support@ceylo.lk.');
+                signOut(auth);
+                return;
+              }
+              setUserRole(data.role || 'tourist');
               setUserData(data);
             } else {
               setUserRole('tourist');
@@ -155,6 +163,8 @@ export default function App() {
           setLoading(false);
         }
       } else {
+        // The 7-day window starts at each sign-in, so forget the previous session's date
+        await AsyncStorage.removeItem('lastLoginDate');
         setUserRole(null);
         setUserData(null);
         setLoading(false);
@@ -177,6 +187,13 @@ export default function App() {
       }
     };
   }, []);
+
+  // Register the push token for whoever signs in during this session
+  useEffect(() => {
+    if (user && !user.isAnonymous && navigationRef.current) {
+      NotificationService.init(navigationRef.current);
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -222,17 +239,14 @@ export default function App() {
                 ) : (userRole === 'guide_rejected') ? (
                   <Stack.Screen name="GuidePending" component={GuidePendingScreen} />
                 ) : (userRole === 'vendor_pending' || userRole === 'vendor_rejected') ? (
-                  process.env.EXPO_PUBLIC_DEMO_MODE === 'true' ? (
-                    <Stack.Screen name="VendorPortal" component={VendorNavigator} />
-                  ) : (
-                    <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
-                  )
+                  <Stack.Screen name="VendorPending" component={VendorPendingScreen} />
                 ) : (
                   <Stack.Screen name="Main" component={DrawerNavigator} />
                 )}
 
                 {/* Common Screens */}
                 <Stack.Screen name="Chatbot" component={ChatbotScreen} />
+                <Stack.Screen name="Itinerary" component={ItineraryScreen} />
                 <Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
                 <Stack.Screen name="RideTracking" component={RideTrackingScreen} />
                 <Stack.Screen name="MapScreen" component={MapScreen} />

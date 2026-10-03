@@ -41,7 +41,13 @@ async function downloadTile(regionId, z, x, y) {
   if (info.exists) return filePath; // Already downloaded
 
   const url = OSM_TILE_URL.replace('{z}', z).replace('{x}', x).replace('{y}', y);
-  await FileSystem.downloadAsync(url, filePath);
+  const result = await FileSystem.downloadAsync(url, filePath, {
+    headers: { 'User-Agent': 'CEYLO-Mobile/1.0 (Horizon Campus final year project)' },
+  });
+  if (result.status !== 200) {
+    await FileSystem.deleteAsync(filePath, { idempotent: true });
+    throw new Error(`Tile HTTP ${result.status}`);
+  }
   return filePath;
 }
 
@@ -64,16 +70,21 @@ export async function downloadRegion(name, bounds, zooms, onProgress) {
   }
 
   let downloaded = 0;
+  let failed = 0;
   const total = allTiles.length;
 
   for (const tile of allTiles) {
     try {
       await downloadTile(regionId, tile.z, tile.x, tile.y);
     } catch (e) {
-      // Skip failed tiles silently
+      failed++;
     }
     downloaded++;
     if (onProgress) onProgress(downloaded, total);
+  }
+  if (failed === total) {
+    await FileSystem.deleteAsync(`${MAPS_DIR}${regionId}/`, { idempotent: true });
+    throw new Error('No map tiles could be downloaded. Check your connection.');
   }
 
   // Calculate downloaded size
@@ -102,6 +113,11 @@ export async function downloadRegion(name, bounds, zooms, onProgress) {
 /** Get local tile file URI (for use in map rendering) */
 export function getLocalTileUri(regionId, z, x, y) {
   return `${MAPS_DIR}${regionId}/${z}/${x}/${y}.png`;
+}
+
+/** Tile path template for react-native-maps <LocalTile> (a plain file path, without file://) */
+export function getRegionTilePathTemplate(regionId) {
+  return `${MAPS_DIR}${regionId}/{z}/{x}/{y}.png`.replace(/^file:\/\//, '');
 }
 
 /** Delete a region by id */

@@ -74,6 +74,47 @@ const ROLES = [
   },
 ];
 
+// Each card owns its press animation (hooks cannot be created inside a .map callback)
+function RoleCard({ role, isActive, onSelect }) {
+  const cardScale = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(cardScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
+      Animated.spring(cardScale, { toValue: 1, tension: 120, friction: 8, useNativeDriver: true }),
+    ]).start();
+    onSelect();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: cardScale }] }}>
+      <TouchableOpacity
+        onPress={handlePress}
+        style={[styles.roleCard, isActive && styles.roleCardActive]}
+        activeOpacity={0.88}
+      >
+        {/* Icon */}
+        <View style={[styles.iconCircle, { backgroundColor: role.iconBg }]}>
+          <MaterialCommunityIcons name={role.icon} size={26} color={role.iconColor} />
+        </View>
+
+        {/* Text */}
+        <View style={styles.roleText}>
+          <Text style={[styles.roleTitle, isActive && styles.roleTitleActive]}>
+            {role.title}
+          </Text>
+          <Text style={styles.roleDesc}>{role.description}</Text>
+        </View>
+
+        {/* Selection indicator */}
+        {isActive && (
+          <MaterialCommunityIcons name="check-circle" size={22} color="#006A3B" />
+        )}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export default function RolePickerScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [selectedRole, setSelectedRole] = useState('tourist');
@@ -134,46 +175,14 @@ export default function RolePickerScreen({ navigation }) {
 
         {/* Role Cards */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], gap: 14, marginTop: 8 }}>
-          {ROLES.map((role, i) => {
-            const isActive = selectedRole === role.key;
-            const cardScale = useRef(new Animated.Value(1)).current;
-
-            const handlePress = () => {
-              Animated.sequence([
-                Animated.timing(cardScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
-                Animated.spring(cardScale, { toValue: 1, tension: 120, friction: 8, useNativeDriver: true }),
-              ]).start();
-              setSelectedRole(role.key);
-            };
-
-            return (
-              <Animated.View key={role.key} style={{ transform: [{ scale: cardScale }] }}>
-                <TouchableOpacity
-                  onPress={handlePress}
-                  style={[styles.roleCard, isActive && styles.roleCardActive]}
-                  activeOpacity={0.88}
-                >
-                  {/* Icon */}
-                  <View style={[styles.iconCircle, { backgroundColor: role.iconBg }]}>
-                    <MaterialCommunityIcons name={role.icon} size={26} color={role.iconColor} />
-                  </View>
-
-                  {/* Text */}
-                  <View style={styles.roleText}>
-                    <Text style={[styles.roleTitle, isActive && styles.roleTitleActive]}>
-                      {role.title}
-                    </Text>
-                    <Text style={styles.roleDesc}>{role.description}</Text>
-                  </View>
-
-                  {/* Selection indicator */}
-                  {isActive && (
-                    <MaterialCommunityIcons name="check-circle" size={22} color="#006A3B" />
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+          {ROLES.map((role) => (
+            <RoleCard
+              key={role.key}
+              role={role}
+              isActive={selectedRole === role.key}
+              onSelect={() => setSelectedRole(role.key)}
+            />
+          ))}
         </Animated.View>
 
         {/* Progress dot */}

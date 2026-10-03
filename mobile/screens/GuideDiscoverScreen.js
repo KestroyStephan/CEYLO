@@ -109,7 +109,7 @@ export default function GuideDiscoverScreen({ navigation }) {
       <StatusBar barStyle="dark-content" backgroundColor="#F4F7F4" />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{ padding: 4, marginRight: 12 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home', { screen: 'EditProfile' })} style={{ padding: 4, marginRight: 12 }}>
           <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
         </TouchableOpacity>
         <View>

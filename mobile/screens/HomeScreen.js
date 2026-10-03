@@ -8,12 +8,15 @@ import { auth, db } from '../firebaseConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadEcoStats } from '../utils/ecoStats';
+import { loadEvents, eventsNear } from '../utils/events';
+import { NotificationService } from '../services/NotificationService';
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // Import AI Generated Datasets
 import destinationsData from '../assets/data/ai_destinations.json';
-import eventsData from '../assets/data/ai_events.json';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +42,7 @@ export default function HomeScreen({ navigation }) {
   const [loadingGems, setLoadingGems] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [trendingRoutes, setTrendingRoutes] = useState([]);
+  const [ecoPoints, setEcoPoints] = useState(0);
   
   // Chat Notifications State
   const [activeChats, setActiveChats] = useState([]);
@@ -51,6 +55,7 @@ export default function HomeScreen({ navigation }) {
     }
     loadAIData();
     fetchRealNearbyGems();
+    loadEcoStats(user?.uid).then(s => setEcoPoints(s.points)).catch(() => {});
 
     // Fetch active bookings for chat
     if (user) {
@@ -88,10 +93,9 @@ export default function HomeScreen({ navigation }) {
     const sortedEco = famous.sort((a, b) => b.eco_score - a.eco_score);
     setAIPicks(sortedEco.slice(0, 5));
     
-    if (eventsData && eventsData.length > 0) {
-      const randEvent = eventsData[Math.floor(Math.random() * eventsData.length)];
-      setFeaturedEvent(randEvent);
-    }
+    loadEvents().then(events => {
+      if (events.length > 0) setFeaturedEvent(events[0]);
+    });
     
     const centralPlaces = destinationsData.filter(d => d.province === 'Central Province').slice(0, 3);
     const southernPlaces = destinationsData.filter(d => d.province === 'Southern Province').slice(0, 3);
@@ -99,6 +103,7 @@ export default function HomeScreen({ navigation }) {
     setTrendingRoutes([
         {
             id: 'route_1',
+            province: 'Central Province',
             title: 'Central Eco-Trail',
             subtitle: 'Knuckles & Horton Plains',
             image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Knuckles_mountain_range_Sri_Lanka.jpg/800px-Knuckles_mountain_range_Sri_Lanka.jpg',
@@ -109,6 +114,7 @@ export default function HomeScreen({ navigation }) {
         },
         {
             id: 'route_2',
+            province: 'Southern Province',
             title: 'Southern Heritage',
             subtitle: 'Galle Fort & Marine Life',
             image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Galle_Fort_Lighthouse_Sri_Lanka.jpg/800px-Galle_Fort_Lighthouse_Sri_Lanka.jpg',
@@ -119,6 +125,7 @@ export default function HomeScreen({ navigation }) {
         },
         {
             id: 'route_3',
+            province: 'Northern Province',
             title: 'Northern Peninsula',
             subtitle: 'Jaffna & Delft Island',
             image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Nallur_Kandaswamy_Temple_Jaffna.jpg/800px-Nallur_Kandaswamy_Temple_Jaffna.jpg',
@@ -129,6 +136,7 @@ export default function HomeScreen({ navigation }) {
         },
         {
             id: 'route_4',
+            province: 'Eastern Province',
             title: 'Eastern Safari',
             subtitle: 'Arugam Bay & Kumana',
             image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Elephant_at_Yala_National_Park_Sri_Lanka.jpg/800px-Elephant_at_Yala_National_Park_Sri_Lanka.jpg',
@@ -139,6 +147,7 @@ export default function HomeScreen({ navigation }) {
         },
         {
             id: 'route_5',
+            province: 'North Central Province',
             title: 'Cultural Triangle',
             subtitle: 'Sigiriya to Polonnaruwa',
             image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Sigiriya_rock_fortress.jpg/800px-Sigiriya_rock_fortress.jpg',
@@ -149,6 +158,7 @@ export default function HomeScreen({ navigation }) {
         },
         {
             id: 'route_6',
+            province: 'Uva Province',
             title: 'Tea Country Train',
             subtitle: 'Kandy to Ella Scenic',
             image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Nine_Arch_Bridge%2C_Demodara.jpg/800px-Nine_Arch_Bridge%2C_Demodara.jpg',
@@ -169,6 +179,7 @@ export default function HomeScreen({ navigation }) {
       
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
+      notifyNearbyEvents(loc.coords);
 
       const aiQuery = 'popular tourist attraction OR heritage site OR famous landmark';
       const aiUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(aiQuery)}&location=${lat},${lng}&radius=20000&key=${GOOGLE_API_KEY}`;
@@ -226,6 +237,24 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const notifyNearbyEvents = async (coords) => {
+    try {
+      const nearby = eventsNear(await loadEvents(), coords);
+      if (nearby.length === 0) return;
+      const today = new Date().toDateString();
+      const key = `eventAlert_${nearby[0].id}`;
+      if ((await AsyncStorage.getItem(key)) === today) return;
+      await AsyncStorage.setItem(key, today);
+      NotificationService.sendLocal(
+        'Cultural Event Nearby! 🎊',
+        `${nearby[0].title} is ${nearby[0].distanceKm.toFixed(1)} km away in ${nearby[0].location}.`,
+        { type: 'geofence_enter', regionId: nearby[0].title }
+      );
+    } catch (e) {
+      console.log('Nearby event check failed:', e.message);
+    }
+  };
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     loadAIData();
@@ -257,7 +286,7 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
           <View style={styles.ecoPointsBadge}>
             <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
-            <Text style={styles.ecoPointsText}>1,250 pt</Text>
+            <Text style={styles.ecoPointsText}>{ecoPoints.toLocaleString()} pt</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -276,6 +305,12 @@ export default function HomeScreen({ navigation }) {
 
   const QuickActions = () => (
     <View style={styles.quickActionsContainer}>
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Itinerary')}>
+        <View style={[styles.actionIconBg, { backgroundColor: '#E0F2F1' }]}>
+          <MaterialCommunityIcons name="map-marker-path" size={26} color={COLORS.primary} />
+        </View>
+        <Text style={styles.actionText}>Plan Trip</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('EcoPassport')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#E8F5E9' }]}>
           <MaterialCommunityIcons name="leaf-circle-outline" size={26} color={COLORS.ecoGreen} />
@@ -408,7 +443,7 @@ export default function HomeScreen({ navigation }) {
         </View>
         <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('CulturalEvents')}>
           <ImageBackground 
-            source={{ uri: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa' }} // Fallback cultural image
+            source={{ uri: featuredEvent.imageUrl || 'https://images.unsplash.com/photo-1544735716-392fe2489ffa' }}
             style={styles.eventCard}
             imageStyle={{ borderRadius: 20 }}
           >
@@ -416,17 +451,17 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.eventTopRow}>
                 <View style={styles.eventTag}>
                   <MaterialCommunityIcons name="calendar-month" size={14} color="#FFF" />
-                  <Text style={styles.tagText}>{featuredEvent.month}</Text>
+                  <Text style={styles.tagText}>{featuredEvent.date ? new Date(featuredEvent.date).toLocaleString('en-US', { month: 'long' }) : 'TBC'}</Text>
                 </View>
                 <View style={styles.eventTagGold}>
                   <Text style={styles.tagTextGold}>Cultural</Text>
                 </View>
               </View>
               <View>
-                <Text style={styles.eventTitle}>{featuredEvent.name}</Text>
+                <Text style={styles.eventTitle}>{featuredEvent.title}</Text>
                 <Text style={styles.eventDesc} numberOfLines={2}>{featuredEvent.location} • Join the community and learn local crafts and traditions.</Text>
                 <View style={{ flexDirection: 'row', marginTop: 12 }}>
-                  <TouchableOpacity style={styles.remindBtn}>
+                  <TouchableOpacity style={styles.remindBtn} onPress={() => navigation.navigate('EventDetail', { event: featuredEvent })}>
                     <Text style={styles.remindBtnText}>Learn More</Text>
                   </TouchableOpacity>
                 </View>
@@ -576,7 +611,7 @@ const styles = StyleSheet.create({
   
   quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
   actionItem: { alignItems: 'center', gap: 10 },
-  actionIconBg: { width: 64, height: 64, borderRadius: 24, justifyContent: 'center', alignItems: 'center', elevation: 1 },
+  actionIconBg: { width: 56, height: 56, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 1 },
   actionText: { fontSize: 12, fontFamily: 'Outfit-Medium', color: COLORS.text },
 
   bannerContainer: { borderRadius: 16, overflow: 'hidden', marginBottom: 35 },

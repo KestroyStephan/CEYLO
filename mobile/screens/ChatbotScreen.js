@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Keyboard, Dimensions, FlatList, Alert } from 'react-native';
-import { Text, TextInput, Avatar, ActivityIndicator, IconButton, Surface, Chip, Card, Portal, Modal, Button } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, FlatList, Alert, Image } from 'react-native';
+import { Text, TextInput, Avatar, IconButton, Surface, Chip, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { db, auth } from '../firebaseConfig';
-import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { chatJSON } from '../services/aiClient';
+import { generateItinerary as buildItinerary, moodKey } from '../services/ItineraryService';
+import destinationsData from '../assets/data/ai_destinations.json';
 
-const { width, height } = Dimensions.get('window');
-
-
-
-
-const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge. 
+const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge.
 Your goal is to build a "Trip Profile" for the traveler through natural conversation.
 STRICT JSON OUTPUT REQUIRED for every response.
 
@@ -35,352 +33,42 @@ ExtractedState JSON Schema:
 CONTEXT:
 - Use Sri Lankan hospitality markers (Ayubowan, Vanakkam).
 - Prioritize eco-friendly destinations.
-- Extract preferences silently while talking.`;
+- Extract preferences silently while talking.
+- Set "isReady" to true once destination or mood, and number of days, are known.`;
 
-export default function ChatbotScreen({ navigation }) {
-  const { t, i18n } = useTranslation();
-  const [messages, setMessages] = useState([
-    { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
-  ]);
-  const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
-  const [extractedState, setExtractedState] = useState({
-    destination: null,
-    days: null,
-    budget: null,
-    eco_interest: 50,
-    mood: null
-  });
-  
-  const hudAnim = useRef(new Animated.Value(-100)).current;
-  const flatListRef = useRef();
+const MOOD_CATEGORIES = {
+  eco: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
+  adventurer: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
+  culture: ['Heritage & Culture'],
+  spiritual: ['Heritage & Culture'],
+  family: ['Beach', 'Wildlife', 'Nature & Viewpoint'],
+};
 
-  const waveAnims = useRef([
-    new Animated.Value(20),
-    new Animated.Value(40),
-    new Animated.Value(60),
-    new Animated.Value(40),
-    new Animated.Value(20),
-  ]).current;
+// Real destination cards from the bundled dataset, matched to what the traveler has told us so far
+function findRecommendations(state) {
+  const place = String(state.destination || '').toLowerCase();
+  let matches = place
+    ? destinationsData.filter(d => d.name.toLowerCase().includes(place) || d.province.toLowerCase().includes(place))
+    : [];
+  if (matches.length === 0 && state.mood) {
+    const categories = MOOD_CATEGORIES[moodKey(state.mood)];
+    matches = destinationsData.filter(d => categories.includes(d.category));
+  }
+  if (matches.length === 0) return null;
+  return [...matches]
+    .sort((a, b) => b.eco_score - a.eco_score)
+    .slice(0, 3)
+    .map(d => ({
+      id: d.destination_id,
+      name: d.name,
+      category: d.category,
+      province: d.province,
+      ecoScore: Math.round(d.eco_score),
+      rating: d.avg_rating,
+      image: d.image,
+    }));
+}
 
-  const startWaveAnimation = () => {
-    const anims = waveAnims.map((anim, index) => {
-      return Animated.loop(
-        Animated.sequence([
-          Animated.timing(anim, {
-            toValue: Math.random() * 80 + 20,
-            duration: 300 + index * 50,
-            useNativeDriver: false,
-          }),
-          Animated.timing(anim, {
-            toValue: Math.random() * 30 + 10,
-            duration: 300 + index * 50,
-            useNativeDriver: false,
-          }),
-        ])
-      );
-    });
-    Animated.parallel(anims).start();
-  };
-
-  const speakMessage = (text) => {
-    Speech.stop();
-    Speech.speak(text, {
-      language: i18n.language === 'si' ? 'si-LK' : i18n.language === 'ta' ? 'ta-LK' : 'en-US',
-      pitch: 1.0,
-      rate: 0.9,
-    });
-  };
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      Speech.stop();
-    });
-    return () => {
-      Speech.stop();
-      unsubscribe();
-    };
-  }, [navigation]);
-
-  useEffect(() => {
-    // Fetch user mood from onboarding
-    const fetchUserMood = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists() && userDoc.data().mood) {
-          setExtractedState(prev => ({ ...prev, mood: userDoc.data().mood }));
-        }
-      }
-    };
-    fetchUserMood();
-  }, []);
-
-  useEffect(() => {
-    // Animate HUD in when valid data exists
-    if (extractedState.destination || extractedState.mood) {
-      Animated.spring(hudAnim, { toValue: 0, useNativeDriver: true }).start();
-    }
-  }, [extractedState]);
-
-  const callWaterfall = async (prompt) => {
-    const contextPrompt = `\n\nCURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${prompt}`;
-    
-    const models = [
-      { name: 'Groq Llama 3', url: 'https://api.groq.com/openai/v1/chat/completions', type: 'groq', key: process.env.EXPO_PUBLIC_GROQ_API_KEY },
-      { name: 'OpenAI GPT-4o-mini', url: 'https://api.openai.com/v1/chat/completions', type: 'openai', key: process.env.EXPO_PUBLIC_OPENAI_API_KEY },
-      { name: 'Gemini 1.5 Flash', url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`, type: 'gemini' },
-    ];
-
-    // Helper to safely parse JSON from AI response (strips markdown fences if present)
-    const safeParseJSON = (raw) => {
-      let text = raw.trim();
-      // Strip ```json ... ``` or ``` ... ``` wrappers
-      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      return JSON.parse(text);
-    };
-
-    for (const model of models) {
-      // Skip models with no API key (except Gemini which embeds key in URL)
-      if (model.type !== 'gemini' && !model.key) {
-        console.warn(`Skipping ${model.name}: no API key set`);
-        continue;
-      }
-      
-      try {
-        console.log(`Trying ${model.name}...`);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
-
-        let response;
-        if (model.type === 'gemini') {
-          response = await fetch(model.url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: `${SYSTEM_PROMPT}${contextPrompt}` }] }],
-              generationConfig: { responseMimeType: "application/json" }
-            }),
-            signal: controller.signal
-          });
-        } else {
-          response = await fetch(model.url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${model.key}`
-            },
-            body: JSON.stringify({
-              model: model.type === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4o-mini",
-              messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
-                { role: 'user', content: contextPrompt }
-              ],
-              response_format: { type: "json_object" }
-            }),
-            signal: controller.signal
-          });
-        }
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errText = await response.text().catch(() => '');
-          throw new Error(`${model.name} HTTP ${response.status}: ${errText.substring(0, 120)}`);
-        }
-
-        const data = await response.json();
-        
-        const resultString = model.type === 'gemini' 
-          ? data?.candidates?.[0]?.content?.parts?.[0]?.text 
-          : data?.choices?.[0]?.message?.content;
-
-        if (!resultString) throw new Error(`${model.name} returned empty content`);
-          
-        console.log(`${model.name} success ✅`);
-        return safeParseJSON(resultString);
-      } catch (err) {
-        console.warn(`${model.name} failed:`, err.message);
-        continue; // Try next model
-      }
-    }
-    throw new Error("All AI models exhausted");
-  };
-
-
-  const handleSend = async (text = inputText) => {
-    if (!text.trim()) return;
-    const userMsg = { id: Date.now().toString(), text, sender: 'user' };
-    setMessages(prev => [...prev, userMsg]);
-    setInputText('');
-    setLoading(true);
-
-    try {
-      const responseJson = await callWaterfall(text);
-      if (responseJson.extractedState) {
-        setExtractedState(prev => ({ ...prev, ...responseJson.extractedState }));
-      }
-
-      // Check if we should inject mock recommendations for frontend display
-      let recommendations = null;
-      const lowerText = text.toLowerCase();
-      if (lowerText.includes('sigiriya') || lowerText.includes('culture') || lowerText.includes('stay') || lowerText.includes('hotel') || lowerText.includes('mirissa') || lowerText.includes('safari') || lowerText.includes('wildlife')) {
-        recommendations = [
-          {
-            id: 'rec_1',
-            name: lowerText.includes('mirissa') ? "Mirissa Golden Sandy Beach" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Yala National Park Safari" : "Sigiriya Rock Fortress",
-            category: lowerText.includes('mirissa') ? "Beach" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Wildlife" : "Heritage & Culture",
-            ecoScore: 92,
-            rating: 4.9,
-            image: lowerText.includes('mirissa') 
-              ? "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600"
-              : lowerText.includes('safari') || lowerText.includes('wildlife')
-              ? "https://images.unsplash.com/photo-1581888227599-779811939961?w=600"
-              : "https://images.unsplash.com/photo-1588598130782-690a2985731f?w=600",
-            vibe: lowerText.includes('mirissa') ? "Family Trip" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Adventurer" : "Culture Seeker"
-          },
-          {
-            id: 'rec_2',
-            name: lowerText.includes('mirissa') ? "Paradise Bay Eco Resort" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "Cinnamon Wild Yala" : "Sigiriya Wilderness Lodge",
-            category: "Stay",
-            price: lowerText.includes('mirissa') ? "LKR 18,500/night" : lowerText.includes('safari') || lowerText.includes('wildlife') ? "LKR 28,000/night" : "LKR 14,000/night",
-            ecoScore: 96,
-            rating: 4.8,
-            image: lowerText.includes('mirissa')
-              ? "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600"
-              : lowerText.includes('safari') || lowerText.includes('wildlife')
-              ? "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600"
-              : "https://images.unsplash.com/photo-1601248464673-9eb1f5850444?w=600",
-            vibe: "Eco Explorer"
-          }
-        ];
-      }
-
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: responseJson.resp,
-        sender: 'bot',
-        options: responseJson.ui_options,
-        isFinal: responseJson.isReady,
-        recommendations: recommendations
-      }]);
-
-    } catch (error) {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: "I'm having a bit of trouble connecting to my signals. Please check your internet connection.",
-        sender: 'bot'
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startVoiceAssistant = () => {
-    setVoiceModalVisible(true);
-    startWaveAnimation();
-    setTimeout(() => {
-      setVoiceModalVisible(false);
-      const voiceInputs = [
-        "I want to plan a 3 day culture trip to Sigiriya on a standard budget",
-        "Show me eco friendly stays in Mirissa beach",
-        "Let's make a luxury wildlife safari in Yala National Park",
-      ];
-      const randomInput = voiceInputs[Math.floor(Math.random() * voiceInputs.length)];
-      handleSend(randomInput);
-    }, 3000);
-  };
-
-  const generateItinerary = async () => {
-    setLoading(true);
-    try {
-      // 1. Fetch real 100k data RAG matches from backend
-      const defaultHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-      const baseUrl = process.env.EXPO_PUBLIC_BACKEND_URL 
-        ? process.env.EXPO_PUBLIC_BACKEND_URL.replace('localhost', defaultHost)
-        : `http://${defaultHost}:5000`;
-      const ragResponse = await fetch(`${baseUrl}/api/recommend`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mood: extractedState.mood || 'Adventurer' })
-      });
-      
-      const ragData = await ragResponse.json();
-      const topDestinations = ragData.top_matches;
-
-      // 2. Build the dynamic plan from real AI predictions
-      const dynamicPlan = topDestinations.map((dest, index) => ({
-        day: index + 1,
-        activity: `Explore ${dest.name} in ${dest.province} (${dest.category})`,
-        eco: dest.ecoScore,
-        lat: dest.lat,
-        lon: dest.lon,
-        destinationId: dest.id
-      }));
-
-      const itinerary = {
-        title: `Your ${extractedState.mood || 'Custom'} trip to ${extractedState.destination || 'Sri Lanka'}`,
-        userId: auth.currentUser?.uid,
-        createdAt: new Date().toISOString(),
-        plan: dynamicPlan
-      };
-
-      const docRef = await addDoc(collection(db, 'itineraries'), itinerary);
-      
-      Alert.alert(
-        "Itinerary Ready", 
-        "Your ML-predicted itinerary has been generated from 100,000+ data points!",
-        [
-          {
-            text: "View Itinerary",
-            onPress: () => navigation.navigate('ItineraryDetail', { routeData: { id: docRef.id, ...itinerary } })
-          }
-        ]
-      );
-    } catch (e) {
-      console.warn("RAG backend failed, generating fallback itinerary:", e);
-      
-      // FALLBACK TO MOCK PLAN
-      const dynamicPlan = [
-        { day: 1, activity: `Arrive and settle in ${extractedState.destination || 'Colombo'}`, eco: 85, lat: 6.9271, lon: 79.8612, destinationId: 'colombo', transport: 'car' },
-        { day: 2, activity: `Eco-friendly city tour and local cuisine`, eco: 92, lat: 6.9271, lon: 79.8612, destinationId: 'colombo_tour', transport: 'walk' },
-        { day: 3, activity: `Visit nearest national park for wildlife safari`, eco: 98, lat: 6.9271, lon: 79.8612, destinationId: 'safari', transport: 'train' }
-      ];
-
-      const itinerary = {
-        title: `Your ${extractedState.mood || 'Custom'} trip to ${extractedState.destination || 'Sri Lanka'}`,
-        userId: auth.currentUser?.uid || 'anonymous',
-        createdAt: new Date().toISOString(),
-        plan: dynamicPlan,
-        ecoScore: 92,
-        cost: "LKR 20,000",
-        duration: "3 Days"
-      };
-
-      try {
-        const docRef = await addDoc(collection(db, 'itineraries'), itinerary);
-        Alert.alert(
-          "Itinerary Ready (Fallback Mode)", 
-          "Could not connect to the ML backend. A smart fallback itinerary has been generated and saved instead.",
-          [
-            {
-              text: "View Itinerary",
-              onPress: () => navigation.navigate('ItineraryDetail', { routeData: { id: docRef.id, ...itinerary } })
-            }
-          ]
-        );
-      } catch (firestoreError) {
-        console.error("Firestore error:", firestoreError);
-        Alert.alert("Error", "Could not connect to the RAG backend, and failed to save fallback itinerary to Firestore.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-// ─── Rendered outside component to prevent keyboard dismissal on re-render ───
 const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
   <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
     {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
@@ -413,7 +101,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
                 <Text style={styles.recTitle} numberOfLines={1}>{rec.name}</Text>
                 <Text style={styles.recCategory}>{rec.category}</Text>
                 <View style={styles.recRow}>
-                  <Text style={styles.recPrice}>{rec.price || 'Free Entry'}</Text>
+                  <Text style={styles.recPrice} numberOfLines={1}>{rec.province.replace(' Province', '')}</Text>
                   <View style={styles.recRatingRow}>
                     <MaterialCommunityIcons name="star" size={12} color="#FFB300" />
                     <Text style={styles.recRating}>{rec.rating}</Text>
@@ -422,17 +110,11 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
                 <TouchableOpacity
                   style={styles.recBtn}
                   onPress={() => {
-                    if (rec.category === 'Stay') {
-                      Alert.alert("Accommodation Selected", `${rec.name} has been set as your preferred stay!`);
-                    } else {
-                      onSetDestination(rec.name);
-                      Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
-                    }
+                    onSetDestination(rec.name);
+                    Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
                   }}
                 >
-                  <Text style={styles.recBtnText}>
-                    {rec.category === 'Stay' ? 'Book Stay' : 'Add to Route'}
-                  </Text>
+                  <Text style={styles.recBtnText}>Add to Route</Text>
                 </TouchableOpacity>
               </View>
             </Surface>
@@ -451,9 +133,143 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
   </View>
 ));
 
+export default function ChatbotScreen({ navigation, route }) {
+  const { i18n } = useTranslation();
+  const [messages, setMessages] = useState([
+    { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [extractedState, setExtractedState] = useState({
+    destination: null,
+    days: null,
+    budget: null,
+    eco_interest: 50,
+    mood: null
+  });
+
+  const hudAnim = useRef(new Animated.Value(-100)).current;
+  const flatListRef = useRef();
+  const inputRef = useRef(null);
+
+  const speakMessage = (text) => {
+    Speech.stop();
+    Speech.speak(text, {
+      language: i18n.language === 'si' ? 'si-LK' : i18n.language === 'ta' ? 'ta-LK' : 'en-US',
+      pitch: 1.0,
+      rate: 0.9,
+    });
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      Speech.stop();
+    });
+    return () => {
+      Speech.stop();
+      unsubscribe();
+    };
+  }, [navigation]);
+
+  useEffect(() => {
+    // Fetch user mood from onboarding
+    const fetchUserMood = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().mood) {
+          setExtractedState(prev => ({ ...prev, mood: prev.mood || userDoc.data().mood }));
+        }
+      } catch (e) {
+        console.log('Could not load mood:', e.message);
+      }
+    };
+    fetchUserMood();
+  }, []);
+
+  useEffect(() => {
+    // Animate HUD in when valid data exists
+    if (extractedState.destination || extractedState.mood) {
+      Animated.spring(hudAnim, { toValue: 0, useNativeDriver: true }).start();
+    }
+  }, [extractedState]);
+
+  const handleSend = async (text = inputText) => {
+    if (!text.trim() || loading) return;
+    const userMsg = { id: Date.now().toString(), text, sender: 'user' };
+    // Send the recent conversation so the concierge remembers earlier answers
+    const history = [...messages, userMsg].slice(-12).map(m => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text,
+    }));
+    history[history.length - 1].content =
+      `CURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${text}`;
+
+    setMessages(prev => [...prev, userMsg]);
+    setInputText('');
+    setLoading(true);
+
+    try {
+      const responseJson = await chatJSON(SYSTEM_PROMPT, history);
+      const nextState = { ...extractedState, ...(responseJson.extractedState || {}) };
+      setExtractedState(nextState);
+
+      const destinationChanged = nextState.destination && nextState.destination !== extractedState.destination;
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: responseJson.resp || "Tell me a little more about your trip.",
+        sender: 'bot',
+        options: responseJson.ui_options,
+        isFinal: responseJson.isReady,
+        recommendations: destinationChanged ? findRecommendations(nextState) : null,
+      }]);
+    } catch (error) {
+      console.warn('Concierge request failed:', error.message);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: "I'm having a bit of trouble connecting to my signals. Please check your internet connection.",
+        sender: 'bot'
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Speech-to-text needs a native module this app does not ship, so the mic hands
+  // over to the keyboard's built-in dictation instead of faking a transcript.
+  const startVoiceInput = () => {
+    inputRef.current?.focus();
+    Alert.alert('Voice Input', 'Tap the microphone on your keyboard to dictate your message.');
+  };
+
+  const generateItinerary = async () => {
+    setLoading(true);
+    try {
+      const itinerary = await buildItinerary({
+        mood: extractedState.mood,
+        days: extractedState.days,
+        budget: extractedState.budget,
+        destination: extractedState.destination,
+      });
+      Alert.alert(
+        itinerary.offline ? "Itinerary Ready (Offline Mode)" : "Itinerary Ready",
+        itinerary.offline
+          ? "The recommendation server could not be reached, so your itinerary was built from the on-device destination dataset."
+          : `Your itinerary was built from ${itinerary.plan.length} AI-ranked eco-cultural destinations.`,
+        [{ text: "View Itinerary", onPress: () => navigation.navigate('ItineraryDetail', { routeData: itinerary }) }]
+      );
+    } catch (e) {
+      console.error("Itinerary generation failed:", e);
+      Alert.alert("Cannot generate itinerary", "Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Stable callbacks passed to memoized RenderMessage
   const handleSpeak = useCallback((text) => speakMessage(text), []);
-  const handleSendCallback = useCallback((text) => handleSend(text), [inputText, extractedState, loading]);
+  const handleSendCallback = useCallback((text) => handleSend(text), [messages, extractedState, loading]);
   const handleSetDestination = useCallback((name) => {
     setExtractedState(prev => ({ ...prev, destination: name }));
   }, []);
@@ -465,6 +281,9 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
       onSetDestination={handleSetDestination}
     />
   ), [handleSpeak, handleSendCallback, handleSetDestination]);
+
+  const lastMessage = messages[messages.length - 1];
+  const canGenerate = lastMessage.isFinal || (extractedState.days && (extractedState.destination || extractedState.mood));
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
@@ -503,36 +322,31 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {messages[messages.length - 1].isFinal && (
-        <Button 
-          mode="contained" 
-          icon="sparkles" 
-          onPress={generateItinerary} 
+      {canGenerate && (
+        <Button
+          mode="contained"
+          icon="sparkles"
+          onPress={generateItinerary}
           style={styles.genBtn}
           loading={loading}
+          disabled={loading}
         >
           Generate Premium Itinerary
         </Button>
       )}
 
-      {isRecording && (
-        <View style={styles.recordingOverlay}>
-          <MaterialCommunityIcons name="microphone" size={24} color="#D32F2F" style={styles.recordingIcon} />
-          <Text style={styles.recordingText}>Listening...</Text>
-        </View>
-      )}
-
       <Surface style={styles.inputArea} elevation={5}>
         <View style={styles.inputRow}>
-          <IconButton 
-            icon="microphone" 
-            containerColor="#E0F2F1" 
-            iconColor="#00695C" 
-            size={24} 
-            onPress={startVoiceAssistant}
+          <IconButton
+            icon="microphone"
+            containerColor="#E0F2F1"
+            iconColor="#00695C"
+            size={24}
+            onPress={startVoiceInput}
             disabled={loading}
           />
           <TextInput
+            ref={inputRef}
             placeholder="Type your preferences..."
             value={inputText}
             onChangeText={setInputText}
@@ -541,55 +355,16 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
             underlineColor="transparent"
             activeUnderlineColor="transparent"
           />
-          <IconButton 
-            icon="send" 
-            containerColor="#00695C" 
-            iconColor="#FFF" 
-            size={24} 
+          <IconButton
+            icon="send"
+            containerColor="#00695C"
+            iconColor="#FFF"
+            size={24}
             onPress={() => handleSend()}
-            disabled={loading || (!inputText.trim() && !isRecording)}
+            disabled={loading || !inputText.trim()}
           />
         </View>
       </Surface>
-
-      {/* Voice Assistant Modal Overlay */}
-      <Portal>
-        <Modal 
-          visible={voiceModalVisible} 
-          onDismiss={() => setVoiceModalVisible(false)} 
-          contentContainerStyle={styles.voiceModal}
-        >
-          <LinearGradient colors={['rgba(0, 77, 64, 0.95)', 'rgba(0, 105, 92, 0.95)']} style={styles.voiceGradient}>
-            <IconButton 
-              icon="close" 
-              iconColor="#FFF" 
-              size={20} 
-              style={styles.closeVoiceBtn} 
-              onPress={() => setVoiceModalVisible(false)} 
-            />
-            <Avatar.Icon size={64} icon="microphone" style={{ backgroundColor: '#004D40' }} iconColor="#FFF" />
-            <Text style={styles.voiceTitle}>Ceylo Voice Concierge</Text>
-            <Text style={styles.voiceSubtitle}>Listening to your travel vibes...</Text>
-            
-            {/* Waveform Visualization */}
-            <View style={styles.waveRow}>
-              {waveAnims.map((anim, index) => (
-                <Animated.View 
-                  key={index} 
-                  style={[
-                    styles.waveBar, 
-                    { 
-                      height: anim, 
-                      backgroundColor: index % 2 === 0 ? '#FF7043' : '#4CAF50',
-                      opacity: index % 2 === 0 ? 0.9 : 0.8
-                    }
-                  ]} 
-                />
-              ))}
-            </View>
-          </LinearGradient>
-        </Modal>
-      </Portal>
     </KeyboardAvoidingView>
   );
 }

@@ -39,6 +39,7 @@ export const Polygon = noop;
 export const Polyline = noop;
 export const Overlay = noop;
 export const UrlTile = noop;
+export const LocalTile = noop;
 export const WMSTile = noop;
 export const Heatmap = noop;
 export const Geojson = noop;

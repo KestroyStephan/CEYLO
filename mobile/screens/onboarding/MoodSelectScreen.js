@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
 import { Text, Surface, Button, IconButton } from 'react-native-paper';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -26,16 +26,16 @@ export default function MoodSelectScreen({ navigation }) {
     try {
       const user = auth.currentUser;
       if (user) {
-        await updateDoc(doc(db, 'users', user.uid), {
+        // merge: guests (anonymous sign-in) have no profile document yet
+        await setDoc(doc(db, 'users', user.uid), {
           mood: selectedMood,
           onboardingCompleted: true,
-        });
+        }, { merge: true });
       }
-      // App.js will react to document changes if we set up a listener or user will be navigated on next load
-      // For now, we can just navigate to Main since it's the next step
-      navigation.replace('Main');
+      // App.js listens to the profile document and swaps this screen for the main app
     } catch (error) {
       console.error(error);
+      Alert.alert('Could not save', 'Please check your connection and try again.');
     } finally {
       setLoading(false);
     }

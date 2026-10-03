@@ -15,6 +15,7 @@ const Bookings = lazy(() => import('./pages/Bookings'));
 const SOSAlerts = lazy(() => import('./pages/SOSAlerts'));
 const SOSMonitor = lazy(() => import('./pages/SOSMonitor'));
 const Guides = lazy(() => import('./pages/Guides'));
+const Drivers = lazy(() => import('./pages/Drivers'));
 const Login = lazy(() => import('./pages/Login'));
 const Destinations = lazy(() => import('./pages/Destinations'));
 const CulturalEvents = lazy(() => import('./pages/CulturalEvents'));
@@ -32,6 +33,11 @@ import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme';
 import './App.css';
 
+// Staff who may use the admin portal; admin and super_admin can open every page
+export const STAFF_ROLES = ['admin', 'super_admin', 'manager', 'support', 'finance', 'vendor_manager', 'guide_manager', 'content_manager'];
+// Partners who get their own dashboard on the portal
+export const PROVIDER_ROLES = ['accommodation', 'vendor', 'vendor_active', 'tour_provider'];
+
 // Private Route Component
 function PrivateRoute({ children, allowedRoles }) {
   const { currentUser, userRole } = useAuth();
@@ -41,10 +47,12 @@ function PrivateRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Check role-based access if allowedRoles are provided
-  // Note: userRole might be undefined initially if not fully loaded, 
-  // but AuthContext blocks render until loading is false.
-  if (allowedRoles && userRole && !allowedRoles.includes(userRole) && userRole !== 'super_admin' && userRole !== 'admin') {
+  // Accounts without a portal role (tourists, drivers, guides, missing profile) never get in
+  if (!STAFF_ROLES.includes(userRole) && !PROVIDER_ROLES.includes(userRole)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(userRole) && userRole !== 'super_admin' && userRole !== 'admin') {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -52,11 +60,15 @@ function PrivateRoute({ children, allowedRoles }) {
 }
 
 function Unauthorized() {
+  const { currentUser, logout } = useAuth();
   return (
     <div style={{ padding: '50px', textAlign: 'center' }}>
       <h1>403 - Unauthorized</h1>
       <p>You do not have permission to view this page.</p>
       <a href="/">Go to Dashboard</a>
+      {currentUser && (
+        <p><button onClick={logout} style={{ marginTop: 16 }}>Sign out</button></p>
+      )}
     </div>
   );
 }
@@ -65,11 +77,11 @@ function RoleBasedDashboard() {
   const { userRole } = useAuth();
 
   if (userRole === 'accommodation') return <AccommodationDashboard />;
-  if (userRole === 'vendor') return <VendorDashboard />;
+  if (userRole === 'vendor' || userRole === 'vendor_active') return <VendorDashboard />;
   if (userRole === 'tour_provider') return <TourProviderDashboard />;
+  if (STAFF_ROLES.includes(userRole)) return <AdminDashboard />;
 
-  // Default to Admin Dashboard for 'admin' or undefined (for now)
-  return <AdminDashboard />;
+  return <Navigate to="/unauthorized" replace />;
 }
 
 import ErrorBoundary from './components/ErrorBoundary';
@@ -99,6 +111,7 @@ function App() {
                 <Route path="bookings" element={<PrivateRoute allowedRoles={['finance', 'support', 'vendor_manager', 'manager']}><Bookings /></PrivateRoute>} />
                 <Route path="sos" element={<PrivateRoute allowedRoles={['support', 'manager']}><SOSMonitor /></PrivateRoute>} />
                 <Route path="guides" element={<PrivateRoute allowedRoles={['guide_manager', 'manager']}><Guides /></PrivateRoute>} />
+                <Route path="drivers" element={<PrivateRoute allowedRoles={['support', 'manager']}><Drivers /></PrivateRoute>} />
                 <Route path="destinations" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><Destinations /></PrivateRoute>} />
                 <Route path="events" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><CulturalEvents /></PrivateRoute>} />
                 <Route path="analytics" element={<PrivateRoute allowedRoles={['finance', 'manager']}><Analytics /></PrivateRoute>} />

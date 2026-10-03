@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
+import i18n from '../i18n';
 import { Text, Surface } from 'react-native-paper';
 import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -35,7 +36,7 @@ export default function ProfileScreen({ navigation }) {
                 const savedSnap = await getCountFromServer(savedQ);
                 setSavedPlacesCount(savedSnap.data().count);
 
-                const reviewsQ = query(collection(db, 'reviews'), where('userId', '==', user.uid));
+                const reviewsQ = query(collection(db, 'reviews'), where('touristId', '==', user.uid));
                 const reviewsSnap = await getCountFromServer(reviewsQ);
                 setReviewsCount(reviewsSnap.data().count);
 
@@ -179,7 +180,11 @@ export default function ProfileScreen({ navigation }) {
                     <MenuItem icon="bookmark" title="Saved Places" subtitle={`${savedPlacesCount} Hidden Gems saved`} onPress={() => {}} />
                     <MenuItem icon="map" title="Itineraries" subtitle={`${itinerariesCount} Upcoming journeys`} onPress={() => navigation.navigate('ItineraryDetail')} />
                     <MenuItem icon="edit-2" title="Edit Profile" subtitle="Update your info & photo" onPress={() => navigation.navigate('EditProfile')} />
-                    <MenuItem icon="settings" title="Settings" subtitle="Preferences & Privacy" onPress={() => {}} />
+                    <MenuItem icon="settings" title="Language" subtitle="English / සිංහල / தமிழ்" onPress={() => Alert.alert('Language', 'Choose your app language', [
+                        { text: 'English', onPress: () => i18n.changeLanguage('en') },
+                        { text: 'සිංහල', onPress: () => i18n.changeLanguage('si') },
+                        { text: 'தமிழ்', onPress: () => i18n.changeLanguage('ta') },
+                    ])} />
                 </View>
 
                 <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>

@@ -93,7 +93,7 @@ export default function VendorRevenueScreen() {
       snap.forEach(d=>{
         const data=d.data();const dt=data.createdAt?.toDate?data.createdAt.toDate():new Date();
         const k=dt.toDateString();tot++;
-        if(data.status==='completed'){compl++;const p=data.totalPrice||0;tot++;dayRevMap[k]=(dayRevMap[k]||0)+p;tot2=tot;setPeriodTotal(t=>t+p);}
+        if(data.status==='completed'){compl++;const p=data.totalPrice||0;dayRevMap[k]=(dayRevMap[k]||0)+p;}
         if(data.rating){ratSum+=data.rating;ratCnt++;dayRatMap[k]=(dayRatMap[k]||0)+data.rating;revList.push({...data,id:d.id});}
         if(data.serviceId){svcMap[data.serviceId]=(svcMap[data.serviceId]||{count:0,name:data.serviceName||'Service'});svcMap[data.serviceId].count++;}
       });
@@ -107,7 +107,7 @@ export default function VendorRevenueScreen() {
       setTrustScore(calcTrust(tot?compl/tot:0,ar,tot));
       setTopServices(Object.entries(svcMap).sort((a,b)=>b[1].count-a[1].count).slice(0,3).map(([k,v])=>v));
       setReviews(revList.slice(0,5));
-    } catch(e){}
+    } catch(e){console.log('Revenue load error:',e.message);}
     finally{setLoading(false);}
   };
 

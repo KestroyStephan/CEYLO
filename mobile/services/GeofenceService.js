@@ -4,19 +4,20 @@ import { NotificationService } from './NotificationService';
 
 const GEOFENCE_TASK_NAME = 'GEOFENCE_EVENT_TASK';
 
-// Define the background task
-TaskManager.defineTask(GEOFENCE_TASK_NAME, ({ data: { eventType, region }, error }) => {
+// Define the background task (this module must be imported at app start-up, see App.js)
+TaskManager.defineTask(GEOFENCE_TASK_NAME, ({ data, error }) => {
   if (error) {
     console.log('[Geofence] Task error:', error.message);
     return;
   }
-  
+  const { eventType, region } = data || {};
+  if (!region) return;
+
   if (eventType === Location.GeofencingEventType.Enter) {
     console.log('[Geofence] You entered region:', region.identifier);
-    // Send a local notification using our push notification service
     NotificationService.sendLocal(
       'Cultural Event Nearby! 🎊',
-      `You are near ${region.identifier}. Tap to view details and launch AR mode.`,
+      `You are near ${region.identifier}. Tap to see what's happening.`,
       { type: 'geofence_enter', regionId: region.identifier }
     );
   } else if (eventType === Location.GeofencingEventType.Exit) {
@@ -25,16 +26,18 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, ({ data: { eventType, region }, error
 });
 
 class GeofenceServiceClass {
+  /** @returns {Promise<boolean>} true when background geofencing is running */
   async startGeofencing(regions) {
     try {
       const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
       if (fgStatus !== 'granted') {
         console.log('[Geofence] Foreground permission denied');
-        return;
+        return false;
       }
       const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
       if (bgStatus !== 'granted') {
-        console.log('[Geofence] Background permission denied - geofencing won\'t work in background');
+        console.log('[Geofence] Background permission denied - geofencing needs "Always" location access');
+        return false;
       }
 
       const formattedRegions = regions.map((r) => ({
@@ -45,11 +48,14 @@ class GeofenceServiceClass {
         notifyOnEnter: true,
         notifyOnExit: true,
       }));
+      if (formattedRegions.length === 0) return false;
 
       await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, formattedRegions);
       console.log('[Geofence] Started tracking', formattedRegions.length, 'regions');
+      return true;
     } catch (e) {
       console.log('[Geofence] Start error:', e.message);
+      return false;
     }
   }
 

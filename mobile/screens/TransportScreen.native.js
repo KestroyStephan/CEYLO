@@ -46,6 +46,8 @@ export default function TransportScreen({ route, navigation }) {
   const [routeInfo, setRouteInfo] = useState(null);
 
   const mapRef = useRef(null);
+  const demoDriverTimer = useRef(null);
+  useEffect(() => () => clearTimeout(demoDriverTimer.current), []);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Initialize Pickup Location and Reverse Geocode
@@ -138,11 +140,16 @@ export default function TransportScreen({ route, navigation }) {
         setActiveBooking({ id: snap.id, ...data });
 
         if (data.status === 'Confirmed' && data.driverId) {
+          clearTimeout(demoDriverTimer.current);
           setBookingStep('driverAssigned');
           // Fetch driver details
-          const driverSnap = await getDoc(doc(db, 'drivers', data.driverId));
-          if (driverSnap.exists()) {
-            setAssignedDriver(driverSnap.data());
+          if (data.demoDriver) {
+            setAssignedDriver(data.demoDriver);
+          } else {
+            const driverSnap = await getDoc(doc(db, 'drivers', data.driverId));
+            if (driverSnap.exists()) {
+              setAssignedDriver(driverSnap.data());
+            }
           }
         }
 
@@ -296,7 +303,7 @@ export default function TransportScreen({ route, navigation }) {
   // --- NEW SEARCH IMPLEMENTATION (SECTION 1) ---
   const searchDestination = async (text) => {
     setDropAddress(text);
-    
+
     if (!text || text.length < 2) {
       setDestinationSuggestions([]);
       return;
@@ -305,10 +312,10 @@ export default function TransportScreen({ route, navigation }) {
     try {
       const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${apiKey}&components=country:lk&language=en&types=geocode|establishment`;
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       console.log('=== TRANSPORT SEARCH DEBUG ===');
       console.log('Query:', text);
       console.log('URL:', url);
@@ -316,7 +323,7 @@ export default function TransportScreen({ route, navigation }) {
       console.log('Error message:', data.error_message || 'none');
       console.log('Results count:', data.predictions?.length || 0);
       console.log('==============================');
-      
+
       if (data.status === 'OK' && data.predictions?.length > 0) {
         setDestinationSuggestions(data.predictions);
       } else if (data.status === 'ZERO_RESULTS') {
@@ -335,24 +342,24 @@ export default function TransportScreen({ route, navigation }) {
   const selectDestination = async (placeId, description) => {
     setDropAddress(description);
     setDestinationSuggestions([]);
-    
+
     try {
       const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
       const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=${apiKey}`;
-      
+
       const response = await fetch(detailsUrl);
       const data = await response.json();
-      
+
       if (data.status === 'OK' && data.result?.geometry?.location) {
         const { lat, lng } = data.result.geometry.location;
         const coords = { latitude: lat, longitude: lng };
-        
+
         setDropoffCoords(coords);
-        
+
         if (pickupCoords) {
           await calculateRoute(pickupCoords, coords);
         }
-        
+
         if (mapRef?.current) {
           mapRef.current.fitToCoordinates(
             [pickupCoords, coords],
@@ -376,10 +383,10 @@ export default function TransportScreen({ route, navigation }) {
     try {
       const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${apiKey}&mode=driving&region=lk`;
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       if (data.status === 'OK' && data.routes?.length > 0) {
         const leg = data.routes[0].legs[0];
         setRouteInfo({
@@ -387,7 +394,7 @@ export default function TransportScreen({ route, navigation }) {
           duration: leg.duration.text,
           distanceValue: leg.distance.value,
         });
-        
+
         const distanceKm = leg.distance.value / 1000;
         if (typeof estimateAllFares === 'function') {
           const fares = estimateAllFares(distanceKm);
@@ -438,40 +445,41 @@ export default function TransportScreen({ route, navigation }) {
       setActiveBookingId(bookingRef.id);
       setBookingStep('searching');
 
-      // SIMULATION: Automatically assign a mock driver after 5 seconds
-      setTimeout(async () => {
-        try {
-          const bookingCheck = await getDoc(bookingRef);
-          if (bookingCheck.exists() && bookingCheck.data().status === 'pending') {
-            await updateDoc(bookingRef, {
-              status: 'Confirmed',
-              driverId: 'mock_driver_123',
-              driverLocation: {
-                latitude: pickupCoords.latitude + 0.005,
-                longitude: pickupCoords.longitude + 0.005,
-              }
-            });
-            // Ensure the mock driver exists in the drivers collection for the UI to display details
-            const { setDoc } = require('firebase/firestore');
-            const mockDriverRef = doc(db, 'drivers', 'mock_driver_123');
-            await setDoc(mockDriverRef, {
-              name: 'Kamal (Mock Driver)',
-              phone: '+94712345678',
-              vehicleType: selectedVehicle,
-              licensePlate: 'WP-ABC-1234'
-            }, { merge: true });
+      // Demo builds only (EXPO_PUBLIC_DEMO_MODE=true): if no real driver accepts within 15s,
+      // assign a clearly-labelled demo driver so the ride flow can be presented.
+      if (process.env.EXPO_PUBLIC_DEMO_MODE === 'true') {
+        demoDriverTimer.current = setTimeout(async () => {
+          try {
+            const bookingCheck = await getDoc(bookingRef);
+            if (bookingCheck.exists() && bookingCheck.data().status === 'pending') {
+              await updateDoc(bookingRef, {
+                status: 'Confirmed',
+                driverId: 'demo_driver',
+                demoDriver: {
+                  name: 'Kamal (Demo Driver)',
+                  phone: '+94712345678',
+                  vehicleType: selectedVehicle,
+                  licensePlate: 'WP-ABC-1234',
+                },
+                driverLocation: {
+                  latitude: pickupCoords.latitude + 0.005,
+                  longitude: pickupCoords.longitude + 0.005,
+                }
+              });
+            }
+          } catch (simError) {
+            console.log("Demo driver assignment failed:", simError);
           }
-        } catch (simError) {
-          console.log("Mock driver simulation failed:", simError);
-        }
-      }, 5000);
-      
+        }, 15000);
+      }
+
     } catch (error) {
       Alert.alert('Booking Failed', error.message);
     }
   };
 
   const handleCancelBooking = async () => {
+    clearTimeout(demoDriverTimer.current);
     if (activeBookingId) {
       try {
         await updateDoc(doc(db, 'bookings', activeBookingId), {
@@ -593,7 +601,7 @@ export default function TransportScreen({ route, navigation }) {
         driverId: null,
       });
       setActiveBookingId(bookingRef.id);
-      
+
       const q = query(collection(db, 'users'), where('role', '==', 'driver'), where('isOnline', '==', true));
       const querySnapshot = await getDocs(q);
       const messages = [];
@@ -748,14 +756,14 @@ export default function TransportScreen({ route, navigation }) {
                       suggestion.description
                     )}
                   >
-                    <Ionicons 
-                      name="location-outline" 
-                      size={16} 
-                      color="#006A3B" 
+                    <Ionicons
+                      name="location-outline"
+                      size={16}
+                      color="#006A3B"
                     />
                     <View style={styles.suggestionTextContainer}>
                       <Text style={styles.suggestionMain} numberOfLines={1}>
-                        {suggestion.structured_formatting?.main_text || 
+                        {suggestion.structured_formatting?.main_text ||
                          suggestion.description}
                       </Text>
                       <Text style={styles.suggestionSecondary} numberOfLines={1}>
@@ -922,7 +930,6 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 8 },
   searchInputField: { flex: 1, fontSize: 15, color: '#333', fontFamily: 'Outfit-Regular' },
   suggestionsBox: { maxHeight: 200, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EEE', borderRadius: 10, marginTop: 4, overflow: 'hidden' },
-  suggestionItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5', gap: 10 },
   suggestionText: { fontSize: 13, color: '#333', flex: 1 },
   pickupRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   pickupText: { fontSize: 12, color: '#6F7A70' },

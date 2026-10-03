@@ -203,7 +203,7 @@ export default function GuidesListScreen({ navigation }) {
           <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
         </TouchableOpacity>
         <Text style={styles.appName}>Ceylon Echoes</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'AppTabs', params: { screen: 'ProfileTab' } })}>
           <Image
             source={{ uri: auth.currentUser?.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
             style={styles.avatar}

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
+import { chatJSON } from '../services/aiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -58,36 +59,12 @@ Provide a JSON response with the following strictly formatted keys:
 }
 Only output the raw JSON string without markdown wrapping.`;
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          response_format: { type: 'json_object' },
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!data || !data.choices || !data.choices[0]) {
-        throw new Error('Invalid response from Groq API: ' + JSON.stringify(data));
-      }
-      
-      let resultText = data.choices[0].message.content;
-      
-      resultText = resultText.replace(/```json\n?|\n?```/gi, '').trim();
-      
-      const parsed = JSON.parse(resultText);
+      const parsed = await chatJSON('You are a Sri Lankan travel expert. Reply with JSON only.', [{ role: 'user', content: prompt }]);
       setAiData(parsed);
     } catch (error) {
       console.error('Failed to fetch AI insights', error);
       setAiData({
-        translation: "සීගිරිය • சிகிரியா",
+        translation: "",
         ai_insight: place.description || "A wonderful destination to explore.",
         history: "A beautiful location with a deep cultural past.",
         practical_info: "Wear comfortable shoes and bring water.",

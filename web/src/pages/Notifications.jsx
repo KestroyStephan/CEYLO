@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-    Box, Typography, Button, Paper, TextField, 
+import {
+    Box, Typography, Button, Paper, TextField,
     Select, MenuItem, FormControl, InputLabel,
     Stack, Chip, Alert, Card, CardContent, Grid, Avatar, Snackbar
 } from '@mui/material';
 import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
 import SendIcon from '@mui/icons-material/Send';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import PeopleIcon from '@mui/icons-material/People';
@@ -52,15 +52,17 @@ function Notifications() {
                     data: { type: 'admin_broadcast', title, message }
                 }));
 
-                await fetch("https://exp.host/--/api/v2/push/send", {
+                const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+                const idToken = await auth.currentUser.getIdToken();
+                const res = await fetch(`${backendUrl}/api/push`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Accept-encoding': 'gzip, deflate',
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(messages),
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                    body: JSON.stringify({ messages }),
                 });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || `Push service returned ${res.status}`);
+                }
             }
 
             // 4. Log the broadcast to Firestore history
@@ -104,7 +106,7 @@ function Notifications() {
                         <Typography variant="h6" fontWeight={700} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
                             <NotificationsActiveIcon sx={{ mr: 1, color: '#00695c' }} /> New Broadcast Message
                         </Typography>
-                        
+
                         <Stack spacing={3}>
                             <FormControl fullWidth>
                                 <InputLabel>Target Audience</InputLabel>
@@ -119,19 +121,19 @@ function Notifications() {
                                 </Select>
                             </FormControl>
 
-                            <TextField 
-                                label="Notification Title" 
-                                fullWidth 
+                            <TextField
+                                label="Notification Title"
+                                fullWidth
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="e.g. Eco-Festival Tomorrow!"
                                 disabled={sending}
                             />
 
-                            <TextField 
-                                label="Message Body" 
-                                fullWidth 
-                                multiline 
+                            <TextField
+                                label="Message Body"
+                                fullWidth
+                                multiline
                                 rows={4}
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
@@ -139,10 +141,10 @@ function Notifications() {
                                 disabled={sending}
                             />
 
-                            <TextField 
+                            <TextField
                                 type="date"
-                                label="Valid Until (Expiry Date)" 
-                                fullWidth 
+                                label="Valid Until (Expiry Date)"
+                                fullWidth
                                 value={expiryDate}
                                 onChange={(e) => setExpiryDate(e.target.value)}
                                 InputLabelProps={{ shrink: true }}
@@ -150,9 +152,9 @@ function Notifications() {
                                 disabled={sending}
                             />
 
-                            <Button 
-                                variant="contained" 
-                                size="large" 
+                            <Button
+                                variant="contained"
+                                size="large"
                                 startIcon={<SendIcon />}
                                 disabled={!title.trim() || !message.trim() || sending}
                                 onClick={handleBroadcast}
@@ -206,12 +208,12 @@ function Notifications() {
                 autoHideDuration={4000}
                 onClose={() => setSnackbarOpen(false)}
             >
-                <Alert 
-                    severity={sentStatus?.success ? "success" : "error"} 
+                <Alert
+                    severity={sentStatus?.success ? "success" : "error"}
                     sx={{ borderRadius: 2 }}
                 >
-                    {sentStatus?.success 
-                        ? `Broadcast delivered to ${sentStatus.count} active Expo tokens!` 
+                    {sentStatus?.success
+                        ? `Broadcast delivered to ${sentStatus.count} active Expo tokens!`
                         : `Broadcast failed: ${sentStatus?.error}`
                     }
                 </Alert>

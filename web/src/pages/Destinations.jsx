@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
     Box, Typography, Button, Paper, Grid,
-    TextField, Chip, IconButton, Avatar, 
+    TextField, Chip, IconButton, Avatar,
     Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Select, MenuItem,
     Snackbar, Alert, TablePagination, Dialog, DialogTitle, DialogContent, DialogActions,
@@ -33,7 +33,7 @@ const defaultDestinations = destinationsData.map((d, index) => {
         nameSinhala = "ශ්‍රී දළදා මාළිගාව";
         nameTamil = "தலதா மாளிகை";
     }
-    
+
     // Map existing categories to the new ones where appropriate, or just assign randomly for mock variety
     let cat = d.category || 'Heritage';
     if (d.name.toLowerCase().includes('temple')) cat = 'Temples';
@@ -60,18 +60,18 @@ export default function Destinations() {
     const [destinations, setDestinations] = useState([]);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    
+
     // Filters
     const [filterProvince, setFilterProvince] = useState('All Provinces');
     const [filterCategory, setFilterCategory] = useState('All Categories');
     const [searchQuery, setSearchQuery] = useState('');
-    
+
     // Editor State
     const [openDialog, setOpenDialog] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [selectedDest, setSelectedDest] = useState(null);
     const [formData, setFormData] = useState({});
-    
+
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
@@ -149,7 +149,7 @@ export default function Destinations() {
     const filteredDestinations = destinations.filter(d => {
         const matchSearch = d.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchProvince = filterProvince === 'All Provinces' || d.province === filterProvince;
-        
+
         let matchCategory = filterCategory === 'All Categories';
         if (!matchCategory) {
             if (filterCategory === 'Hidden Gems') {
@@ -168,7 +168,7 @@ export default function Destinations() {
 
     return (
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            
+
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
@@ -179,8 +179,8 @@ export default function Destinations() {
                         Manage the island's locations, curate hidden gems, and track eco-scores.
                     </Typography>
                 </Box>
-                <Button 
-                    variant="contained" 
+                <Button
+                    variant="contained"
                     onClick={() => handleOpenEditor()}
                     startIcon={<AddIcon />}
                     sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, px: 3, textTransform: 'none' }}
@@ -253,8 +253,8 @@ export default function Destinations() {
                         ))}
                     </TextField>
                 </Box>
-                <TextField 
-                    placeholder="Search destinations..." 
+                <TextField
+                    placeholder="Search destinations..."
                     size="small"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -379,11 +379,11 @@ export default function Destinations() {
                         <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>ECO-SCORE TRACKING</Typography>
                             <Box sx={{ px: 2, pb: 2 }}>
-                                <Slider 
-                                    value={formData.ecoScore || 85} 
-                                    min={0} max={100} 
-                                    valueLabelDisplay="auto" 
-                                    onChange={(e, val) => setFormData({ ...formData, ecoScore: val })} 
+                                <Slider
+                                    value={formData.ecoScore || 85}
+                                    min={0} max={100}
+                                    valueLabelDisplay="auto"
+                                    onChange={(e, val) => setFormData({ ...formData, ecoScore: val })}
                                     sx={{ color: formData.ecoScore >= 80 ? '#006A3B' : '#F57F17' }}
                                 />
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: -1 }}>
@@ -419,7 +419,7 @@ export default function Destinations() {
                 </DialogContent>
                 <DialogActions sx={{ p: 3, pt: 0 }}>
                     {!isCreating && (
-                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => handleDelete(selectedEvent?.id || selectedDest?.id)} sx={{ mr: 'auto', fontWeight: 800 }}>
+                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => handleDelete(selectedDest?.id)} sx={{ mr: 'auto', fontWeight: 800 }}>
                             Delete
                         </Button>
                     )}

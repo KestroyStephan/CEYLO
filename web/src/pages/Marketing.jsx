@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Typography, Grid, Paper, TextField, Button, 
+import {
+    Box, Typography, Grid, Paper, TextField, Button,
     Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, Stack, Chip, Divider
 } from '@mui/material';
 import { collection, getDocs, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -14,7 +14,7 @@ export default function Marketing() {
     const [events, setEvents] = useState([]);
     const [selectedTarget, setSelectedTarget] = useState('');
     const [targetType, setTargetType] = useState('destination');
-    
+
     // SEO State
     const [seoTitle, setSeoTitle] = useState('');
     const [seoDescription, setSeoDescription] = useState('');
@@ -34,8 +34,8 @@ export default function Marketing() {
             try {
                 const destSnap = await getDocs(collection(db, 'destinations'));
                 setDestinations(destSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-                
-                const eventSnap = await getDocs(collection(db, 'culturalEvents'));
+
+                const eventSnap = await getDocs(collection(db, 'cultural_events'));
                 setEvents(eventSnap.docs.map(e => ({ id: e.id, ...e.data() })));
             } catch (err) {
                 console.error("Error fetching content for SEO:", err);
@@ -51,7 +51,7 @@ export default function Marketing() {
         }
         setSeoLoading(true);
         try {
-            const collName = targetType === 'destination' ? 'destinations' : 'culturalEvents';
+            const collName = targetType === 'destination' ? 'destinations' : 'cultural_events';
             await updateDoc(doc(db, collName, selectedTarget), {
                 seoMeta: {
                     title: seoTitle,
@@ -139,34 +139,34 @@ export default function Marketing() {
                                 </Grid>
                             </Grid>
 
-                            <TextField 
-                                label="SEO Meta Title" 
-                                fullWidth 
+                            <TextField
+                                label="SEO Meta Title"
+                                fullWidth
                                 value={seoTitle}
                                 onChange={(e) => setSeoTitle(e.target.value)}
                                 placeholder="e.g. Best Safari in Sri Lanka - Ceylo"
                             />
 
-                            <TextField 
-                                label="SEO Meta Description" 
-                                fullWidth 
+                            <TextField
+                                label="SEO Meta Description"
+                                fullWidth
                                 multiline rows={3}
                                 value={seoDescription}
                                 onChange={(e) => setSeoDescription(e.target.value)}
                                 placeholder="A 160-character snippet for search engines..."
                             />
 
-                            <TextField 
-                                label="Keywords (comma separated)" 
-                                fullWidth 
+                            <TextField
+                                label="Keywords (comma separated)"
+                                fullWidth
                                 value={seoKeywords}
                                 onChange={(e) => setSeoKeywords(e.target.value)}
                                 placeholder="safari, yala, sri lanka, tourism"
                             />
 
-                            <Button 
-                                variant="contained" 
-                                onClick={handleSeoUpdate} 
+                            <Button
+                                variant="contained"
+                                onClick={handleSeoUpdate}
                                 disabled={seoLoading || !selectedTarget}
                                 sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, py: 1.5, borderRadius: 2 }}
                             >
@@ -194,26 +194,26 @@ export default function Marketing() {
                                 </Select>
                             </FormControl>
 
-                            <TextField 
-                                label="Campaign Subject" 
-                                fullWidth 
+                            <TextField
+                                label="Campaign Subject"
+                                fullWidth
                                 value={emailSubject}
                                 onChange={(e) => setEmailSubject(e.target.value)}
                                 placeholder="e.g. Discover Hidden Gems in Sri Lanka this Season!"
                             />
 
-                            <TextField 
-                                label="Email HTML Body" 
-                                fullWidth 
+                            <TextField
+                                label="Email HTML Body"
+                                fullWidth
                                 multiline rows={6}
                                 value={emailBody}
                                 onChange={(e) => setEmailBody(e.target.value)}
                                 placeholder="<h1>Welcome to Ceylo</h1><p>Check out our latest...</p>"
                             />
 
-                            <Button 
-                                variant="contained" 
-                                onClick={handleSendEmail} 
+                            <Button
+                                variant="contained"
+                                onClick={handleSendEmail}
                                 disabled={emailLoading}
                                 sx={{ bgcolor: '#1565c0', '&:hover': { bgcolor: '#0d47a1' }, fontWeight: 800, py: 1.5, borderRadius: 2 }}
                             >

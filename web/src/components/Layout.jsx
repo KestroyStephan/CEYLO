@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { 
-    AppBar, Toolbar, Typography, Drawer, List, ListItem, 
-    ListItemIcon, ListItemText, IconButton, Box, ListItemButton, 
+import {
+    AppBar, Toolbar, Typography, Drawer, List, ListItem,
+    ListItemIcon, ListItemText, IconButton, Box, ListItemButton,
     Badge, Popover, Avatar, Stack, Chip, InputBase
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -24,6 +24,9 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import SearchIcon from '@mui/icons-material/Search';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SettingsIcon from '@mui/icons-material/Settings';
+import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import InsightsIcon from '@mui/icons-material/Insights';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -70,9 +73,13 @@ function Layout() {
         { text: t('cultural_events'), icon: <EventIcon sx={{ fontSize: 22 }}/>, path: '/events' },
         { text: t('destinations'), icon: <TravelExploreIcon sx={{ fontSize: 22 }}/>, path: '/destinations' },
         { text: 'Guides', icon: <MapIcon sx={{ fontSize: 22 }}/>, path: '/guides' },
+        { text: 'Drivers', icon: <LocalTaxiIcon sx={{ fontSize: 22 }}/>, path: '/drivers' },
         { text: t('vendors'), icon: <StoreIcon sx={{ fontSize: 22 }}/>, path: '/vendors' },
         { text: t('users'), icon: <PeopleIcon sx={{ fontSize: 22 }}/>, path: '/users' },
         { text: t('ai_center'), icon: <AutoAwesomeIcon sx={{ fontSize: 22 }}/>, path: '/ai-center' },
+        { text: 'Notifications', icon: <NotificationsActiveIcon sx={{ fontSize: 22 }}/>, path: '/notifications' },
+        { text: 'Marketing', icon: <CampaignIcon sx={{ fontSize: 22 }}/>, path: '/marketing' },
+        { text: 'Analytics', icon: <InsightsIcon sx={{ fontSize: 22 }}/>, path: '/analytics' },
         { text: t('reports'), icon: <AssessmentIcon sx={{ fontSize: 22 }}/>, path: '/reports' },
         { text: t('system_health'), icon: <HealthAndSafetyIcon sx={{ fontSize: 22 }}/>, path: '/health' },
         { text: 'Settings', icon: <SettingsIcon sx={{ fontSize: 22 }}/>, path: '/settings' },
@@ -118,9 +125,9 @@ function Layout() {
                                     <ListItemIcon sx={{ minWidth: 36, color: isActive ? '#006A3B' : '#8B9B92' }}>
                                         {item.icon}
                                     </ListItemIcon>
-                                    <ListItemText 
-                                        primary={item.text} 
-                                        primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: isActive ? 800 : 600 }} 
+                                    <ListItemText
+                                        primary={item.text}
+                                        primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: isActive ? 800 : 600 }}
                                     />
                                 </ListItemButton>
                             </ListItem>
@@ -163,11 +170,11 @@ function Layout() {
             <AppBar position="fixed" elevation={0} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #EBEFE8', width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}>
                 <Toolbar sx={{ minHeight: '72px !important', px: { xs: 2, sm: 4 } }}>
                     <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' }, color: '#006A3B' }}><MenuIcon /></IconButton>
-                    
+
                     {/* Attractive Top Search Bar */}
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-                        <Box sx={{ 
-                            display: { xs: 'none', md: 'flex' }, alignItems: 'center', 
+                        <Box sx={{
+                            display: { xs: 'none', md: 'flex' }, alignItems: 'center',
                             bgcolor: '#F4F7F6', borderRadius: '12px', px: 2, py: 1, width: 400,
                             border: '1px solid #EBEFE8', transition: 'all 0.3s',
                             '&:hover': { borderColor: '#006A3B', bgcolor: '#FFFFFF', boxShadow: '0 4px 12px rgba(0,106,59,0.05)' }
@@ -176,7 +183,7 @@ function Layout() {
                             <InputBase placeholder="Search anything in CEYLO..." sx={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, color: '#181D19' }} />
                         </Box>
                     </Box>
-                    
+
                     <Stack direction="row" spacing={1.5} alignItems="center">
                         <IconButton onClick={handleLangClick} sx={{ color: '#006A3B', bgcolor: '#E8F5E9', '&:hover': { bgcolor: '#C8E6C9' } }}>
                             <LanguageIcon sx={{ fontSize: 22 }} />
@@ -222,7 +229,7 @@ function Layout() {
                     {drawer}
                 </Drawer>
             </Box>
-            
+
             {/* REMOVED maxWidth: 1600 and mx: 'auto' to ensure the content stretches fully, fixing the left/right whitespace issue */}
             <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 }, width: { sm: `calc(100% - ${drawerWidth}px)` }, pt: '96px !important' }}>
                 <Outlet />

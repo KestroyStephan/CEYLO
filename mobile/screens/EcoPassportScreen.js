@@ -1,18 +1,56 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, Dimensions, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView, Dimensions, Image, Alert } from 'react-native';
 import { Text, Surface, ProgressBar, IconButton, Button, Avatar, Chip, Divider } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { auth } from '../firebaseConfig';
+import { loadEcoStats } from '../utils/ecoStats';
 
 const { width } = Dimensions.get('window');
 
 export default function EcoPassportScreen({ navigation }) {
-  const stats = {
-    totalCO2Saved: '42.5kg',
-    rank: 'Eco Expert',
-    badges: 8,
-    points: 1250,
-    progress: 0.75
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    loadEcoStats(auth.currentUser?.uid)
+      .then(setStats)
+      .catch(e => {
+        console.log('Eco stats error:', e.message);
+        setStats(null);
+      });
+  }, []);
+
+  const s = stats || { points: 0, rank: 'Explorer', co2SavedKg: 0, greenKm: 0, itineraries: 0, reviews: 0, progress: 0, nextRank: 'Eco Friend', pointsToNext: 300 };
+  const badges = [
+    { icon: 'leaf', label: 'Trip Planner', earned: s.itineraries >= 1 },
+    { icon: 'train', label: 'Green Commute', earned: !!s.usedTransit },
+    { icon: 'walk', label: 'Walker', earned: !!s.walked },
+    { icon: 'star', label: 'Reviewer', earned: s.reviews >= 1 },
+    { icon: 'map-marker-multiple', label: 'Globetrotter', earned: s.itineraries >= 3 },
+    { icon: 'trophy', label: 'Eco Legend', earned: s.rank === 'Eco Legend' },
+  ];
+  // A mature tree absorbs roughly 21 kg of CO2 per year
+  const treesEquivalent = Math.round((s.co2SavedKg / 21) * 10) / 10;
+
+  const shareCertificate = async () => {
+    const name = auth.currentUser?.displayName || 'CEYLO Traveller';
+    const html = `
+      <html><body style="font-family: sans-serif; text-align: center; padding: 60px; border: 8px solid #1B5E20;">
+        <h1 style="color: #1B5E20;">CEYLO Eco-Certificate</h1>
+        <p>This certifies that</p>
+        <h2>${name}</h2>
+        <p>has reached the rank of <b>${s.rank}</b> with <b>${s.points}</b> Eco Points,</p>
+        <p>travelling ${s.greenKm} km by low-carbon transport and saving an estimated ${s.co2SavedKg} kg of CO2.</p>
+        <p style="color: #666;">${new Date().toDateString()}</p>
+      </body></html>`;
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri);
+    } catch (e) {
+      Alert.alert('Error', 'Could not create the certificate.');
+    }
   };
 
   const Badge = ({ icon, label, locked }) => (
@@ -30,15 +68,17 @@ export default function EcoPassportScreen({ navigation }) {
         <View style={styles.headerTop}>
           <IconButton icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>Eco Passport</Text>
-          <IconButton icon="share-variant" iconColor="#FFF" />
+          <IconButton icon="share-variant" iconColor="#FFF" onPress={shareCertificate} />
         </View>
 
         <View style={styles.profileBox}>
           <Surface style={styles.avatarSurface} elevation={4}>
-            <Avatar.Image size={80} source={{ uri: 'https://i.pravatar.cc/150?u=me' }} />
+            {auth.currentUser?.photoURL
+              ? <Avatar.Image size={80} source={{ uri: auth.currentUser.photoURL }} />
+              : <Avatar.Icon size={80} icon="account" style={{ backgroundColor: '#4CAF50' }} />}
           </Surface>
-          <Text style={styles.rankText}>{stats.rank}</Text>
-          <Text style={styles.pointText}>{stats.points} Eco Points</Text>
+          <Text style={styles.rankText}>{s.rank}</Text>
+          <Text style={styles.pointText}>{s.points} Eco Points</Text>
         </View>
       </LinearGradient>
 
@@ -46,29 +86,24 @@ export default function EcoPassportScreen({ navigation }) {
         <Surface style={styles.statsCard} elevation={2}>
           <View style={styles.statRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statVal}>{stats.totalCO2Saved}</Text>
+              <Text style={styles.statVal}>{s.co2SavedKg}kg</Text>
               <Text style={styles.statLab}>CO2 Saved</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.statItem}>
-              <Text style={styles.statVal}>{stats.badges}</Text>
+              <Text style={styles.statVal}>{badges.filter(b => b.earned).length}</Text>
               <Text style={styles.statLab}>Badges</Text>
             </View>
           </View>
           <Divider style={{ marginVertical: 15 }} />
-          <Text style={styles.progTitle}>Next Rank: Eco Legend</Text>
-          <ProgressBar progress={stats.progress} color="#4CAF50" style={styles.progress} />
-          <Text style={styles.progSub}>350 pts to go</Text>
+          <Text style={styles.progTitle}>{s.nextRank ? `Next Rank: ${s.nextRank}` : 'Top rank reached!'}</Text>
+          <ProgressBar progress={s.progress} color="#4CAF50" style={styles.progress} />
+          <Text style={styles.progSub}>{s.nextRank ? `${s.pointsToNext} pts to go` : 'Keep exploring sustainably'}</Text>
         </Surface>
 
         <Text style={styles.sectionTitle}>Your Achievements</Text>
         <View style={styles.badgeGrid}>
-          <Badge icon="leaf" label="Tree Planter" />
-          <Badge icon="train" label="Green Commute" />
-          <Badge icon="water" label="H2O Saver" />
-          <Badge icon="bicycle" label="E-Tourer" />
-          <Badge icon="trash-can" label="Zero Waste" locked />
-          <Badge icon="solar-power" label="Sun Child" locked />
+          {badges.map(b => <Badge key={b.label} icon={b.icon} label={b.label} locked={!b.earned} />)}
         </View>
 
         <Surface style={styles.impactCard} elevation={1}>
@@ -76,13 +111,13 @@ export default function EcoPassportScreen({ navigation }) {
           <View style={styles.impactRow}>
             <View style={styles.impactItem}>
               <MaterialCommunityIcons name="tree" size={40} color="#4CAF50" />
-              <Text style={styles.impactVal}>3</Text>
-              <Text style={styles.impactLab}>Trees Grown</Text>
+              <Text style={styles.impactVal}>{treesEquivalent}</Text>
+              <Text style={styles.impactLab}>Tree-Years of CO2</Text>
             </View>
             <View style={styles.impactItem}>
-              <MaterialCommunityIcons name="lightbulb-on" size={40} color="#FFB300" />
-              <Text style={styles.impactVal}>18</Text>
-              <Text style={styles.impactLab}>Days of Light</Text>
+              <MaterialCommunityIcons name="bus" size={40} color="#FFB300" />
+              <Text style={styles.impactVal}>{s.greenKm}</Text>
+              <Text style={styles.impactLab}>Low-Carbon km</Text>
             </View>
           </View>
         </Surface>
@@ -92,7 +127,7 @@ export default function EcoPassportScreen({ navigation }) {
           icon="certificate" 
           style={styles.certBtn} 
           buttonColor="#00695C"
-          onPress={() => {}}
+          onPress={shareCertificate}
         >
           View Eco-Certificate
         </Button>

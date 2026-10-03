@@ -4,13 +4,17 @@ import {
   Platform, ScrollView, Alert, TextInput, StatusBar, Dimensions
 } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../../firebaseConfig';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithCredential, getAdditionalUserInfo } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
+
+// OAuth web client (client_type 3) from google-services.json; Firebase verifies tokens issued for it
+const GOOGLE_WEB_CLIENT_ID = '8889588910-euqp5j8rvv07l724b36l4ku3rh05n52q.apps.googleusercontent.com';
 
 // Google "G" logo as colored icon
 function GoogleIcon({ size = 20 }) {
@@ -44,6 +48,46 @@ export default function LoginScreen({ navigation }) {
       if (error.code === 'auth/invalid-email') message = 'The email address is not valid.';
       else if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Please try again later.';
       Alert.alert('Login Failed', message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    // The native module only exists in a development/production build, not in Expo Go
+    let google;
+    try {
+      google = require('@react-native-google-signin/google-signin');
+    } catch (e) {
+      Alert.alert('Google Sign-In', 'Google sign-in needs the installed CEYLO app (it is not available in Expo Go).');
+      return;
+    }
+    const { GoogleSignin, isSuccessResponse, statusCodes } = google;
+    setLoading(true);
+    try {
+      GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response) || !response.data.idToken) return; // user cancelled
+
+      const result = await signInWithCredential(auth, GoogleAuthProvider.credential(response.data.idToken));
+      if (getAdditionalUserInfo(result)?.isNewUser) {
+        await setDoc(doc(db, 'users', result.user.uid), {
+          uid: result.user.uid,
+          name: result.user.displayName || 'Traveller',
+          email: result.user.email,
+          phone: result.user.phoneNumber || '',
+          role: 'tourist',
+          isOnboarded: false,
+          createdAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+    } catch (error) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED || error.code === statusCodes.IN_PROGRESS) return;
+      console.log('Google sign-in error:', error.code, error.message);
+      Alert.alert('Google Sign-In Failed', error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
+        ? 'Google Play Services is not available on this device.'
+        : 'Could not sign in with Google. Please try again or use email.');
     } finally {
       setLoading(false);
     }
@@ -167,7 +211,8 @@ export default function LoginScreen({ navigation }) {
             <TouchableOpacity
               style={styles.googleBtn}
               activeOpacity={0.85}
-              onPress={() => Alert.alert('Google Sign-In', 'Google sign-in requires additional setup with expo-auth-session.')}
+              onPress={handleGoogleLogin}
+              disabled={loading}
             >
               <Text style={styles.googleG}>G</Text>
               <Text style={styles.googleBtnText}>Continue with Google</Text>

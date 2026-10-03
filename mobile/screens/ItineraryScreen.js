@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Button, Card, IconButton, ActivityIndicator } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from '../firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
+import { generateItinerary } from '../services/ItineraryService';
+
+const FOCUS_TO_MOOD = { 'Nature/Eco': 'Eco Explorer', 'Balanced': 'Family Trip', 'Culture/History': 'Culture Seeker' };
+const MAX_DAYS = 14;
 
 export default function ItineraryScreen({ navigation }) {
     const [focus, setFocus] = useState('Nature/Eco');
@@ -18,23 +23,20 @@ export default function ItineraryScreen({ navigation }) {
 
         setLoading(true);
         try {
-            await addDoc(collection(db, `users/${auth.currentUser.uid}/itineraries`), {
-                focus,
-                days,
-                budget,
-                status: 'generated',
-                createdAt: serverTimestamp(),
-            });
-            Alert.alert("Success", "Itinerary generated and saved successfully!");
-            // Navigate to Concierge passing the extracted state
-            navigation.navigate('Concierge', { 
-                initialState: { focus, days, budget }
-            });
+            // FR-010: preferences saved locally and on the server
+            const preferences = { focus, days, budget, updatedAt: new Date().toISOString() };
+            await AsyncStorage.setItem('travelPreferences', JSON.stringify(preferences)).catch(() => {});
+            setDoc(doc(db, 'users', auth.currentUser.uid), { travelPreferences: preferences }, { merge: true })
+                .catch(e => console.log('Preference sync failed:', e.message));
+
+            const itinerary = await generateItinerary({ mood: FOCUS_TO_MOOD[focus], days, budget });
+            navigation.navigate('ItineraryDetail', { routeData: itinerary });
         } catch (error) {
-            console.error("Error saving itinerary:", error);
-            Alert.alert("Error", "Failed to save itinerary.");
+            console.error("Error generating itinerary:", error);
+            Alert.alert("Error", "Cannot generate itinerary. Try again.");
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
@@ -65,7 +67,7 @@ export default function ItineraryScreen({ navigation }) {
                     <View style={styles.counterRow}>
                         <IconButton icon="minus" mode="contained-tonal" size={20} onPress={() => setDays(Math.max(1, days - 1))} />
                         <Text variant="headlineMedium">{days}</Text>
-                        <IconButton icon="plus" mode="contained-tonal" size={20} onPress={() => setDays(days + 1)} />
+                        <IconButton icon="plus" mode="contained-tonal" size={20} onPress={() => setDays(Math.min(MAX_DAYS, days + 1))} />
                     </View>
 
                     <View style={styles.spacer} />

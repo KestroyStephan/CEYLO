@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, Platform, ScrollView, ActivityIndicator, Modal, Alert, Linking, TextInput } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../components/Map';
+import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections, LocalTile } from '../components/Map';
+import NetInfo from '@react-native-community/netinfo';
+import { useFocusEffect } from '@react-navigation/native';
+import { loadRegions, getRegionTilePathTemplate } from '../utils/offlineMapUtils';
 import * as Location from 'expo-location';
 import { IconButton, Text, Surface, Chip, Avatar } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -26,14 +29,49 @@ export default function MapScreen({ navigation }) {
   const [searchedPlace, setSearchedPlace] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [showDirections, setShowDirections] = useState(false); // Initially visible
-  
+
+  const [offlineRegions, setOfflineRegions] = useState([]);
+  const [isOffline, setIsOffline] = useState(false);
+
   const filters = ['All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'];
+  const REGION_CENTERS = {
+    'All Island': { latitude: 7.8731, longitude: 80.7718, delta: 2.0 },
+    Western: { latitude: 6.9271, longitude: 79.8612, delta: 0.4 },
+    Central: { latitude: 7.2906, longitude: 80.6337, delta: 0.4 },
+    Southern: { latitude: 6.0535, longitude: 80.2210, delta: 0.4 },
+    Northern: { latitude: 9.6615, longitude: 80.0255, delta: 0.4 },
+    Eastern: { latitude: 7.7310, longitude: 81.6747, delta: 0.4 },
+  };
+
+  // Downloaded regions are drawn from local tiles whenever the device is offline
+  useFocusEffect(useCallback(() => {
+    loadRegions().then(setOfflineRegions).catch(() => {});
+  }, []));
+  useEffect(() => NetInfo.addEventListener(state => {
+    setIsOffline(!state.isConnected || state.isInternetReachable === false);
+  }), []);
+
+  const selectRegion = (filter) => {
+    setActiveFilter(filter);
+    const center = REGION_CENTERS[filter];
+    mapRef.current?.animateToRegion({
+      latitude: center.latitude,
+      longitude: center.longitude,
+      latitudeDelta: center.delta,
+      longitudeDelta: center.delta,
+    }, 800);
+    if (filter === 'All Island') {
+      if (location) fetchNearbyPlaces(location.latitude, location.longitude);
+    } else {
+      fetchNearbyPlaces(center.latitude, center.longitude, 30000);
+    }
+  };
 
   useEffect(() => {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        
+
         if (status !== 'granted') {
           Alert.alert(
             'Location Permission Required',
@@ -54,7 +92,7 @@ export default function MapScreen({ navigation }) {
           timeout: 10000,
         });
         setLocation(loc.coords);
-        
+
         if (mapRef.current) {
           mapRef.current.animateToRegion({
             latitude: loc.coords.latitude,
@@ -78,18 +116,18 @@ export default function MapScreen({ navigation }) {
 
   const searchPlace = async (query) => {
     if (!query || query.trim().length < 2) return;
-    
+
     setIsSearchLoading(true);
-    
+
     try {
       const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-      
+
       const searchQueryText = query.includes('Sri Lanka') ? query : `${query}, Sri Lanka`;
       const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQueryText)}&key=${apiKey}&region=lk&language=en`;
-      
+
       const response = await fetch(textSearchUrl);
       const data = await response.json();
-      
+
       console.log('=== MAP SEARCH DEBUG ===');
       console.log('Query:', query); // Using 'query' instead of 'searchQuery' to avoid stale state in closure
       console.log('URL:', textSearchUrl);
@@ -97,12 +135,12 @@ export default function MapScreen({ navigation }) {
       console.log('Error message:', data.error_message || 'none');
       console.log('Results count:', data.results?.length || 0);
       console.log('========================');
-      
+
       if (data.status === 'OK' && data.results?.length > 0) {
         const place = data.results[0];
         const loc = place.geometry.location;
         const coords = { latitude: loc.lat, longitude: loc.lng };
-        
+
         if (mapRef?.current) {
           mapRef.current.animateToRegion({
             latitude: loc.lat,
@@ -111,30 +149,30 @@ export default function MapScreen({ navigation }) {
             longitudeDelta: 0.05,
           }, 1000);
         }
-        
+
         setSearchResult({
           coords: coords,
           name: place.name,
           address: place.formatted_address,
           rating: place.rating,
         });
-        
+
         if (location) {
           const R = 6371;
           const dLat = (loc.lat - location.latitude) * Math.PI / 180;
           const dLon = (loc.lng - location.longitude) * Math.PI / 180;
           const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(location.latitude * Math.PI / 180) * Math.cos(loc.lat * Math.PI / 180) * 
+            Math.cos(location.latitude * Math.PI / 180) * Math.cos(loc.lat * Math.PI / 180) *
             Math.sin(dLon/2) * Math.sin(dLon/2);
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
           const distanceKm = R * c;
-          
+
           setSearchResult(prev => ({
             ...prev,
             distance: distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m away` : `${distanceKm.toFixed(1)}km away`,
           }));
         }
-        
+
       } else if (data.status === 'ZERO_RESULTS') {
         Alert.alert('Place Not Found', `Could not find "${query}" in Sri Lanka. Try a more specific name like "Colombo Fort" or "Kandy Lake".`, [{ text: 'OK' }]);
       } else if (data.status === 'REQUEST_DENIED') {
@@ -161,21 +199,21 @@ export default function MapScreen({ navigation }) {
     return (R * c).toFixed(1);
   };
 
-  const fetchNearbyPlaces = async (lat, lng) => {
+  const fetchNearbyPlaces = async (lat, lng, radius = 5000) => {
     setLoadingPlaces(true);
     try {
       const query = 'restaurant OR museum OR temple OR church OR botanical garden OR tourist attraction OR hidden gem';
-      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=5000&key=${GOOGLE_API_KEY}`;
+      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius}&key=${GOOGLE_API_KEY}`;
       const res = await fetch(url);
       const data = await res.json();
-      
+
       if(data.results) {
         const places = data.results.slice(0, 15).map(p => ({
           id: p.place_id,
           title: p.name,
           type: getPlaceType(p.types || []),
           coords: { latitude: p.geometry.location.lat, longitude: p.geometry.location.lng },
-          rating: p.rating || (Math.random() * (5 - 4) + 4).toFixed(1), // Random fallback rating
+          rating: p.rating || null,
           photo_reference: p.photos ? p.photos[0].photo_reference : null,
           categoryText: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Destination',
           distance: getDistance(lat, lng, p.geometry.location.lat, p.geometry.location.lng)
@@ -235,13 +273,17 @@ export default function MapScreen({ navigation }) {
         showsMyLocationButton={false}
         mapType="standard"
         customMapStyle={mapStyle}
+        mapType={isOffline && offlineRegions.length > 0 ? 'none' : 'standard'}
       >
+        {isOffline && offlineRegions.map(region => (
+          <LocalTile key={region.id} pathTemplate={getRegionTilePathTemplate(region.id)} tileSize={256} zIndex={-1} />
+        ))}
         {nearbyPlaces.filter(p => typeFilter === 'All' || p.type === typeFilter).map((marker) => (
           <Marker
             key={marker.id}
             coordinate={marker.coords}
             onPress={() => {
-              navigation.navigate('DestinationDetail', { 
+              navigation.navigate('DestinationDetail', {
                 place: {
                   name: marker.title,
                   image: getPhotoUrl(marker.photo_reference),
@@ -253,10 +295,10 @@ export default function MapScreen({ navigation }) {
             }}
           >
             <View style={[styles.customMarker, { backgroundColor: getMarkerColor(marker.type) }]}>
-              <MaterialCommunityIcons 
-                name={getMarkerIcon(marker.type)} 
-                size={16} 
-                color="#FFF" 
+              <MaterialCommunityIcons
+                name={getMarkerIcon(marker.type)}
+                size={16}
+                color="#FFF"
               />
             </View>
           </Marker>
@@ -288,7 +330,6 @@ export default function MapScreen({ navigation }) {
           />
         )}
 
-        ))}
         {searchResult?.coords && (
           <Marker
             coordinate={searchResult.coords}
@@ -301,7 +342,7 @@ export default function MapScreen({ navigation }) {
           </Marker>
         )}
       </MapView>
-      
+
       {searchResult && (
         <View style={styles.searchResultCard}>
           <View style={styles.searchResultHeader}>
@@ -313,14 +354,14 @@ export default function MapScreen({ navigation }) {
                 {searchResult.address}
               </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.clearResultButton}
               onPress={() => setSearchResult(null)}
             >
               <Ionicons name="close" size={20} color="#6F7A70" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.searchResultStats}>
             {searchResult.distance && (
               <View style={styles.searchStat}>
@@ -367,13 +408,13 @@ export default function MapScreen({ navigation }) {
               onSubmitEditing={() => searchPlace(searchQuery)}
               returnKeyType="search"
             />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={{ paddingHorizontal: 8 }}
               onPress={() => searchPlace(searchQuery)}
               disabled={isSearchLoading}
             >
-              {isSearchLoading 
+              {isSearchLoading
                 ? <ActivityIndicator size="small" color="#006A3B" />
                 : <Ionicons name="search" size={20} color="#006A3B" />
               }
@@ -395,10 +436,10 @@ export default function MapScreen({ navigation }) {
       <View style={[styles.filterRowContainer, { top: insets.top + 60 }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {filters.map(filter => (
-            <TouchableOpacity 
-              key={filter} 
+            <TouchableOpacity
+              key={filter}
               style={[styles.filterChip, activeFilter === filter && styles.activeFilterChip]}
-              onPress={() => setActiveFilter(filter)}
+              onPress={() => selectRegion(filter)}
             >
               <Text style={[styles.filterText, activeFilter === filter && styles.activeFilterText]}>
                 {filter}
@@ -416,7 +457,7 @@ export default function MapScreen({ navigation }) {
         <TouchableOpacity style={styles.floatingBtnGold}>
           <MaterialCommunityIcons name="cube-scan" size={22} color="#5C4033" />
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.floatingBtnWhite}
           onPress={() => location && mapRef.current.animateToRegion({ ...location, latitudeDelta: 0.05, longitudeDelta: 0.05 })}
         >
@@ -426,7 +467,7 @@ export default function MapScreen({ navigation }) {
 
       {/* Bottom Sheet */}
       <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: sheetAnim }] }]}>
-        
+
         {/* Floating SOS Button attached to bottom sheet */}
         <TouchableOpacity style={styles.sosButton}>
           <Text style={styles.sosText}>SOS</Text>
@@ -436,7 +477,7 @@ export default function MapScreen({ navigation }) {
           <View style={styles.dragBarContainer}>
             <View style={styles.dragBar} />
           </View>
-          
+
           <View style={styles.sheetHeaderRow}>
             <View>
               <Text style={styles.sheetTitle}>Nearby Discoveries</Text>
@@ -462,7 +503,7 @@ export default function MapScreen({ navigation }) {
                     {searchedPlace.rating ? <><MaterialCommunityIcons name="star-circle-outline" size={12} color="#666" /> {searchedPlace.rating} - </> : null}
                     {searchedPlace.distance} km away
                   </Text>
-                  
+
                   {showDirections && routeInfo ? (
                     <View style={{flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4}}>
                       <Text style={{fontSize: 12, fontFamily: 'Outfit-Bold', color: '#00695C'}}>{routeInfo.duration} mins</Text>
@@ -471,7 +512,7 @@ export default function MapScreen({ navigation }) {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={{backgroundColor: '#00695C', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginTop: 4}}
                       onPress={() => setShowDirections(true)}
                     >
@@ -484,11 +525,11 @@ export default function MapScreen({ navigation }) {
             {loadingPlaces ? (
               <ActivityIndicator size="large" color="#00695C" style={{marginTop: 40}} />
             ) : nearbyPlaces.filter(p => typeFilter === 'All' || p.type === typeFilter).map(place => (
-              <TouchableOpacity 
-                key={place.id} 
+              <TouchableOpacity
+                key={place.id}
                 style={styles.discoveryCard}
                 onPress={() => {
-                  navigation.navigate('DestinationDetail', { 
+                  navigation.navigate('DestinationDetail', {
                     place: {
                       name: place.title,
                       image: getPhotoUrl(place.photo_reference),
@@ -503,7 +544,7 @@ export default function MapScreen({ navigation }) {
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardTitle} numberOfLines={1}>{place.title}</Text>
                   <Text style={styles.cardMeta}>
-                    <MaterialCommunityIcons name="star-circle-outline" size={12} color="#666" /> {place.rating} • {place.distance} km away
+                    <MaterialCommunityIcons name="star-circle-outline" size={12} color="#666" /> {place.rating ? `${place.rating} • ` : ''}{place.distance} km away
                   </Text>
                   <View style={styles.cardTagRow}>
                     <View style={styles.hiddenGemTag}>
@@ -524,10 +565,10 @@ export default function MapScreen({ navigation }) {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTypeFilterModal(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Filter by Type</Text>
-            
+
             {['All', 'cultural', 'nature', 'restaurant', 'gem'].map(type => (
-              <TouchableOpacity 
-                key={type} 
+              <TouchableOpacity
+                key={type}
                 style={[styles.modalOption, typeFilter === type && styles.modalOptionActive]}
                 onPress={() => {
                   setTypeFilter(type);
@@ -618,7 +659,7 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1, backgroundColor: '#F5F5F5' },
   map: { ...StyleSheet.absoluteFillObject },
-  
+
   // Header
   header: { position: 'absolute', width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, zIndex: 10 },
   menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
@@ -635,7 +676,7 @@ const styles = StyleSheet.create({
 
   // Map Markers
   customMarker: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', elevation: 4 },
-  
+
   // Floating Buttons Right
   rightFloatingStack: { position: 'absolute', right: 15, gap: 15, zIndex: 10 },
   floatingBtnWhite: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4 },
@@ -650,7 +691,7 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 22, fontFamily: 'Outfit-Bold', color: '#111' },
   sheetSubtitle: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#666', marginTop: 2 },
   filterIconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EBEBEB', justifyContent: 'center', alignItems: 'center' },
-  
+
   // SOS Button
   sosButton: { position: 'absolute', top: -30, right: 20, width: 66, height: 66, borderRadius: 33, backgroundColor: '#C62828', justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#C62828', shadowOpacity: 0.4, shadowRadius: 6, zIndex: 30 },
   sosText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16, letterSpacing: 1 },

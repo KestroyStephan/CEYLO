@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { db } from '../firebaseConfig';
-import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import 'react-native-get-random-values';
 
 const QUEUE_KEY = 'ceylo_offline_queue';
@@ -93,7 +93,8 @@ class OfflineQueueService {
     const { type, payload } = item;
     switch (type) {
       case 'sos':
-        await setDoc(doc(db, 'EmergencyLogs', payload.docId), payload.data);
+        // Offline SOS (sent by SMS) is logged for the admin SOS monitor once back online
+        await addDoc(collection(db, 'sos_alerts'), { ...payload, syncedAt: serverTimestamp(), timestamp: serverTimestamp() });
         break;
       case 'booking':
         await addDoc(collection(db, 'bookings'), payload);

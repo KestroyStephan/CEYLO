@@ -1,18 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
-import { Text, Surface, IconButton, Button, Avatar, Chip, Divider } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, Linking } from 'react-native';
+import { Text, Surface, IconButton, Button, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
+import { buildPlan, summarizePlan, distanceKm } from '../services/ItineraryService';
+import destinationsData from '../assets/data/ai_destinations.json';
 
 const { width } = Dimensions.get('window');
 
+// Curated routes from the home screen carry a province instead of a plan
+function planForRoute(route) {
+  const days = parseInt(route.duration, 10) || 3;
+  const stops = destinationsData
+    .filter(d => d.province === route.province)
+    .sort((a, b) => b.eco_score - a.eco_score)
+    .slice(0, Math.min(10, Math.max(5, days)))
+    .map(d => ({
+      id: d.destination_id, name: d.name, category: d.category, province: d.province,
+      lat: parseFloat(d.lat), lon: parseFloat(d.lon), ecoScore: Math.round(d.eco_score),
+    }));
+  return buildPlan(stops, 'Standard', days);
+}
+
+function ecoLabel(score) {
+  if (score >= 85) return 'Excellent';
+  if (score >= 70) return 'Good';
+  if (score >= 55) return 'Fair';
+  return 'Low';
+}
+
 export default function ItineraryDetailScreen({ route, navigation }) {
   const incomingData = route?.params?.routeData;
-  const [plan, setPlan] = useState(incomingData && incomingData.plan ? incomingData.plan : []);
+  const [plan, setPlan] = useState(() => {
+    if (incomingData?.plan) return incomingData.plan;
+    if (incomingData?.province) return planForRoute(incomingData);
+    return [];
+  });
   const [data, setData] = useState(incomingData);
 
   useEffect(() => {
@@ -27,7 +54,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           );
           const snaps = await getDocs(q);
           if (!snaps.empty) {
-            const itin = snaps.docs[0].data();
+            const itin = { id: snaps.docs[0].id, ...snaps.docs[0].data() };
             setData(itin);
             if (itin.plan) setPlan(itin.plan);
           }
@@ -39,53 +66,72 @@ export default function ItineraryDetailScreen({ route, navigation }) {
     }
   }, [incomingData]);
 
-  const duration = data ? data.duration || '2 Days' : '2 Days';
-  const ecoAvg = data ? data.ecoScore || 88 : 88;
-  const cost = data ? data.cost || 'LKR 5.2k' : 'LKR 5.2k';
-  const title = data ? data.title || 'Your Eco Itinerary' : 'Your Eco Itinerary';
+  const summary = summarizePlan(plan, data?.budget);
+  const duration = data?.duration || summary.duration;
+  const ecoAvg = summary.ecoScore;
+  const cost = data?.cost || summary.cost;
+  const title = data?.title || 'Your Eco Itinerary';
 
-  const carbonSaved = ((ecoAvg / 100) * 24.8).toFixed(1);
+  // Saved itineraries (those with a Firestore id owned by this user) keep edits
+  const updatePlan = (newPlan) => {
+    setPlan(newPlan);
+    if (data?.id && data.userId === auth.currentUser?.uid) {
+      updateDoc(doc(db, 'itineraries', data.id), { plan: newPlan, ...summarizePlan(newPlan, data.budget) })
+        .catch(e => console.log('Could not save itinerary changes:', e.message));
+    }
+  };
 
   const handleSwapAlternative = (targetItem) => {
-    // A list of interesting Sri Lankan hidden gems to recommend as alternatives
-    const alternativeGems = [
-      { title: "Dunhinda Waterfall Hike", eco: 96, fee: "LKR 500", transport: "walk" },
-      { title: "Secret Beach Mirissa exploration", eco: 94, fee: "Free", transport: "walk" },
-      { title: "Nanu Oya Tea Plantation trek", eco: 95, fee: "Free", transport: "walk" },
-      { title: "Pidurangala Rock Sunrise climb", eco: 93, fee: "LKR 1,000", transport: "walk" },
-      { title: "Gal Viharaya ancient ruins", eco: 91, fee: "LKR 3,000", transport: "walk" },
-    ];
+    // Highest eco-score destination near this stop that is not already in the plan
+    const used = new Set(plan.map(p => p.destinationId));
+    const alternatives = destinationsData
+      .filter(d => !used.has(d.destination_id) && d.eco_score > (Number(targetItem.eco) || 0))
+      .map(d => ({ d, km: targetItem.lat ? distanceKm(targetItem.lat, targetItem.lon, parseFloat(d.lat), parseFloat(d.lon)) : 0 }))
+      .filter(x => x.km <= 60)
+      .sort((a, b) => b.d.eco_score - a.d.eco_score);
 
-    const randomGem = alternativeGems[Math.floor(Math.random() * alternativeGems.length)];
+    if (alternatives.length === 0) {
+      Alert.alert("Ceylo Smart Recommendation", "This stop already has the best eco score in the area.");
+      return;
+    }
+    const { d: gem, km } = alternatives[0];
 
     Alert.alert(
       "Ceylo Smart Recommendation",
-      `Would you like to replace "${targetItem.title || targetItem.activity}" with the nearby hidden gem:\n\n✨ ${randomGem.title}\n🌿 Eco Score: ${randomGem.eco}%\n🎟️ Fee: ${randomGem.fee}?`,
+      `Would you like to replace "${targetItem.title || targetItem.activity}" with:\n\n✨ ${gem.name}\n🌿 Eco Score: ${Math.round(gem.eco_score)}%\n📍 ${km.toFixed(1)} km away`,
       [
         { text: "Keep Original", style: "cancel" },
         {
           text: "Swap It!",
           onPress: () => {
-            const updatedPlan = plan.map(item => {
-              const matchesId = item.id && item.id === targetItem.id;
-              const matchesActivity = item.day === targetItem.day && (item.title === targetItem.title || item.activity === targetItem.activity);
-              if (matchesId || matchesActivity) {
-                return {
-                  ...item,
-                  title: randomGem.title,
-                  activity: randomGem.title,
-                  eco: randomGem.eco,
-                  fee: randomGem.fee,
-                  transport: randomGem.transport
-                };
-              }
-              return item;
-            });
-            setPlan(updatedPlan);
+            updatePlan(plan.map(item => item === targetItem ? {
+              ...item,
+              title: gem.name,
+              activity: `Explore ${gem.name} in ${gem.province} (${gem.category})`,
+              category: gem.category,
+              eco: Math.round(gem.eco_score),
+              lat: parseFloat(gem.lat),
+              lon: parseFloat(gem.lon),
+              destinationId: gem.destination_id,
+            } : item));
           }
         }
       ]
     );
+  };
+
+  const startRoute = () => {
+    const stops = plan.filter(p => p.lat && p.lon);
+    if (stops.length === 0) {
+      navigation.navigate('MapScreen');
+      return;
+    }
+    const coord = p => `${p.lat},${p.lon}`;
+    const destination = coord(stops[stops.length - 1]);
+    const waypoints = stops.slice(0, -1).map(coord).join('|');
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}` +
+      (waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : '') + '&travelmode=driving';
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open navigation.'));
   };
 
   const exportToPDF = async () => {
@@ -153,6 +199,9 @@ export default function ItineraryDetailScreen({ route, navigation }) {
               </View>
             </View>
             
+            {item.distanceKm > 0 && (
+              <Text style={styles.legText}>{item.distanceKm} km • ~{item.travelMinutes} min by {item.transport}</Text>
+            )}
             <View style={styles.chipRow}>
               <Chip style={[styles.ecoChip, { backgroundColor: (item.eco || 80) >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>
                 {item.eco || 80}% ECO
@@ -172,7 +221,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         <View style={styles.headerTop}>
           <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
           <Text style={styles.title}>{title}</Text>
-          <IconButton icon="share-variant" />
+          <IconButton icon="share-variant" onPress={exportToPDF} />
         </View>
         
         <View style={styles.summaryRow}>
@@ -197,9 +246,9 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           <View style={styles.ecoProgressInfo}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <MaterialCommunityIcons name="leaf" size={14} color="#4CAF50" />
-              <Text style={styles.ecoProgressText}>Eco-Impact Index: Excellent</Text>
+              <Text style={styles.ecoProgressText}>Eco-Impact Index: {ecoLabel(ecoAvg)}</Text>
             </View>
-            <Text style={styles.carbonSavedText}>🌿 {carbonSaved}kg CO₂ saved</Text>
+            <Text style={styles.carbonSavedText}>🚶 {summary.totalDistanceKm} km total</Text>
           </View>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${ecoAvg}%` }]} />
@@ -209,11 +258,11 @@ export default function ItineraryDetailScreen({ route, navigation }) {
 
       <DraggableFlatList
         data={plan}
-        onDragEnd={({ data }) => setPlan(data)}
+        onDragEnd={({ data: reordered }) => updatePlan(reordered)}
         keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={<Text style={styles.dayHeader}>DAY 1 — THE EXPLORATION</Text>}
+        ListEmptyComponent={<Text style={styles.dayHeader}>No stops in this itinerary yet.</Text>}
       />
 
       <Surface style={styles.footer} elevation={8}>
@@ -222,7 +271,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           icon="navigation" 
           style={styles.startBtn} 
           buttonColor="#00695C"
-          onPress={() => navigation.navigate('MapScreen')}
+          onPress={startRoute}
         >
           Start Multi-Stop Route
         </Button>
@@ -234,6 +283,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
+  legText: { fontSize: 11, color: '#666', fontFamily: 'Outfit-Regular', marginBottom: 4 },
   header: { backgroundColor: '#FFF', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, paddingBottom: 20 },
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 40, paddingHorizontal: 10 },
   title: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#004D40', flex: 1, textAlign: 'center' },

@@ -45,8 +45,8 @@ export default function VendorPendingScreen({ navigation }) {
         if (snap.exists()) {
           const data = snap.data();
           const role = data.role;
-          
-          if (role === 'vendor_active' || 
+
+          if (role === 'vendor_active' ||
               role === 'vendor') {
             // Admin approved - redirect to dashboard
             setTimeout(() => {
@@ -68,7 +68,7 @@ export default function VendorPendingScreen({ navigation }) {
           const data = snap.data();
           setVendorStatus(data.status);
           setRejectionReason(data.rejectionReason || '');
-          
+
           if (data.status === 'approved') {
             setDisplayStatus('approved');
           } else if (data.status === 'rejected') {
@@ -91,31 +91,8 @@ export default function VendorPendingScreen({ navigation }) {
     };
   }, []);
 
-  useEffect(() => {
-    // demo mode for checking
-    if (process.env.EXPO_PUBLIC_DEMO_MODE === 'true' && vendorStatus !== 'approved') {
-      handleBypass();
-    }
-  }, [vendorStatus]);
-
   const handleLogout = async () => {
     try { await signOut(auth); } catch (e) {}
-  };
-
-  const handleBypass = async () => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) return;
-    setLoading(true);
-    try {
-      // 1. Update vendor document status to approved
-      await updateDoc(doc(db, 'vendors', uid), { status: 'approved' });
-      // 2. Update user role to vendor
-      await updateDoc(doc(db, 'users', uid), { role: 'vendor' });
-      // The onSnapshot listener will handle the rest or the app will re-render
-    } catch (e) {
-      Alert.alert('Bypass Error', e.message);
-      setLoading(false);
-    }
   };
 
   if (loading) {
@@ -208,12 +185,6 @@ export default function VendorPendingScreen({ navigation }) {
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.logoutBtn, { marginTop: 12, borderColor: '#d97706' }]}
-        onPress={handleBypass}
-      >
-        <Text style={[styles.logoutText, { color: '#d97706' }]}>Bypass Review (Demo Mode)</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
