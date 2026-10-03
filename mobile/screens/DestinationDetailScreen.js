@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
-import { chatJSON } from '../services/aiClient';
+import { destinationInsights } from '../services/aiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -38,51 +38,34 @@ export default function DestinationDetailScreen({ route, navigation }) {
     return (R * c).toFixed(1);
   };
 
+  // Facts, nearby places and the eco model's breakdown from the CEYLO backend models
   const fetchInsights = async () => {
     try {
       setLoading(true);
-      const prompt = `Analyze the Sri Lankan destination: ${place.name || 'Sigiriya'} (${place.province || 'Central Province'}). Category: ${place.category || 'Heritage'}.
-Provide a JSON response with the following strictly formatted keys:
-{
-  "translation": "The Sinhala and Tamil names (e.g., වික්ටෝරියා උද්‍යානය • விக்டோரியா பூங்கா)",
-  "ai_insight": "A captivating, engaging 3-sentence description of its history, significance, and what visitors experience.",
-  "history": "A detailed paragraph explaining the historical background and origin of this location.",
-  "practical_info": "A bullet-style summary of tips (e.g. what to wear, entry fees, warnings).",
-  "opening_hours": "e.g., 08:00 - 18:00",
-  "best_time": "e.g., Early Morning",
-  "distance_from_hub": "e.g., 17 km • 30 mins (from the nearest major city/hub)",
-  "explore_nearby": [
-    { "name": "Nearby Attraction 1", "image": "https://images.unsplash.com/photo-1588693959664-98e6c7102711" },
-    { "name": "Nearby Attraction 2", "image": "https://images.unsplash.com/photo-1589923188900-85dae523342b" },
-    { "name": "Nearby Attraction 3", "image": "https://images.unsplash.com/photo-1576092762791-dd9e2220abd4" }
-  ]
-}
-Only output the raw JSON string without markdown wrapping.`;
-
-      const parsed = await chatJSON('You are a Sri Lankan travel expert. Reply with JSON only.', [{ role: 'user', content: prompt }]);
-      setAiData(parsed);
+      const data = await destinationInsights({
+        id: place.id,
+        name: place.name,
+        lat: place.lat ?? place.coords?.latitude,
+        lon: place.lon ?? place.coords?.longitude,
+        category: place.category,
+        province: place.province,
+      });
+      setAiData(data);
     } catch (error) {
-      console.error('Failed to fetch AI insights', error);
+      console.warn('Failed to fetch destination insights', error.message);
       setAiData({
-        translation: "",
-        ai_insight: place.description || "A wonderful destination to explore.",
-        history: "A beautiful location with a deep cultural past.",
-        practical_info: "Wear comfortable shoes and bring water.",
-        opening_hours: "08:00 - 18:00",
-        best_time: "08:00 AM",
-        distance_from_hub: "15 km • 25 mins",
-        explore_nearby: [
-          { name: "Hakgala Gardens", image: "https://images.unsplash.com/photo-1588693959664-98e6c7102711" },
-          { name: "Gregory Lake", image: "https://images.unsplash.com/photo-1589923188900-85dae523342b" },
-          { name: "Pedro Tea Factory", image: "https://images.unsplash.com/photo-1576092762791-dd9e2220abd4" }
-        ]
+        ai_insight: place.description || 'Insights are unavailable offline. Connect to the internet to load them.',
+        sustainability: '',
+        practical_info: '',
+        best_time: '',
+        explore_nearby: [],
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const TABS = ['Overview', 'History', 'Practical Info', 'Reviews'];
+  const TABS = ['Overview', 'Sustainability', 'Practical Info', 'Reviews'];
 
   return (
     <View style={styles.container}>
@@ -107,7 +90,7 @@ Only output the raw JSON string without markdown wrapping.`;
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{place.name || 'Destination'}</Text>
-              <Text style={styles.subTitle}>{aiData?.translation || '...'}</Text>
+              {aiData?.distance_from_hub ? <Text style={styles.subTitle}>{aiData.distance_from_hub}</Text> : null}
             </View>
             <Surface style={styles.ecoRing} elevation={2}>
               <Text style={styles.ecoValue}>{place.ecoScore ?? '—'}</Text>
@@ -128,7 +111,7 @@ Only output the raw JSON string without markdown wrapping.`;
           {loading ? (
             <View style={styles.loadingArea}>
               <ActivityIndicator size="large" color="#00695C" />
-              <Text style={styles.loadingText}>Groq AI is analyzing this destination...</Text>
+              <Text style={styles.loadingText}>Loading insights from the CEYLO models...</Text>
             </View>
           ) : null}
 
@@ -147,11 +130,11 @@ Only output the raw JSON string without markdown wrapping.`;
               <View style={styles.quickInfoRow}>
                 <Surface style={styles.quickInfoCard} elevation={0}>
                   <View style={styles.quickInfoLabelRow}>
-                    <MaterialCommunityIcons name="clock-outline" size={16} color="#00695C" />
-                    <Text style={styles.quickInfoLabel}>Opening Hours</Text>
+                    <MaterialCommunityIcons name="calendar-month-outline" size={16} color="#00695C" />
+                    <Text style={styles.quickInfoLabel}>Season</Text>
                   </View>
-                  <Text style={styles.quickInfoValue}>{aiData?.opening_hours}</Text>
-                  <Text style={styles.quickInfoSub}>Open Daily</Text>
+                  <Text style={styles.quickInfoValue}>{aiData?.season || '—'}</Text>
+                  <Text style={styles.quickInfoSub}>From the CEYLO dataset</Text>
                 </Surface>
 
                 <Surface style={styles.quickInfoCard} elevation={0}>
@@ -159,8 +142,8 @@ Only output the raw JSON string without markdown wrapping.`;
                     <MaterialCommunityIcons name="white-balance-sunny" size={16} color="#B8860B" />
                     <Text style={styles.quickInfoLabel}>Best Time</Text>
                   </View>
-                  <Text style={styles.quickInfoValue}>{aiData?.best_time}</Text>
-                  <Text style={styles.quickInfoSub}>Avoid Midday Heat</Text>
+                  <Text style={styles.quickInfoValue} numberOfLines={3}>{aiData?.best_time ? aiData.best_time.split('. ')[0] : '—'}</Text>
+                  <Text style={styles.quickInfoSub}>{place.category || 'Destination'}</Text>
                 </Surface>
               </View>
 
@@ -207,10 +190,10 @@ Only output the raw JSON string without markdown wrapping.`;
             </View>
           )}
 
-          {!loading && activeTab === 'History' && (
+          {!loading && activeTab === 'Sustainability' && (
             <View style={styles.tabContent}>
-              <Text style={styles.sectionTitle}>Historical Background</Text>
-              <Text style={styles.description}>{aiData?.history}</Text>
+              <Text style={styles.sectionTitle}>Eco Score Breakdown</Text>
+              <Text style={styles.description}>{aiData?.sustainability || 'No sustainability data for this place yet.'}</Text>
             </View>
           )}
 

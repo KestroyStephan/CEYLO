@@ -221,9 +221,9 @@ footer { font-size: 0.85rem; color: var(--ink-soft); border-top: 1px solid var(-
       <ul class="tasks">
         <li><div>Commit the fixes on a branch, review together, merge to <code>main</code>.</div></li>
         <li><div>Deploy rules and indexes with <code>firebase deploy --only firestore</code>.<span class="sub">Write rules tests with <code>@firebase/rules-unit-testing</code> on the emulator: register each role, vendor submit, driver accepts a ride, user tries to make themselves admin (must fail).</span></div></li>
-        <li><div>Set <code>GROQ_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>GEMINI_API_KEY</code> on Render and redeploy the backend. Rotate every key that was in older APKs.</div></li>
+        <li><div>Redeploy the backend on Render (https://ceylo.onrender.com). All AI now runs on CEYLO's trained models, so no AI keys are needed; revoke the Groq, OpenAI and Gemini keys that older APKs contained.</div></li>
         <li><div>Restrict the Google Maps key to the Android package and SHA-1. Add the SHA-1 in Firebase for Google sign-in.</div></li>
-        <li><div>Set <code>VITE_BACKEND_URL</code> (web) and <code>EXPO_PUBLIC_SOS_SMS_NUMBER</code> (mobile). Build a development APK with EAS.</div></li>
+        <li><div>Redeploy the admin portal on Vercel (https://ceylo-theta.vercel.app/) and set <code>EXPO_PUBLIC_SOS_SMS_NUMBER</code> (mobile). Build a development APK with EAS.</div></li>
         <li><div>Remove remaining invented data.<span class="sub">Hardcoded payouts in <code>Reports.jsx</code>, random values in <code>SystemHealth.jsx</code> and admin <code>CulturalEvents.jsx</code>, fixed eco score 85 on map markers.</span></div></li>
         <li><div>Run the device smoke test on a mid-range Android phone: every role signs up, guest mode, itinerary, chatbot, SOS online and offline, offline map, event alert, vendor approval, driver ride, admin pages.</div></li>
       </ul>

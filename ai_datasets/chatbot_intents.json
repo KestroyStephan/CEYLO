@@ -1,0 +1,554 @@
+{
+  "description": "Training data for the CEYLO concierge intent classifier. FAQ answers come from chatbot_qa.csv; faq_paraphrases adds extra ways travellers ask the same question.",
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "hi",
+        "hello",
+        "hey",
+        "hey there",
+        "hello ceylo",
+        "hi ceylo",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "ayubowan",
+        "vanakkam",
+        "hiya",
+        "greetings",
+        "yo",
+        "hi there how are you",
+        "hello is anyone there",
+        "morning",
+        "hello there",
+        "hi again",
+        "hey ceylo",
+        "good day",
+        "howdy",
+        "hi friend",
+        "hello hello",
+        "hey how are you doing",
+        "namaste",
+        "hai"
+      ],
+      "responses": [
+        "Ayubowan! I'm Ceylo, your Sri Lankan travel concierge. Where would you like to go, or what kind of trip are you dreaming of?"
+      ]
+    },
+    {
+      "tag": "thanks",
+      "patterns": [
+        "thanks",
+        "thank you",
+        "thank you so much",
+        "thanks a lot",
+        "cheers",
+        "great thanks",
+        "awesome thank you",
+        "that helps",
+        "that was helpful",
+        "perfect thanks",
+        "nice one",
+        "much appreciated",
+        "stuthi",
+        "nandri",
+        "thank u",
+        "thx",
+        "ty",
+        "thanks so much for the help",
+        "great, thank you",
+        "brilliant thanks",
+        "appreciate it",
+        "thank you very much",
+        "lovely thanks",
+        "wonderful thank you"
+      ],
+      "responses": [
+        "You're most welcome! Anything else I can help you plan?"
+      ]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": [
+        "bye",
+        "goodbye",
+        "see you",
+        "see you later",
+        "that's all",
+        "that is all for now",
+        "i'm done",
+        "catch you later",
+        "good night",
+        "talk later",
+        "nothing else",
+        "no that's it",
+        "bye bye",
+        "goodbye for now",
+        "see ya",
+        "ok bye",
+        "have a nice day",
+        "later",
+        "i'll come back later",
+        "exit",
+        "that's all thanks bye",
+        "farewell"
+      ],
+      "responses": [
+        "Safe travels! Come back any time you want to plan more of Sri Lanka."
+      ]
+    },
+    {
+      "tag": "capabilities",
+      "patterns": [
+        "what can you do",
+        "help",
+        "how can you help me",
+        "what are you",
+        "who are you",
+        "what do you do",
+        "how does this work",
+        "what can i ask you",
+        "are you a bot",
+        "how do i use this",
+        "show me what you can do",
+        "what can you help with",
+        "what are your features",
+        "can you help me",
+        "i need help using the app",
+        "what questions can i ask",
+        "tell me about yourself",
+        "what is ceylo"
+      ],
+      "responses": [
+        "I can plan an eco-friendly itinerary, suggest destinations for your mood, tell you about festivals and events, and answer practical questions about transport, safety, money, health and local customs. Tell me where you'd like to go and for how many days."
+      ]
+    },
+    {
+      "tag": "plan_trip",
+      "patterns": [
+        "plan a trip",
+        "help me plan a trip",
+        "i want to plan a holiday",
+        "plan my holiday",
+        "i want to travel in sri lanka",
+        "i want to visit sri lanka",
+        "can you plan my vacation",
+        "plan a tour for me",
+        "i'm planning a trip to sri lanka",
+        "make a travel plan",
+        "organise a trip for us",
+        "we want to go on a holiday",
+        "start planning",
+        "i need a travel plan",
+        "help me with my trip",
+        "plan an eco friendly trip",
+        "plan a family holiday",
+        "i want a holiday next month",
+        "let's plan",
+        "create a trip",
+        "i want to go on a trip",
+        "help me plan my vacation",
+        "plan something for me",
+        "i want to travel",
+        "can you make a trip plan",
+        "plan a honeymoon",
+        "plan a backpacking trip",
+        "i'm coming to sri lanka"
+      ],
+      "responses": [
+        "Wonderful, let's plan it together."
+      ]
+    },
+    {
+      "tag": "recommend_places",
+      "patterns": [
+        "what should i visit",
+        "where should i go",
+        "suggest some places",
+        "recommend destinations",
+        "best places to visit",
+        "top attractions",
+        "what are the must see places",
+        "show me hidden gems",
+        "any hidden gems",
+        "suggest eco friendly places",
+        "what is good to see near kandy",
+        "recommend somewhere quiet",
+        "best places for nature",
+        "where can i see wildlife",
+        "what are the best beaches",
+        "show me waterfalls",
+        "which temples should i visit",
+        "places to visit in the south",
+        "recommend something for my mood",
+        "what do you recommend",
+        "where to go",
+        "any suggestions",
+        "suggest a place",
+        "what's worth seeing",
+        "good places for kids",
+        "where is nice to visit",
+        "must visit places",
+        "recommend a destination",
+        "what are popular spots",
+        "off the beaten path places"
+      ],
+      "responses": [
+        "Here are the places our recommender ranks highest for you."
+      ]
+    },
+    {
+      "tag": "generate_itinerary",
+      "patterns": [
+        "generate my itinerary",
+        "create the itinerary",
+        "build my plan",
+        "make the itinerary now",
+        "show me the itinerary",
+        "i'm ready",
+        "go ahead and plan it",
+        "yes create it",
+        "make my route",
+        "build the route",
+        "that's everything, plan it",
+        "let's do it",
+        "finalise the trip",
+        "show me the plan",
+        "create my day by day plan",
+        "create itinerary",
+        "make a plan now",
+        "plan it",
+        "show my trip",
+        "generate",
+        "build it",
+        "i'm ready to see the plan",
+        "create a day by day itinerary",
+        "give me the itinerary",
+        "make it"
+      ],
+      "responses": [
+        "Great, your trip profile is ready."
+      ]
+    },
+    {
+      "tag": "events",
+      "patterns": [
+        "what festivals are there",
+        "any cultural events",
+        "events this month",
+        "when is the perahera",
+        "tell me about festivals",
+        "what is happening in august",
+        "is there a festival in kandy",
+        "cultural shows",
+        "religious festivals",
+        "what events can i attend",
+        "when is vesak",
+        "esala perahera dates",
+        "festivals in jaffna",
+        "events near me",
+        "what's on during my trip",
+        "festival",
+        "perahera",
+        "events",
+        "what's happening",
+        "cultural festival in august",
+        "any celebrations",
+        "new year festival",
+        "when is deepavali"
+      ],
+      "responses": [
+        "Here are cultural events from the CEYLO events calendar."
+      ]
+    },
+    {
+      "tag": "best_time",
+      "patterns": [
+        "when is the best time to visit",
+        "what is the weather like",
+        "is it monsoon season",
+        "best season to travel",
+        "when does it rain",
+        "when should i visit the east coast",
+        "weather in december",
+        "is april a good time",
+        "best month to visit sri lanka",
+        "rainy season",
+        "when is the dry season in the hill country",
+        "weather",
+        "monsoon",
+        "when to visit",
+        "climate",
+        "is it hot",
+        "what's the weather in ella",
+        "season",
+        "rain"
+      ],
+      "responses": [
+        "Sri Lanka has two monsoons, so there is always a dry side. The south and west coasts and the hill country are best from December to April. The east coast and the north are best from May to September. The Cultural Triangle is good most of the year."
+      ]
+    },
+    {
+      "tag": "eco_tips",
+      "patterns": [
+        "how can i travel sustainably",
+        "eco friendly tips",
+        "how to be a responsible tourist",
+        "green travel tips",
+        "how do i reduce my carbon footprint",
+        "what is the eco score",
+        "how is the eco score calculated",
+        "how can i earn eco points",
+        "sustainable travel",
+        "how do i support local communities",
+        "eco tips",
+        "sustainable tips",
+        "eco score",
+        "eco points",
+        "green travel",
+        "responsible travel",
+        "carbon footprint"
+      ],
+      "responses": [
+        "Choose trains and buses over private cars, stay in locally owned guesthouses, carry a refillable bottle, avoid elephant rides, and keep to marked trails. CEYLO's eco score comes from our trained model, which weighs carbon footprint, wildlife disturbance, plastic risk, community benefit and carrying capacity. Greener choices earn eco points in your Eco Passport."
+      ]
+    },
+    {
+      "tag": "sos",
+      "patterns": [
+        "help me emergency",
+        "i need help now",
+        "i'm in danger",
+        "i'm lost",
+        "there has been an accident",
+        "call the police",
+        "i need an ambulance",
+        "someone is following me",
+        "i was robbed",
+        "medical emergency",
+        "i'm hurt",
+        "sos",
+        "help police",
+        "emergency",
+        "i'm scared",
+        "urgent help",
+        "i need a doctor now",
+        "call an ambulance",
+        "my friend is injured",
+        "danger"
+      ],
+      "responses": [
+        "If you are in danger, press the red SOS button in the app now. It sends your location to the CEYLO safety desk. You can also call 119 for police, 1990 for an ambulance or 1912 for the tourist police."
+      ]
+    },
+    {
+      "tag": "currency",
+      "patterns": [
+        "what currency do they use",
+        "can i pay by card",
+        "where can i exchange money",
+        "are there atms",
+        "is it cash or card",
+        "how much money should i bring",
+        "exchange rate",
+        "do shops accept dollars",
+        "rupees",
+        "money",
+        "atm",
+        "card payments",
+        "cash",
+        "currency",
+        "change money",
+        "dollars or rupees"
+      ],
+      "responses": [
+        "The currency is the Sri Lankan Rupee (LKR). ATMs are common in towns and cards work in hotels and larger shops, but carry cash for tuk-tuks, small shops and rural areas. Exchange money at banks or licensed exchanges rather than on the street."
+      ]
+    },
+    {
+      "tag": "visa",
+      "patterns": [
+        "do i need a visa",
+        "how do i get a visa",
+        "eta for sri lanka",
+        "visa on arrival",
+        "entry requirements",
+        "what documents do i need to enter",
+        "how long can i stay as a tourist",
+        "visa",
+        "eta",
+        "entry visa",
+        "passport requirements",
+        "visa fee",
+        "how to apply for visa"
+      ],
+      "responses": [
+        "Most visitors need an Electronic Travel Authorization (ETA) before arrival. Apply on the official Sri Lanka immigration website, and check the current rules for your nationality before you travel."
+      ]
+    },
+    {
+      "tag": "food",
+      "patterns": [
+        "what food should i try",
+        "local dishes",
+        "is the food spicy",
+        "vegetarian food",
+        "where can i eat",
+        "best sri lankan food",
+        "what is rice and curry",
+        "street food",
+        "what is kottu",
+        "hoppers",
+        "what to eat",
+        "food recommendations",
+        "is there vegan food",
+        "traditional food",
+        "what should i eat in jaffna",
+        "best dishes",
+        "local cuisine",
+        "where to try kottu"
+      ],
+      "responses": [
+        "Try rice and curry, kottu roti, hoppers (appa), string hoppers, lamprais and fresh king coconut. Food can be spicy, so ask for 'less spicy' if you prefer. Vegetarian food is easy to find, especially in the north and in temple towns."
+      ]
+    },
+    {
+      "tag": "reset",
+      "patterns": [
+        "start over",
+        "reset",
+        "clear everything",
+        "new trip",
+        "forget that",
+        "let's start again",
+        "change my plans completely",
+        "start again",
+        "begin again",
+        "clear my trip",
+        "restart",
+        "new conversation",
+        "start a new plan",
+        "wipe it"
+      ],
+      "responses": [
+        "No problem, let's start fresh. Where would you like to go?"
+      ]
+    }
+  ],
+  "faq_paraphrases": {
+    "What is the best way to travel from Colombo to Kandy?": [
+      "how do i get from colombo to kandy",
+      "colombo to kandy train",
+      "how long is the trip to kandy",
+      "is there a bus to kandy",
+      "best transport between colombo and kandy",
+      "how to reach kandy"
+    ],
+    "How much does a tuk-tuk cost per kilometer in Sri Lanka?": [
+      "tuk tuk price",
+      "how much is a tuktuk",
+      "tuk tuk fare per km",
+      "are tuk tuks expensive",
+      "how do i pay a tuk tuk",
+      "what should a three wheeler cost"
+    ],
+    "Is it safe for solo female travelers in Sri Lanka?": [
+      "is sri lanka safe",
+      "is it safe for women",
+      "safety for solo travellers",
+      "can a woman travel alone",
+      "is it dangerous at night",
+      "how safe is sri lanka for tourists"
+    ],
+    "What should I wear when visiting a Buddhist temple?": [
+      "temple dress code",
+      "what to wear at temples",
+      "can i wear shorts in a temple",
+      "do i remove shoes at the temple",
+      "temple etiquette",
+      "how should i dress"
+    ],
+    "When is the best time to visit the southern beaches like Mirissa and Unawatuna?": [
+      "best time for mirissa",
+      "when to go to the south coast beaches",
+      "whale watching season",
+      "when is unawatuna best",
+      "beach season in the south"
+    ],
+    "What is the emergency police number in Sri Lanka?": [
+      "police number",
+      "emergency number",
+      "tourist police number",
+      "what number do i call in an emergency",
+      "how do i contact the police"
+    ],
+    "Can I drink tap water in Sri Lanka?": [
+      "is the water safe",
+      "is tap water safe to drink",
+      "can i drink the water",
+      "drinking water",
+      "should i buy bottled water"
+    ],
+    "How much should I tip in restaurants?": [
+      "tipping",
+      "do i need to tip",
+      "how much to tip",
+      "is service charge included",
+      "tipping guides and drivers"
+    ],
+    "What is the entry fee for Sigiriya Rock Fortress?": [
+      "sigiriya ticket price",
+      "how much is sigiriya",
+      "sigiriya entrance fee",
+      "cost to climb sigiriya",
+      "sigiriya tickets"
+    ],
+    "Are there any eco-friendly ways to see elephants?": [
+      "ethical elephant experience",
+      "where to see elephants",
+      "should i ride an elephant",
+      "elephant safari",
+      "best place to see wild elephants",
+      "minneriya elephant gathering"
+    ],
+    "How do I get a SIM card as a tourist?": [
+      "sim card",
+      "mobile data",
+      "where to buy a sim",
+      "tourist sim",
+      "internet on my phone",
+      "dialog or mobitel"
+    ],
+    "What is a 'Poya' day?": [
+      "what is poya",
+      "full moon holiday",
+      "why are shops closed today",
+      "can i buy alcohol on poya",
+      "poya day rules"
+    ],
+    "How do I avoid plastic waste during my trip?": [
+      "plastic free travel",
+      "avoid plastic",
+      "reusable bottle refill",
+      "reduce plastic waste",
+      "where can i refill water"
+    ],
+    "What are the common symptoms of dengue and how to avoid it?": [
+      "dengue",
+      "mosquitoes",
+      "how to avoid mosquito bites",
+      "is there malaria",
+      "dengue symptoms",
+      "do i need repellent"
+    ],
+    "Is Uber available in Sri Lanka?": [
+      "can i use uber",
+      "pickme app",
+      "taxi apps",
+      "how do i book a taxi",
+      "ride hailing in colombo",
+      "is there uber in colombo"
+    ]
+  }
+}

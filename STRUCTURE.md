@@ -29,9 +29,9 @@
 - **Expo Push Notifications** — Booking confirmations, chat messages, vendor approvals
 
 **AI Services:**
-- **Multi-Model Chatbot Waterfall** (ChatbotScreen): Groq Llama 3.3-70b (primary) → Gemini 1.5 Flash → OpenAI GPT-4o-mini
-- **AI-Powered Marketplace** (MarketplaceScreen): Groq Llama 3-8b-8192 with JSON mode generates live Sri Lankan product/experience listings
-- **AI Destination Insights** (DestinationDetailScreen): Groq Llama 3.3-70b generates history, practical info, opening hours, and nearby attractions per place
+- **Trained Concierge Chatbot** (ChatbotScreen): CEYLO's own intent classifier (TF-IDF + logistic regression) with trip-detail extraction, served by the backend; no external AI service
+- **Marketplace** (MarketplaceScreen): live vendor products from Firestore (`products` collection group)
+- **Destination Insights** (DestinationDetailScreen): dataset facts, nearby places and the eco model's sustainability breakdown from `/api/insights`
 - **AI Picks / Nearby** (HomeScreen): Google Places Text Search API fetches real nearby attractions based on user GPS
 - **Local ML Models** (ai_models/): Trained Python models for offline/edge use — Eco Scorer (Random Forest), Destination Recommender (Two-Tower NCF Neural Net), Demand Forecaster (LSTM)
 - **Expo Speech (TTS)** — Text-to-speech for AI responses in chatbot
@@ -40,9 +40,9 @@
 - ✅ Authentication flows (Splash, Language Select, Welcome, Login, Register, Onboarding)
 - ✅ Tourist tab navigation (Home, Map, AI Chatbot, SOS, Profile) + common stack screens
 - ✅ MoodSelectScreen now wired as first tourist screen after login (if not onboarded)
-- ✅ AI Concierge with multi-model waterfall (Groq→Gemini→OpenAI); HUD overlay, TTS, itinerary save
-- ✅ AI-powered MarketplaceScreen (Groq generates product listings on demand)
-- ✅ AI-powered DestinationDetailScreen (per-place insights from Groq)
+- ✅ AI Concierge on the trained intent classifier; HUD overlay, TTS, itinerary save
+- ✅ MarketplaceScreen with live vendor products from Firestore
+- ✅ DestinationDetailScreen insights from the dataset and the eco model
 - ✅ Google Maps (MapScreen.native.js) with real Google Places Text Search for nearby places
 - ✅ HiddenGemsListScreen — live GPS tracking, distance sort, loads from ai_destinations.json
 - ✅ CulturalEventsScreen — live Firestore query on cultural_events, type filter, calendar view
@@ -105,10 +105,10 @@
 | Gestures | react-native-gesture-handler | ~2.28.0 |
 | Audio | expo-av | ^16.0.8 |
 | Haptics | expo-haptics | — |
-| AI Primary (Chatbot) | Groq Llama 3.3-70b (REST API) | — |
-| AI Fallback 1 (Chatbot) | Gemini 1.5 Flash (Google AI REST) | — |
-| AI Fallback 2 (Chatbot) | OpenAI GPT-4o-mini (REST API) | — |
-| AI (Marketplace/Insights) | Groq Llama 3-8b / 3.3-70b (REST API) | — |
+| Chatbot | CEYLO intent classifier (scikit-learn, exported to JSON, run in Node) | — |
+| Recommender | Two-tower NCF (Keras), run in Node | — |
+| Demand forecast | 2-layer LSTM (Keras), run in Node | — |
+| Eco score | Random forest (scikit-learn), run in Node | — |
 | AI (Home/Map) | Google Places Text Search REST API | — |
 
 ### Web (`/web`)
@@ -206,7 +206,7 @@
 |   |   `-- VendorNavigator.js          # Vendor portal: 4-tab + stack overlay screens
 |   |
 |   |-- screens/
-|   |   |-- ChatbotScreen.js            # AI concierge: waterfall API calls (Groq→Gemini→OpenAI), HUD, TTS, itinerary save
+|   |   |-- ChatbotScreen.js            # AI concierge: trained intent model via /api/chat, HUD, TTS, itinerary save
 |   |   |-- ConfirmBookingScreen.js     # Confirm transport/guide bookings
 |   |   |-- DriverDashboard.js          # Unified Driver Dashboard
 |   |   |-- EditProfileScreen.js        # User profile editor
@@ -221,7 +221,7 @@
 |   |   |-- TransportScreen.js          # Unified Transport Screen
 |   |   |-- WaitingApprovalScreen.js    # Generic waiting for admin approval
 |   |   |-- CulturalEventsScreen.js     # [NEW] Live Firestore events list: type filter chips, list/calendar view
-|   |   |-- DestinationDetailScreen.js  # Place detail: AI-powered insights (history, tips, nearby) via Groq, tabbed UI
+|   |   |-- DestinationDetailScreen.js  # Place detail: insights, nearby places, eco breakdown via /api/insights, tabbed UI
 |   |   |-- DriverDashboard.native.js   # [SPLIT] Native: live map, real-time bookings, online toggle, eco optimizer
 |   |   |-- DriverDashboard.web.js      # [SPLIT] Web: earnings summary placeholder, account management info
 |   |   |-- EcoPassportScreen.js        # Tourist eco stats: CO2, badges, rank, points (mock data)
@@ -233,7 +233,7 @@
 |   |   |-- ItineraryScreen.js          # Trip config: focus/days/budget, generate trigger
 |   |   |-- MapScreen.native.js         # [SPLIT] Native: Google Maps, real Places Text Search API, distance calc, bottom sheet
 |   |   |-- MapScreen.web.js            # [SPLIT] Web: placeholder (react-native-maps not available on web)
-|   |   |-- MarketplaceScreen.js        # AI-powered marketplace: Groq generates live product/experience JSON
+|   |   |-- MarketplaceScreen.js        # Marketplace: live vendor products from Firestore
 |   |   |-- OfflineMapSettings.js       # Manage offline regions in AsyncStorage
 |   |   |-- ProfileScreen.js            # Profile: avatar, stats (hardcoded), menu, logout
 |   |   |-- SOSScreen.js                # Emergency: SOS button, call shortcuts, embassy search
@@ -351,7 +351,7 @@ Several screens have `.native.js` / `.web.js` variants resolved automatically by
 |---|---|---|---|
 | HomeScreen | `screens/HomeScreen.js` | Greeting, AI Picks (Google Places API nearby + ai_destinations.json fallback), Hidden Gems (ai_destinations.json), Featured Event (ai_events.json random), pull-to-refresh | Google Places Text Search API, local JSON assets |
 | MapScreen | `screens/MapScreen.native.js` | Google MapView, real Google Places Text Search (5km radius, up to 15 results), province filter chips, distance calc, bottom sheet | Google Places Text Search REST API |
-| ChatbotScreen | `screens/ChatbotScreen.js` | Chat FlatList, HUD overlay (dest/days/eco%/mood), quick reply chips, mic btn (UI only), Generate Itinerary, TTS | Groq→Gemini→OpenAI waterfall; `itineraries` Firestore write |
+| ChatbotScreen | `screens/ChatbotScreen.js` | Chat FlatList, HUD overlay (dest/days/eco%/mood), quick reply chips, mic btn (UI only), Generate Itinerary, TTS | Backend `/api/chat` (trained intent model); `itineraries` Firestore write |
 | SOSScreen | `screens/SOSScreen.js` | Red pulse SOS btn, 3 call cards (119/1990/Tourist Police), searchable embassy list | `Linking.openURL` (calls only); no Firestore |
 | ProfileScreen | `screens/ProfileScreen.js` | Avatar, 3 stat cards (hardcoded), menu items, Logout | `auth.currentUser` only |
 
@@ -359,13 +359,13 @@ Several screens have `.native.js` / `.web.js` variants resolved automatically by
 
 | Screen | File | Purpose | Firebase / External API |
 |---|---|---|---|
-| DestinationDetailScreen | `screens/DestinationDetailScreen.js` | Tabbed (Overview/History/Practical/Nearby): AI-generated content via Groq Llama 3.3-70b per place; user GPS distance | Groq REST API; `expo-location` |
+| DestinationDetailScreen | `screens/DestinationDetailScreen.js` | Tabbed (Overview/Sustainability/Practical/Reviews): dataset facts, nearby places, eco model breakdown; user GPS distance | Backend `/api/insights`; `expo-location` |
 | HiddenGemsListScreen | `screens/HiddenGemsListScreen.js` | Loads `ai_destinations.json` where `hidden_gem=true`; live GPS tracking (10s/50m); sort by distance/rating/eco | `expo-location` live updates; local JSON |
 | CulturalEventsScreen | `screens/CulturalEventsScreen.js` | Live Firestore query on `cultural_events` ordered by date; type filter chips (Festival/Religious/Cultural/Heritage/Seasonal); list + calendar view | `cultural_events` (onSnapshot) |
 | EcoPassportScreen | `screens/EcoPassportScreen.js` | CO2 saved, badges, rank, points (all mock data) | None |
 | ItineraryDetailScreen | `screens/ItineraryDetailScreen.js` | Draggable day plan (MOCK_PLAN), PDF export | None (Firestore load not wired) |
 | ItineraryScreen | `screens/ItineraryScreen.js` | Trip config: focus slider/days/budget, generate trigger | None |
-| MarketplaceScreen | `screens/MarketplaceScreen.js` | AI generates live JSON listings (Handcrafted/Tea&Spices/Workshops/Art + Experiences) via Groq Llama-3; search + category filter | Groq REST API (`llama3-8b-8192`, JSON mode) |
+| MarketplaceScreen | `screens/MarketplaceScreen.js` | Live vendor products; search + category filter | Firestore `products` collection group |
 | TransportScreen | `screens/TransportScreen.native.js` | Vehicle selector (Tuk/Car/Van/Bike), MapView with route to destination, 3-step booking UI (simulated) | `expo-location`; no Firestore write |
 | EventDetailScreen | `screens/EventDetailScreen.js` | Event detail, eco score, AR Guide btn (not implemented) | None (route.params) |
 | OfflineMapSettings | `screens/OfflineMapSettings.js` | List/delete offline map regions from AsyncStorage | None |
@@ -722,34 +722,32 @@ None deployed. All logic is client-side. Push notifications sent via Expo Push A
 
 ## 9. AI Architecture Detail
 
-### 9.1 AI Travel Chatbot (ChatbotScreen.js)
+### 9.1 Trained models (no external AI service)
 
-**Waterfall model order (updated):**
-```
-[0] Groq Llama 3.3-70b    (Primary — fastest, free tier)
-[1] Gemini 1.5 Flash      (Fallback 1 — Google AI REST)
-[2] OpenAI GPT-4o-mini    (Fallback 2 — OpenAI REST)
-```
-**Note:** Order changed since v1 — Groq is now primary (was Gemini).
+All AI runs on CEYLO's own models. `ai_models/training/export_models.py` trains the chatbot
+and exports every model to JSON in `backend/models/`; the backend (`backend/ai/`) runs them in
+plain JavaScript, and its tests check the results match Python.
 
-**Timeout:** 8000ms per model
-**Response format:** Strict JSON (`extractedState` schema with `resp`, `extractedState`, `isReady`, `ui_options`)
-**TTS:** `expo-speech` reads `resp` field aloud using detected i18n language
-**Itinerary save:** `addDoc` to `itineraries` collection on "Generate Itinerary" tap
+| Model | Training data | Algorithm | Endpoint |
+|---|---|---|---|
+| Concierge intent classifier | `ai_datasets/chatbot_intents.json` + `chatbot_qa.csv` | TF-IDF (words + characters) + logistic regression | `POST /api/chat`, `POST /api/models/intent` |
+| Destination recommender | `ai_datasets/interactions.csv`, `users.csv` | Two-tower neural collaborative filtering (Keras) | `POST /api/recommend` |
+| Demand forecast | `ai_datasets/time_series_demand.csv` | 2-layer LSTM, 30-day look-back (Keras) | `GET /api/forecast` |
+| Eco score | `ai_datasets/destinations.csv` | Random forest regressor (scikit-learn) | `POST /api/eco-score`, `POST /api/insights` |
 
-### 9.2 AI Destination Insights (DestinationDetailScreen.js)
+Evaluation results are in `backend/models/metrics.json` and on the admin AI Model Monitor (`GET /api/models`).
 
-**Model:** Groq Llama 3.3-70b-versatile (JSON mode)
-**Trigger:** On screen mount, fetches insights for `place.name` + `place.province` + `place.category`
-**JSON fields returned:** `translation`, `ai_insight`, `history`, `practical_info`, `opening_hours`, `best_time`, `distance_from_hub`, `explore_nearby` (3 items with Unsplash images)
-**Display:** 4 tabs — Overview (AI insight + distance + eco score), History, Practical (tips + hours), Nearby
+### 9.2 AI Travel Chatbot (ChatbotScreen.js)
 
-### 9.3 AI Marketplace (MarketplaceScreen.js)
+The app sends `{ message, state }` to `/api/chat`. The backend classifies the intent, extracts
+destination / days / budget / mood, and replies with `resp`, `extractedState`, `isReady`,
+`ui_options` and optional `recommendations` (ranked by the recommender).
+**TTS:** `expo-speech` reads `resp` aloud. **Itinerary save:** `addDoc` to `itineraries` on "Generate Itinerary".
 
-**Model:** Groq `llama3-8b-8192` (JSON mode, response_format: json_object)
-**Trigger:** On screen mount via `fetchMarketplaceData()`
-**JSON fields returned:** `handcrafted[]`, `flavors[]`, `experiences[]` — each with name/price/image/description
-**Fallback:** If API fails → hardcoded static product arrays displayed
+### 9.3 Destination Insights (DestinationDetailScreen.js)
+
+`/api/insights` returns dataset facts, the 3 nearest destinations, distance from the nearest town,
+category-based visitor tips and the eco model's feature breakdown.
 
 ### 9.4 AI Nearby Picks (HomeScreen.js)
 
@@ -871,19 +869,11 @@ LANGUAGE_KEY = 'user-language'
 ### AI Config
 
 ```javascript
-// ChatbotScreen.js — Waterfall order:
-MODELS = [
-  { name: 'Groq Llama 3', url: 'https://api.groq.com/...', type: 'groq', model: 'llama-3.3-70b-versatile' },
-  { name: 'Gemini 1.5 Flash', url: 'https://generativelanguage.googleapis.com/...', type: 'gemini' },
-  { name: 'OpenAI GPT-4o-mini', url: 'https://api.openai.com/...', type: 'openai', model: 'gpt-4o-mini' },
-]
-TIMEOUT_PER_MODEL = 8000ms
-
-// MarketplaceScreen.js:
-MODEL = 'llama3-8b-8192' (Groq, JSON mode)
-
-// DestinationDetailScreen.js:
-MODEL = 'llama-3.3-70b-versatile' (Groq, JSON mode)
+// All AI runs on the CEYLO backend (https://ceylo.onrender.com) with trained models:
+// ChatbotScreen.js          -> POST /api/chat       (intent classifier)
+// ItineraryService.js       -> POST /api/recommend  (two-tower recommender)
+// DestinationDetailScreen.js -> POST /api/insights  (dataset + eco model)
+// No AI API keys are needed anywhere.
 
 // HomeScreen.js / HiddenGemsListScreen.js:
 Google Places Text Search REST API (not SDK)
@@ -907,10 +897,8 @@ EXPO_PUBLIC_FIREBASE_APP_ID=
 # Google Maps & Places (baked into app.json for native SDKs)
 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=
 
-# AI Models
-EXPO_PUBLIC_GROQ_API_KEY=         # Primary AI (Chatbot + Marketplace + DestinationDetail)
-EXPO_PUBLIC_GEMINI_API_KEY=       # Chatbot Fallback 1
-EXPO_PUBLIC_OPENAI_API_KEY=       # Chatbot Fallback 2
+# Backend (optional; defaults to https://ceylo.onrender.com)
+EXPO_PUBLIC_BACKEND_URL=
 
 # Google OAuth (partially implemented)
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
@@ -946,9 +934,9 @@ VITE_FIREBASE_MEASUREMENT_ID=
 - [x] Push Notification Service — Expo push token registered; deep-link routing on tap
 - [x] Geofence Service — background task fires local notifications near cultural regions
 - [x] Tourist Home Screen — Google Places API nearby (20km), ai_destinations.json fallback, ai_events.json featured event
-- [x] AI Concierge — waterfall (Groq→Gemini→OpenAI); HUD; quick replies; TTS; itinerary save
-- [x] AI Destination Insights — per-place AI (Groq): history, practical tips, nearby attractions, opening hours
-- [x] AI Marketplace — Groq generates live product/experience listings on demand
+- [x] AI Concierge — trained intent classifier; HUD; quick replies; TTS; itinerary save
+- [x] Destination Insights — dataset facts, nearby places, eco model breakdown
+- [x] Marketplace — live vendor products from Firestore
 - [x] Google Maps (native) — real Google Places Text Search, distance calc, province filter, custom markers
 - [x] Hidden Gems List — ai_destinations.json filtered, live GPS tracking, sort by distance/rating/eco
 - [x] Cultural Events Screen — live Firestore onSnapshot, type filter, list + calendar view
@@ -1028,7 +1016,6 @@ VITE_FIREBASE_MEASUREMENT_ID=
 | 13 | `ChatbotScreen.js` | Microphone `IconButton` has no `onPress` handler — voice input is visual placeholder only | 🟡 Incomplete |
 | 14 | `HomeScreen.js` | "See All" for hidden gems navigates to `HiddenGemsList` — verify navigation name matches App.js registration | 🟡 Verify |
 | 15 | `HiddenGemsListScreen.js` | `hidden_gem` field is inconsistently typed (`boolean` vs `"True"` string) in JSON data — filter handles both but inconsistency should be fixed in dataset | 🟡 Data Quality |
-| 16 | `MarketplaceScreen.js` | If Groq API key is missing/invalid, falls back to hardcoded data silently — no user-visible error | 🟡 UX |
 | 17 | `ai_models/recommender_model.keras` | File does not exist — training script requires TensorFlow (not installed in standard node env) | 🟠 Missing Artifact |
 | 18 | `ai_models/demand_lstm_model.keras` | File does not exist — same as above | 🟠 Missing Artifact |
 
@@ -1047,9 +1034,9 @@ VITE_FIREBASE_MEASUREMENT_ID=
 | Environment Loader Fix | Split packaging host parameters to `.env.local` to prevent local development environment collisions |
 | New screens added | `CulturalEventsScreen.js`, `HiddenGemsListScreen.js` |
 | Platform-split screens | `DriverDashboard`, `MapScreen`, `TransportScreen` split into `.native.js` / `.web.js` |
-| ChatbotScreen AI waterfall | Order changed: **Groq is now primary** (was Gemini); Groq→Gemini→OpenAI |
-| MarketplaceScreen | **No longer hardcoded** — now calls Groq API to generate live Sri Lankan product listings |
-| DestinationDetailScreen | **Fully revamped** — now calls Groq for AI-powered tabbed insights (history/practical/nearby) |
+| ChatbotScreen | Runs on CEYLO's trained intent classifier via the backend; no external AI |
+| MarketplaceScreen | Live vendor products from Firestore |
+Insights from the CEYLO dataset and eco model via /api/insights |
 | HomeScreen | Now uses **Google Places Text Search REST API** for nearby AI Picks; loads **bundled JSON assets** |
 | Navigation — MoodSelectScreen | **Now wired** as first screen for new tourists (`!onboardingCompleted`) |
 | Navigation — LanguageSelectScreen | **Moved** to unauthenticated stack (was not in any navigator before) |

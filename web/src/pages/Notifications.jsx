@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { BACKEND_URL } from '../config';
 import {
     Box, Typography, Button, Paper, TextField,
     Select, MenuItem, FormControl, InputLabel,
     Stack, Chip, Alert, Card, CardContent, Grid, Avatar, Snackbar
 } from '@mui/material';
-import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import SendIcon from '@mui/icons-material/Send';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
@@ -52,7 +53,7 @@ function Notifications() {
                     data: { type: 'admin_broadcast', title, message }
                 }));
 
-                const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+                const backendUrl = BACKEND_URL;
                 const idToken = await auth.currentUser.getIdToken();
                 const res = await fetch(`${backendUrl}/api/push`, {
                     method: 'POST',

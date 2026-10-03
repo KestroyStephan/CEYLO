@@ -7,34 +7,9 @@ import { db, auth } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { chatJSON } from '../services/aiClient';
+import { chatTurn } from '../services/aiClient';
 import { generateItinerary as buildItinerary, moodKey } from '../services/ItineraryService';
 import destinationsData from '../assets/data/ai_destinations.json';
-
-const SYSTEM_PROMPT = `You are CEYLO, a premium Sri Lankan Travel Concierge.
-Your goal is to build a "Trip Profile" for the traveler through natural conversation.
-STRICT JSON OUTPUT REQUIRED for every response.
-
-ExtractedState JSON Schema:
-{
-  "resp": "Conversational reply in traveler's language",
-  "extractedState": {
-    "destination": "City Name",
-    "days": 0,
-    "budget": "Economy/Standard/Luxury",
-    "eco_interest": 0-100,
-    "mood": "Adventurer/Culture Seeker/Eco Explorer/Family/Spiritual",
-    "mobility": "Standard/Accessible"
-  },
-  "isReady": boolean,
-  "ui_options": ["Option 1", "Option 2"]
-}
-
-CONTEXT:
-- Use Sri Lankan hospitality markers (Ayubowan, Vanakkam).
-- Prioritize eco-friendly destinations.
-- Extract preferences silently while talking.
-- Set "isReady" to true once destination or mood, and number of days, are known.`;
 
 const MOOD_CATEGORIES = {
   eco: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
@@ -198,20 +173,14 @@ export default function ChatbotScreen({ navigation, route }) {
   const handleSend = async (text = inputText) => {
     if (!text.trim() || loading) return;
     const userMsg = { id: Date.now().toString(), text, sender: 'user' };
-    // Send the recent conversation so the concierge remembers earlier answers
-    const history = [...messages, userMsg].slice(-12).map(m => ({
-      role: m.sender === 'user' ? 'user' : 'assistant',
-      content: m.text,
-    }));
-    history[history.length - 1].content =
-      `CURRENT KNOWN STATE: ${JSON.stringify(extractedState)}\nUser: ${text}`;
 
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
     setLoading(true);
 
     try {
-      const responseJson = await chatJSON(SYSTEM_PROMPT, history);
+      // The trained concierge model keeps the trip profile in extractedState between turns
+      const responseJson = await chatTurn(text, extractedState);
       const nextState = { ...extractedState, ...(responseJson.extractedState || {}) };
       setExtractedState(nextState);
 
@@ -222,7 +191,9 @@ export default function ChatbotScreen({ navigation, route }) {
         sender: 'bot',
         options: responseJson.ui_options,
         isFinal: responseJson.isReady,
-        recommendations: destinationChanged ? findRecommendations(nextState) : null,
+        recommendations: responseJson.recommendations?.length
+          ? responseJson.recommendations
+          : (destinationChanged ? findRecommendations(nextState) : null),
       }]);
     } catch (error) {
       console.warn('Concierge request failed:', error.message);
@@ -396,7 +367,7 @@ const styles = StyleSheet.create({
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   textInput: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 25, height: 50 },
   genBtn: { margin: 20, borderRadius: 15, backgroundColor: '#FF7043' },
-  
+
   // Voice Modal Styles
   voiceModal: { backgroundColor: 'transparent', margin: 20, justifyContent: 'center', alignItems: 'center' },
   voiceGradient: { width: '90%', borderRadius: 25, padding: 30, alignItems: 'center', position: 'relative' },
