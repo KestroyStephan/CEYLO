@@ -1,0 +1,410 @@
+<title>CEYLO Completion Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Noto+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; summary first, then timeline, then each sprint as a work packet, then the traceability matrix. Colours come from the CEYLO app design system. */
+:root {
+  --bg: #F6FBF3;
+  --surface: #FFFFFF;
+  --surface-2: #EBEFE8;
+  --ink: #181D19;
+  --ink-soft: #3F4941;
+  --line: #BECABE;
+  --primary: #006A3B;
+  --primary-soft: #D7EBDD;
+  --teal: #006A6A;
+  --gold: #735C00;
+  --gold-soft: #F3E6B8;
+  --warn: #9A4A00;
+  --warn-soft: #FBE3CC;
+  --bad: #BA1A1A;
+  --bad-soft: #F9DAD7;
+  --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101511; --surface: #171D18; --surface-2: #222A23; --ink: #DFE4DD; --ink-soft: #AEB8AE; --line: #3A453B;
+    --primary: #6FDB9C; --primary-soft: #18382A; --teal: #73D3D3; --gold: #E6C65A; --gold-soft: #3A3115;
+    --warn: #F5B26B; --warn-soft: #3D2810; --bad: #FFB4AB; --bad-soft: #4A1715; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101511; --surface: #171D18; --surface-2: #222A23; --ink: #DFE4DD; --ink-soft: #AEB8AE; --line: #3A453B;
+  --primary: #6FDB9C; --primary-soft: #18382A; --teal: #73D3D3; --gold: #E6C65A; --gold-soft: #3A3115;
+  --warn: #F5B26B; --warn-soft: #3D2810; --bad: #FFB4AB; --bad-soft: #4A1715; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 920px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.5rem; font-weight: 600; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.85em; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.eyebrow { font-family: var(--font-display); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); }
+.muted { color: var(--ink-soft); }
+section { display: flex; flex-direction: column; gap: 16px; }
+
+/* Header */
+header { display: flex; flex-direction: column; gap: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-soft); font-size: 0.9rem; }
+
+/* Progress */
+.progress { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 18px; }
+.progress-figs { display: flex; flex-wrap: wrap; gap: 28px; }
+.fig { display: flex; flex-direction: column; }
+.fig b { font-family: var(--font-display); font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fig span { font-size: 0.85rem; color: var(--ink-soft); }
+.track { position: relative; height: 14px; background: var(--surface-2); border-radius: 7px; overflow: hidden; }
+.track .done { position: absolute; inset: 0 auto 0 0; width: 63%; background: var(--primary); }
+.track .ticks { position: absolute; inset: 0; display: flex; }
+.track .ticks i { flex: 1; border-right: 1px solid var(--bg); }
+.milestones { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; font-size: 0.82rem; }
+.milestones div { display: flex; flex-direction: column; border-left: 2px solid var(--line); padding-left: 8px; }
+.milestones b { font-family: var(--font-display); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.milestones .now { border-color: var(--primary); }
+
+/* Timeline */
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.gantt { min-width: 760px; display: grid; grid-template-columns: 190px repeat(13, 1fr); font-size: 0.8rem; }
+.gantt > div { padding: 8px 6px; border-bottom: 1px solid var(--surface-2); }
+.gantt .wk { text-align: center; color: var(--ink-soft); font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--line); }
+.gantt .lbl { font-weight: 600; font-family: var(--font-display); }
+.bar { border-radius: 6px; margin: 2px 0; padding: 4px 8px; font-size: 0.75rem; font-weight: 600; color: var(--bg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b0 { background: var(--bad); } .b1 { background: var(--primary); } .b2 { background: var(--teal); }
+.b3 { background: var(--gold); } .b4 { background: var(--warn); } .b5 { background: var(--ink-soft); }
+
+/* Tracks */
+.tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.trackcard { border-top: 3px solid var(--primary); background: var(--surface); padding: 14px 16px; border-radius: 0 0 10px 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.trackcard:nth-child(2) { border-color: var(--teal); }
+.trackcard:nth-child(3) { border-color: var(--gold); }
+.trackcard ul { margin: 0; padding-left: 18px; font-size: 0.9rem; }
+.owner { font-size: 0.8rem; color: var(--ink-soft); }
+
+/* Sprint packets */
+.packet { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; }
+.packet-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; justify-content: space-between; }
+.packet-head .when { font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 0.88rem; }
+.packet-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+.goal { font-size: 1rem; }
+.covers { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--font-mono); font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-soft); }
+.tasks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.tasks li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.tasks li::before { content: ""; width: 14px; height: 14px; margin-top: 4px; border: 1.5px solid var(--line); border-radius: 4px; }
+.tasks li > div { min-width: 0; }
+.tasks .sub { display: block; font-size: 0.86rem; color: var(--ink-soft); }
+.done-when { background: var(--primary-soft); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; }
+.done-when b { font-family: var(--font-display); color: var(--primary); }
+
+/* Matrix */
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 640px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--surface-2); vertical-align: top; }
+th { font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); background: var(--surface-2); }
+td:first-child { font-family: var(--font-mono); font-size: 0.8rem; white-space: nowrap; }
+.st { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.st-done { background: var(--primary-soft); color: var(--primary); }
+.st-part { background: var(--gold-soft); color: var(--gold); }
+.st-miss { background: var(--bad-soft); color: var(--bad); }
+
+/* Risks */
+.risks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.risk { background: var(--surface); border-left: 3px solid var(--warn); padding: 12px 14px; border-radius: 0 10px 10px 0; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.risk b { font-family: var(--font-display); }
+
+.checklist { columns: 2 260px; column-gap: 28px; margin: 0; padding-left: 18px; }
+.checklist li { break-inside: avoid; margin-bottom: 6px; }
+footer { font-size: 0.85rem; color: var(--ink-soft); border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 520px) { h1 { font-size: 1.8rem; } .wrap { gap: 44px; } }
+@media (prefers-reduced-motion: no-preference) { .track .done { animation: grow 900ms ease-out; } @keyframes grow { from { width: 0; } } }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">IT41028 Final Year Project · Completion plan</span>
+  <h1>CEYLO Completion Roadmap</h1>
+  <p class="muted">How we take <em>An AI-Powered Smart Guide for Sustainable Eco and Cultural Tourism in Sri Lanka</em> from where it stands today to every requirement in the Research Proposal and the Methodology &amp; Design document being built, tested and evidenced.</p>
+  <div class="meta">
+    <span>S. Kestroy · R. A. Sharoobini · N. Kishnapriyan</span>
+    <span>Supervisor: Isuru Samarappilige</span>
+    <span>Plan date: 3 October 2026</span>
+  </div>
+</header>
+
+<section aria-labelledby="where">
+  <span class="eyebrow">Where we are</span>
+  <h2 id="where">63% of the promised system works today</h2>
+  <div class="progress">
+    <div class="progress-figs">
+      <div class="fig"><b>63%</b><span>App vs. proposal &amp; design</span></div>
+      <div class="fig"><b>~52%</b><span>Whole project incl. evaluation</span></div>
+      <div class="fig"><b>13</b><span>Weeks in this plan</span></div>
+      <div class="fig"><b>6</b><span>Two-week Scrum sprints</span></div>
+    </div>
+    <div class="track" role="img" aria-label="Progress bar at 63 percent">
+      <div class="done"></div>
+      <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="milestones">
+      <div class="now"><b>63%</b>Today</div>
+      <div><b>66%</b>After Phase 0</div>
+      <div><b>75%</b>After Sprint 1</div>
+      <div><b>83%</b>After Sprint 2</div>
+      <div><b>90%</b>After Sprint 3</div>
+      <div><b>95%</b>After Sprint 4</div>
+      <div><b>100%</b>After Sprint 5 + write-up</div>
+    </div>
+  </div>
+  <p class="muted">"100%" here means: every MUST and SHOULD functional requirement (FR-001 to FR-060) meets its acceptance criteria, every NFR has a measured result, research objectives 1–6 have evidence, and research questions 1–6 are answered in the thesis. Percentages are weighted by module, as in the earlier audit.</p>
+</section>
+
+<section aria-labelledby="timeline">
+  <span class="eyebrow">Timeline</span>
+  <h2 id="timeline">Thirteen weeks, Agile Scrum, two-week sprints</h2>
+  <p class="muted">Week 1 starts Monday 5 October 2026. If the submission date is earlier, compress Sprint 5 and the write-up, never Phase 0 or Sprint 4 (the evaluation needs real usage data).</p>
+  <div class="scroll">
+    <div class="gantt" role="table" aria-label="Thirteen-week timeline">
+      <div class="wk"></div>
+      <div class="wk">W1</div><div class="wk">W2</div><div class="wk">W3</div><div class="wk">W4</div><div class="wk">W5</div><div class="wk">W6</div><div class="wk">W7</div><div class="wk">W8</div><div class="wk">W9</div><div class="wk">W10</div><div class="wk">W11</div><div class="wk">W12</div><div class="wk">W13</div>
+
+      <div class="lbl">Phase 0 · Stabilise</div><div style="grid-column: span 1"><div class="bar b0">5–11 Oct</div></div><div style="grid-column: span 12"></div>
+      <div class="lbl">S1 · Context-aware AI</div><div></div><div style="grid-column: span 2"><div class="bar b1">12–25 Oct</div></div><div style="grid-column: span 10"></div>
+      <div class="lbl">S2 · Offline &amp; language</div><div style="grid-column: span 3"></div><div style="grid-column: span 2"><div class="bar b2">26 Oct–8 Nov</div></div><div style="grid-column: span 8"></div>
+      <div class="lbl">S3 · Safety &amp; vendors</div><div style="grid-column: span 5"></div><div style="grid-column: span 2"><div class="bar b3">9–22 Nov</div></div><div style="grid-column: span 6"></div>
+      <div class="lbl">S4 · Research data</div><div style="grid-column: span 7"></div><div style="grid-column: span 2"><div class="bar b4">23 Nov–6 Dec</div></div><div style="grid-column: span 4"></div>
+      <div class="lbl">S5 · Test &amp; evaluate</div><div style="grid-column: span 9"></div><div style="grid-column: span 2"><div class="bar b5">7–20 Dec</div></div><div style="grid-column: span 2"></div>
+      <div class="lbl">Write-up &amp; release</div><div style="grid-column: span 11"></div><div style="grid-column: span 2"><div class="bar b1">21 Dec–3 Jan</div></div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="tracks">
+  <span class="eyebrow">Who does what</span>
+  <h2 id="tracks">Three parallel tracks</h2>
+  <p class="muted">Each sprint has work in all three tracks so nobody waits on anyone else. Assign one owner per track at the first sprint planning; owners can rotate between sprints.</p>
+  <div class="tracks">
+    <div class="trackcard">
+      <h3>Track A · Mobile &amp; AI</h3>
+      <span class="owner">Owner: assign at sprint planning</span>
+      <ul><li>Recommendation model &amp; TFLite</li><li>Preferences, itinerary, offline route</li><li>Translations &amp; accessibility</li><li>Mobile screens for new features</li></ul>
+    </div>
+    <div class="trackcard">
+      <h3>Track B · Backend, safety &amp; admin</h3>
+      <span class="owner">Owner: assign at sprint planning</span>
+      <ul><li>Backend APIs (weather, SMS, push)</li><li>Firestore rules &amp; data model</li><li>SOS workflow &amp; vendor verification</li><li>Admin portal analytics</li></ul>
+    </div>
+    <div class="trackcard">
+      <h3>Track C · Research, QA &amp; thesis</h3>
+      <span class="owner">Owner: assign at sprint planning</span>
+      <ul><li>Consent, surveys, SUS, usability study</li><li>Automated tests &amp; load tests</li><li>Evaluation analysis (RQ1–RQ6)</li><li>Implementation, testing &amp; evaluation chapters</li></ul>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="sprints">
+  <span class="eyebrow">Sprint by sprint</span>
+  <h2 id="sprints">What gets built, and how we know it is done</h2>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Phase 0 · Stabilise and deploy the fixes</h3><span class="when">Week 1 · 5–11 Oct · 63% → 66%</span></div>
+    <div class="packet-body">
+      <p class="goal">Get the 31 bug fixes onto real devices and the live Firebase project before adding anything new.</p>
+      <div class="covers"><span class="chip">NFR-004</span><span class="chip">all FRs (regression)</span></div>
+      <ul class="tasks">
+        <li><div>Commit the fixes on a branch, review together, merge to <code>main</code>.</div></li>
+        <li><div>Deploy rules and indexes with <code>firebase deploy --only firestore</code>.<span class="sub">Write rules tests with <code>@firebase/rules-unit-testing</code> on the emulator: register each role, vendor submit, driver accepts a ride, user tries to make themselves admin (must fail).</span></div></li>
+        <li><div>Set <code>GROQ_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>GEMINI_API_KEY</code> on Render and redeploy the backend. Rotate every key that was in older APKs.</div></li>
+        <li><div>Restrict the Google Maps key to the Android package and SHA-1. Add the SHA-1 in Firebase for Google sign-in.</div></li>
+        <li><div>Set <code>VITE_BACKEND_URL</code> (web) and <code>EXPO_PUBLIC_SOS_SMS_NUMBER</code> (mobile). Build a development APK with EAS.</div></li>
+        <li><div>Remove remaining invented data.<span class="sub">Hardcoded payouts in <code>Reports.jsx</code>, random values in <code>SystemHealth.jsx</code> and admin <code>CulturalEvents.jsx</code>, fixed eco score 85 on map markers.</span></div></li>
+        <li><div>Run the device smoke test on a mid-range Android phone: every role signs up, guest mode, itinerary, chatbot, SOS online and offline, offline map, event alert, vendor approval, driver ride, admin pages.</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> the smoke test passes end to end on a real phone and the rules tests are green.</div>
+    </div>
+  </article>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Sprint 1 · Context-aware AI</h3><span class="when">Weeks 2–3 · 12–25 Oct · 66% → 75%</span></div>
+    <div class="packet-body">
+      <p class="goal">Deliver the core promise of the proposal: recommendations driven by mood, preferences, location, weather and season, using our own trained models.</p>
+      <div class="covers"><span class="chip">Objective 2</span><span class="chip">RQ2</span><span class="chip">RQ3</span><span class="chip">FR-011</span><span class="chip">NFR-001</span></div>
+      <ul class="tasks">
+        <li><div>Weather: add <code>/api/weather</code> on the backend (OpenWeather, key on the server, 30-minute cache).<span class="sub">Rain or storms down-rank beaches, waterfalls and viewpoints and up-rank heritage sites. Show a weather chip on Home and on each itinerary day.</span></div></li>
+        <li><div>Retrain the recommender as a content-based model.<span class="sub">The current model learns embeddings for synthetic user IDs, so it cannot score real users (cold start). New inputs: mood, eco preference, budget, month, weather, plus destination features (category, eco score, carbon index, popularity). Train on <code>interactions.csv</code> joined with users and destinations. Report precision@5 and NDCG against today's rule-based ranking.</span></div></li>
+        <li><div>Export the model to TensorFlow Lite and run it on the phone with <code>react-native-fast-tflite</code> over the 275 bundled destinations, so itineraries work offline as the design says.</div></li>
+        <li><div>Use the other two models.<span class="sub">Eco scorer (random forest): batch-score all destinations and record the model version. Demand LSTM: export a monthly crowd forecast per destination and add a "fewer crowds" boost that favours under-visited places (supports Objective 6).</span></div></li>
+        <li><div>Log every generated itinerary to a <code>recommendation_records</code> collection (model version, inputs, results), as in design section 4.4.</div></li>
+        <li><div>For RQ3, assign each user a strategy (mood-based, location-based or seasonal) and log it with each recommendation.</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> model metrics are written up, 95% of itineraries are generated in under 3 seconds, and itinerary generation works in airplane mode.</div>
+    </div>
+  </article>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Sprint 2 · Preferences, offline travel and language</h3><span class="when">Weeks 4–5 · 26 Oct–8 Nov · 75% → 83%</span></div>
+    <div class="packet-body">
+      <p class="goal">Make the app usable without signal and in all three languages.</p>
+      <div class="covers"><span class="chip">FR-002</span><span class="chip">FR-010</span><span class="chip">FR-012</span><span class="chip">FR-020</span><span class="chip">FR-021</span><span class="chip">NFR-002</span><span class="chip">NFR-006–008</span></div>
+      <ul class="tasks">
+        <li><div>Preferences form as designed: eco % and culture % sliders, budget, duration, mobility (walking only, low mobility). Saved on the phone and in Firestore, used by the model and pre-filled in the chatbot.</div></li>
+        <li><div>Offline itinerary: cache the last itineraries and their destination details on the phone.</div></li>
+        <li><div>Offline route guidance.<span class="sub">When an itinerary is saved online, fetch and store the route line for each leg. Offline, show the stored route on the downloaded map with live GPS, distance and direction to the next stop, and a re-centre when the traveller leaves the route.</span></div></li>
+        <li><div>Move offline tiles to a provider whose terms allow downloads (for example MapTiler or Thunderforest with a free key), and sync downloaded regions to <code>offline_map_regions</code>.</div></li>
+        <li><div>Full translation: move every tourist-facing string into <code>en.json</code>, <code>si.json</code>, <code>ta.json</code>. Team members check the Sinhala and Tamil wording.</div></li>
+        <li><div>Accessibility: text-size setting, AA colour contrast check, labels on every icon-only button.</div></li>
+        <li><div>Time first-time onboarding with three people who have never used the app (target under 3 minutes).</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> a full trip can be planned and followed in Sinhala and in Tamil, and a saved itinerary, map and route all work in airplane mode with tiles loading in under 1 second.</div>
+    </div>
+  </article>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Sprint 3 · Safety, vendors and notifications</h3><span class="when">Weeks 6–7 · 9–22 Nov · 83% → 90%</span></div>
+    <div class="packet-body">
+      <p class="goal">Close the loops between tourists, vendors, guides, drivers and the tourism authority.</p>
+      <div class="covers"><span class="chip">FR-001</span><span class="chip">FR-040</span><span class="chip">FR-041</span><span class="chip">FR-050</span><span class="chip">FR-051</span><span class="chip">FR-060</span><span class="chip">Seq. 4.2.5.2–3</span></div>
+      <ul class="tasks">
+        <li><div>SOS by SMS.<span class="sub">Online: the backend sends an SMS to the emergency desk for every SOS through a gateway (Notify.lk, Dialog Ideamart or Twilio). Offline: the pre-filled SMS to the desk number stays, because Google Play does not allow silent SMS sending. Add an SMS log tab to the admin SOS monitor.</span></div></li>
+        <li><div>Emergency workflow in the SOS monitor: active → acknowledged → dispatched → resolved, recording which admin handled it, plus a "forward to authority" action with location and contact details.</div></li>
+        <li><div>Phone-number sign-up with an OTP check (Firebase phone auth).</div></li>
+        <li><div>Booking notifications: vendor or guide gets a push on a new request, the tourist gets a push on accept or reject, and after 15 minutes without a reply the tourist is shown other vendors.</div></li>
+        <li><div>Vendor verification in the admin portal: view uploaded NIC and certificate, reject with a reason, allow resubmission, suspend or ban later.</div></li>
+        <li><div>Reviews after visits: prompt after a completed booking or itinerary day. Add a GPS check-in at a destination (within 200 m) that writes <code>visited_places</code> and stamps the Eco Passport. Add saving places.</div></li>
+        <li><div>Privacy: split user profiles into a public part (name, photo, role) and a private part (email, phone) readable only by the owner, booking partners and staff.</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> a booking goes request → accept → complete → review with notifications both ways, an SOS reaches the desk by SMS, and a rejected vendor can resubmit and be approved.</div>
+    </div>
+  </article>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Sprint 4 · Research data collection</h3><span class="when">Weeks 8–9 · 23 Nov–6 Dec · 90% → 95%</span></div>
+    <div class="packet-body">
+      <p class="goal">Build what the evaluation chapter needs: consent, usage data and feedback, all visible to the team in the admin portal.</p>
+      <div class="covers"><span class="chip">Objectives 4–6</span><span class="chip">RQ1</span><span class="chip">RQ3–RQ6</span><span class="chip">Ethics</span></div>
+      <ul class="tasks">
+        <li><div>Consent screen on first launch and a privacy policy page, with an opt-out toggle in Profile. Analytics are stored without names.</div></li>
+        <li><div>Usage events: recommendation shown, opened, saved, swapped, booked; event viewed and alert opened; vendor contacted; SOS used. Each event carries the user's strategy group from Sprint 1.</div></li>
+        <li><div>In-app feedback: rating after each itinerary, the 10-question System Usability Scale, Likert questions on recommendation relevance, and a before/after eco-awareness question.</div></li>
+        <li><div>Research dashboard in the admin portal: open rate by strategy, booking conversion, share of visits going to hidden gems and small vendors versus famous places, satisfaction scores. CSV export for analysis.</div></li>
+        <li><div>Replace the invented figures in <code>Analytics.jsx</code> and <code>Reports.jsx</code> with real aggregates.</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> events from test users appear live on the research dashboard and the CSV export opens cleanly in Excel or Python.</div>
+    </div>
+  </article>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Sprint 5 · Testing and evaluation</h3><span class="when">Weeks 10–11 · 7–20 Dec · 95% → 98%</span></div>
+    <div class="packet-body">
+      <p class="goal">Prove the system works and answer the research questions with data.</p>
+      <div class="covers"><span class="chip">Objective 4</span><span class="chip">Objective 5</span><span class="chip">Objective 6</span><span class="chip">NFR-001–006</span></div>
+      <ul class="tasks">
+        <li><div>Automated tests in GitHub Actions: unit tests for <code>ItineraryService</code>, <code>ecoStats</code>, <code>events</code> and the ranking; Firestore rules tests; backend API tests; Playwright tests for the admin portal (login, approve vendor, SOS monitor); component tests for the main mobile screens.</div></li>
+        <li><div>Performance: k6 load test with 500 concurrent users on the backend (NFR-005), and measure recommendation speed (NFR-001) and offline tile loading (NFR-002).</div></li>
+        <li><div>Usability study with 15–20 participants, mixing domestic and international tourists as in the 101-person survey.<span class="sub">Tasks: register, plan a trip, find an event near you, trigger a test SOS, book a guide. Record success, time, errors and SUS score, followed by the post-use survey. Signed consent forms.</span></div></li>
+        <li><div>Analyse the usage data: compare strategy groups (RQ3), engagement with alerts and promotions (RQ4), choices of eco-friendly and under-represented places (RQ5, Objective 6).</div></li>
+        <li><div>Keep the last three days of the sprint for fixing what the study finds.</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> every MUST requirement passes its acceptance test, the SUS average is 68 or higher, and the results are in a test report with real numbers.</div>
+    </div>
+  </article>
+
+  <article class="packet">
+    <div class="packet-head"><h3>Write-up and release</h3><span class="when">Weeks 12–13 · 21 Dec–3 Jan · 98% → 100%</span></div>
+    <div class="packet-body">
+      <p class="goal">Hand in a thesis that matches the system, and a system anyone can install.</p>
+      <div class="covers"><span class="chip">Thesis ch. 5–7</span><span class="chip">Design 4.5.6 deployment</span></div>
+      <ul class="tasks">
+        <li><div>Chapters: Implementation, Testing, Evaluation and discussion (answer RQ1–RQ6 one by one), Conclusion and future work.</div></li>
+        <li><div>Fix mismatches between the documents and the code: the proposal lists Android Studio with Java/Kotlin but we built with React Native; the design names <code>EmergencyLogs</code> where the app uses <code>sos_alerts</code>; offline maps use downloaded tiles rather than Google offline maps.</div></li>
+        <li><div>User guide, admin guide and deployment guide. Update the README (it still mentions Ollama and a missing <code>WORK_DIVISION.md</code>).</div></li>
+        <li><div>Release: signed Android build from EAS, admin portal on Firebase Hosting, backend on Render, demo data seeded, recorded demo video and a written demo script for the viva.</div></li>
+      </ul>
+      <div class="done-when"><b>Done when</b> the submission package is complete and a classmate can install and use the app from the guides alone.</div>
+    </div>
+  </article>
+</section>
+
+<section aria-labelledby="matrix">
+  <span class="eyebrow">Traceability</span>
+  <h2 id="matrix">Every requirement, its status today and when it closes</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>ID</th><th>Requirement</th><th>Today</th><th>Closed in</th></tr></thead>
+      <tbody>
+        <tr><td>FR-001</td><td>Register with email, phone or Firebase Auth</td><td><span class="st st-part">Partial: no phone</span></td><td>Sprint 3</td></tr>
+        <tr><td>FR-002</td><td>Choose EN / SI / TA language</td><td><span class="st st-part">Partial: switch only</span></td><td>Sprint 2</td></tr>
+        <tr><td>FR-010</td><td>Set eco %, culture %, budget, mobility</td><td><span class="st st-part">Partial</span></td><td>Sprint 2</td></tr>
+        <tr><td>FR-011</td><td>5–10 recommendations in under 3 s</td><td><span class="st st-part">Partial: no weather or model</span></td><td>Sprint 1</td></tr>
+        <tr><td>FR-012</td><td>Distance, duration, fees and eco score per stop</td><td><span class="st st-done">Done (estimates)</span></td><td>Sprint 2 (real fees)</td></tr>
+        <tr><td>FR-020</td><td>Download offline maps</td><td><span class="st st-done">Done</span></td><td>Sprint 2 (tile provider)</td></tr>
+        <tr><td>FR-021</td><td>Offline turn-by-turn navigation</td><td><span class="st st-miss">Missing</span></td><td>Sprint 2</td></tr>
+        <tr><td>FR-030</td><td>Nearby cultural events by GPS radius</td><td><span class="st st-done">Done</span></td><td>Sprint 5 (verify)</td></tr>
+        <tr><td>FR-040</td><td>SOS with location in under 1 s online</td><td><span class="st st-done">Done</span></td><td>Sprint 5 (measure)</td></tr>
+        <tr><td>FR-041</td><td>SMS fallback, logs in admin panel</td><td><span class="st st-part">Partial: no gateway or log</span></td><td>Sprint 3</td></tr>
+        <tr><td>FR-050</td><td>Vendor registration with documents</td><td><span class="st st-done">Done</span></td><td>Sprint 3 (notify admin)</td></tr>
+        <tr><td>FR-051</td><td>Admin approves or rejects vendors</td><td><span class="st st-part">Partial: no reasons or resubmit</span></td><td>Sprint 3</td></tr>
+        <tr><td>FR-060</td><td>Reviews after visits</td><td><span class="st st-part">Partial: guides and rides only</span></td><td>Sprint 3</td></tr>
+        <tr><td>NFR-001</td><td>Recommendations under 3 s for 95% of requests</td><td><span class="st st-part">Not measured</span></td><td>Sprint 5</td></tr>
+        <tr><td>NFR-002</td><td>Offline tiles load under 1 s</td><td><span class="st st-part">Not measured</span></td><td>Sprint 2</td></tr>
+        <tr><td>NFR-003</td><td>99% uptime</td><td><span class="st st-part">Not measured</span></td><td>Sprint 5 (uptime monitor)</td></tr>
+        <tr><td>NFR-004</td><td>TLS, OAuth 2.0, secure access</td><td><span class="st st-part">Rules rewritten, untested</span></td><td>Phase 0 / Sprint 3</td></tr>
+        <tr><td>NFR-005</td><td>500 concurrent users</td><td><span class="st st-miss">Not tested</span></td><td>Sprint 5</td></tr>
+        <tr><td>NFR-006</td><td>Onboarding under 3 min for 90%</td><td><span class="st st-miss">Not tested</span></td><td>Sprint 2 / 5</td></tr>
+        <tr><td>NFR-007</td><td>Adjustable text, AA contrast</td><td><span class="st st-miss">Missing</span></td><td>Sprint 2</td></tr>
+        <tr><td>NFR-008</td><td>Language switch within 2 taps</td><td><span class="st st-done">Done</span></td><td>—</td></tr>
+        <tr><td>Obj 1</td><td>Survey of tourist needs</td><td><span class="st st-done">Done (101 responses)</span></td><td>—</td></tr>
+        <tr><td>Obj 2</td><td>AI recommendations by mood, location, season, weather</td><td><span class="st st-part">Partial</span></td><td>Sprint 1</td></tr>
+        <tr><td>Obj 3</td><td>Planner, alerts, vendors, transport, emergency</td><td><span class="st st-part">Mostly done</span></td><td>Sprint 3</td></tr>
+        <tr><td>Obj 4</td><td>Usability testing</td><td><span class="st st-miss">Missing</span></td><td>Sprint 5</td></tr>
+        <tr><td>Obj 5</td><td>Effectiveness of AI recommendations</td><td><span class="st st-miss">Missing</span></td><td>Sprints 4–5</td></tr>
+        <tr><td>Obj 6</td><td>Impact on eco-tourism and local vendors</td><td><span class="st st-miss">Missing</span></td><td>Sprints 4–5</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="risks">
+  <span class="eyebrow">Risks</span>
+  <h2 id="risks">What could slow us down</h2>
+  <div class="risks">
+    <div class="risk"><b>On-device AI needs a custom build</b>TensorFlow Lite does not run in Expo Go. Make the EAS development build in Phase 0 and use it from then on.</div>
+    <div class="risk"><b>Model trained on synthetic data</b>State this openly in the thesis, compare against the rule-based baseline, and retrain on real interaction data collected in Sprint 4 if time allows.</div>
+    <div class="risk"><b>Silent offline SMS is not allowed on Google Play</b>Keep the pre-filled SMS for offline use, send automatic SMS from the backend when online, and document the limitation.</div>
+    <div class="risk"><b>API quotas and cost</b>Places, OpenWeather and the AI providers have limits. Cache on the backend, keep the rate limits, and use free tiers during the study.</div>
+    <div class="risk"><b>Recruiting study participants</b>Start recruiting in Sprint 3 through campus, the original survey respondents and local guides. Book sessions before Sprint 5 starts.</div>
+    <div class="risk"><b>Deadline earlier than week 13</b>Cut stretch items first: offline tile provider switch, AR, extra admin reports. Never cut Phase 0, Sprint 4 or the usability study.</div>
+  </div>
+</section>
+
+<section aria-labelledby="dod">
+  <span class="eyebrow">Definition of done</span>
+  <h2 id="dod">Final checklist before submission</h2>
+  <ul class="checklist">
+    <li>All MUST requirements pass their acceptance criteria on a real phone</li>
+    <li>All SHOULD requirements done or justified in the thesis</li>
+    <li>Every NFR has a measured number in the test report</li>
+    <li>Rules tests, unit tests and E2E tests pass in CI</li>
+    <li>No hardcoded or random data left in any screen</li>
+    <li>No API keys inside the app bundle; old keys rotated</li>
+    <li>Full app usable in English, Sinhala and Tamil</li>
+    <li>Usability study done with SUS, timings and survey results</li>
+    <li>RQ1–RQ6 each answered with evidence</li>
+    <li>Thesis and design documents match the built system</li>
+    <li>Signed APK, hosted admin portal and live backend</li>
+    <li>Demo script, demo video and user guides ready</li>
+  </ul>
+</section>
+
+<footer>
+  Sprint rhythm from the methodology: planning on the first Monday of each sprint, a short daily stand-up, review and retrospective on the second Friday. Track tasks in GitHub Projects or Trello with one card per bullet above.
+</footer>
+
+</div>
