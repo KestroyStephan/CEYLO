@@ -184,7 +184,7 @@ export default function MarketplaceScreen({ navigation }) {
       </ScrollView>
 
       {/* Floating SOS Button */}
-      <TouchableOpacity style={styles.sosButton}>
+      <TouchableOpacity style={styles.sosButton} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
         <MaterialCommunityIcons name="car-emergency" size={24} color="#FFF" />
       </TouchableOpacity>
     </View>

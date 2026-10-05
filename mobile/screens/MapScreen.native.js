@@ -459,9 +459,6 @@ export default function MapScreen({ navigation }) {
         <TouchableOpacity style={styles.floatingBtnWhite} onPress={() => navigation.navigate('OfflineMapSettings')}>
           <MaterialCommunityIcons name="wifi-off" size={22} color="#333" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.floatingBtnGold}>
-          <MaterialCommunityIcons name="cube-scan" size={22} color="#5C4033" />
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.floatingBtnWhite}
           onPress={() => location && mapRef.current.animateToRegion({ ...location, latitudeDelta: 0.05, longitudeDelta: 0.05 })}
@@ -474,7 +471,7 @@ export default function MapScreen({ navigation }) {
       <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: sheetAnim }] }]}>
 
         {/* Floating SOS Button attached to bottom sheet */}
-        <TouchableOpacity style={styles.sosButton}>
+        <TouchableOpacity style={styles.sosButton} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
           <Text style={styles.sosText}>SOS</Text>
         </TouchableOpacity>
 

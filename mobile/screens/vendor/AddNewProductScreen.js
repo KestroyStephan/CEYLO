@@ -144,9 +144,7 @@ export default function AddNewProductScreen({ navigation }) {
           <Ionicons name="close" size={22} color={ON_SURF} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>List New Item</Text>
-        <TouchableOpacity>
-          <Text style={styles.saveDraft}>SAVE DRAFT</Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Step progress */}

@@ -195,7 +195,7 @@ export default function ProfileScreen({ navigation }) {
                 )}
 
                 <View style={styles.menuList}>
-                    <MenuItem icon="bookmark" title={t('saved_places')} subtitle={t('saved_places_sub', { n: savedPlacesCount })} onPress={() => {}} />
+                    <MenuItem icon="bookmark" title={t('saved_places')} subtitle={t('saved_places_sub', { n: savedPlacesCount })} onPress={() => navigation.navigate('SavedPlaces')} />
                     <MenuItem icon="map" title={t('itineraries')} subtitle={t('itineraries_sub', { n: itinerariesCount })} onPress={() => navigation.navigate('ItineraryDetail')} />
                     <MenuItem icon="sliders" title={t('prefs_title')} subtitle={t('travel_prefs_sub')} onPress={() => navigation.navigate('TravelPreferences')} />
                     <MenuItem icon="edit-2" title={t('edit_profile')} subtitle={t('edit_profile_sub')} onPress={() => navigation.navigate('EditProfile')} />

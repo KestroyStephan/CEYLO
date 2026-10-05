@@ -300,10 +300,6 @@ export default function GuidesListScreen({ navigation }) {
         />
       )}
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab}>
-        <MaterialCommunityIcons name="plus" size={28} color="#FFF" />
-      </TouchableOpacity>
     </View>
   );
 }

@@ -129,7 +129,7 @@ export default function GuideDiscoverScreen({ navigation }) {
               <>
                 <Text style={styles.sectionTitle}>Admin Announcements</Text>
                 {announcements.map((ann) => (
-                  <TouchableOpacity key={ann.id} style={styles.announcementCard} activeOpacity={0.9}>
+                  <View key={ann.id} style={styles.announcementCard}>
                     <View style={styles.announcementIconWrap}>
                       <MaterialCommunityIcons name="bullhorn-outline" size={24} color="#006A3B" />
                     </View>
@@ -140,7 +140,7 @@ export default function GuideDiscoverScreen({ navigation }) {
                         {ann.sentAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
                       </Text>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 ))}
               </>
             )}
@@ -159,7 +159,8 @@ export default function GuideDiscoverScreen({ navigation }) {
                   const day = eventDate.getDate();
 
                   return (
-                    <TouchableOpacity key={event.id} style={styles.suggestionCard} activeOpacity={0.9}>
+                    <TouchableOpacity key={event.id} style={styles.suggestionCard} activeOpacity={0.9}
+                      onPress={() => navigation.navigate('EventDetail', { event: { ...event, imageUrl: event.imageUrl || event.image } })}>
                       <Image 
                         source={{ uri: event.imageUrl || event.image || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=500' }} 
                         style={styles.suggestionImg}
