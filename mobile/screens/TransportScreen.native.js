@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import i18n from '../i18n';
 import {
   View, StyleSheet, Dimensions, Animated, TouchableOpacity,
-  Image, ScrollView, TextInput, FlatList, Alert, Linking
+  Image, ScrollView, TextInput, FlatList, Alert, Linking, Keyboard
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../components/Map';
 import { Text, Surface, Button, Avatar, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
@@ -54,6 +54,14 @@ export default function TransportScreen({ route, navigation }) {
   const [myRating, setMyRating] = useState(0);
   const [driverRating, setDriverRating] = useState(null);
   const expiryTimer = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Lift the bottom sheet above the keyboard so destination suggestions stay visible
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e => setKeyboardHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
   useEffect(() => () => clearTimeout(expiryTimer.current), []);
 
   // Online drivers and their approximate positions (PickMe-style cars on the map)
@@ -114,6 +122,13 @@ export default function TransportScreen({ route, navigation }) {
       calculateFares(pickupCoords, destObj);
     }
   }, [passedDestination, pickupCoords]);
+
+  // Centre the map on the pickup as soon as it is known
+  useEffect(() => {
+    if (pickupCoords && !dropoffCoords && mapRef.current) {
+      mapRef.current.animateToRegion({ ...pickupCoords, latitudeDelta: 0.03, longitudeDelta: 0.03 }, 600);
+    }
+  }, [pickupCoords]);
 
   // Adjust map viewport to fit pickup and destination
   useEffect(() => {
@@ -746,7 +761,7 @@ export default function TransportScreen({ route, navigation }) {
 
       <IconButton accessibilityLabel="Go back" icon="arrow-left" mode="contained" containerColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
 
-      <Surface style={styles.bottomSheet} elevation={5}>
+      <Surface style={[styles.bottomSheet, keyboardHeight ? { bottom: keyboardHeight, maxHeight: height - keyboardHeight - 130, overflow: 'hidden' } : null]} elevation={5}>
         <View style={styles.dragBar} />
 
         {bookingStep === 'input' && (
