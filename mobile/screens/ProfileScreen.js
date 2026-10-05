@@ -27,7 +27,7 @@ export default function ProfileScreen({ navigation }) {
                 setUserData(docSnap.data());
             }
         });
-        
+
         const fetchAggregations = async () => {
             try {
                 const itinQ = query(collection(db, 'itineraries'), where('userId', '==', user.uid));
@@ -117,13 +117,13 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.mainContainer}>
             <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                 <Header />
-                
+
                 <View style={styles.profileSection}>
                     <View style={styles.avatarContainer}>
                         <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
-                            <Image 
-                                source={{ uri: userData?.photoUrl || user?.photoURL || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80' }} 
-                                style={styles.avatar} 
+                            <Image
+                                source={{ uri: userData?.photoUrl || user?.photoURL || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80' }}
+                                style={styles.avatar}
                             />
                             <View style={styles.editAvatarBtn}>
                                 <Feather name="camera" size={14} color="#FFF" />
@@ -161,12 +161,12 @@ export default function ProfileScreen({ navigation }) {
                 {visitedPlaces.length > 0 ? (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.passportScroll}>
                         {visitedPlaces.map((place, index) => (
-                            <PassportCard 
-                                key={index} 
-                                icon="map-marker-check" 
-                                title={place.name} 
-                                date={place.date || 'Recently'} 
-                                borderColor="#B2DFDB" 
+                            <PassportCard
+                                key={index}
+                                icon="map-marker-check"
+                                title={place.name}
+                                date={place.date || 'Recently'}
+                                borderColor="#B2DFDB"
                             />
                         ))}
                     </ScrollView>
@@ -181,6 +181,7 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.menuList}>
                     <MenuItem icon="bookmark" title="Saved Places" subtitle={`${savedPlacesCount} Hidden Gems saved`} onPress={() => {}} />
                     <MenuItem icon="map" title="Itineraries" subtitle={`${itinerariesCount} Upcoming journeys`} onPress={() => navigation.navigate('ItineraryDetail')} />
+                    <MenuItem icon="sliders" title="Travel Preferences" subtitle="Interests, budget, mobility, crowds" onPress={() => navigation.navigate('TravelPreferences')} />
                     <MenuItem icon="edit-2" title="Edit Profile" subtitle="Update your info & photo" onPress={() => navigation.navigate('EditProfile')} />
                     <MenuItem icon="settings" title="Language" subtitle="English / සිංහල / தமிழ்" onPress={() => Alert.alert('Language', 'Choose your app language', [
                         { text: 'English', onPress: () => i18n.changeLanguage('en') },
@@ -196,9 +197,9 @@ export default function ProfileScreen({ navigation }) {
             </ScrollView>
 
             {/* Floating SOS Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
                 style={styles.fabSOS}
-                activeOpacity={0.8} 
+                activeOpacity={0.8}
                 onPress={() => navigation.navigate('SOSScreen')}
             >
                 <Text style={styles.fabSOSText}>SOS</Text>
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     container: { flex: 1, paddingHorizontal: 20 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 20 },
     headerTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#004D40' },
-    
+
     profileSection: { alignItems: 'center', marginBottom: 25 },
     avatarContainer: { position: 'relative', marginBottom: 15 },
     avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: '#A7FFEB' },

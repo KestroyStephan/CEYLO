@@ -28,6 +28,8 @@ Tester: ______________ Device / Android version: ______________ Date: __________
 - [ ] Turn on airplane mode → Plan Trip still works ("Offline Mode", ranked by the on-device TensorFlow Lite model; `engine: tflite` in the admin records)
 - [ ] Home shows a weather chip for your location; itinerary days show forecast chips
 - [ ] "Fewer crowds" on the trip form changes the suggested places
+- [ ] Profile → Travel Preferences: change eco/culture, budget, mobility; Plan Trip and the chatbot start from them
+- [ ] Open a saved itinerary, turn on airplane mode, reopen it from Profile → Itineraries (cached copy)
 - [ ] Each generated itinerary appears in the admin AI Model Monitor under its strategy
 - [ ] Itinerary: drag to reorder and swap a stop, reopen → changes kept
 - [ ] Itinerary: "Start Multi-Stop Route" opens Google Maps with all stops; Export PDF works

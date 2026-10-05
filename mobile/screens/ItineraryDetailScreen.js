@@ -9,6 +9,7 @@ import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc } fro
 import { db, auth } from '../firebaseConfig';
 import { buildPlan, summarizePlan, distanceKm } from '../services/ItineraryService';
 import { getWeather } from '../services/aiClient';
+import { cacheItinerary, getLatestCachedItinerary } from '../services/ItineraryCache';
 import WeatherChip from '../components/WeatherChip';
 import destinationsData from '../assets/data/ai_destinations.json';
 
@@ -59,9 +60,16 @@ export default function ItineraryDetailScreen({ route, navigation }) {
             const itin = { id: snaps.docs[0].id, ...snaps.docs[0].data() };
             setData(itin);
             if (itin.plan) setPlan(itin.plan);
+            cacheItinerary(itin);
           }
         } catch (e) {
-          console.error("Error fetching itinerary:", e);
+          // Offline: open the copy saved on the phone (FR-012)
+          console.log('Itinerary fetch failed, using the cached copy:', e.message);
+          const cached = await getLatestCachedItinerary(auth.currentUser.uid);
+          if (cached) {
+            setData({ ...cached, fromCache: true });
+            if (cached.plan) setPlan(cached.plan);
+          }
         }
       };
       fetchItin();
@@ -97,6 +105,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
   // Saved itineraries (those with a Firestore id owned by this user) keep edits
   const updatePlan = (newPlan) => {
     setPlan(newPlan);
+    if (data?.id) cacheItinerary({ ...data, plan: newPlan, ...summarizePlan(newPlan, data.budget) });
     if (data?.id && data.userId === auth.currentUser?.uid) {
       updateDoc(doc(db, 'itineraries', data.id), { plan: newPlan, ...summarizePlan(newPlan, data.budget) })
         .catch(e => console.log('Could not save itinerary changes:', e.message));

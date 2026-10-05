@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Button, Card, IconButton, ActivityIndicator, Switch } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from '../firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { generateItinerary } from '../services/ItineraryService';
+import { loadPreferences, moodFromPreferences } from '../services/PreferencesService';
 
 const FOCUS_TO_MOOD = { 'Nature/Eco': 'Eco Explorer', 'Balanced': 'Family Trip', 'Culture/History': 'Culture Seeker' };
 const MAX_DAYS = 14;
@@ -15,6 +16,17 @@ export default function ItineraryScreen({ navigation }) {
     const [budget, setBudget] = useState('$$ Standard');
     const [avoidCrowds, setAvoidCrowds] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Start from the traveller's saved preferences
+    useEffect(() => {
+        loadPreferences().then(p => {
+            const mood = moodFromPreferences(p);
+            setFocus(mood === 'Culture Seeker' ? 'Culture/History' : mood === 'Eco Explorer' ? 'Nature/Eco' : 'Balanced');
+            setDays(p.days);
+            setBudget(p.budget === 'Economy' ? '$ Budget' : p.budget === 'Luxury' ? '$$$ Luxury' : '$$ Standard');
+            setAvoidCrowds(p.avoidCrowds);
+        });
+    }, []);
 
     const handleGenerate = async () => {
         if (!auth.currentUser) {

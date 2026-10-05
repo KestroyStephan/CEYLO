@@ -12,6 +12,7 @@ import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatTurn } from '../services/aiClient';
 import { generateItinerary as buildItinerary, moodKey } from '../services/ItineraryService';
+import { loadPreferences } from '../services/PreferencesService';
 import destinationsData from '../assets/data/ai_destinations.json';
 
 const MOOD_CATEGORIES = {
@@ -165,6 +166,10 @@ export default function ChatbotScreen({ navigation, route }) {
       }
     };
     fetchUserMood();
+    // Saved preferences pre-fill the trip profile (budget and eco interest)
+    loadPreferences().then(p => {
+      setExtractedState(prev => ({ ...prev, budget: prev.budget || p.budget, eco_interest: p.ecoPct }));
+    });
   }, []);
 
   // Keep the newest message visible when the keyboard opens

@@ -38,6 +38,7 @@ const STRATEGIES = {
 
 const OUTDOOR = ['Beach', 'Waterfall', 'Nature & Viewpoint'];
 const NEAR_KM = 60;
+const WALKING_KM = 15;
 
 // Destinations staff have paused in the admin portal (AI Model Monitor guardrails)
 let blocked = new Set();
@@ -55,10 +56,12 @@ const pct = (x) => Math.round(x * 100);
  * @param {{lat: number, lon: number}} [opts.origin] traveller's position (location strategy)
  * @param {object} [opts.weather] from weather.getWeather() for the trip area
  * @param {boolean} [opts.avoidCrowds]
+ * @param {'standard'|'low'|'walking'} [opts.mobility] low = avoid hikes and waterfalls;
+ *        walking = keep every stop within walking/short-hop distance of the first one
  * @param {number} [opts.count]
  */
 function recommend(opts = {}) {
-    const { mood, days, destination, budget, ecoInterest, origin, weather, avoidCrowds } = opts;
+    const { mood, days, destination, budget, ecoInterest, origin, weather, avoidCrowds, mobility } = opts;
     const n = opts.count || Math.min(10, Math.max(5, parseInt(days, 10) || 5));
     const now = new Date();
     const month = Math.min(12, Math.max(1, parseInt(opts.month, 10) || now.getMonth() + 1));
@@ -113,6 +116,11 @@ function recommend(opts = {}) {
             score += 0.1 * rain;
             notes.push('good choice for rainy days');
         }
+        // Low mobility: steep trails and waterfall paths are hard going
+        if (mobility === 'low' && (d.category === 'Waterfall' || d.category === 'Nature & Viewpoint')) {
+            score -= 0.25;
+            notes.push('fewer steep trails for low mobility');
+        }
         if (avoidCrowds) {
             score -= 0.15 * crowd;
             if (crowd < 0.3) notes.push('forecast to be quiet this month');
@@ -121,13 +129,22 @@ function recommend(opts = {}) {
     });
     scored.sort((a, b) => b.score - a.score);
 
+    // Walking only: keep stops close to the best pick so legs stay short
+    let picks = scored;
+    if (mobility === 'walking' && scored.length > 0) {
+        const first = scored[0].d;
+        const close = scored.filter(s => distanceKm(first.lat, first.lon, s.d.lat, s.d.lon) <= WALKING_KM);
+        if (close.length >= Math.min(n, 3)) picks = close;
+    }
+
     return {
         vibe: MOOD_LABEL[moodKey] || 'All travellers',
         strategy,
         month,
         modelVersion: contentModel.version,
         weather: weather ? { rainyShare: rain, today: weather.daily?.[0] || null } : null,
-        top_matches: scored.slice(0, n).map(({ d, raw: p, categoryMatch, crowd, km, score, notes }) => ({
+        mobility: mobility || 'standard',
+        top_matches: picks.slice(0, n).map(({ d, raw: p, categoryMatch, crowd, km, score, notes }) => ({
             id: d.destination_id,
             name: d.name,
             category: d.category,

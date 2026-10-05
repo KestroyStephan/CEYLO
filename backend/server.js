@@ -107,9 +107,9 @@ function timed(name, fn) {
 
 // Recommendation endpoint: best destinations for a mood, 5-10 items (one per trip day),
 // ranked by the trained two-tower recommender
-// Body: { mood, days, destination?, budget?, ecoInterest?, month?, strategy?, lat?, lon?, avoidCrowds? }
+// Body: { mood, days, destination?, budget?, ecoInterest?, month?, strategy?, lat?, lon?, avoidCrowds?, mobility? }
 app.post('/api/recommend', async (req, res) => {
-    const { mood, days, destination, budget, ecoInterest, month, strategy, lat, lon, avoidCrowds } = req.body || {};
+    const { mood, days, destination, budget, ecoInterest, month, strategy, lat, lon, avoidCrowds, mobility } = req.body || {};
     const origin = Number.isFinite(Number(lat)) && Number.isFinite(Number(lon)) && lat !== null && lon !== null
         ? { lat: Number(lat), lon: Number(lon) } : null;
     // Forecast for the trip area (the requested place, else where the traveller is); skipped when unknown
@@ -118,6 +118,7 @@ app.post('/api/recommend', async (req, res) => {
     const weather = area ? await getWeather(area.lat, area.lon, { timeoutMs: 2500 }) : null;
     const result = timed('recommender', () => recommend({
         mood, days, destination, budget, ecoInterest, month, strategy, origin, weather, avoidCrowds: Boolean(avoidCrowds),
+        mobility: ['low', 'walking'].includes(mobility) ? mobility : 'standard',
     }));
     res.json({ success: true, mood, ...result });
 });

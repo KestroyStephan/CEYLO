@@ -85,6 +85,21 @@ describe('Context-aware ranking', () => {
         expect(avg(quiet)).toBeLessThanOrEqual(avg(normal));
     });
 
+    it('low mobility ranks fewer trails and waterfalls', () => {
+        const hard = (r) => r.top_matches.filter(m => ['Waterfall', 'Nature & Viewpoint'].includes(m.category)).length;
+        const normal = recommend({ mood: 'eco', days: 10 });
+        const low = recommend({ mood: 'eco', days: 10, mobility: 'low' });
+        expect(hard(low)).toBeLessThan(hard(normal));
+    });
+
+    it('walking only keeps every stop near the first one', () => {
+        const r = recommend({ mood: 'culture', days: 6, mobility: 'walking' });
+        const [first, ...rest] = r.top_matches;
+        const km = (a, b) => Math.hypot(a.lat - b.lat, (a.lon - b.lon) * Math.cos(a.lat * Math.PI / 180)) * 111;
+        expect(r.mobility).toBe('walking');
+        expect(rest.every(m => km(first, m) <= 15.5)).toBe(true);
+    });
+
     it('location strategy keeps picks close to the traveller', () => {
         const origin = { lat: 6.0535, lon: 80.221 }; // Galle
         const near = recommend({ mood: 'eco', days: 5, strategy: 'location', origin });

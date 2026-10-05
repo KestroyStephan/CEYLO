@@ -51,6 +51,7 @@ import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
 import TransportScreen from './screens/TransportScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
 import EcoPassportScreen from './screens/EcoPassportScreen';
+import TravelPreferencesScreen from './screens/TravelPreferencesScreen';
 import CulturalEventsScreen from './screens/CulturalEventsScreen';
 import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
 import SOSScreen from './screens/SOSScreen';
@@ -260,6 +261,7 @@ export default function App() {
                 <Stack.Screen name="Transport" component={TransportScreen} />
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
                 <Stack.Screen name="EcoPassport" component={EcoPassportScreen} />
+                <Stack.Screen name="TravelPreferences" component={TravelPreferencesScreen} />
                 <Stack.Screen name="CulturalEvents" component={CulturalEventsScreen} />
                 <Stack.Screen name="SOSScreen" component={SOSScreen} />
                 <Stack.Screen name="GuidesList" component={GuidesListScreen} />

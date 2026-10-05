@@ -10,6 +10,8 @@ import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'fireba
 import * as Location from 'expo-location';
 import { auth, db } from '../firebaseConfig';
 import { recommendDestinations } from './aiClient';
+import { loadPreferences } from './PreferencesService';
+import { cacheItinerary } from './ItineraryCache';
 import localDestinations from '../assets/data/ai_destinations.json';
 import contentModel from '../assets/data/content_recommender.json';
 import crowdForecast from '../assets/data/crowd_forecast.json';
@@ -89,7 +91,7 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
 
 // On-device ranking with the trained content-based model (offline mode). Mirrors the
 // backend's balanced strategy: model 50%, eco score 30%, mood category 20%.
-async function localRecommendations({ mood, days, destination, budget, ecoInterest, avoidCrowds, month, year }) {
+async function localRecommendations({ mood, days, destination, budget, ecoInterest, avoidCrowds, mobility, month, year }) {
   const categories = MOOD_CATEGORIES[moodKey(mood)];
   const place = String(destination || '').toLowerCase();
   let candidates = localDestinations.filter(d => inSeasonMonth(d.seasonal_availability, month));
@@ -102,15 +104,24 @@ async function localRecommendations({ mood, days, destination, budget, ecoIntere
   const { scores: raw, engine } = await modelScores(profile, candidates, month);
   const lo = Math.min(...raw);
   const hi = Math.max(...raw);
-  const stops = candidates
+  const ranked = candidates
     .map((d, i) => {
       const model = hi > lo ? (raw[i] - lo) / (hi - lo) : 0.5;
       const crowd = crowdFor(crowdForecast[d.destination_id], year, month);
       let score = 0.5 * model + 0.3 * (d.eco_score / 100) + 0.2 * (categories.includes(d.category) ? 1 : 0);
       if (avoidCrowds) score -= 0.15 * crowd;
+      if (mobility === 'low' && (d.category === 'Waterfall' || d.category === 'Nature & Viewpoint')) score -= 0.25;
       return { d, score };
     })
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score);
+  // Walking only: keep stops close to the best pick
+  let picks = ranked;
+  if (mobility === 'walking' && ranked.length > 0) {
+    const first = ranked[0].d;
+    const close = ranked.filter(r => distanceKm(parseFloat(first.lat), parseFloat(first.lon), parseFloat(r.d.lat), parseFloat(r.d.lon)) <= 15);
+    if (close.length >= Math.min(days, 3)) picks = close;
+  }
+  const stops = picks
     .slice(0, days)
     .map(({ d, score }) => ({
       id: d.destination_id, name: d.name, category: d.category, province: d.province,
@@ -222,8 +233,14 @@ export function summarizePlan(plan, budget) {
  * Generate, save and return an itinerary.
  * @returns {Promise<{id: string, offline: boolean, ...itinerary}>}
  */
-export async function generateItinerary({ mood, days, budget, destination, ecoInterest, avoidCrowds = false }) {
+export async function generateItinerary({ mood, days, budget, destination, ecoInterest, avoidCrowds, mobility }) {
   const started = Date.now();
+  // Saved preferences (FR-010) fill in anything this request does not say
+  const prefs = await loadPreferences();
+  ecoInterest = ecoInterest ?? prefs.ecoPct;
+  avoidCrowds = avoidCrowds ?? prefs.avoidCrowds;
+  mobility = mobility ?? prefs.mobility;
+  budget = budget || prefs.budget;
   const dayCount = Math.min(14, Math.max(1, parseInt(days, 10) || 5));
   // FR-011: 5-10 recommended locations per itinerary
   const stopCount = Math.min(10, Math.max(5, dayCount));
@@ -240,7 +257,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
   try {
     const result = await recommendDestinations({
       mood: moodKey(mood), days: stopCount, destination, budget, ecoInterest, month, strategy,
-      lat: position?.lat, lon: position?.lon, avoidCrowds,
+      lat: position?.lat, lon: position?.lon, avoidCrowds, mobility,
     });
     stops = (result.top_matches || []).map(d => ({
       id: d.id, name: d.name, category: d.category, province: d.province,
@@ -251,7 +268,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
     if (stops.length === 0) throw new Error('No recommendations returned');
   } catch (e) {
     console.warn('Recommendation backend unavailable, using the on-device model:', e.message);
-    ({ stops, engine } = await localRecommendations({ mood, days: stopCount, destination, budget, ecoInterest, avoidCrowds, month, year }));
+    ({ stops, engine } = await localRecommendations({ mood, days: stopCount, destination, budget, ecoInterest, avoidCrowds, mobility, month, year }));
     offline = true;
   }
 
@@ -287,12 +304,15 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
       latencyMs,
       inputs: {
         mood: mood || null, days: dayCount, budget: budget || null, destination: destination || null,
-        ecoInterest: ecoInterest ?? null, month, avoidCrowds, hasLocation: Boolean(position),
+        ecoInterest: ecoInterest ?? null, month, avoidCrowds, mobility, hasLocation: Boolean(position),
       },
       rainyShare,
       results: stops.map(s => ({ id: s.id, name: s.name, matchScore: s.matchScore ?? null })),
     }).catch(e => console.log('Could not log recommendation record:', e.message));
   }
 
-  return { id: docRef.id, offline, latencyMs, ...itinerary };
+  const saved = { id: docRef.id, offline, latencyMs, ...itinerary };
+  // FR-012: keep a copy on the phone so it opens without a connection
+  cacheItinerary(saved);
+  return saved;
 }
