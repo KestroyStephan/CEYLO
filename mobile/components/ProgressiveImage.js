@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Image, StyleSheet, Animated } from 'react-native';
+import { imgSource, FALLBACK_IMAGE } from '../utils/images';
 
 // Shimmer animation that pulses between two grays to indicate loading
 const ShimmerPlaceholder = () => {
@@ -23,7 +24,7 @@ const ShimmerPlaceholder = () => {
   );
 };
 
-const DEFAULT_FALLBACK = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Sigiriya_rock_from_the_south_side.jpg/800px-Sigiriya_rock_from_the_south_side.jpg';
+const DEFAULT_FALLBACK = FALLBACK_IMAGE;
 const TIMEOUT_MS = 8000; // 8 seconds before giving up and showing fallback
 
 /**
@@ -39,7 +40,7 @@ const TIMEOUT_MS = 8000; // 8 seconds before giving up and showing fallback
  */
 const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => {
   const [loaded, setLoaded] = useState(false);
-  const [imgSource, setImgSource] = useState(null);
+  const [imgSrc, setImgSrc] = useState(null);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -48,16 +49,16 @@ const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => 
 
     if (!uri || uri === 'null' || uri === 'undefined') {
       // No valid URI — skip fetch, jump straight to fallback
-      setImgSource(fallback || { uri: DEFAULT_FALLBACK });
+      setImgSrc(fallback || { uri: DEFAULT_FALLBACK });
       setLoaded(true);
       return;
     }
 
-    setImgSource({ uri });
+    setImgSrc({ uri });
 
     // Start a timeout: if onLoad/onError hasn't fired within 8s, use fallback
     timeoutRef.current = setTimeout(() => {
-      setImgSource(fallback || { uri: DEFAULT_FALLBACK });
+      setImgSrc(fallback || { uri: DEFAULT_FALLBACK });
       setLoaded(true);
     }, TIMEOUT_MS);
 
@@ -71,11 +72,11 @@ const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => 
 
   const handleError = () => {
     clearTimeout(timeoutRef.current);
-    setImgSource(fallback || { uri: DEFAULT_FALLBACK });
+    setImgSrc(fallback || { uri: DEFAULT_FALLBACK });
     setLoaded(true);
   };
 
-  if (!imgSource) {
+  if (!imgSrc) {
     return (
       <View style={[style, styles.container]}>
         <ShimmerPlaceholder />
@@ -87,7 +88,7 @@ const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => 
     <View style={[style, styles.container]}>
       {!loaded && <ShimmerPlaceholder />}
       <Image
-        source={imgSource}
+        source={imgSource(imgSrc?.uri)}
         style={StyleSheet.absoluteFillObject}
         resizeMode={resizeMode}
         onLoad={handleLoad}

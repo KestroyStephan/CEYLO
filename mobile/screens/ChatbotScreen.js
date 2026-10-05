@@ -11,6 +11,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatTurn } from '../services/aiClient';
+import { imgSource } from '../utils/images';
 import { generateItinerary as buildItinerary, moodKey } from '../services/ItineraryService';
 import { loadPreferences } from '../services/PreferencesService';
 import destinationsData from '../assets/data/ai_destinations.json';
@@ -72,7 +73,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
           {item.recommendations.map((rec) => (
             <Surface key={rec.id} style={styles.recCard} elevation={2}>
-              <Image source={{ uri: rec.image }} style={styles.recImage} />
+              <Image source={imgSource(rec.image)} style={styles.recImage} />
               <View style={rec.ecoScore >= 95 ? styles.recBadge : [styles.recBadge, { backgroundColor: '#FFA726' }]}>
                 <Text style={styles.recBadgeText}>{rec.ecoScore}% ECO</Text>
               </View>
