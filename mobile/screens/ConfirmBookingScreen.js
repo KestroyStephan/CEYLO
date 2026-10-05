@@ -319,7 +319,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
           {/* Trust Footer */}
           <View style={styles.trustFooter}>
             <MaterialCommunityIcons name="shield-check-outline" size={14} color="#8A9E8A" />
-            <Text style={styles.trustText}>Protected by LankaEco Sustainable Travel Guarantee</Text>
+            <Text style={styles.trustText}>You only pay after the guide accepts your request</Text>
           </View>
 
           <View style={{ height: 30 }} />

@@ -4,6 +4,7 @@
 // onSurface:#181D19 onSurfaceVariant:#3F4941
 // outline:#6F7A70 outlineVariant:#BECABE
 
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import useTabBarStyle from '../utils/useTabBarStyle';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
@@ -34,6 +35,7 @@ const INACTIVE  = 'rgba(63,73,65,0.4)';
 const BG_NAV    = 'rgba(246,251,243,0.95)';
 
 function VendorTabs() {
+  const { t } = useTranslation();
   const tabBarStyle = useTabBarStyle({
     backgroundColor: BG_NAV,
     borderTopWidth: 0.5,
@@ -61,11 +63,11 @@ function VendorTabs() {
         },
       })}
     >
-      <Tab.Screen name="VendorHome"     component={VendorDashboardScreen}    options={{ tabBarLabel: 'Dashboard' }} />
-      <Tab.Screen name="VendorOrders"   component={BookingManagementScreen}   options={{ tabBarLabel: 'Orders' }} />
-      <Tab.Screen name="VendorServices" component={VendorServiceListingScreen} options={{ tabBarLabel: 'Services' }} />
-      <Tab.Screen name="VendorRevenue"  component={VendorRevenueScreen}       options={{ tabBarLabel: 'Revenue' }} />
-      <Tab.Screen name="VendorProfile"  component={VendorProfileScreen}      options={{ tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="VendorHome"     component={VendorDashboardScreen}    options={{ tabBarLabel: t('p_dashboard') }} />
+      <Tab.Screen name="VendorOrders"   component={BookingManagementScreen}   options={{ tabBarLabel: t('p_orders') }} />
+      <Tab.Screen name="VendorServices" component={VendorServiceListingScreen} options={{ tabBarLabel: t('p_services') }} />
+      <Tab.Screen name="VendorRevenue"  component={VendorRevenueScreen}       options={{ tabBarLabel: t('p_revenue') }} />
+      <Tab.Screen name="VendorProfile"  component={VendorProfileScreen}      options={{ tabBarLabel: t('tab_profile') }} />
     </Tab.Navigator>
   );
 }

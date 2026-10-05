@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, TouchableOpacity, Alert,
@@ -16,19 +17,20 @@ const WHILE_WAIT_ITEMS = [
     icon: 'file-document-check-outline',
     iconBg: '#E8F5E9',
     iconColor: '#006A3B',
-    title: 'Check Documentation',
-    subtitle: 'Ensure your license scans are high-resolution and clearly legible for faster approval.',
+    title: 'gp_doc_title',
+    subtitle: 'gp_doc_sub',
   },
   {
     icon: 'leaf-circle-outline',
     iconBg: '#FFF8DC',
     iconColor: '#8B6914',
-    title: 'Review Eco-Ethics',
-    subtitle: 'Brush up on our 2024 Sustainable Guiding Guidelines to prepare for your first booking.',
+    title: 'gp_eco_title',
+    subtitle: 'gp_eco_sub',
   },
 ];
 
 export default function GuidePendingScreen({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [status, setStatus] = useState('pending'); // pending | approved | rejected
   const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ export default function GuidePendingScreen({ navigation }) {
       {/* Top bar */}
       <View style={styles.topBar}>
         <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
-        <Text style={styles.brandName}>LankaEco</Text>
+        <Text style={styles.brandName}>CEYLO</Text>
         <View style={styles.avatarSmall}>
           <MaterialCommunityIcons name="account" size={20} color="#FFF" />
         </View>
@@ -103,18 +105,14 @@ export default function GuidePendingScreen({ navigation }) {
         </View>
 
         {/* Title */}
-        <Text style={styles.heroTitle}>Application Received</Text>
-        <Text style={styles.heroSubTitle}>
-          We've received your registration for the{' '}
-          <Text style={styles.link}>Eco-Guide Program</Text>.{' '}
-          Our administration is currently reviewing your credentials.
-        </Text>
+        <Text style={styles.heroTitle}>{t('gp_received')}</Text>
+        <Text style={styles.heroSubTitle}>{t('gp_received_sub')}</Text>
 
         {/* Verification Status Card */}
         <View style={styles.statusCard}>
           <View style={styles.statusCardHeader}>
-            <Text style={styles.statusLabel}>VERIFICATION STATUS</Text>
-            <Text style={styles.statusStage}>Stage 2 of 3</Text>
+            <Text style={styles.statusLabel}>{t('gp_status')}</Text>
+            <Text style={styles.statusStage}>{t('gp_stage')}</Text>
           </View>
           <View style={styles.progressTrack}>
             <Animated.View style={[styles.progressFill, { width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
@@ -122,7 +120,7 @@ export default function GuidePendingScreen({ navigation }) {
           <View style={styles.estimateRow}>
             <MaterialCommunityIcons name="clock-outline" size={18} color="#8B6914" />
             <View style={{ marginLeft: 12 }}>
-              <Text style={styles.estimateTitle}>Estimated: 24-48 Hours</Text>
+              <Text style={styles.estimateTitle}>{t('gp_estimate')}</Text>
               <Text style={styles.estimateBody}>
                 We prioritize quality over speed to ensure the safety of our eco-tourists and the integrity of the environment.
               </Text>
@@ -131,15 +129,15 @@ export default function GuidePendingScreen({ navigation }) {
         </View>
 
         {/* While You Wait */}
-        <Text style={styles.sectionTitle}>While you wait...</Text>
+        <Text style={styles.sectionTitle}>{t('gp_wait')}</Text>
         {WHILE_WAIT_ITEMS.map((item, i) => (
           <View key={i} style={styles.waitCard}>
             <View style={[styles.waitIcon, { backgroundColor: item.iconBg }]}>
               <MaterialCommunityIcons name={item.icon} size={24} color={item.iconColor} />
             </View>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={styles.waitTitle}>{item.title}</Text>
-              <Text style={styles.waitBody}>{item.subtitle}</Text>
+              <Text style={styles.waitTitle}>{t(item.title)}</Text>
+              <Text style={styles.waitBody}>{t(item.subtitle)}</Text>
             </View>
           </View>
         ))}
@@ -148,13 +146,13 @@ export default function GuidePendingScreen({ navigation }) {
         {status === 'approved' ? (
           <LinearGradient colors={['#006A3B', '#004D2C']} style={styles.dashBtn}>
             <MaterialCommunityIcons name="check-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
-            <Text style={styles.dashBtnText}>Approved! Redirecting to Dashboard...</Text>
+            <Text style={styles.dashBtnText}>{t('gp_approved')}</Text>
             <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={{ marginLeft: 10 }} />
           </LinearGradient>
         ) : status === 'rejected' ? (
           <View style={[styles.dashBtn, { backgroundColor: '#D32F2F' }]}>
             <MaterialCommunityIcons name="close-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
-            <Text style={styles.dashBtnText}>Application Rejected</Text>
+            <Text style={styles.dashBtnText}>{t('app_rejected')}</Text>
           </View>
         ) : (
           <TouchableOpacity
@@ -163,21 +161,21 @@ export default function GuidePendingScreen({ navigation }) {
           >
             <LinearGradient colors={['#006A3B', '#004D2C']} style={StyleSheet.absoluteFillObject} />
             <MaterialCommunityIcons name="clock-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
-            <Text style={styles.dashBtnText}>Under Review — Check Back Soon</Text>
+            <Text style={styles.dashBtnText}>{t('gp_check_back')}</Text>
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
           style={styles.supportBtn}
-          onPress={() => Alert.alert('Contact Support', 'Please email: support@lankaeco.lk')}
+          onPress={() => Alert.alert('Contact Support', 'Please email: support@ceylo.lk')}
         >
           <MaterialCommunityIcons name="help-circle-outline" size={20} color="#4A5E4A" style={{ marginRight: 8 }} />
-          <Text style={styles.supportBtnText}>Contact Support</Text>
+          <Text style={styles.supportBtnText}>{t('contact_support')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.logoutRow} onPress={() => signOut(auth)}>
           <MaterialCommunityIcons name="logout" size={16} color="#8A9E8A" />
-          <Text style={styles.logoutText}>Sign Out</Text>
+          <Text style={styles.logoutText}>{t('sign_out')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

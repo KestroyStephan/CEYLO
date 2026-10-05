@@ -4,6 +4,7 @@
 // onSurface:#181D19 onSurfaceVariant:#3F4941
 // outline:#6F7A70 outlineVariant:#BECABE
 
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
@@ -23,12 +24,13 @@ const ON_SURF   = '#181D19';
 const ON_SURF_V = '#3F4941';
 
 const NEXT_STEPS = [
-  { icon: 'document-text-outline', text: 'Our team reviews your submitted documents' },
-  { icon: 'notifications-outline', text: 'You\'ll be notified here automatically' },
-  { icon: 'storefront-outline',    text: 'Once approved, gain full vendor dashboard access' },
+  { icon: 'document-text-outline', text: 'vp_step1' },
+  { icon: 'notifications-outline', text: 'vp_step2' },
+  { icon: 'storefront-outline',    text: 'vp_step3' },
 ];
 
 export default function VendorPendingScreen({ navigation }) {
+  const { t } = useTranslation();
   const [vendorStatus, setVendorStatus] = useState('pending_verification');
   const [rejectionReason, setRejectionReason] = useState('');
   const [displayStatus, setDisplayStatus] = useState('pending_verification');
@@ -107,20 +109,20 @@ export default function VendorPendingScreen({ navigation }) {
     pending_verification: {
       color: '#735C00', bg: '#FFFBEB', border: '#F59E0B',
       icon: 'hourglass-outline', iconColor: '#D97706',
-      title: 'Application Under Review',
-      message: 'Usually takes 1-2 business days.',
+      title: t('app_under_review'),
+      message: t('vp_usually'),
     },
     approved: {
       color: PRIMARY, bg: '#F0FDF4', border: '#6EE7B7',
       icon: 'checkmark-circle-outline', iconColor: PRIMARY,
-      title: 'Welcome to CEYLO!',
-      message: 'Welcome to CEYLO! Redirecting to your dashboard...',
+      title: t('welcome_ceylo'),
+      message: t('vp_redirect'),
     },
     rejected: {
       color: ERROR, bg: '#FEF2F2', border: '#FCA5A5',
       icon: 'close-circle-outline', iconColor: ERROR,
-      title: 'Application Rejected',
-      message: rejectionReason ? `Reason: ${rejectionReason}` : 'Application Rejected.',
+      title: t('app_rejected'),
+      message: rejectionReason ? t('reason', { reason: rejectionReason }) : t('vp_rejected_plain'),
     },
   };
 
@@ -135,7 +137,7 @@ export default function VendorPendingScreen({ navigation }) {
 
       {/* Header */}
       <View style={styles.headerRow}>
-        <Text style={styles.appName}>CEYLO Vendor</Text>
+        <Text style={styles.appName}>{t('vp_brand')}</Text>
         <View style={styles.logoCircle}>
           <Ionicons name="leaf" size={20} color={PRIMARY} />
         </View>
@@ -154,7 +156,7 @@ export default function VendorPendingScreen({ navigation }) {
       {/* Next Steps (pending only) */}
       {isPending && (
         <View style={styles.stepsCard}>
-          <Text style={styles.stepsTitle}>👋 What happens next?</Text>
+          <Text style={styles.stepsTitle}>{t('vp_next')}</Text>
           {NEXT_STEPS.map((s, i) => (
             <View key={i} style={styles.stepRow}>
               <View style={styles.stepNumCircle}>
@@ -163,7 +165,7 @@ export default function VendorPendingScreen({ navigation }) {
               <View style={styles.stepIconWrap}>
                 <Ionicons name={s.icon} size={20} color={PRIMARY} />
               </View>
-              <Text style={styles.stepText}>{s.text}</Text>
+              <Text style={styles.stepText}>{t(s.text)}</Text>
             </View>
           ))}
         </View>
@@ -172,20 +174,20 @@ export default function VendorPendingScreen({ navigation }) {
       {/* Rejected actions */}
       {isRejected && (
         <View style={styles.stepsCard}>
-          <Text style={styles.stepsTitle}>What can you do?</Text>
-          <Text style={styles.stepText}>• Correct the details or upload clearer documents, then send the application again</Text>
+          <Text style={styles.stepsTitle}>{t('vp_can_do')}</Text>
+          <Text style={styles.stepText}>{t('vp_fix_text')}</Text>
           <TouchableOpacity style={[styles.supportBtn, { backgroundColor: PRIMARY, marginBottom: 10 }]} onPress={() => navigation.navigate('VendorRegistration')} accessibilityRole="button">
-            <Text style={[styles.supportBtnText, { color: '#FFF' }]}>Fix and resubmit</Text>
+            <Text style={[styles.supportBtnText, { color: '#FFF' }]}>{t('vp_fix')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.supportBtn} onPress={() => Alert.alert('Support', 'Please email support@ceylo.lk')}>
-            <Text style={styles.supportBtnText}>Contact Support</Text>
+            <Text style={styles.supportBtnText}>{t('contact_support')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
         <Ionicons name="log-out-outline" size={18} color={PRIMARY} />
-        <Text style={styles.logoutText}>Sign Out</Text>
+        <Text style={styles.logoutText}>{t('sign_out')}</Text>
       </TouchableOpacity>
 
     </ScrollView>

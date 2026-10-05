@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   View, StyleSheet, FlatList, TouchableOpacity, Image,
@@ -25,6 +26,7 @@ const TYPE_COLORS = {
 
 
 export default function GuideDashboard({ navigation }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [guideData, setGuideData] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -191,11 +193,11 @@ export default function GuideDashboard({ navigation }) {
         <View style={styles.greetRow}>
           <View style={styles.verifiedTag}>
             <MaterialCommunityIcons name="check-decagram" size={13} color="#006A3B" />
-            <Text style={styles.verifiedText}>VERIFIED</Text>
+            <Text style={styles.verifiedText}>{t('verified')}</Text>
           </View>
         </View>
-        <Text style={styles.greetSub}>Welcome back to your ecosystem</Text>
-        <Text style={styles.greetTitle}>Your Sanctuary Overview</Text>
+        <Text style={styles.greetSub}>{t('g_welcome_back')}</Text>
+        <Text style={styles.greetTitle}>{t('g_overview')}</Text>
 
         {reminder && (
           <TouchableOpacity 
@@ -212,7 +214,7 @@ export default function GuideDashboard({ navigation }) {
               <MaterialCommunityIcons name="calendar-clock" size={20} color="#E65100" />
             </View>
             <View style={styles.notificationTextWrap}>
-              <Text style={[styles.notificationTitle, { color: '#E65100' }]}>Upcoming Journey Reminder!</Text>
+              <Text style={[styles.notificationTitle, { color: '#E65100' }]}>{t('g_reminder')}</Text>
               <Text style={[styles.notificationSub, { color: '#B26A00' }]}>
                 {reminder.days === 0 
                   ? `Your journey with ${reminder.booking.touristName} is TODAY!` 
@@ -234,7 +236,7 @@ export default function GuideDashboard({ navigation }) {
               <MaterialCommunityIcons name="bell-ring" size={20} color="#FFF" />
             </View>
             <View style={styles.notificationTextWrap}>
-              <Text style={styles.notificationTitle}>New Booking Request!</Text>
+              <Text style={styles.notificationTitle}>{t('g_new_request')}</Text>
               <Text style={styles.notificationSub}>{pendingBookings.length} tourist(s) want to book you.</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={24} color="#006A3B" />
@@ -244,13 +246,13 @@ export default function GuideDashboard({ navigation }) {
         {/* Update Availability Button */}
         <TouchableOpacity style={styles.availBtn} onPress={() => navigation.navigate('GuideAvailability')}>
           <MaterialCommunityIcons name="calendar-check" size={16} color="#006A3B" />
-          <Text style={styles.availBtnText}>Update Availability</Text>
+          <Text style={styles.availBtnText}>{t('g_update_avail')}</Text>
         </TouchableOpacity>
 
         {/* ─── Eco Score Card ─── */}
         <View style={styles.ecoCard}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.ecoLabel}>Eco-Score Excellence</Text>
+            <Text style={styles.ecoLabel}>{t('g_eco_title')}</Text>
             <View style={styles.ecoScoreRow}>
               <Text style={styles.ecoNum}>{ecoScore}</Text>
               <Text style={styles.ecoOf}>/100</Text>
@@ -258,7 +260,7 @@ export default function GuideDashboard({ navigation }) {
             <View style={styles.ecoBar}>
               <View style={[styles.ecoBarFill, { width: `${ecoScore}%` }]} />
             </View>
-            <Text style={styles.ecoSub}>Top 5% of Sri Lankan Guides this month</Text>
+            <Text style={styles.ecoSub}>{t('g_eco_sub')}</Text>
           </View>
           <MaterialCommunityIcons name="leaf" size={60} color="rgba(0,106,59,0.12)" style={{ position: 'absolute', right: 16, top: 12 }} />
         </View>
@@ -268,11 +270,13 @@ export default function GuideDashboard({ navigation }) {
           <View style={styles.earningsIconWrap}>
             <MaterialCommunityIcons name="cash-multiple" size={20} color="#FFF" />
           </View>
-          <Text style={styles.earningsLabel}>Earnings: {currentMonth}</Text>
+          <Text style={styles.earningsLabel}>{t('g_earnings', { month: currentMonth })}</Text>
           <Text style={styles.earningsAmt}>${totalEarnings > 0 ? totalEarnings.toLocaleString() : '0.00'}</Text>
           <View style={styles.earningsChange}>
             <MaterialCommunityIcons name="trending-up" size={14} color="#FFF" />
-            <Text style={styles.earningsChangeTxt}>+12.5% vs May</Text>
+            <Text style={styles.earningsChangeTxt}>
+              {t('g_paid_bookings', { n: bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length })}
+            </Text>
           </View>
         </LinearGradient>
 
@@ -280,19 +284,21 @@ export default function GuideDashboard({ navigation }) {
         <View style={styles.statusCard}>
           <View style={styles.statusRow}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusActive}>Active & Online</Text>
+            <Text style={styles.statusActive}>{t('g_active')}</Text>
           </View>
-          <Text style={styles.statusLevel}>LEVEL 4 MASTER GUIDE</Text>
+          <Text style={styles.statusLevel}>
+            {t('g_level', { level: 1 + Math.floor(bookings.filter(b => b.status === 'completed').length / 5) })}
+          </Text>
           <Text style={styles.statusHappy}>
-            {bookings.filter(b => b.status === 'completed').length} Completed Tours
+            {t('g_completed', { n: bookings.filter(b => b.status === 'completed').length })}
           </Text>
         </View>
 
         {/* ─── Upcoming Journeys ─── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Upcoming Journeys</Text>
+          <Text style={styles.sectionTitle}>{t('g_upcoming')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Bookings')}>
-            <Text style={styles.viewAll}>View All Bookings</Text>
+            <Text style={styles.viewAll}>{t('g_view_bookings')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -339,12 +345,12 @@ export default function GuideDashboard({ navigation }) {
         {/* ─── Manage Offerings CTA ─── */}
         <LinearGradient colors={['#006A3B', '#004D2C']} style={styles.offeringsCard}>
           <MaterialCommunityIcons name="leaf" size={40} color="rgba(255,255,255,0.15)" style={styles.offeringsLeaf} />
-          <Text style={styles.offeringsTitle}>Manage Your Offerings</Text>
+          <Text style={styles.offeringsTitle}>{t('g_manage')}</Text>
           <Text style={styles.offeringsSub}>
             Edit your seasonal packages, update pricing, or add new sustainable experiences to your profile.
           </Text>
           <TouchableOpacity style={styles.offeringsBtn} onPress={() => navigation.navigate('GuideServices')}>
-            <Text style={styles.offeringsBtnText}>MANAGE SERVICES</Text>
+            <Text style={styles.offeringsBtnText}>{t('g_manage_services')}</Text>
           </TouchableOpacity>
         </LinearGradient>
 
@@ -361,7 +367,7 @@ export default function GuideDashboard({ navigation }) {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowChatModal(false)}>
           <TouchableOpacity activeOpacity={1} style={styles.chatModalContent}>
             <View style={styles.chatModalHeader}>
-              <Text style={styles.chatModalTitle}>Active Chats</Text>
+              <Text style={styles.chatModalTitle}>{t('g_active_chats')}</Text>
               <TouchableOpacity onPress={() => setShowChatModal(false)}>
                 <MaterialCommunityIcons name="close" size={24} color="#1A2E1A" />
               </TouchableOpacity>
@@ -402,7 +408,7 @@ export default function GuideDashboard({ navigation }) {
                       <Image source={{ uri: item.touristPhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }} style={styles.chatAvatar} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.chatName}>{item.touristName || 'Tourist'}</Text>
-                        <Text style={styles.chatDesc} numberOfLines={1}>Tap to view messages</Text>
+                        <Text style={styles.chatDesc} numberOfLines={1}>{t('g_tap_messages')}</Text>
                       </View>
                       <MaterialCommunityIcons name="chevron-right" size={20} color="#CCC" />
                     </TouchableOpacity>

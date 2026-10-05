@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import useTabBarStyle from '../utils/useTabBarStyle';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -12,6 +13,7 @@ import DriverProfileScreen from '../screens/driver/DriverProfileScreen';
 const Tab = createBottomTabNavigator();
 
 export default function DriverNavigator() {
+  const { t } = useTranslation();
   const tabBarStyle = useTabBarStyle({ backgroundColor: 'rgba(246,251,243,0.95)', borderTopWidth: 0, elevation: 8 });
   return (
     <Tab.Navigator
@@ -34,11 +36,11 @@ export default function DriverNavigator() {
         },
       })}
     >
-      <Tab.Screen name="DriverDashboard" component={DriverDashboard} options={{ tabBarLabel: 'Dashboard' }} />
-      <Tab.Screen name="DriverHistory" component={DriverHistoryScreen} options={{ tabBarLabel: 'History' }} />
-      <Tab.Screen name="DriverRide" component={DriverRideRequestsScreen} options={{ tabBarLabel: 'Ride' }} />
-      <Tab.Screen name="DriverFees" component={DriverFeesScreen} options={{ tabBarLabel: 'Fees' }} />
-      <Tab.Screen name="DriverProfile" component={DriverProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="DriverDashboard" component={DriverDashboard} options={{ tabBarLabel: t('p_dashboard') }} />
+      <Tab.Screen name="DriverHistory" component={DriverHistoryScreen} options={{ tabBarLabel: t('p_history') }} />
+      <Tab.Screen name="DriverRide" component={DriverRideRequestsScreen} options={{ tabBarLabel: t('p_ride') }} />
+      <Tab.Screen name="DriverFees" component={DriverFeesScreen} options={{ tabBarLabel: t('p_fees') }} />
+      <Tab.Screen name="DriverProfile" component={DriverProfileScreen} options={{ tabBarLabel: t('tab_profile') }} />
     </Tab.Navigator>
   );
 }

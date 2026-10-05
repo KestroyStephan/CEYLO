@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -16,6 +17,7 @@ import { stopLocationTracking } from '../../services/DriverLocationService';
 import { notifyBooking } from '../../services/aiClient';
 
 export default function DriverRideRequestsScreen() {
+  const { t } = useTranslation();
   const [activeRide, setActiveRide] = useState(null);
   const [loading, setLoading] = useState(true);
   const [driverLocation, setDriverLocation] = useState(null);
@@ -168,7 +170,7 @@ export default function DriverRideRequestsScreen() {
     return (
       <View style={styles.emptyState}>
         <Ionicons name="car-outline" size={52} color="#6F7A70" />
-        <Text style={styles.emptyTitle}>No Active Ride</Text>
+        <Text style={styles.emptyTitle}>{t('r_no_active')}</Text>
         <Text style={styles.emptySubtitle}>
           Accept a ride from the Dashboard to see it here
         </Text>
@@ -180,7 +182,7 @@ export default function DriverRideRequestsScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Ride</Text>
+          <Text style={styles.headerTitle}>{t('p_ride')}</Text>
           <View style={[styles.statusBadge, { 
             backgroundColor: getStatusColor(activeRide?.status) + '20' 
           }]}>
@@ -244,7 +246,7 @@ export default function DriverRideRequestsScreen() {
 
         {/* Customer Details Card */}
         <View style={styles.detailsCard}>
-          <Text style={styles.sectionLabel}>CUSTOMER</Text>
+          <Text style={styles.sectionLabel}>{t('r_customer')}</Text>
           <Text style={styles.customerName}>
             {activeRide?.userName || 'Customer'}
           </Text>
@@ -260,17 +262,17 @@ export default function DriverRideRequestsScreen() {
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionLabel}>PICKUP</Text>
+          <Text style={styles.sectionLabel}>{t('r_pickup')}</Text>
           <Text style={styles.locationText}>{activeRide?.pickup}</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionLabel}>DROPOFF</Text>
+          <Text style={styles.sectionLabel}>{t('r_dropoff')}</Text>
           <Text style={styles.locationText}>{activeRide?.dropoff}</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionLabel}>FARE</Text>
+          <Text style={styles.sectionLabel}>{t('r_fare')}</Text>
           <Text style={styles.fareText}>
             LKR {activeRide?.price?.toLocaleString() || '0'}
           </Text>
@@ -279,17 +281,17 @@ export default function DriverRideRequestsScreen() {
         {/* Action Button based on status */}
         {activeRide?.status === 'Confirmed' && (
           <TouchableOpacity style={styles.actionButton} onPress={handleArrived}>
-            <Text style={styles.actionButtonText}>Arrived at Pickup</Text>
+            <Text style={styles.actionButtonText}>{t('r_arrived')}</Text>
           </TouchableOpacity>
         )}
         {activeRide?.status === 'Arrived' && (
           <TouchableOpacity style={styles.actionButton} onPress={handleStartTrip}>
-            <Text style={styles.actionButtonText}>Start Trip</Text>
+            <Text style={styles.actionButtonText}>{t('r_start')}</Text>
           </TouchableOpacity>
         )}
         {activeRide?.status === 'InProgress' && (
           <TouchableOpacity style={styles.actionButton} onPress={handleCompleteTrip}>
-            <Text style={styles.actionButtonText}>Complete Trip</Text>
+            <Text style={styles.actionButtonText}>{t('r_complete')}</Text>
           </TouchableOpacity>
         )}
 
@@ -300,7 +302,7 @@ export default function DriverRideRequestsScreen() {
             onPress={() => setCancelDialogVisible(true)}
           >
             <Ionicons name="close-circle-outline" size={18} color="#BA1A1A" />
-            <Text style={styles.cancelButtonText}>Cancel Ride</Text>
+            <Text style={styles.cancelButtonText}>{t('r_cancel')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -309,7 +311,7 @@ export default function DriverRideRequestsScreen() {
       <Modal visible={cancelDialogVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Cancel Ride</Text>
+            <Text style={styles.modalTitle}>{t('r_cancel')}</Text>
             <Text style={styles.modalSubtitle}>
               Select a reason for cancellation
             </Text>
@@ -335,7 +337,7 @@ export default function DriverRideRequestsScreen() {
               onPress={handleCancelRide}
               disabled={!cancelReason}
             >
-              <Text style={styles.confirmCancelText}>Confirm Cancellation</Text>
+              <Text style={styles.confirmCancelText}>{t('r_confirm_cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.dismissButton}
@@ -344,7 +346,7 @@ export default function DriverRideRequestsScreen() {
                 setCancelReason('');
               }}
             >
-              <Text style={styles.dismissText}>Keep Ride</Text>
+              <Text style={styles.dismissText}>{t('r_keep')}</Text>
             </TouchableOpacity>
           </View>
         </View>

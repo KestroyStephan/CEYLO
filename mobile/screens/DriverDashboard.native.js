@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Dimensions, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, Button, Card, Switch, ActivityIndicator, Surface, ProgressBar } from 'react-native-paper';
@@ -13,12 +14,12 @@ import { notifyBooking } from '../services/aiClient';
 const { width } = Dimensions.get('window');
 
 export default function DriverDashboard({ navigation }) {
+  const { t } = useTranslation();
   const [location, setLocation] = useState(null);
   const [isOnline, setIsOnline] = useState(false);
   const [rideRequests, setRideRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ecoOptimizer, setEcoOptimizer] = useState(true);
-  const [stats, setStats] = useState({ earnings: '12,500', trips: 14, ecoScore: 92 });
+  const [stats, setStats] = useState({ earnings: 0, trips: 0, lowEmissionPct: null });
   const [driverName, setDriverName] = useState('Driver');
   const [driverData, setDriverData] = useState(null);
   const [accepting, setAccepting] = useState(null);
@@ -41,8 +42,26 @@ export default function DriverDashboard({ navigation }) {
       }
     });
 
+    // This month's completed rides: earnings, trips and the share in low-emission vehicles
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const unsubRides = onSnapshot(query(collection(db, 'bookings'), where('driverId', '==', user.uid)), (snap) => {
+      const done = snap.docs.map(d => d.data()).filter(b => {
+        const when = b.completedAt?.toDate?.() || b.createdAt?.toDate?.();
+        return String(b.status).toLowerCase() === 'completed' && (!when || when >= monthStart);
+      });
+      const lowEmission = done.filter(b => ['Tuk', 'Bike'].includes(b.vehicleType)).length;
+      setStats({
+        earnings: done.reduce((sum, b) => sum + (Number(b.price) || 0), 0),
+        trips: done.length,
+        lowEmissionPct: done.length ? Math.round((100 * lowEmission) / done.length) : null,
+      });
+    }, (e) => console.log('Driver stats unavailable:', e.message));
+
     return () => {
       unsubUser();
+      unsubRides();
     };
   }, []);
 
@@ -133,7 +152,7 @@ export default function DriverDashboard({ navigation }) {
       <LinearGradient colors={['#004D40', '#00695C']} style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.welcome}>Hi let's Ride,</Text>
+            <Text style={styles.welcome}>{t('d_hi')}</Text>
             <Text style={styles.driverName}>{driverName}</Text>
           </View>
           {/* Replace existing avatar with dynamic profile photo / letter logic */}
@@ -156,7 +175,7 @@ export default function DriverDashboard({ navigation }) {
         <Surface style={styles.onlineBar} elevation={2}>
           <View style={styles.onlineStatus}>
             <View style={[styles.statusDot, { backgroundColor: isOnline ? '#006A3B' : '#BA1A1A' }]} />
-            <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+            <Text style={styles.statusText}>{isOnline ? t('online') : t('offline')}</Text>
           </View>
           <Switch value={isOnline} onValueChange={handleToggleOnline} color="#006A3B" />
         </Surface>
@@ -164,26 +183,25 @@ export default function DriverDashboard({ navigation }) {
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.statsRow}>
-          <StatCard label="Earnings" value={`LKR ${stats.earnings}`} icon="wallet" color="#00695C" />
-          <StatCard label="Eco Score" value={`${stats.ecoScore}%`} icon="leaf" color="#4CAF50" />
+          <StatCard label={t('d_earnings_label', { n: stats.trips })} value={`LKR ${stats.earnings.toLocaleString()}`} icon="wallet" color="#00695C" />
+          <StatCard label={t('d_low_label')} value={stats.lowEmissionPct == null ? '-' : `${stats.lowEmissionPct}%`} icon="leaf" color="#4CAF50" />
         </View>
 
         <Card style={styles.optimizerCard}>
           <Card.Content>
             <View style={styles.optHeader}>
               <View>
-                <Text style={styles.optTitle}>Eco Optimizer</Text>
-                <Text style={styles.optSub}>Auto-routing for fuel efficiency</Text>
+                <Text style={styles.optTitle}>{t('d_low_title')}</Text>
+                <Text style={styles.optSub}>{t('d_low_sub')}</Text>
               </View>
-              <Switch value={ecoOptimizer} onValueChange={setEcoOptimizer} color="#4CAF50" />
             </View>
             <View style={styles.progressArea}>
               <View style={styles.progressLabels}>
-                <Text style={styles.progText}>Green Bonus Progress</Text>
-                <Text style={styles.progVal}>75%</Text>
+                <Text style={styles.progText}>{t('d_trips', { n: stats.trips })}</Text>
+                <Text style={styles.progVal}>{stats.lowEmissionPct == null ? '-' : `${stats.lowEmissionPct}%`}</Text>
               </View>
-              <ProgressBar progress={0.75} color="#4CAF50" style={styles.progress} />
-              <Text style={styles.hint}>Complete 2 more eco-rides for 5% commission rebate!</Text>
+              <ProgressBar progress={(stats.lowEmissionPct || 0) / 100} color="#4CAF50" style={styles.progress} />
+              <Text style={styles.hint}>{t('d_hint')}</Text>
             </View>
           </Card.Content>
         </Card>
@@ -192,17 +210,17 @@ export default function DriverDashboard({ navigation }) {
         {isOnline && (
           <View style={styles.rideRequestsCard}>
             <View style={styles.rideRequestsHeader}>
-              <Text style={styles.rideRequestsTitle}>Ride Requests</Text>
+              <Text style={styles.rideRequestsTitle}>{t('d_requests')}</Text>
               <View style={styles.liveIndicator}>
                 <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
+                <Text style={styles.liveText}>{t('live')}</Text>
               </View>
             </View>
 
             {rideRequests.length === 0 ? (
               <View style={styles.scanningState}>
                 <Ionicons name="radio-outline" size={32} color="#6F7A70" />
-                <Text style={styles.scanningText}>Scanning for passengers...</Text>
+                <Text style={styles.scanningText}>{t('d_scanning')}</Text>
               </View>
             ) : (
               rideRequests.map((request) => (
@@ -231,7 +249,7 @@ export default function DriverDashboard({ navigation }) {
                       {accepting === request.id ? (
                         <ActivityIndicator size="small" color="#FFF" />
                       ) : (
-                        <Text style={styles.acceptButtonText}>Accept</Text>
+                        <Text style={styles.acceptButtonText}>{t('d_accept')}</Text>
                       )}
                     </TouchableOpacity>
                   </View>

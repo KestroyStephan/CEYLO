@@ -124,7 +124,7 @@ export default function GuideOnboardingScreen({ navigation }) {
         {/* Top Nav */}
         <View style={[styles.topNav, { paddingTop: insets.top + 8 }]}>
           <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
-          <Text style={styles.brandName}>LankaEco</Text>
+          <Text style={styles.brandName}>CEYLO</Text>
           <View style={styles.avatarSmall}>
             <MaterialCommunityIcons name="account" size={20} color="#FFF" />
           </View>

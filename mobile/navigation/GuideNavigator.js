@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import useTabBarStyle from '../utils/useTabBarStyle';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -30,6 +31,7 @@ function GuideHomeStack() {
 }
 
 export default function GuideNavigator() {
+  const { t } = useTranslation();
   const tabBarStyle = useTabBarStyle({ backgroundColor: '#FFF', borderTopColor: '#EEF2EE', borderTopWidth: 1 });
   return (
     <Tab.Navigator
@@ -62,11 +64,11 @@ export default function GuideNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={GuideHomeStack} />
-      <Tab.Screen name="Bookings" component={GuideBookingsScreen} />
-      <Tab.Screen name="Discover" component={GuideDiscoverScreen} />
-      <Tab.Screen name="Map" component={MapScreen} />
-      <Tab.Screen name="SOS" component={SOSScreen} />
+      <Tab.Screen name="Home" component={GuideHomeStack} options={{ tabBarLabel: t('tab_home') }} />
+      <Tab.Screen name="Bookings" component={GuideBookingsScreen} options={{ tabBarLabel: t('p_bookings') }} />
+      <Tab.Screen name="Discover" component={GuideDiscoverScreen} options={{ tabBarLabel: t('p_discover') }} />
+      <Tab.Screen name="Map" component={MapScreen} options={{ tabBarLabel: t('map') }} />
+      <Tab.Screen name="SOS" component={SOSScreen} options={{ tabBarLabel: t('sos') }} />
     </Tab.Navigator>
   );
 }

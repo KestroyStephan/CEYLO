@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator
@@ -8,6 +9,7 @@ import { auth, db } from '../../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DriverPendingScreen() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState('pending_verification');
   const [rejectionReason, setRejectionReason] = useState('');
 
@@ -51,7 +53,7 @@ export default function DriverPendingScreen() {
       {status === 'pending_verification' && (
         <View style={[styles.card, styles.pendingCard]}>
           <Ionicons name="hourglass-outline" size={48} color="#FF8F00" />
-          <Text style={styles.title}>Application Under Review</Text>
+          <Text style={styles.title}>{t('app_under_review')}</Text>
           <Text style={styles.subtitle}>
             Our team is reviewing your driver application. 
             This usually takes 1-2 business days.
@@ -62,7 +64,7 @@ export default function DriverPendingScreen() {
       {status === 'approved' && (
         <View style={[styles.card, styles.approvedCard]}>
           <Ionicons name="checkmark-circle" size={48} color="#006A3B" />
-          <Text style={styles.title}>Welcome to CEYLO!</Text>
+          <Text style={styles.title}>{t('welcome_ceylo')}</Text>
           <ActivityIndicator size="small" color="#006A3B" style={{ marginTop: 12 }} />
         </View>
       )}
@@ -70,7 +72,7 @@ export default function DriverPendingScreen() {
       {status === 'rejected' && (
         <View style={[styles.card, styles.rejectedCard]}>
           <Ionicons name="close-circle" size={48} color="#BA1A1A" />
-          <Text style={styles.title}>Application Rejected</Text>
+          <Text style={styles.title}>{t('app_rejected')}</Text>
           <Text style={styles.subtitle}>
             Reason: {rejectionReason || 'Not specified'}
           </Text>
@@ -78,7 +80,7 @@ export default function DriverPendingScreen() {
       )}
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Sign Out</Text>
+        <Text style={styles.logoutText}>{t('sign_out')}</Text>
       </TouchableOpacity>
     </View>
   );

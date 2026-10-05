@@ -4,6 +4,7 @@
 // onSurface:#181D19 onSurfaceVariant:#3F4941
 // outline:#6F7A70 outlineVariant:#BECABE
 
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
@@ -52,6 +53,7 @@ function timeAgo(ts) {
 }
 
 export default function VendorDashboardScreen({ navigation }) {
+  const { t } = useTranslation();
   const [vendorData,      setVendorData]      = useState(null);
   const [isAccepting,     setIsAccepting]     = useState(true);
   const [stats,           setStats]           = useState({ orders: 0, revenue: 0, rating: 0 });
@@ -128,9 +130,9 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   const STAT_CARDS = [
-    { label: "Today's Orders", value: stats.orders,          border: PRIMARY,   icon: 'receipt-outline' },
-    { label: 'Revenue (LKR)',  value: `${stats.revenue.toLocaleString()}`, border: SECONDARY, icon: 'cash-outline' },
-    { label: 'Avg Rating',     value: stats.rating || '—',   border: TERTIARY,  icon: 'star-outline' },
+    { label: t('v_today_orders'), value: stats.orders,          border: PRIMARY,   icon: 'receipt-outline' },
+    { label: t('v_revenue_lkr'),  value: `${stats.revenue.toLocaleString()}`, border: SECONDARY, icon: 'cash-outline' },
+    { label: t('v_avg_rating'),     value: stats.rating || '—',   border: TERTIARY,  icon: 'star-outline' },
   ];
 
   if (loading) {
@@ -157,9 +159,9 @@ export default function VendorDashboardScreen({ navigation }) {
               </Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.welcomeLabel}>WELCOME BACK,</Text>
+          <Text style={styles.welcomeLabel}>{t('v_welcome')}</Text>
           <Text style={styles.businessName}>{vendorData?.businessName || 'Vendor'}</Text>
-          <Text style={styles.dashboardTitle}>Vendor Dashboard</Text>
+          <Text style={styles.dashboardTitle}>{t('v_title')}</Text>
         </LinearGradient>
 
         {/* Wrap Accepting Orders card and Add Product card in a row */}
@@ -193,7 +195,7 @@ export default function VendorDashboardScreen({ navigation }) {
             <View style={styles.addProductIconCircle}>
               <Ionicons name="add" size={22} color="#FFFFFF" />
             </View>
-            <Text style={styles.addProductText}>Add Product</Text>
+            <Text style={styles.addProductText}>{t('v_add')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -210,10 +212,10 @@ export default function VendorDashboardScreen({ navigation }) {
 
         {/* Live Orders */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Orders</Text>
+          <Text style={styles.sectionTitle}>{t('v_recent')}</Text>
           <View style={styles.liveBadge}>
             <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
+            <Text style={styles.liveText}>{t('live')}</Text>
           </View>
         </View>
 
@@ -221,8 +223,8 @@ export default function VendorDashboardScreen({ navigation }) {
           <View style={styles.emptyCard}>
             <View style={styles.lotusWrap}><LotusWatermark /></View>
             <Ionicons name="receipt-outline" size={40} color={OUTLINE_V} />
-            <Text style={styles.emptyText}>No pending orders</Text>
-            <Text style={styles.emptySub}>New bookings will appear here in real-time</Text>
+            <Text style={styles.emptyText}>{t('v_no_orders')}</Text>
+            <Text style={styles.emptySub}>{t('v_no_orders_sub')}</Text>
           </View>
         ) : (
           pendingOrders.map(order => (
@@ -237,7 +239,7 @@ export default function VendorDashboardScreen({ navigation }) {
                   <Text style={styles.orderTime}>{timeAgo(order.createdAt)}</Text>
                 </View>
                 <View style={styles.pendingBadge}>
-                  <Text style={styles.pendingBadgeText}>Pending</Text>
+                  <Text style={styles.pendingBadgeText}>{t('pending')}</Text>
                 </View>
               </View>
               <Text style={styles.orderItems} numberOfLines={2}>
@@ -247,7 +249,7 @@ export default function VendorDashboardScreen({ navigation }) {
                 <Text style={styles.orderTotal}>LKR {(order.totalPrice || 0).toLocaleString()}</Text>
                 <TouchableOpacity style={styles.viewBtn}
                   onPress={() => navigation.navigate('VendorIncomingOrder', { order })}>
-                  <Text style={styles.viewBtnText}>View Order</Text>
+                  <Text style={styles.viewBtnText}>{t('v_view_order')}</Text>
                   <Ionicons name="arrow-forward" size={14} color={PRIMARY} />
                 </TouchableOpacity>
               </View>
@@ -260,8 +262,8 @@ export default function VendorDashboardScreen({ navigation }) {
           <View style={styles.lotusWrapBanner}><LotusWatermark /></View>
           <Ionicons name="leaf" size={32} color="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={styles.ecoTitle}>Your Eco Impact</Text>
-            <Text style={styles.ecoSub}>You've earned a Verified Eco Vendor badge! Keep up sustainable practices.</Text>
+            <Text style={styles.ecoTitle}>{t('v_eco_title')}</Text>
+            <Text style={styles.ecoSub}>{t('v_eco_sub')}</Text>
           </View>
         </LinearGradient>
       </ScrollView>
