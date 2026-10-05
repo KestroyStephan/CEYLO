@@ -50,7 +50,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
     <View style={{ flex: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
       <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flex: 1 }]}>{item.text}</Text>
+          <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flexShrink: 1 }]}>{item.text}</Text>
           {item.sender === 'bot' && (
             <IconButton
               icon="volume-high"

@@ -74,6 +74,7 @@ import SustainableRoutesListScreen from './screens/SustainableRoutesListScreen';
 import VendorNavigator from './navigation/VendorNavigator';
 import VendorRegistrationScreen from './screens/vendor/VendorRegistrationScreen';
 import VendorPendingScreen from './screens/vendor/VendorPendingScreen';
+import { warmUpBackend } from './services/aiClient';
 
 // Driver approval gate
 import DriverPendingScreen from './screens/driver/DriverPendingScreen';
@@ -100,6 +101,7 @@ export default function App() {
   const [isOnboarded, setIsOnboarded] = useState(false);
 
   useEffect(() => {
+    warmUpBackend();
     OfflineQueue.startListening();
     return () => OfflineQueue.stopListening();
   }, []);

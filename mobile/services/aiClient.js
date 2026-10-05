@@ -38,7 +38,8 @@ async function postJSON(path, body, timeoutMs = 25000) {
  * @returns {Promise<{resp: string, extractedState: object, isReady: boolean, ui_options: string[], recommendations?: object[]}>}
  */
 export async function chatTurn(message, state) {
-  const data = await postJSON('/api/chat', { message, state }, 15000);
+  // Long timeout: the Render free tier can take up to a minute to wake from sleep
+  const data = await postJSON('/api/chat', { message, state }, 60000);
   return data.result;
 }
 
@@ -53,7 +54,12 @@ export async function destinationInsights({ id, name, lat, lon, category, provin
  * @returns {Promise<{top_matches: object[], modelVersion: string, strategy: string, weather: object|null}>}
  */
 export async function recommendDestinations(params) {
-  return postJSON('/api/recommend', params, 15000);
+  return postJSON('/api/recommend', params, 30000);
+}
+
+/** Wake the backend early (Render free tier sleeps when idle) so the first chat is fast. */
+export function warmUpBackend() {
+  fetch(`${API_BASE_URL}/api/health`).catch(() => {});
 }
 
 /** Current weather and a 7-day forecast (Open-Meteo through the backend). */
