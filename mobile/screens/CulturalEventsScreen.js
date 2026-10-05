@@ -130,12 +130,13 @@ export default function CulturalEventsScreen({ navigation }) {
         <View style={styles.container}>
             <Surface style={styles.header} elevation={4}>
                 <View style={styles.headerTop}>
-                    <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
+                    <IconButton accessibilityLabel="Go back" icon="arrow-left" onPress={() => navigation.goBack()} />
                     <Text style={styles.headerTitle}>Sri Lanka Festivals</Text>
                     <View style={{ flexDirection: 'row' }}>
-                        <IconButton icon="bell-ring-outline" onPress={enableNearbyAlerts} />
+                        <IconButton accessibilityLabel="Remind me" icon="bell-ring-outline" onPress={enableNearbyAlerts} />
                         <IconButton
                             icon={viewMode === 'list' ? 'calendar-month' : 'view-list'}
+                            accessibilityLabel={viewMode === 'list' ? 'Show calendar view' : 'Show list view'}
                             onPress={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
                         />
                     </View>
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     },
     calendarDateBox: { alignItems: 'center', width: 45, borderRightWidth: 1, borderRightColor: '#EEE', paddingRight: 10, marginRight: 15 },
     calendarDay: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#333' },
-    calendarWeekday: { fontSize: 10, fontFamily: 'Outfit-Medium', color: '#999', textTransform: 'uppercase' },
+    calendarWeekday: { fontSize: 10, fontFamily: 'Outfit-Medium', color: '#6B7280', textTransform: 'uppercase' },
     calendarEventInfo: { flex: 1 },
     calendarEventTitle: { fontSize: 15, fontFamily: 'Outfit-SemiBold', color: '#333' },
     calendarEventLoc: { fontSize: 12, color: '#666', fontFamily: 'Outfit-Regular' }

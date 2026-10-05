@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert, Linking, Platform, PixelRatio } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { setAnalyticsConsent } from '../services/Analytics';
 import { Text, Surface } from 'react-native-paper';
@@ -188,6 +188,10 @@ export default function ProfileScreen({ navigation }) {
                     <MenuItem icon="clipboard" title={t('research_survey')} subtitle={t('research_survey_sub')} onPress={() => navigation.navigate('ResearchSurvey')} />
                     <MenuItem icon="bar-chart-2" title={t('share_usage')} subtitle={userData?.consent?.analytics ? t('usage_on') : t('usage_off')}
                         onPress={() => setAnalyticsConsent(!userData?.consent?.analytics).catch(e => Alert.alert(t('could_not_save'), e.message))} />
+                    <MenuItem icon="type" title={t('text_size')} subtitle={t('text_size_sub', { pct: Math.round(PixelRatio.getFontScale() * 100) })}
+                        onPress={() => (Platform.OS === 'android'
+                            ? Linking.sendIntent('android.settings.DISPLAY_SETTINGS').catch(() => Linking.openSettings())
+                            : Linking.openSettings())} />
                     <MenuItem icon="settings" title={t('language')} subtitle="English / සිංහල / தமிழ்" onPress={() => Alert.alert(t('language'), t('language_choose'), [
                         { text: 'English', onPress: () => i18n.changeLanguage('en') },
                         { text: 'සිංහල', onPress: () => i18n.changeLanguage('si') },
@@ -249,7 +253,7 @@ const styles = StyleSheet.create({
 
     emptyPassport: { backgroundColor: '#FFF', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#EEE' },
     emptyPassportText: { fontFamily: 'Outfit-SemiBold', color: '#444', fontSize: 14, marginTop: 10 },
-    emptyPassportSub: { fontFamily: 'Outfit-Regular', color: '#888', fontSize: 12, marginTop: 4 },
+    emptyPassportSub: { fontFamily: 'Outfit-Regular', color: '#6B7280', fontSize: 12, marginTop: 4 },
 
     menuList: { marginTop: 20 },
     menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 12 },

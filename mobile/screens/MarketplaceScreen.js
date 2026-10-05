@@ -215,12 +215,12 @@ const styles = StyleSheet.create({
   hcPrice: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#00695C' },
   hcDesc: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#666', marginBottom: 15, lineHeight: 18 },
   hcBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  hcRating: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#888', marginLeft: 4, flex: 1 },
+  hcRating: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#6B7280', marginLeft: 4, flex: 1 },
   cartBtnSm: { backgroundColor: '#00695C', padding: 8, borderRadius: 8 },
   
   emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 40 },
   emptyText: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#3F4941', marginTop: 15 },
-  emptySub: { fontSize: 13, color: '#6F7A70', textAlign: 'center', marginTop: 5 },
+  emptySub: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 5 },
 
   sosButton: { position: 'absolute', bottom: 20, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: '#FF5252', justifyContent: 'center', alignItems: 'center', elevation: 6 },
 });

@@ -143,5 +143,7 @@
   "research_survey_sub": "3 minutes - helps our university study",
   "share_usage": "Share anonymous usage data",
   "usage_on": "On - tap to turn off",
-  "usage_off": "Off - tap to turn on"
+  "usage_off": "Off - tap to turn on",
+  "text_size": "Text size",
+  "text_size_sub": "{{pct}}% - follows your phone's font size"
 }

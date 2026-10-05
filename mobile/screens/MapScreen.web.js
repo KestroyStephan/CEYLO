@@ -12,9 +12,9 @@ export default function MapScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <Surface style={[styles.header, { pt: insets.top + 20 }]} elevation={2}>
-                <IconButton icon="menu" onPress={() => navigation.openDrawer()} />
+                <IconButton accessibilityLabel="Open menu" icon="menu" onPress={() => navigation.openDrawer()} />
                 <Text style={styles.title}>Map Explorer</Text>
-                <IconButton icon="magnify" />
+                <IconButton accessibilityLabel="Search" icon="magnify" />
             </Surface>
 
             <View style={styles.placeholderContainer}>

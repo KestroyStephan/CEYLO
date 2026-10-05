@@ -6,7 +6,15 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+// MapTiler's free plan allows tiles to be stored for offline use; set EXPO_PUBLIC_MAPTILER_KEY to use it.
+// Without a key the app falls back to OpenStreetMap tiles, whose policy only allows small downloads,
+// so downloads are capped at MAX_TILES.
+const MAPTILER_KEY = process.env.EXPO_PUBLIC_MAPTILER_KEY;
+const OSM_TILE_URL = MAPTILER_KEY
+  ? `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+  : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+export const TILE_PROVIDER = MAPTILER_KEY ? 'MapTiler' : 'OpenStreetMap';
+export const MAX_TILES = MAPTILER_KEY ? 6000 : 1500;
 const MAPS_DIR = `${FileSystem.documentDirectory}maps/`;
 const STORAGE_KEY = 'offline_regions';
 
@@ -59,8 +67,7 @@ async function downloadTile(regionId, z, x, y) {
  * @param {function} onProgress - (downloaded, total) => void
  * @returns {object} saved region metadata
  */
-export async function downloadRegion(name, bounds, zooms, onProgress) {
-  const regionId = `region_${Date.now()}`;
+export async function downloadRegion(name, bounds, zooms, onProgress, extra = {}) {
   const allTiles = [];
   for (const zoom of zooms) {
     const tiles = getTilesForBounds(
@@ -68,6 +75,47 @@ export async function downloadRegion(name, bounds, zooms, onProgress) {
     );
     allTiles.push(...tiles);
   }
+  return downloadTiles(name, bounds, zooms, allTiles, onProgress, extra);
+}
+
+/** Number of tiles a region download would fetch. */
+export function countRegionTiles(bounds, zooms) {
+  return zooms.reduce((n, z) => n + getTilesForBounds(bounds.minLat, bounds.maxLat, bounds.minLon, bounds.maxLon, z).length, 0);
+}
+
+/**
+ * Tiles along a route only (FR-021): every tile the route line passes through plus its
+ * neighbours at street zooms, and the whole bounding box at overview zooms.
+ */
+export function corridorTiles(points, bounds, streetZooms = [12, 13, 14], overviewZooms = [8, 9, 10]) {
+  const seen = new Set();
+  const tiles = [];
+  const add = (x, y, z) => {
+    const k = `${z}/${x}/${y}`;
+    if (!seen.has(k)) { seen.add(k); tiles.push({ x, y, z }); }
+  };
+  for (const z of overviewZooms) {
+    getTilesForBounds(bounds.minLat, bounds.maxLat, bounds.minLon, bounds.maxLon, z).forEach(t => add(t.x, t.y, z));
+  }
+  for (const z of streetZooms) {
+    for (const p of points) {
+      const { x, y } = latLonToTile(p.latitude, p.longitude, z);
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) add(x + dx, y + dy, z);
+    }
+  }
+  return tiles;
+}
+
+export async function downloadCorridor(name, points, bounds, onProgress, extra = {}) {
+  const tiles = corridorTiles(points, bounds);
+  if (tiles.length > MAX_TILES) {
+    throw new Error(`This route needs ${tiles.length} map tiles, more than the ${MAX_TILES} allowed from ${TILE_PROVIDER}. Download the province maps in Offline Maps instead.`);
+  }
+  return downloadTiles(name, bounds, [8, 9, 10, 12, 13, 14], tiles, onProgress, extra);
+}
+
+async function downloadTiles(name, bounds, zooms, allTiles, onProgress, extra) {
+  const regionId = `region_${Date.now()}`;
 
   let downloaded = 0;
   let failed = 0;
@@ -99,6 +147,8 @@ export async function downloadRegion(name, bounds, zooms, onProgress) {
     tileCount: total,
     size: sizeBytes,
     downloadedAt: new Date().toISOString(),
+    provider: TILE_PROVIDER,
+    ...extra,
   };
 
   // Persist to AsyncStorage

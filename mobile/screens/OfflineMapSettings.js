@@ -131,7 +131,7 @@ export default function OfflineMapSettings({ navigation }) {
       {/* Header */}
       <LinearGradient colors={[COLORS.primary, COLORS.dark]} style={styles.header}>
         <View style={styles.headerRow}>
-          <IconButton icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
+          <IconButton accessibilityLabel="Go back" icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
           <View>
             <Text style={styles.headerTitle}>Offline Maps</Text>
             <Text style={styles.headerSub}>Available without internet</Text>

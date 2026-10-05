@@ -137,13 +137,13 @@ export default function DriverDashboard({ navigation }) {
       </ScrollView>
 
       <Surface style={styles.bottomMenu} elevation={5}>
-        <IconButton icon="home" iconColor="#00695C" size={28} />
-        <IconButton icon="history" iconColor="#999" size={28} />
+        <IconButton accessibilityLabel="Home" icon="home" iconColor="#00695C" size={28} />
+        <IconButton accessibilityLabel="Ride history" icon="history" iconColor="#999" size={28} />
         <View style={styles.goBtn}>
           <MaterialCommunityIcons name="navigation" size={32} color="#FFF" />
         </View>
-        <IconButton icon="wallet" iconColor="#999" size={28} />
-        <IconButton icon="cog" iconColor="#999" size={28} />
+        <IconButton accessibilityLabel="Earnings" icon="wallet" iconColor="#999" size={28} />
+        <IconButton accessibilityLabel="Settings" icon="cog" iconColor="#999" size={28} />
       </Surface>
     </View>
   );

@@ -12,6 +12,7 @@ import { getWeather } from '../services/aiClient';
 import { cacheItinerary, getLatestCachedItinerary } from '../services/ItineraryCache';
 import WeatherChip from '../components/WeatherChip';
 import ItineraryFeedback from '../components/ItineraryFeedback';
+import { cacheRoute } from '../services/RouteCache';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 
@@ -81,6 +82,12 @@ export default function ItineraryDetailScreen({ route, navigation }) {
   useEffect(() => {
     if (data?.id) logEvent('itinerary_opened', { itineraryId: data.id, fromCache: Boolean(data.fromCache) });
   }, [data?.id]);
+
+  // FR-021: store the road route and turn steps while there is signal, for offline guidance
+  const routeKey = plan.map(p => `${p.lat},${p.lon}`).join('|');
+  useEffect(() => {
+    if (data?.id && plan.length > 1) cacheRoute(data.id, plan);
+  }, [data?.id, routeKey]);
 
   // Forecast for the trip area, matched to each day when the trip starts within the forecast window
   const [forecast, setForecast] = useState(null);
@@ -158,18 +165,18 @@ export default function ItineraryDetailScreen({ route, navigation }) {
     );
   };
 
+  // In-app guidance along the stored route; works offline (FR-021)
   const startRoute = () => {
     const stops = plan.filter(p => p.lat && p.lon);
-    if (stops.length === 0) {
+    if (stops.length < 2) {
       navigation.navigate('MapScreen');
       return;
     }
-    const coord = p => `${p.lat},${p.lon}`;
-    const destination = coord(stops[stops.length - 1]);
-    const waypoints = stops.slice(0, -1).map(coord).join('|');
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}` +
-      (waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : '') + '&travelmode=driving';
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open navigation.'));
+    navigation.navigate('RouteGuide', {
+      itineraryId: data?.id || incomingData?.id || `route_${title}`,
+      plan,
+      title,
+    });
   };
 
   const exportToPDF = async () => {
@@ -227,7 +234,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
             <View style={styles.cardHeader}>
               <Text style={styles.itemTitle}>{item.title || item.activity}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <IconButton
+                <IconButton accessibilityLabel="Suggest a greener alternative"
                   icon="sparkles"
                   iconColor="#FF7043"
                   size={16}
@@ -258,9 +265,9 @@ export default function ItineraryDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       <Surface style={styles.header} elevation={4}>
         <View style={styles.headerTop}>
-          <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
+          <IconButton accessibilityLabel="Go back" icon="arrow-left" onPress={() => navigation.goBack()} />
           <Text style={styles.title}>{title}</Text>
-          <IconButton icon="share-variant" onPress={exportToPDF} />
+          <IconButton accessibilityLabel="Share" icon="share-variant" onPress={exportToPDF} />
         </View>
 
         <View style={styles.summaryRow}>
@@ -353,7 +360,7 @@ const styles = StyleSheet.create({
   ecoProgressContainer: { paddingHorizontal: 20, marginTop: 15, marginBottom: 5 },
   ecoProgressInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' },
   ecoProgressText: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#004D40' },
-  carbonSavedText: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#4CAF50' },
+  carbonSavedText: { fontSize: 11, fontFamily: 'Outfit-Bold', color: '#6B7280' },
   progressBarBg: { height: 6, backgroundColor: '#E0F2F1', borderRadius: 3, overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: '#4CAF50', borderRadius: 3 },
   transportBadge: { position: 'absolute', top: '25%', left: -6, backgroundColor: '#E0F2F1', borderRadius: 8, width: 15, height: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#00695C' },

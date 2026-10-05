@@ -106,7 +106,7 @@ export default function TransportScreen({ navigation }) {
         {location && <Marker coordinate={location} title="Pickup" pinColor="#00695C" />}
       </MapView>
 
-      <IconButton icon="arrow-left" mode="contained" containerColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
+      <IconButton accessibilityLabel="Go back" icon="arrow-left" mode="contained" containerColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
 
       <Surface style={styles.bottomSheet} elevation={5}>
         <View style={styles.dragBar} />
@@ -149,7 +149,7 @@ export default function TransportScreen({ navigation }) {
                 </View>
                 <Text style={styles.plate}>WP BCD-1234 • White Tuk</Text>
               </View>
-              <IconButton icon="phone" mode="contained" containerColor="#E0F2F1" iconColor="#00695C" />
+              <IconButton accessibilityLabel="Call" icon="phone" mode="contained" containerColor="#E0F2F1" iconColor="#00695C" />
             </View>
             <Divider style={{ marginVertical: 15 }} />
             <View style={styles.statusRow}>

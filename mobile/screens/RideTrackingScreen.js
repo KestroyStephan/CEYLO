@@ -237,7 +237,7 @@ export default function RideTrackingScreen({ route, navigation }) {
                   {assignedDriver?.licensePlate || 'WP BCD-1234'} • {assignedDriver?.vehicleType || 'Vehicle'}
                 </Text>
               </View>
-              <IconButton 
+              <IconButton accessibilityLabel="Call" 
                 icon="phone" 
                 mode="contained" 
                 containerColor="rgba(0,106,59,0.08)" 

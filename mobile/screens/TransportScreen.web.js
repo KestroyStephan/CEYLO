@@ -7,9 +7,9 @@ export default function TransportScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <Surface style={styles.header} elevation={2}>
-                <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
+                <IconButton accessibilityLabel="Go back" icon="arrow-left" onPress={() => navigation.goBack()} />
                 <Text style={styles.title}>Transport Options</Text>
-                <IconButton icon="dots-vertical" />
+                <IconButton accessibilityLabel="More options" icon="dots-vertical" />
             </Surface>
 
             <View style={styles.content}>

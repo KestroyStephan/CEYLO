@@ -66,9 +66,9 @@ export default function EcoPassportScreen({ navigation }) {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <LinearGradient colors={['#1B5E20', '#4CAF50']} style={styles.header}>
         <View style={styles.headerTop}>
-          <IconButton icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
+          <IconButton accessibilityLabel="Go back" icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>Eco Passport</Text>
-          <IconButton icon="share-variant" iconColor="#FFF" onPress={shareCertificate} />
+          <IconButton accessibilityLabel="Share" icon="share-variant" iconColor="#FFF" onPress={shareCertificate} />
         </View>
 
         <View style={styles.profileBox}>
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   divider: { width: 1, backgroundColor: '#EEE', height: 30 },
   progTitle: { fontSize: 14, fontFamily: 'Outfit-SemiBold', color: '#333', marginBottom: 10 },
   progress: { height: 10, borderRadius: 5 },
-  progSub: { fontSize: 10, fontFamily: 'Outfit-Regular', color: '#999', marginTop: 5, textAlign: 'right' },
+  progSub: { fontSize: 10, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 5, textAlign: 'right' },
   sectionTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#333', marginBottom: 20 },
   badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center', marginBottom: 30 },
   badgeWrapper: { width: width / 3.8, alignItems: 'center' },

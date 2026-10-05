@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { collection, addDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
+import { susScore } from '../utils/sus';
 
 const ACCENT = '#00695C';
 const SCALE = [1, 2, 3, 4, 5];
@@ -33,11 +34,6 @@ const STUDY_ITEMS = [
   { id: 'ecoAwarenessAfter', text: 'When choosing places to visit, I think about their environmental impact.' },
 ];
 
-/** SUS: odd items score (answer - 1), even items (5 - answer); the sum times 2.5 gives 0-100. */
-export function susScore(answers) {
-  const sum = answers.reduce((s, a, i) => s + (i % 2 === 0 ? a - 1 : 5 - a), 0);
-  return sum * 2.5;
-}
 
 function Scale({ value, onChange, label }) {
   return (

@@ -61,7 +61,7 @@ export default function SustainableRoutesListScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} iconColor={COLORS.dark} style={{ marginLeft: -10 }} />
+        <IconButton accessibilityLabel="Go back" icon="arrow-left" size={24} onPress={() => navigation.goBack()} iconColor={COLORS.dark} style={{ marginLeft: -10 }} />
         <View>
           <Text style={styles.headerTitle}>Sustainable Routes</Text>
           <Text style={styles.headerSub}>Curated low-carbon itineraries</Text>

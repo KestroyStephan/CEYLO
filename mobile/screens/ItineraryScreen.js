@@ -52,7 +52,7 @@ export default function ItineraryScreen({ navigation, route }) {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
-                <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
+                <IconButton accessibilityLabel="Go back" icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
                 <Text variant="titleLarge" style={styles.headerTitle}>Tailor Your Journey</Text>
             </View>
             {destination && (
@@ -80,9 +80,9 @@ export default function ItineraryScreen({ navigation, route }) {
 
                     <Text variant="titleMedium" style={styles.label}>How many days?</Text>
                     <View style={styles.counterRow}>
-                        <IconButton icon="minus" mode="contained-tonal" size={20} onPress={() => setDays(Math.max(1, days - 1))} />
+                        <IconButton accessibilityLabel="Remove" icon="minus" mode="contained-tonal" size={20} onPress={() => setDays(Math.max(1, days - 1))} />
                         <Text variant="headlineMedium">{days}</Text>
-                        <IconButton icon="plus" mode="contained-tonal" size={20} onPress={() => setDays(Math.min(MAX_DAYS, days + 1))} />
+                        <IconButton accessibilityLabel="Add" icon="plus" mode="contained-tonal" size={20} onPress={() => setDays(Math.min(MAX_DAYS, days + 1))} />
                     </View>
 
                     <View style={styles.spacer} />

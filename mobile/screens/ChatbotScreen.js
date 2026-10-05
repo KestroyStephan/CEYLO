@@ -59,7 +59,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flexShrink: 1 }]}>{item.text}</Text>
           {item.sender === 'bot' && (
-            <IconButton
+            <IconButton accessibilityLabel="Read aloud"
               icon="volume-high"
               iconColor="#00695C"
               size={18}
@@ -326,7 +326,7 @@ export default function ChatbotScreen({ navigation, route }) {
 
       <Surface style={styles.inputArea} elevation={5}>
         <View style={styles.inputRow}>
-          <IconButton
+          <IconButton accessibilityLabel="Voice input"
             icon="microphone"
             containerColor="#E0F2F1"
             iconColor="#00695C"
@@ -344,7 +344,7 @@ export default function ChatbotScreen({ navigation, route }) {
             underlineColor="transparent"
             activeUnderlineColor="transparent"
           />
-          <IconButton
+          <IconButton accessibilityLabel="Send message"
             icon="send"
             containerColor="#00695C"
             iconColor="#FFF"

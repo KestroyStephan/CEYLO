@@ -54,6 +54,7 @@ import EcoPassportScreen from './screens/EcoPassportScreen';
 import TravelPreferencesScreen from './screens/TravelPreferencesScreen';
 import ConsentScreen from './screens/ConsentScreen';
 import ResearchSurveyScreen from './screens/ResearchSurveyScreen';
+import RouteGuideScreen from './screens/RouteGuideScreen';
 import CulturalEventsScreen from './screens/CulturalEventsScreen';
 import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
 import SOSScreen from './screens/SOSScreen';
@@ -270,6 +271,7 @@ export default function App() {
                 <Stack.Screen name="EcoPassport" component={EcoPassportScreen} />
                 <Stack.Screen name="TravelPreferences" component={TravelPreferencesScreen} />
                 <Stack.Screen name="ResearchSurvey" component={ResearchSurveyScreen} />
+                <Stack.Screen name="RouteGuide" component={RouteGuideScreen} />
                 <Stack.Screen name="CulturalEvents" component={CulturalEventsScreen} />
                 <Stack.Screen name="SOSScreen" component={SOSScreen} />
                 <Stack.Screen name="GuidesList" component={GuidesListScreen} />

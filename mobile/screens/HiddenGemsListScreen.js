@@ -173,7 +173,7 @@ export default function HiddenGemsListScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <IconButton icon="arrow-left" size={24} iconColor="#333" onPress={() => navigation.goBack()} style={{marginLeft: 0}} />
+        <IconButton accessibilityLabel="Go back" icon="arrow-left" size={24} iconColor="#333" onPress={() => navigation.goBack()} style={{marginLeft: 0}} />
         <View style={{flex: 1}}>
           <Text style={styles.headerTitle}>{filterType === 'all' ? 'All Destinations Near You' : 'Hidden Gems Near You'}</Text>
           {!loading && <Text style={styles.headerSubtitle}>{gems.length} locations sorted by {sortBy}</Text>}
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   cardImage: { width: 90, height: 90, borderRadius: 12, backgroundColor: '#EEE' },
   cardContent: { flex: 1, marginLeft: 15, justifyContent: 'center' },
   cardTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#222', marginBottom: 4 },
-  cardSubtitle: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#777', marginBottom: 10 },
+  cardSubtitle: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#6B7280', marginBottom: 10 },
   cardFooterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   badgeRow: { flexDirection: 'row', gap: 5 },
   ecoBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },

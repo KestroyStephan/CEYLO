@@ -20,9 +20,10 @@ const Marker = () => null;
 const PROVIDER_GOOGLE = "google";
 const Polyline = () => null;
 const MapViewDirections = () => null;
+const LocalTile = () => null;
 
 export default MapView;
-export { Marker, Polyline, PROVIDER_GOOGLE, MapViewDirections };
+export { Marker, Polyline, PROVIDER_GOOGLE, MapViewDirections, LocalTile };
 
 const styles = StyleSheet.create({
     container: {

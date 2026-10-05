@@ -85,7 +85,7 @@ export default function EventDetailScreen({ route, navigation }) {
           colors={['rgba(0,0,0,0.6)', 'transparent', 'rgba(0,0,0,0.8)']}
           style={styles.gradient}
         />
-        <IconButton
+        <IconButton accessibilityLabel="Go back"
           icon="arrow-left"
           iconColor="#FFF"
           size={28}
@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
   metaItem: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   metaText: { fontSize: 16, color: '#333', marginLeft: 8, fontWeight: '500' },
   ecoBadge: { backgroundColor: '#E8F5E9', padding: 10, borderRadius: 15, alignItems: 'center' },
-  ecoScore: { fontSize: 20, fontWeight: 'bold', color: '#4CAF50' },
-  ecoLabel: { fontSize: 10, fontWeight: 'bold', color: '#4CAF50' },
+  ecoScore: { fontSize: 20, fontWeight: 'bold', color: '#6B7280' },
+  ecoLabel: { fontSize: 10, fontWeight: 'bold', color: '#6B7280' },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 10 },
   description: { fontSize: 16, color: '#666', lineHeight: 24, marginBottom: 20 },
   alertBox: { flexDirection: 'row', backgroundColor: '#FBE9E7', padding: 15, borderRadius: 15, marginBottom: 20, alignItems: 'center' },

@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
 
   heroSection: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingBottom: 20 },
   heroTitle: { fontSize: 24, fontFamily: 'Outfit-Bold', color: '#1A2E1A', marginTop: 8 },
-  heroSub: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#6B7B6B', marginTop: 4, marginBottom: 16, lineHeight: 19 },
+  heroSub: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 4, marginBottom: 16, lineHeight: 19 },
 
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F4F0', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: 'Outfit-Regular', color: '#333' },
@@ -365,16 +365,16 @@ const styles = StyleSheet.create({
 
   cardBody: { padding: 16 },
   guideName: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#1A2E1A', marginBottom: 3 },
-  guideSpec: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7B6B', marginBottom: 10 },
+  guideSpec: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', marginBottom: 10 },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
   areaChip: { backgroundColor: '#EAF4EC', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
   areaChipText: { fontSize: 11, fontFamily: 'Outfit-Medium', color: '#006A3B' },
 
   cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  startLabel: { fontSize: 9, fontFamily: 'Outfit-Medium', color: '#AAA', letterSpacing: 0.5 },
+  startLabel: { fontSize: 9, fontFamily: 'Outfit-Medium', color: '#6B7280', letterSpacing: 0.5 },
   priceLabel: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },
-  priceUnit: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#888' },
+  priceUnit: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#6B7280' },
 
   viewBtn: { backgroundColor: '#006A3B', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 10 },
   viewBtnText: { fontSize: 13, fontFamily: 'Outfit-Bold', color: '#FFF' },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   certBtnText: { fontSize: 13, fontFamily: 'Outfit-Bold', color: '#FFF' },
 
   emptyState: { alignItems: 'center', marginTop: 80 },
-  emptyText: { fontSize: 14, fontFamily: 'Outfit-Regular', color: '#AAA', marginTop: 12 },
+  emptyText: { fontSize: 14, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 12 },
 
   fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#006A3B', justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#006A3B', shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
 });

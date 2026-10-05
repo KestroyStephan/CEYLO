@@ -702,7 +702,7 @@ export default function TransportScreen({ route, navigation }) {
         )}
       </MapView>
 
-      <IconButton icon="arrow-left" mode="contained" containerColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
+      <IconButton accessibilityLabel="Go back" icon="arrow-left" mode="contained" containerColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
 
       <Surface style={styles.bottomSheet} elevation={5}>
         <View style={styles.dragBar} />
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
   suggestionsBox: { maxHeight: 200, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EEE', borderRadius: 10, marginTop: 4, overflow: 'hidden' },
   suggestionText: { fontSize: 13, color: '#333', flex: 1 },
   pickupRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  pickupText: { fontSize: 12, color: '#6F7A70' },
+  pickupText: { fontSize: 12, color: '#6B7280' },
   selectedDestRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F7F9', padding: 12, borderRadius: 10, gap: 8 },
   selectedDestText: { flex: 1, fontSize: 13, color: '#333' },
   editBtn: { fontSize: 13, color: '#006A3B', fontWeight: '700' },
@@ -1039,14 +1039,14 @@ const styles = StyleSheet.create({
   driverAvatarLetter: { fontSize: 18, fontWeight: '700', color: '#006A3B' },
   driverInfo: { flex: 1 },
   driverName: { fontSize: 16, fontWeight: '700', color: '#181D19' },
-  driverVehicle: { fontSize: 12, color: '#6F7A70', marginTop: 2 },
+  driverVehicle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
   callDriverButton: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(0,106,59,0.1)',
     alignItems: 'center', justifyContent: 'center',
   },
   fareRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#EBEFE8' },
-  fareLabel: { fontSize: 13, color: '#6F7A70' },
+  fareLabel: { fontSize: 13, color: '#6B7280' },
   fareAmount: { fontSize: 20, fontWeight: '800', color: '#006A3B' },
   cancelRideButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

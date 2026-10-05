@@ -198,7 +198,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
           <ProgressiveImage source={{ uri: place.image }} style={styles.heroImage} resizeMode="cover" />
           <LinearGradient colors={['rgba(0,0,0,0.5)', 'transparent']} style={styles.topGradient} />
 
-          <IconButton icon="arrow-left" iconColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
+          <IconButton accessibilityLabel="Go back" icon="arrow-left" iconColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
           <IconButton icon="share-variant" iconColor="#FFF" style={styles.shareBtn} onPress={sharePlace} accessibilityLabel="Share this place" />
           <IconButton icon={savedId ? 'heart' : 'heart-outline'} iconColor={savedId ? '#FF5A5F' : '#FFF'} style={styles.favBtn} onPress={toggleSaved} accessibilityLabel={savedId ? 'Remove from saved places' : 'Save this place'} />
 
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 24, paddingVertical: 15, borderTopLeftRadius: 30, borderTopRightRadius: 30, backgroundColor: '#FFF', marginTop: -30 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   title: { fontSize: 28, fontFamily: 'Outfit-Bold', color: '#333', lineHeight: 32 },
-  subTitle: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#999', marginTop: 4 },
+  subTitle: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#6B7280', marginTop: 4 },
   ecoRing: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#F9FBE7', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', elevation: 5, marginTop: -30 },
   ecoValue: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#827717' },
   ecoLabel: { fontSize: 8, fontFamily: 'Outfit-Bold', color: '#827717' },
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   tabContainer: { flexDirection: 'row', marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#EEE' },
   tab: { paddingVertical: 10, paddingHorizontal: 15, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   activeTab: { borderBottomColor: '#00695C' },
-  tabText: { fontSize: 14, fontFamily: 'Outfit-Medium', color: '#999' },
+  tabText: { fontSize: 14, fontFamily: 'Outfit-Medium', color: '#6B7280' },
   activeTabText: { color: '#00695C', fontFamily: 'Outfit-Bold' },
   loadingArea: { paddingVertical: 40, alignItems: 'center' },
   loadingText: { marginTop: 15, fontFamily: 'Outfit-Medium', color: '#666' },
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   quickInfoLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
   quickInfoLabel: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#00695C' },
   quickInfoValue: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#333' },
-  quickInfoSub: { fontSize: 11, fontFamily: 'Outfit-Regular', color: '#999', marginTop: 2 },
+  quickInfoSub: { fontSize: 11, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 2 },
   distanceBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', padding: 15, borderRadius: 15 },
   distanceIconBg: { backgroundColor: '#00695C', padding: 8, borderRadius: 20 },
   distanceLabel: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#666' },

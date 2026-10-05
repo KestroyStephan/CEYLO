@@ -460,17 +460,17 @@ export default function SOSScreen({ navigation }) {
 
         <View style={styles.actionGrid}>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton icon="phone-classic" mode="contained" containerColor="#D32F2F" iconColor="#FFF" onPress={() => handleCall('119')} />
+            <IconButton accessibilityLabel="Call" icon="phone-classic" mode="contained" containerColor="#D32F2F" iconColor="#FFF" onPress={() => handleCall('119')} />
             <Text style={styles.actionLabel}>Police</Text>
             <Text style={styles.actionNum}>119</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton icon="ambulance" mode="contained" containerColor="#00695C" iconColor="#FFF" onPress={() => handleCall('1990')} />
+            <IconButton accessibilityLabel="Ambulance" icon="ambulance" mode="contained" containerColor="#00695C" iconColor="#FFF" onPress={() => handleCall('1990')} />
             <Text style={styles.actionLabel}>Ambulance</Text>
             <Text style={styles.actionNum}>1990</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton icon="fire" mode="contained" containerColor="#E65100" iconColor="#FFF" onPress={() => handleCall('110')} />
+            <IconButton accessibilityLabel="Fire service" icon="fire" mode="contained" containerColor="#E65100" iconColor="#FFF" onPress={() => handleCall('110')} />
             <Text style={styles.actionLabel}>Fire</Text>
             <Text style={styles.actionNum}>110</Text>
           </Surface>
@@ -478,17 +478,17 @@ export default function SOSScreen({ navigation }) {
 
         <View style={[styles.actionGrid, { marginTop: 15 }]}>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton icon="shield-account" mode="contained" containerColor="#FFB300" iconColor="#FFF" onPress={() => handleCall('0112421052')} />
+            <IconButton accessibilityLabel="Police" icon="shield-account" mode="contained" containerColor="#FFB300" iconColor="#FFF" onPress={() => handleCall('0112421052')} />
             <Text style={styles.actionLabel}>Tourist Police</Text>
             <Text style={styles.actionNum}>011 242 1052</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton icon="face-woman" mode="contained" containerColor="#C2185B" iconColor="#FFF" onPress={() => handleCall('1929')} />
+            <IconButton accessibilityLabel="Women's helpline" icon="face-woman" mode="contained" containerColor="#C2185B" iconColor="#FFF" onPress={() => handleCall('1929')} />
             <Text style={styles.actionLabel}>Women Aid</Text>
             <Text style={styles.actionNum}>1929</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton icon="hospital-box" mode="contained" containerColor="#1976D2" iconColor="#FFF" onPress={() => handleCall('0112691111')} />
+            <IconButton accessibilityLabel="Hospital" icon="hospital-box" mode="contained" containerColor="#1976D2" iconColor="#FFF" onPress={() => handleCall('0112691111')} />
             <Text style={styles.actionLabel}>Gen. Hospital</Text>
             <Text style={styles.actionNum}>011 269 1111</Text>
           </Surface>
@@ -515,7 +515,7 @@ export default function SOSScreen({ navigation }) {
                     <Text style={styles.aiItemTitle}>{aiSuggestions.hospital?.name || 'No hospital found nearby'}</Text>
                     <Text style={styles.aiItemSub}>{aiSuggestions.hospital?.distance} away</Text>
                   </View>
-                  <IconButton icon="phone" size={20} disabled={!aiSuggestions.hospital?.phone} onPress={() => handleCall(aiSuggestions.hospital?.phone)} />
+                  <IconButton accessibilityLabel="Call" icon="phone" size={20} disabled={!aiSuggestions.hospital?.phone} onPress={() => handleCall(aiSuggestions.hospital?.phone)} />
                 </View>
                 <View style={styles.aiItem}>
                   <View style={[styles.aiIconBox, { backgroundColor: '#E3F2FD' }]}><MaterialCommunityIcons name="police-badge" size={20} color="#1976D2" /></View>
@@ -523,7 +523,7 @@ export default function SOSScreen({ navigation }) {
                     <Text style={styles.aiItemTitle}>{aiSuggestions.police?.name || 'No police station found nearby'}</Text>
                     <Text style={styles.aiItemSub}>{aiSuggestions.police?.distance} away</Text>
                   </View>
-                  <IconButton icon="phone" size={20} disabled={!aiSuggestions.police?.phone} onPress={() => handleCall(aiSuggestions.police?.phone)} />
+                  <IconButton accessibilityLabel="Call" icon="phone" size={20} disabled={!aiSuggestions.police?.phone} onPress={() => handleCall(aiSuggestions.police?.phone)} />
                 </View>
                 <View style={styles.aiItem}>
                   <View style={[styles.aiIconBox, { backgroundColor: '#E8F5E9' }]}><MaterialCommunityIcons name="medical-bag" size={20} color="#2E7D32" /></View>
@@ -531,7 +531,7 @@ export default function SOSScreen({ navigation }) {
                     <Text style={styles.aiItemTitle}>{aiSuggestions.pharmacy?.name || 'No pharmacy found nearby'}</Text>
                     <Text style={styles.aiItemSub}>{aiSuggestions.pharmacy?.distance} away</Text>
                   </View>
-                  <IconButton icon="phone" size={20} disabled={!aiSuggestions.pharmacy?.phone} onPress={() => handleCall(aiSuggestions.pharmacy?.phone)} />
+                  <IconButton accessibilityLabel="Call" icon="phone" size={20} disabled={!aiSuggestions.pharmacy?.phone} onPress={() => handleCall(aiSuggestions.pharmacy?.phone)} />
                 </View>
                 <View style={styles.aiTipBox}>
                   <MaterialCommunityIcons name="lightbulb-on" size={16} color="#F57F17" />
@@ -563,7 +563,7 @@ export default function SOSScreen({ navigation }) {
                 descriptionStyle={styles.listDesc}
                 left={props => <List.Icon {...props} icon="flag-outline" color="#D32F2F" />}
                 right={props => (
-                  <IconButton icon="phone" onPress={() => handleCall(e.phone)} />
+                  <IconButton accessibilityLabel="Call" icon="phone" onPress={() => handleCall(e.phone)} />
                 )}
               />
             ))}
@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
   search: { borderRadius: 15, backgroundColor: '#FFF', marginBottom: 15 },
   embassyList: { backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' },
   listTitle: { fontFamily: 'Outfit-Bold', fontSize: 16 },
-  listDesc: { fontFamily: 'Outfit-Regular', fontSize: 12, color: '#999' },
+  listDesc: { fontFamily: 'Outfit-Regular', fontSize: 12, color: '#6B7280' },
   // Camera Modal Styles
   cameraOverlay:{position:'absolute',top:0,left:0,right:0,bottom:0,justifyContent:'space-between'},
   cameraHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:56,paddingHorizontal:20,paddingBottom:16,backgroundColor:'rgba(0,0,0,0.55)'},

@@ -133,7 +133,7 @@ export default function MapScreen({ navigation, route }) {
           styles={searchStyles}
           fetchDetails
           enablePoweredByContainer={false}
-          leftButton={<IconButton icon="menu" onPress={() => navigation.openDrawer()} />}
+          leftButton={<IconButton accessibilityLabel="Open menu" icon="menu" onPress={() => navigation.openDrawer()} />}
         />
       </View>
 
@@ -170,7 +170,7 @@ export default function MapScreen({ navigation, route }) {
                 >
                   View Details
                 </Button>
-                <IconButton 
+                <IconButton accessibilityLabel="Navigate" 
                   icon="navigation-variant" 
                   mode="contained" 
                   containerColor="#E0F2F1" 
@@ -181,7 +181,7 @@ export default function MapScreen({ navigation, route }) {
               </View>
             </View>
           )}
-          <IconButton icon="close" style={styles.closeBtn} onPress={closeDetails} />
+          <IconButton accessibilityLabel="Close" icon="close" style={styles.closeBtn} onPress={closeDetails} />
         </Surface>
       </Animated.View>
 
