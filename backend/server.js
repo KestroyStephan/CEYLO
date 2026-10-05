@@ -8,6 +8,7 @@ const { forecastDemand, demandHistory, predictEcoScore, ecoFeatures, metrics, cl
 const { destinations, resolvePlace } = require('./ai/places');
 const { getWeather } = require('./ai/weather');
 const { sendSms, isConfigured: smsConfigured } = require('./sms');
+const phoneAuth = require('./phoneAuth');
 
 const app = express();
 app.use(cors());
@@ -261,8 +262,9 @@ app.post('/api/notify-booking', requireAuth, async (req, res) => {
         const recipient = callerIsTraveller ? provider : traveller;
         const message = bookingMessage(booking, callerIsTraveller);
         if (!recipient || !message) return res.json({ sent: 0 });
-        const user = await readDoc(`users/${recipient}`, req.idToken);
-        const to = user?.expoPushToken;
+        // Tokens live in push_tokens (travellers' profiles are private); older accounts only in users
+        const tokenDoc = await readDoc(`push_tokens/${recipient}`, req.idToken);
+        const to = tokenDoc?.token || (await readDoc(`users/${recipient}`, req.idToken))?.expoPushToken;
         if (!to || !String(to).startsWith('ExponentPushToken')) return res.json({ sent: 0, reason: 'recipient has no push token' });
         const r = await fetch('https://exp.host/--/api/v2/push/send', {
             method: 'POST',
@@ -320,6 +322,27 @@ app.post('/api/sos-sms', requireAuth, async (req, res) => {
         res.status(result.ok ? 200 : 502).json({ sent: result.ok, provider: result.provider });
     } catch (e) {
         res.status(502).json({ sent: false, error: 'SMS failed: ' + e.message });
+    }
+});
+
+// FR-001 phone sign-in: SMS code -> Firebase custom token (see phoneAuth.js)
+const otpLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, skip: skipLimits });
+app.get('/api/auth/phone/available', (req, res) => res.json({ available: phoneAuth.isAvailable() }));
+app.post('/api/auth/phone/start', otpLimiter, async (req, res) => {
+    try {
+        const { status, body } = await phoneAuth.startVerification(req.body?.phone);
+        res.status(status).json(body);
+    } catch (e) {
+        res.status(502).json({ error: 'Could not start phone sign-in' });
+    }
+});
+app.post('/api/auth/phone/verify', otpLimiter, async (req, res) => {
+    try {
+        const { status, body } = await phoneAuth.verifyCode(req.body?.phone, req.body?.code);
+        res.status(status).json(body);
+    } catch (e) {
+        console.warn('Phone verification failed:', e.message);
+        res.status(502).json({ error: 'Could not finish phone sign-in' });
     }
 });
 

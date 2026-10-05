@@ -10,7 +10,7 @@ const {
   assertFails,
   assertSucceeds,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, addDoc, collection, deleteDoc } = require('firebase/firestore');
+const { doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, deleteDoc, query, where } = require('firebase/firestore');
 
 let env;
 
@@ -244,6 +244,36 @@ describe('SOS, itineraries and content', () => {
     await assertFails(getDoc(doc(as('t2'), 'sus_responses', 's1')));
     await assertSucceeds(getDoc(doc(as('mgr'), 'feedback', 'f1')));
     await assertFails(getDoc(doc(as('t2'), 'feedback', 'f1')));
+  });
+
+  test('phone verified only for the number Firebase verified at sign-in', async () => {
+    const phoneUser = as('p1', { phone_number: '+94771234567' });
+    await assertSucceeds(setDoc(doc(phoneUser, 'users', 'p1'), { role: 'tourist', phone: '+94771234567', phoneVerified: true }));
+    await assertFails(setDoc(doc(as('p2'), 'users', 'p2'), { role: 'tourist', phone: '+94771234567', phoneVerified: true }));
+    await assertFails(setDoc(doc(as('p3', { phone_number: '+94770000000' }), 'users', 'p3'), { role: 'tourist', phone: '+94771234567', phoneVerified: true }));
+    await assertSucceeds(setDoc(doc(as('p4'), 'users', 'p4'), { role: 'tourist', phone: '+94771234567' }));
+  });
+
+  test('traveller profiles are private; provider profiles are public', async () => {
+    await seed({
+      'users/t1': { role: 'tourist', email: 't1@example.com', phone: '+94771234567' },
+      'users/g1': { role: 'guide', name: 'Nimal' },
+      'users/mgr': { role: 'manager' },
+    });
+    await assertSucceeds(getDoc(doc(as('t1'), 'users', 't1')));
+    await assertFails(getDoc(doc(as('g1'), 'users', 't1')));
+    await assertFails(getDoc(doc(as('t2'), 'users', 't1')));
+    await assertSucceeds(getDoc(doc(as('mgr'), 'users', 't1')));
+    await assertSucceeds(getDoc(doc(as('t1'), 'users', 'g1')));
+    await assertSucceeds(getDocs(query(collection(as('t1'), 'users'), where('role', '==', 'guide'))));
+    await assertFails(getDocs(query(collection(as('g1'), 'users'), where('role', '==', 'tourist'))));
+  });
+
+  test('push tokens: anyone signed in can read, only the owner writes', async () => {
+    await assertSucceeds(setDoc(doc(as('t1'), 'push_tokens', 't1'), { token: 'ExponentPushToken[x]' }));
+    await assertFails(setDoc(doc(as('t2'), 'push_tokens', 't1'), { token: 'ExponentPushToken[evil]' }));
+    await assertSucceeds(getDoc(doc(as('g1'), 'push_tokens', 't1')));
+    await assertFails(getDoc(doc(anon(), 'push_tokens', 't1')));
   });
 
   test('a traveller can record consent on their own profile', async () => {

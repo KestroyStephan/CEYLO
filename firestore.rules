@@ -49,21 +49,45 @@ service cloud.firestore {
         || (before in ['guide_pending', 'guide_rejected'] && after == 'guide_pending');
     }
 
+    // phoneVerified may only be claimed for the number Firebase verified at sign-in
+    function phoneClaimOk() {
+      return !('phoneVerified' in request.resource.data)
+        || request.resource.data.phoneVerified != true
+        || (request.auth.token.phone_number != null
+            && request.resource.data.get('phone', null) == request.auth.token.phone_number);
+    }
+
     // Users collection
+    // Privacy: a traveller's profile (email, phone, preferences, consent) is readable only by
+    // them and by staff. Guide, driver and business profiles are public listings.
+    function isPublicProfile() {
+      return resource.data.get('role', null) in ['guide', 'driver', 'driver_active', 'vendor',
+                                                  'vendor_active', 'accommodation', 'tour_provider'];
+    }
+
     match /users/{uid} {
-      allow read: if isSignedIn();
+      allow read: if isOwner(uid) || isAdmin() || (isSignedIn() && isPublicProfile());
       allow create: if isAdmin() || (
         isOwner(uid) &&
         (!('role' in request.resource.data) || isSelfServiceRole(request.resource.data.role)) &&
-        !('isBanned' in request.resource.data)
+        !('isBanned' in request.resource.data) &&
+        phoneClaimOk()
       );
       allow update: if isAdmin() || (
         isOwner(uid) &&
         isAllowedRoleChange() &&
         !changedKeys().hasAny(['isBanned', 'flagged']) &&
+        phoneClaimOk() &&
         (!changedKeys().hasAny(['status']) || request.resource.data.status == 'pending_verification')
       );
       allow delete: if isAdmin();
+    }
+
+    // Push tokens, kept apart from profiles so booking partners can notify each other
+    // without being able to read a traveller's profile
+    match /push_tokens/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid);
     }
 
     // Bookings (guide tours and rides)

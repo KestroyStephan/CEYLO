@@ -53,6 +53,7 @@ import MarketplaceScreen from './screens/MarketplaceScreen';
 import EcoPassportScreen from './screens/EcoPassportScreen';
 import TravelPreferencesScreen from './screens/TravelPreferencesScreen';
 import ConsentScreen from './screens/ConsentScreen';
+import PhoneLoginScreen from './screens/auth/PhoneLoginScreen';
 import ResearchSurveyScreen from './screens/ResearchSurveyScreen';
 import RouteGuideScreen from './screens/RouteGuideScreen';
 import CulturalEventsScreen from './screens/CulturalEventsScreen';
@@ -297,6 +298,7 @@ export default function App() {
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
                 <Stack.Screen name="RolePicker" component={RolePickerScreen} />
                 <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="PhoneLogin" component={PhoneLoginScreen} />
                 <Stack.Screen name="Register" component={RegisterScreen} />
               </Stack.Group>
             )}

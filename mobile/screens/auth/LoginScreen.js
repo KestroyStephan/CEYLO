@@ -215,6 +215,18 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.googleG}>G</Text>
               <Text style={styles.googleBtnText}>Continue with Google</Text>
             </TouchableOpacity>
+
+            {/* Continue with phone number (FR-001) */}
+            <TouchableOpacity
+              style={[styles.googleBtn, { marginTop: 12 }]}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('PhoneLogin')}
+              disabled={loading}
+              accessibilityRole="button"
+            >
+              <MaterialCommunityIcons name="cellphone" size={20} color="#00695C" style={{ marginRight: 10 }} />
+              <Text style={styles.googleBtnText}>Continue with phone number</Text>
+            </TouchableOpacity>
           </View>
 
           {/* ── Create Account ── */}

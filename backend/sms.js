@@ -20,17 +20,23 @@ function provider(env = process.env) {
     return null;
 }
 
-function isConfigured(env = process.env) {
+/** A gateway has its credentials (enough for sign-in codes). */
+function gatewayReady(env = process.env) {
     const p = provider(env);
-    if (!p || !env.SOS_DESK_NUMBER) return false;
     if (p === 'textbee') return Boolean(env.TEXTBEE_API_KEY);
-    return Boolean(env.NOTIFY_LK_USER_ID && env.NOTIFY_LK_API_KEY);
+    if (p === 'notifylk') return Boolean(env.NOTIFY_LK_USER_ID && env.NOTIFY_LK_API_KEY);
+    return false;
+}
+
+/** SOS SMS also needs the desk number to send to. */
+function isConfigured(env = process.env) {
+    return gatewayReady(env) && Boolean(env.SOS_DESK_NUMBER);
 }
 
 /** Sends one SMS. Resolves to { ok, provider, detail }; never throws for gateway errors. */
 async function sendSms(to, message, env = process.env) {
     const p = provider(env);
-    if (!isConfigured(env)) return { ok: false, provider: p, detail: 'not_configured' };
+    if (!gatewayReady(env)) return { ok: false, provider: p, detail: 'not_configured' };
     const number = String(to).trim();
     try {
         if (p === 'textbee') {
@@ -57,4 +63,4 @@ async function sendSms(to, message, env = process.env) {
     }
 }
 
-module.exports = { sendSms, isConfigured, provider };
+module.exports = { sendSms, isConfigured, gatewayReady, provider };

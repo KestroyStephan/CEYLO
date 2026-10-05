@@ -71,16 +71,36 @@ export function notifyBooking(bookingId) {
     .catch(e => console.log('Booking notification not sent:', e.message));
 }
 
+/** Phone sign-in (FR-001): the server texts a code and returns a Firebase custom token. */
+async function phoneAuthCall(path, body) {
+  const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, 30000, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+export const startPhoneSignIn = (phone) => phoneAuthCall('/api/auth/phone/start', { phone });
+export const verifyPhoneSignIn = (phone, code) => phoneAuthCall('/api/auth/phone/verify', { phone, code });
+export async function phoneSignInAvailable() {
+  try {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/api/auth/phone/available`, 30000);
+    return Boolean((await res.json()).available);
+  } catch (e) {
+    return false;
+  }
+}
+
 /** Wake the backend early (Render free tier sleeps when idle) so the first chat is fast. */
 export function warmUpBackend() {
   fetch(`${API_BASE_URL}/api/health`).catch(() => {});
 }
 
-async function fetchWithTimeout(url, ms) {
+async function fetchWithTimeout(url, ms, options = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), ms);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timeoutId);
   }
