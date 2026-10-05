@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { notifyBooking } from '../services/aiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +14,13 @@ export default function WaitingApprovalScreen({ route, navigation }) {
   const { bookingId, guideName, guidePhoto } = route.params;
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(Date.now());
+
+  // After 15 minutes without a reply, offer other guides (Sprint 3)
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!bookingId) {
@@ -32,6 +40,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
     // Mock Payment
     try {
       await updateDoc(doc(db, 'bookings', bookingId), { status: 'confirmed' });
+      notifyBooking(bookingId);
       navigation.navigate('Main'); // Navigate back to home or a success screen
     } catch (error) {
       console.error(error);
@@ -41,6 +50,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
   const handleCancelAndGoHome = async () => {
     try {
       await updateDoc(doc(db, 'bookings', bookingId), { status: 'cancelled' });
+      notifyBooking(bookingId);
       navigation.navigate('Main');
     } catch (error) {
       console.error(error);
@@ -60,6 +70,8 @@ export default function WaitingApprovalScreen({ route, navigation }) {
   }
 
   const status = booking?.status || 'pending';
+  const sentAt = booking?.createdAt?.toMillis ? booking.createdAt.toMillis() : null;
+  const noReply = status === 'pending' && sentAt != null && now - sentAt > 15 * 60 * 1000;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -86,7 +98,16 @@ export default function WaitingApprovalScreen({ route, navigation }) {
             <Text style={styles.subtitle}>
               Your request has been sent to {guideName}. We'll notify you as soon as they respond!
             </Text>
-            <ActivityIndicator size="small" color="#F57C00" style={{ marginTop: 20, marginBottom: 40 }} />
+            <ActivityIndicator size="small" color="#F57C00" style={{ marginTop: 20, marginBottom: noReply ? 16 : 40 }} />
+            {noReply && (
+              <TouchableOpacity style={styles.noReply} onPress={handleFindAnother} accessibilityRole="button">
+                <MaterialCommunityIcons name="account-search-outline" size={22} color="#004D40" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.noReplyTitle}>No reply after 15 minutes</Text>
+                  <Text style={styles.noReplySub}>Other local guides are available now. Tap to see them.</Text>
+                </View>
+              </TouchableOpacity>
+            )}
             
             <View style={styles.actionRow}>
               <TouchableOpacity style={[styles.cancelBtn, { flex: 1, marginRight: 8 }]} onPress={handleCancelAndGoHome}>
@@ -147,6 +168,9 @@ export default function WaitingApprovalScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  noReply: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#E0F2F1', borderRadius: 16, padding: 14, marginBottom: 24, alignSelf: 'stretch' },
+  noReplyTitle: { fontSize: 15, fontWeight: '700', color: '#004D40' },
+  noReplySub: { fontSize: 13, color: '#33413E', marginTop: 2 },
   container: { flex: 1, backgroundColor: '#F4F7F4' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
   headerTitle: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },

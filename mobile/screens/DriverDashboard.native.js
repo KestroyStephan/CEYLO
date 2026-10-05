@@ -8,6 +8,7 @@ import { signOut } from 'firebase/auth';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { startLocationTracking } from '../services/DriverLocationService';
+import { notifyBooking } from '../services/aiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -103,6 +104,7 @@ export default function DriverDashboard({ navigation }) {
         status: 'Confirmed',
         acceptedAt: new Date().toISOString(),
       });
+      notifyBooking(bookingId);
       startLocationTracking(auth.currentUser.uid, bookingId);
       // Navigate to Ride tab (tab index 2 in DriverNavigator)
       navigation.navigate('DriverRide', { 

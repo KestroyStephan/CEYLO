@@ -219,6 +219,110 @@ app.post('/api/push', requireAuth, requireStaff, async (req, res) => {
     }
 });
 
+// Booking notifications (Sprint 3). The booking is read with the caller's own token, so
+// Firestore rules guarantee the caller is part of it; the message is derived from the
+// booking's real status, never from the request body.
+async function readDoc(path, idToken) {
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Object.fromEntries(Object.entries(data.fields || {}).map(([k, v]) => [k, v.stringValue ?? v.integerValue ?? v.doubleValue ?? v.booleanValue ?? null]));
+}
+
+function bookingMessage(booking, callerIsTraveller) {
+    const kind = booking.driverId !== undefined || booking.vehicleType ? 'ride' : 'tour';
+    const status = String(booking.status || 'pending').toLowerCase();
+    if (callerIsTraveller) {
+        if (status === 'pending') return { title: `New ${kind} request`, body: `${booking.userName || booking.touristName || 'A traveller'} sent a ${kind} request. Open CEYLO to accept or decline.` };
+        if (status === 'cancelled') return { title: 'Booking cancelled', body: `A traveller cancelled their ${kind} request.` };
+        if (status === 'confirmed') return { title: 'Booking confirmed', body: `The traveller confirmed the ${kind}.` };
+        return null;
+    }
+    if (status === 'accepted' || status === 'confirmed') return { title: 'Booking accepted', body: `Your ${kind} request was accepted. Open CEYLO to chat and see the details.` };
+    if (status === 'declined' || status === 'rejected') return { title: 'Booking declined', body: `Your ${kind} request was declined. CEYLO can suggest other providers nearby.` };
+    if (status === 'completed') return { title: 'How was it?', body: `Your ${kind} is complete. Leave a review to help other travellers.` };
+    return null;
+}
+
+app.post('/api/notify-booking', requireAuth, async (req, res) => {
+    const bookingId = String(req.body?.bookingId || '');
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(bookingId)) return res.status(400).json({ error: 'bookingId is required' });
+    try {
+        const booking = await readDoc(`bookings/${bookingId}`, req.idToken);
+        if (!booking) return res.status(404).json({ error: 'Booking not found' });
+        const traveller = booking.touristId || booking.userId;
+        const provider = booking.guideId || booking.driverId || booking.vendorId;
+        const callerIsTraveller = req.uid === traveller;
+        if (!callerIsTraveller && req.uid !== provider) return res.status(403).json({ error: 'Not part of this booking' });
+        const recipient = callerIsTraveller ? provider : traveller;
+        const message = bookingMessage(booking, callerIsTraveller);
+        if (!recipient || !message) return res.json({ sent: 0 });
+        const user = await readDoc(`users/${recipient}`, req.idToken);
+        const to = user?.expoPushToken;
+        if (!to || !String(to).startsWith('ExponentPushToken')) return res.json({ sent: 0, reason: 'recipient has no push token' });
+        const r = await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to, sound: 'default', ...message, data: { type: 'booking', bookingId } }),
+        });
+        const data = await r.json();
+        res.json({ sent: 1, ticket: data.data || null });
+    } catch (e) {
+        res.status(502).json({ error: 'Notification failed: ' + e.message });
+    }
+});
+
+// SOS by SMS (FR-041). When a traveller raises an SOS online, the emergency desk also gets
+// an SMS through the Notify.lk gateway. Configure NOTIFY_LK_USER_ID, NOTIFY_LK_API_KEY,
+// NOTIFY_LK_SENDER_ID and SOS_DESK_NUMBER on the server; without them the endpoint reports
+// that SMS is not configured and the app keeps its pre-filled SMS fallback.
+function sosSmsText(alert, alertId) {
+    const lat = alert.location?.latitude, lon = alert.location?.longitude;
+    const where = lat != null ? `https://maps.google.com/?q=${Number(lat).toFixed(5)},${Number(lon).toFixed(5)}` : 'location not shared';
+    return `CEYLO SOS ${alertId.slice(0, 6)}: ${alert.userName || 'Traveller'} needs help. ${where}. Phone: ${alert.phone || 'n/a'}`.slice(0, 300);
+}
+
+async function patchSosLog(alertId, fields, idToken) {
+    const mask = Object.keys(fields).map(k => `updateMask.fieldPaths=${k}`).join('&');
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/sos_alerts/${alertId}?${mask}`;
+    const body = { fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { stringValue: String(v) }])) };
+    await fetch(url, { method: 'PATCH', headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .catch(() => {});
+}
+
+app.post('/api/sos-sms', requireAuth, async (req, res) => {
+    const alertId = String(req.body?.alertId || '');
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(alertId)) return res.status(400).json({ error: 'alertId is required' });
+    const { NOTIFY_LK_USER_ID, NOTIFY_LK_API_KEY, NOTIFY_LK_SENDER_ID, SOS_DESK_NUMBER } = process.env;
+    try {
+        const alert = await readDoc(`sos_alerts/${alertId}`, req.idToken);
+        if (!alert) return res.status(404).json({ error: 'Alert not found' });
+        if (alert.userId !== req.uid) return res.status(403).json({ error: 'Only the traveller who raised the alert can send it' });
+        if (!NOTIFY_LK_USER_ID || !NOTIFY_LK_API_KEY || !SOS_DESK_NUMBER) {
+            await patchSosLog(alertId, { smsStatus: 'not_configured', smsAt: new Date().toISOString() }, req.idToken);
+            return res.status(503).json({ sent: false, error: 'SMS gateway not configured' });
+        }
+        // readDoc flattens maps, so fetch the location separately when present
+        const raw = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/sos_alerts/${alertId}`,
+            { headers: { Authorization: `Bearer ${req.idToken}` } }).then(r => r.json());
+        const loc = raw.fields?.location?.mapValue?.fields;
+        const location = loc ? { latitude: loc.latitude?.doubleValue, longitude: loc.longitude?.doubleValue } : null;
+        const text = sosSmsText({ ...alert, location }, alertId);
+        const qs = new URLSearchParams({
+            user_id: NOTIFY_LK_USER_ID, api_key: NOTIFY_LK_API_KEY, sender_id: NOTIFY_LK_SENDER_ID || 'NotifyDEMO',
+            to: SOS_DESK_NUMBER.replace(/^\+/, ''), message: text,
+        });
+        const r = await fetch(`https://app.notify.lk/api/v1/send?${qs}`);
+        const data = await r.json().catch(() => ({}));
+        const ok = r.ok && data.status === 'success';
+        await patchSosLog(alertId, { smsStatus: ok ? 'sent' : 'failed', smsAt: new Date().toISOString(), smsTo: SOS_DESK_NUMBER }, req.idToken);
+        res.status(ok ? 200 : 502).json({ sent: ok });
+    } catch (e) {
+        res.status(502).json({ sent: false, error: 'SMS failed: ' + e.message });
+    }
+});
+
 // Health check endpoint for system monitoring and frontend integration
 app.get('/api/health', (req, res) => {
     res.json({

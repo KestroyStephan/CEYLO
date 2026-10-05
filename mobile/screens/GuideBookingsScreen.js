@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { notifyBooking } from '../services/aiClient';
 
 const TYPE_COLORS = {
   'HERITAGE TOUR': '#6A1B9A',
@@ -74,6 +75,7 @@ export default function GuideBookingsScreen({ route, navigation }) {
     if (!selectedBooking) return;
     try {
       await updateDoc(doc(db, 'bookings', selectedBooking.id), { status });
+      notifyBooking(selectedBooking.id);
       const currentBooking = selectedBooking;
       setSelectedBooking(null);
       

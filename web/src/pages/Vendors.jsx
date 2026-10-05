@@ -73,7 +73,8 @@ export default function Vendors() {
             });
 
             await updateDoc(doc(db, 'users', selectedVendor.id), {
-                role: status === 'approved' ? 'vendor_active' : 'vendor_pending',
+                // A rejected vendor can correct their documents and resubmit from the app
+                role: status === 'approved' ? 'vendor_active' : status === 'rejected' ? 'vendor_rejected' : 'vendor_pending',
                 status: status
             });
 

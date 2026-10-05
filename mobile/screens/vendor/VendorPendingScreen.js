@@ -173,7 +173,10 @@ export default function VendorPendingScreen({ navigation }) {
       {isRejected && (
         <View style={styles.stepsCard}>
           <Text style={styles.stepsTitle}>What can you do?</Text>
-          <Text style={styles.stepText}>• You may re-apply with corrected documents</Text>
+          <Text style={styles.stepText}>• Correct the details or upload clearer documents, then send the application again</Text>
+          <TouchableOpacity style={[styles.supportBtn, { backgroundColor: PRIMARY, marginBottom: 10 }]} onPress={() => navigation.navigate('VendorRegistration')} accessibilityRole="button">
+            <Text style={[styles.supportBtnText, { color: '#FFF' }]}>Fix and resubmit</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.supportBtn} onPress={() => Alert.alert('Support', 'Please email support@ceylo.lk')}>
             <Text style={styles.supportBtnText}>Contact Support</Text>
           </TouchableOpacity>

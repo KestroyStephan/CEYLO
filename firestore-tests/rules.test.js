@@ -147,6 +147,13 @@ describe('bookings', () => {
 });
 
 describe('vendors and drivers', () => {
+  test('a rejected vendor can resubmit for review but not approve themselves', async () => {
+    await seed({ 'users/v2': { role: 'vendor_rejected' }, 'vendors/v2': { businessName: 'Tea Stall', status: 'rejected', rejectionReason: 'Blurry NIC' } });
+    await assertSucceeds(setDoc(doc(as('v2'), 'vendors', 'v2'), { businessName: 'Tea Stall', status: 'pending_verification' }));
+    await assertSucceeds(updateDoc(doc(as('v2'), 'users', 'v2'), { role: 'vendor_pending', status: 'pending_verification' }));
+    await assertFails(updateDoc(doc(as('v2'), 'users', 'v2'), { role: 'vendor_active' }));
+  });
+
   test('a vendor registers as pending and cannot approve themselves', async () => {
     await assertSucceeds(setDoc(doc(as('v1'), 'vendors', 'v1'), { businessName: 'Spice Hut', status: 'pending_verification' }));
     await assertFails(updateDoc(doc(as('v1'), 'vendors', 'v1'), { status: 'approved' }));

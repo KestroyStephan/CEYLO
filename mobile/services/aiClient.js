@@ -58,6 +58,20 @@ export async function recommendDestinations(params) {
 }
 
 /** Wake the backend early (Render free tier sleeps when idle) so the first chat is fast. */
+/** Asks the backend to text the emergency desk about an SOS (FR-041). Fire and forget. */
+export function sendSosSms(alertId) {
+  if (!alertId || !auth.currentUser) return;
+  postJSON('/api/sos-sms', { alertId }, 20000)
+    .catch(e => console.log('SOS SMS not sent by the server:', e.message));
+}
+
+/** Pushes a booking update to the other party (Sprint 3). Fire and forget. */
+export function notifyBooking(bookingId) {
+  if (!bookingId || !auth.currentUser) return;
+  postJSON('/api/notify-booking', { bookingId }, 20000)
+    .catch(e => console.log('Booking notification not sent:', e.message));
+}
+
 export function warmUpBackend() {
   fetch(`${API_BASE_URL}/api/health`).catch(() => {});
 }

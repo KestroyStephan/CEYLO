@@ -39,7 +39,7 @@ export default function Dashboard() {
     const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     useEffect(() => {
-        const sosQuery = query(collection(db, "sos_alerts"), where("status", "in", ["active", "investigating"]));
+        const sosQuery = query(collection(db, "sos_alerts"), where("status", "in", ["active", "acknowledged", "dispatched", "investigating"]));
         const unsubSos = onSnapshot(sosQuery, (snap) => setActiveSosCount(snap.size), () => setActiveSosCount(0));
 
         const vendorQuery = query(collection(db, "vendors"), where("verificationStatus", "==", "pending"));

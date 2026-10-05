@@ -10,6 +10,7 @@ import { signOut } from 'firebase/auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { notifyBooking } from '../services/aiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -61,12 +62,12 @@ export default function GuideDashboard({ navigation }) {
   }, []);
 
   const handleAccept = async (id) => {
-    try { await updateDoc(doc(db, 'bookings', id), { status: 'accepted' }); }
+    try { await updateDoc(doc(db, 'bookings', id), { status: 'accepted' }); notifyBooking(id); }
     catch (e) { Alert.alert('Error', e.message); }
   };
 
   const handleDecline = async (id) => {
-    try { await updateDoc(doc(db, 'bookings', id), { status: 'declined' }); }
+    try { await updateDoc(doc(db, 'bookings', id), { status: 'declined' }); notifyBooking(id); }
     catch (e) { Alert.alert('Error', e.message); }
   };
 

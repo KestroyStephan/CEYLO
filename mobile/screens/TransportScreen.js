@@ -61,13 +61,7 @@ export default function TransportScreen({ navigation }) {
           unsub();
         }
       });
-      
-      // Temporary fallback for demo purposes if no driver accepts within 5 seconds
-      setTimeout(() => {
-        if (!isAccepted) {
-          updateDoc(docRef, { status: 'accepted' });
-        }
-      }, 5000);
+
 
     } catch (error) {
       console.error("Booking error:", error);

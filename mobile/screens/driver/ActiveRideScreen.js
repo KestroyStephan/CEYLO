@@ -8,6 +8,7 @@ import { auth, db } from '../../firebaseConfig';
 import { calculateDistance } from '../../utils/fareCalculator';
 import { startLocationTracking, stopLocationTracking } from '../../services/DriverLocationService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { notifyBooking } from '../../services/aiClient';
 
 const { width } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -92,6 +93,7 @@ export default function ActiveRideScreen({ route, navigation }) {
         status: 'Arrived',
         arrivedAt: new Date().toISOString(),
       });
+      notifyBooking(bookingId);
     } catch (e) {
       Alert.alert('Error', 'Failed to update status: ' + e.message);
     }
@@ -103,6 +105,7 @@ export default function ActiveRideScreen({ route, navigation }) {
         status: 'InProgress',
         startedAt: new Date().toISOString(),
       });
+      notifyBooking(bookingId);
     } catch (e) {
       Alert.alert('Error', 'Failed to start trip: ' + e.message);
     }
@@ -115,6 +118,7 @@ export default function ActiveRideScreen({ route, navigation }) {
         completedAt: new Date().toISOString(),
         finalFare: bookingData.price,
       });
+      notifyBooking(bookingId);
       stopLocationTracking();
     } catch (error) {
       Alert.alert('Error', 'Failed to complete trip: ' + error.message);

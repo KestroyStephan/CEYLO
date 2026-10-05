@@ -13,6 +13,7 @@ import {
 import { auth, db } from '../../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { stopLocationTracking } from '../../services/DriverLocationService';
+import { notifyBooking } from '../../services/aiClient';
 
 export default function DriverRideRequestsScreen() {
   const [activeRide, setActiveRide] = useState(null);
@@ -75,6 +76,7 @@ export default function DriverRideRequestsScreen() {
         status: 'Arrived',
         arrivedAt: new Date().toISOString(),
       });
+      notifyBooking(activeRide.id);
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -86,6 +88,7 @@ export default function DriverRideRequestsScreen() {
         status: 'InProgress',
         startedAt: new Date().toISOString(),
       });
+      notifyBooking(activeRide.id);
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -99,6 +102,7 @@ export default function DriverRideRequestsScreen() {
         completedAt: new Date().toISOString(),
         finalFare: activeRide.price,
       });
+      notifyBooking(activeRide.id);
       Alert.alert(
         'Trip Completed!',
         `Fare: LKR ${activeRide.price?.toLocaleString()}`,
@@ -121,6 +125,7 @@ export default function DriverRideRequestsScreen() {
         cancelReason: cancelReason,
         cancelledAt: new Date().toISOString(),
       });
+      notifyBooking(activeRide.id);
       stopLocationTracking();
       setCancelDialogVisible(false);
       setCancelReason('');

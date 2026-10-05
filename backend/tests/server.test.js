@@ -287,4 +287,14 @@ describe('Protected endpoints', () => {
         const response = await request(app).post('/api/push').send({ messages: [] });
         expect(response.statusCode).toBe(401);
     });
+
+    it('SOS SMS requires a signed-in caller', async () => {
+        const response = await request(app).post('/api/sos-sms').send({ alertId: 'a1' });
+        expect(response.statusCode).toBe(401);
+    });
+
+    it('booking notifications require a signed-in caller', async () => {
+        const response = await request(app).post('/api/notify-booking').send({ bookingId: 'abc123' });
+        expect(response.statusCode).toBe(401);
+    });
 });

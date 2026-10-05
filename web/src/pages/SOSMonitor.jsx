@@ -8,6 +8,9 @@ import {
 } from '@mui/material';
 import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { useAuth } from '../context/AuthContext';
+import ForwardToInboxIcon from '@mui/icons-material/ForwardToInbox';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
 import LocalPoliceIcon from '@mui/icons-material/LocalPolice';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
@@ -25,7 +28,15 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebaseConfig';
 
+// Emergency workflow (Sprint 3): active -> acknowledged -> dispatched -> resolved.
+// 'investigating' is the older name for dispatched and is still read.
+const OPEN_STATUSES = ['active', 'acknowledged', 'dispatched', 'investigating'];
+const STATUS_LABEL = { active: 'NEW', acknowledged: 'ACKNOWLEDGED', dispatched: 'DISPATCHED', investigating: 'DISPATCHED', resolved: 'RESOLVED', closed: 'CLOSED' };
+const fmtTime = (t) => (t?.toDate ? t.toDate().toLocaleTimeString() : typeof t === 'string' ? new Date(t).toLocaleTimeString() : null);
+
 function SOSMonitor() {
+    const { currentUser } = useAuth();
+    const handler = () => ({ uid: currentUser?.uid || null, email: currentUser?.email || null });
     const [alerts, setAlerts] = useState([]);
     const [selectedAlert, setSelectedAlert] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,10 +72,9 @@ function SOSMonitor() {
                 return {
                     id: doc.id,
                     ...data,
-                    threatLevel: data.threatLevel || (data.status === 'active' ? 'CRITICAL' : 'STABLE'),
-                    aiInsights: data.aiInsights || ['Vision check complete', 'No structural failures', 'Location accuracy high'],
-                    emergencyContactName: data.emergencyContactName || 'Emergency Services / Guide',
-                    emergencyContactPhone: data.emergencyContactPhone || '+94 11 269 1111'
+                    threatLevel: data.threatLevel || (data.status === 'active' ? 'CRITICAL' : OPEN_STATUSES.includes(data.status) ? 'IN PROGRESS' : 'STABLE'),
+                    emergencyContactName: data.emergencyContactName || 'Tourist Police',
+                    emergencyContactPhone: data.emergencyContactPhone || '1912'
                 };
             });
 
@@ -95,7 +105,7 @@ function SOSMonitor() {
                 setSelectedAlert(null);
             }
         } else {
-            const activeList = alerts.filter(a => a.status === 'active' || a.status === 'investigating');
+            const activeList = alerts.filter(a => OPEN_STATUSES.includes(a.status));
             if (activeList.length > 0) {
                 setSelectedAlert(activeList[0]);
             }
@@ -112,9 +122,11 @@ function SOSMonitor() {
         try {
             // Update Firestore status
             await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
-                status: 'investigating',
+                status: 'dispatched',
                 dispatchTeam: team,
-                dispatchedAt: serverTimestamp()
+                dispatchedAt: serverTimestamp(),
+                handledBy: handler(),
+                ...(selectedAlert.acknowledgedAt ? {} : { acknowledgedAt: serverTimestamp() }),
             });
 
             // Write record to EmergencyLogs
@@ -123,7 +135,9 @@ function SOSMonitor() {
                 userName: selectedAlert.userName,
                 location: selectedAlert.location || null,
                 dispatchedTeam: team,
-                resolvedAt: serverTimestamp(),
+                action: 'dispatched',
+                handledBy: handler(),
+                createdAt: serverTimestamp(),
                 notes: `Emergency response dispatched: ${team}.`
             });
 
@@ -143,13 +157,17 @@ function SOSMonitor() {
         try {
             await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
                 status: 'resolved',
-                resolvedAt: serverTimestamp()
+                resolvedAt: serverTimestamp(),
+                handledBy: handler(),
             });
 
             await addDoc(collection(db, "EmergencyLogs"), {
                 alertId: selectedAlert.id,
                 userName: selectedAlert.userName,
                 location: selectedAlert.location || null,
+                action: 'resolved',
+                handledBy: handler(),
+                createdAt: serverTimestamp(),
                 resolvedAt: serverTimestamp(),
                 notes: `Incident marked as resolved. Closed emergency monitor.`
             });
@@ -158,6 +176,60 @@ function SOSMonitor() {
             setSelectedAlert(null);
         } catch (e) {
             setSnackbar({ open: true, message: 'Failed to resolve: ' + e.message, severity: 'error' });
+        }
+    };
+
+    const handleAcknowledge = async () => {
+        if (!selectedAlert) return;
+        try {
+            await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                status: 'acknowledged',
+                acknowledgedAt: serverTimestamp(),
+                handledBy: handler(),
+            });
+            await addDoc(collection(db, "EmergencyLogs"), {
+                alertId: selectedAlert.id,
+                userName: selectedAlert.userName,
+                location: selectedAlert.location || null,
+                action: 'acknowledged',
+                handledBy: handler(),
+                createdAt: serverTimestamp(),
+                notes: 'Alert acknowledged by the emergency desk.',
+            });
+            setSnackbar({ open: true, message: 'Alert acknowledged. The traveller sees that help is on the way.', severity: 'success' });
+        } catch (e) {
+            setSnackbar({ open: true, message: 'Failed to acknowledge: ' + e.message, severity: 'error' });
+        }
+    };
+
+    // Hands the case to the authority with everything they need, and records that it was sent
+    const handleForward = async () => {
+        if (!selectedAlert) return;
+        const loc = selectedAlert.location;
+        const lat = loc?.latitude ?? loc?.lat;
+        const lon = loc?.longitude ?? loc?.lng ?? loc?.lon;
+        const details = [
+            `CEYLO SOS alert ${selectedAlert.id}`,
+            `Traveller: ${selectedAlert.userName || 'Unknown'}${selectedAlert.userPhone ? `, phone ${selectedAlert.userPhone}` : ''}`,
+            `Raised: ${selectedAlert.timestamp?.toDate ? selectedAlert.timestamp.toDate().toLocaleString() : 'unknown'}`,
+            lat != null ? `Location: ${lat}, ${lon} - https://www.google.com/maps/search/?api=1&query=${lat},${lon}` : `Location: ${selectedAlert.locationName || 'not shared'}`,
+            selectedAlert.message ? `Message: ${selectedAlert.message}` : null,
+            selectedAlert.photoUrl ? `Photo: ${selectedAlert.photoUrl}` : null,
+            `Status: ${STATUS_LABEL[selectedAlert.status] || selectedAlert.status}${selectedAlert.dispatchTeam ? `, ${selectedAlert.dispatchTeam} dispatched` : ''}`,
+        ].filter(Boolean).join('\n');
+        try {
+            await navigator.clipboard.writeText(details);
+            await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
+                forwardedToAuthorityAt: serverTimestamp(),
+                forwardedBy: handler(),
+            });
+            await addDoc(collection(db, "EmergencyLogs"), {
+                alertId: selectedAlert.id, action: 'forwarded', handledBy: handler(),
+                createdAt: serverTimestamp(), notes: details,
+            });
+            setSnackbar({ open: true, message: 'Case details copied. Paste them to Tourist Police (1912) or the relevant authority.', severity: 'success' });
+        } catch (e) {
+            setSnackbar({ open: true, message: 'Could not forward: ' + e.message, severity: 'error' });
         }
     };
 
@@ -232,7 +304,7 @@ function SOSMonitor() {
     };
 
     // Filter alerts for history table
-    const activeAlertsList = alerts.filter(a => a.status === 'active' || a.status === 'investigating');
+    const activeAlertsList = alerts.filter(a => OPEN_STATUSES.includes(a.status));
     const historicalAlertsList = alerts.filter(a => a.status === 'resolved' || a.status === 'closed')
         .filter(a => a.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                      a.locationName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -402,15 +474,31 @@ function SOSMonitor() {
                                     }}>
                                         <Box sx={{ width: 8, height: 8, bgcolor: '#f44336', borderRadius: '50%', mr: 1, animation: 'pulse 1.2s infinite' }} />
                                         <Typography variant="caption" color="#FFF" fontWeight={800}>
-                                            LIVE FEED: CAM_SIG_04
+                                            {selectedAlert.photoUrl ? 'PHOTO FROM TRAVELLER' : 'NO PHOTO SENT'}
                                         </Typography>
                                     </Box>
 
-                                    <img 
-                                        src={selectedAlert.photoUrl || 'https://images.unsplash.com/photo-1501785888041-af3ef285b470'} 
-                                        alt="SOS Live Stream" 
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                    />
+                                    {selectedAlert.photoUrl ? (
+                                        <img
+                                            src={selectedAlert.photoUrl}
+                                            alt="Photo sent with the SOS"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                    ) : (
+                                        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FFF', gap: 1, px: 3, textAlign: 'center' }}>
+                                            <MyLocationIcon sx={{ fontSize: 40 }} />
+                                            <Typography fontWeight={800}>
+                                                {selectedAlert.location?.latitude != null
+                                                    ? `${Number(selectedAlert.location.latitude).toFixed(5)}, ${Number(selectedAlert.location.longitude).toFixed(5)}`
+                                                    : (selectedAlert.locationName || 'Location not shared')}
+                                            </Typography>
+                                            {selectedAlert.location?.latitude != null && (
+                                                <a href={`https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.latitude},${selectedAlert.location.longitude}`} target="_blank" rel="noreferrer" style={{ color: '#A5D6A7', fontWeight: 700 }}>
+                                                    Open in Google Maps
+                                                </a>
+                                            )}
+                                        </Box>
+                                    )}
 
                                     {/* Vision AI Analysis Banner */}
                                     <Box sx={{ 
@@ -427,14 +515,18 @@ function SOSMonitor() {
                                     }}>
                                         <Box>
                                             <Typography variant="subtitle2" fontWeight={900} color="#BA1A1A" sx={{ letterSpacing: 0.5 }}>
-                                                VISION AI ANALYSIS
+                                                RESPONSE STATUS
                                             </Typography>
                                             <Typography variant="caption" color="#444" fontWeight={800}>
-                                                Face detection: OK • Agitation Level: High
+                                                {[
+                                                    fmtTime(selectedAlert.timestamp) && `Raised ${fmtTime(selectedAlert.timestamp)}`,
+                                                    fmtTime(selectedAlert.acknowledgedAt) && `acknowledged ${fmtTime(selectedAlert.acknowledgedAt)}`,
+                                                    fmtTime(selectedAlert.dispatchedAt) && `${selectedAlert.dispatchTeam || 'team'} dispatched ${fmtTime(selectedAlert.dispatchedAt)}`,
+                                                ].filter(Boolean).join(' • ') || 'Waiting for the desk'}
                                             </Typography>
                                         </Box>
                                         <Chip 
-                                            label="MEDIUM THREAT" 
+                                            label={STATUS_LABEL[selectedAlert.status] || 'NEW'} 
                                             size="small"
                                             sx={{ 
                                                 bgcolor: '#FFF9C4', 
@@ -449,12 +541,27 @@ function SOSMonitor() {
 
                                 {/* Tags & Indicators */}
                                 <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-                                    <Chip label="Vision check complete" size="small" variant="outlined" sx={{ borderColor: '#FFCDD2', color: '#BA1A1A', fontWeight: 800 }} />
-                                    <Chip label="No structural failures" size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 800 }} />
+                                    <Chip label={selectedAlert.handledBy?.email ? `Handled by ${selectedAlert.handledBy.email}` : 'Not yet handled'} size="small" variant="outlined" sx={{ borderColor: '#FFCDD2', color: '#BA1A1A', fontWeight: 800 }} />
+                                    {selectedAlert.forwardedToAuthorityAt && <Chip label={`Forwarded ${fmtTime(selectedAlert.forwardedToAuthorityAt) || ''}`} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 800 }} />}
+                                    {selectedAlert.smsStatus && <Chip label={selectedAlert.smsStatus === 'sent' ? `SMS sent to desk ${fmtTime(selectedAlert.smsAt) || ''}` : selectedAlert.smsStatus === 'not_configured' ? 'SMS gateway not configured' : 'SMS failed'} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: selectedAlert.smsStatus === 'sent' ? '#1B5E20' : '#B45309', fontWeight: 800 }} />}
+                                    {selectedAlert.channel && <Chip label={`Sent by ${selectedAlert.channel}`} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 800 }} />}
                                 </Stack>
 
                                 {/* Dispatch Action Grid buttons */}
                                 <Grid container spacing={2}>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button fullWidth variant="contained" startIcon={<DoneAllIcon />} onClick={handleAcknowledge}
+                                            disabled={selectedAlert.status !== 'active'}
+                                            sx={{ bgcolor: '#E65100', '&:hover': { bgcolor: '#BF360C' }, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            {selectedAlert.status === 'active' ? 'Acknowledge' : 'Acknowledged'}
+                                        </Button>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button fullWidth variant="outlined" startIcon={<ForwardToInboxIcon />} onClick={handleForward}
+                                            sx={{ color: '#3F4941', borderColor: '#BECABE', borderWidth: 1.5, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            Forward to authority
+                                        </Button>
+                                    </Grid>
                                     <Grid size={{ xs: 6 }}>
                                         <Button 
                                             fullWidth 

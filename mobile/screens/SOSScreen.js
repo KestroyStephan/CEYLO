@@ -8,6 +8,7 @@ import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo
 import { db, auth, storage } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { logEvent } from '../services/Analytics';
+import { sendSosSms } from '../services/aiClient';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import * as SMS from 'expo-sms';
 import NetInfo from '@react-native-community/netinfo';
@@ -65,6 +66,7 @@ const EMBASSIES = [
 export default function SOSScreen({ navigation }) {
   const [active, setActive] = useState(false);
   const [activeDocId, setActiveDocId] = useState(null);
+  const [deskStatus, setDeskStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [search, setSearch] = useState('');
@@ -181,6 +183,7 @@ export default function SOSScreen({ navigation }) {
       unsub = onSnapshot(doc(db, "sos_alerts", activeDocId), async (snap) => {
         const data = snap.data();
         if (!data) return;
+        setDeskStatus({ status: data.status, team: data.dispatchTeam || null });
 
         // Walkie-Talkie Logic
         if (data.adminAudioUrl && data.adminAudioTimestamp) {
@@ -320,6 +323,7 @@ export default function SOSScreen({ navigation }) {
       setActive(true);
       setActiveDocId(docRef.id);
       logEvent('sos_used', { alertId: docRef.id, online: true });
+      sendSosSms(docRef.id);
       Alert.alert("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
     } catch (error) {
       console.error("Error sending SOS:", error);
@@ -451,6 +455,17 @@ export default function SOSScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {active && deskStatus && deskStatus.status !== 'active' && (
+          <View style={styles.deskStatus} accessibilityLiveRegion="polite">
+            <MaterialCommunityIcons name={deskStatus.status === 'resolved' ? 'check-circle' : 'shield-check'} size={22} color="#1B5E20" />
+            <Text style={styles.deskStatusText}>
+              {deskStatus.status === 'acknowledged' ? 'The CEYLO emergency desk has seen your alert and is arranging help.'
+                : (deskStatus.status === 'dispatched' || deskStatus.status === 'investigating') ? `${deskStatus.team || 'Help'} has been dispatched to your location.`
+                : deskStatus.status === 'resolved' ? 'The emergency desk marked this alert as resolved.'
+                : 'Your alert is being handled.'}
+            </Text>
+          </View>
+        )}
         {active && (
           <TouchableOpacity style={styles.addPhotoBtn} onPress={handleOptionalPhoto}>
             <MaterialCommunityIcons name="camera-plus" size={20} color="#D32F2F" />
@@ -460,12 +475,12 @@ export default function SOSScreen({ navigation }) {
 
         <View style={styles.actionGrid}>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton accessibilityLabel="Call" icon="phone-classic" mode="contained" containerColor="#D32F2F" iconColor="#FFF" onPress={() => handleCall('119')} />
+            <IconButton accessibilityLabel="Call police, 119" icon="phone-classic" mode="contained" containerColor="#D32F2F" iconColor="#FFF" onPress={() => handleCall('119')} />
             <Text style={styles.actionLabel}>Police</Text>
             <Text style={styles.actionNum}>119</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
-            <IconButton accessibilityLabel="Ambulance" icon="ambulance" mode="contained" containerColor="#00695C" iconColor="#FFF" onPress={() => handleCall('1990')} />
+            <IconButton accessibilityLabel="Call ambulance, 1990" icon="ambulance" mode="contained" containerColor="#00695C" iconColor="#FFF" onPress={() => handleCall('1990')} />
             <Text style={styles.actionLabel}>Ambulance</Text>
             <Text style={styles.actionNum}>1990</Text>
           </Surface>
@@ -641,6 +656,8 @@ export default function SOSScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  deskStatus: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5E9', borderRadius: 14, padding: 14, marginHorizontal: 20, marginBottom: 12 },
+  deskStatusText: { flex: 1, color: '#1B5E20', fontSize: 14, fontWeight: '600' },
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   backButton: { marginBottom: 10, width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
   header: { padding: 40, paddingTop: 50, paddingBottom: 50, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
