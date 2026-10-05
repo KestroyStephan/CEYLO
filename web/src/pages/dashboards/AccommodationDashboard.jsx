@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Grid, Card, CardContent, Typography, List, ListItem, ListItemText, Divider, Button, Alert, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton } from '@mui/material';
+import { Container, Grid, Card, CardContent, Typography, List, ListItem, ListItemText, Divider, Button, Alert, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Box } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebaseConfig';
