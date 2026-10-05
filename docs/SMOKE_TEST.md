@@ -25,7 +25,10 @@ Tester: ______________ Device / Android version: ______________ Date: __________
 ## Tourist features
 - [ ] Home: eco points show a real number (0 for a new user), "Plan Trip" opens the form
 - [ ] Plan Trip → itinerary with 5–10 stops, distance and travel time per leg
-- [ ] Turn on airplane mode → Plan Trip still works ("Offline Mode")
+- [ ] Turn on airplane mode → Plan Trip still works ("Offline Mode", ranked by the on-device TensorFlow Lite model; `engine: tflite` in the admin records)
+- [ ] Home shows a weather chip for your location; itinerary days show forecast chips
+- [ ] "Fewer crowds" on the trip form changes the suggested places
+- [ ] Each generated itinerary appears in the admin AI Model Monitor under its strategy
 - [ ] Itinerary: drag to reorder and swap a stop, reopen → changes kept
 - [ ] Itinerary: "Start Multi-Stop Route" opens Google Maps with all stops; Export PDF works
 - [ ] Chatbot answers and remembers the destination from an earlier message

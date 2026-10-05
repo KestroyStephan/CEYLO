@@ -8,10 +8,13 @@ Node backend (Render) can run inference without Python, TensorFlow or any extern
 
 Writes to backend/models/ and backend/data/:
     chatbot.json      TF-IDF + logistic regression intent classifier (trained here)
-    recommender.json  two-tower NCF weights from recommender_model.keras
+    content_recommender.json  content-based recommender (train_content_recommender.py),
+                      also copied to mobile/assets/data for offline itineraries
     demand_lstm.json  LSTM weights from demand_lstm_model.keras + scaler + recent history
     eco_scorer.json   random forest trees from eco_scorer_model.pkl
     metrics.json      evaluation metrics shown in the admin AI Model Monitor
+    backend/data/destinations.json  dataset + eco model batch scores + monthly crowd index
+    mobile/assets/data/crowd_forecast.json  per-destination LSTM crowd forecast (offline ranking)
 Every model file carries a few reference predictions ("checks") that the backend tests
 compare against, so the JavaScript inference is proven to match Python.
 """
@@ -117,107 +120,6 @@ def train_chatbot():
         'intents': len(clf.classes_),
         'accuracy': round(float(scores.mean()), 4),
         'metric': '3-fold cross-validated accuracy',
-        'trained': TODAY,
-    }
-
-
-# ---------------------------------------------------------------- recommender
-# Onboarding moods in the app -> mood profiles in users.csv
-MOOD_COHORTS = {
-    'eco': ['Nature', 'Wildlife'],
-    'adventurer': ['Adventure'],
-    'culture': ['Culture'],
-    'spiritual': ['Culture', 'Relaxation'],
-    'family': ['Relaxation', 'Wildlife'],
-    'relaxed': ['Relaxation'],
-    'romantic': ['Relaxation'],
-    'wildlife': ['Wildlife'],
-    'nightlife': ['Nightlife'],
-}
-
-
-def dense_layers(model, names):
-    return [{'w': r(model.get_layer(n).get_weights()[0]), 'b': r(model.get_layer(n).get_weights()[1])} for n in names]
-
-
-def export_recommender():
-    import keras
-    print('Exporting recommender (two-tower NCF)...')
-    model = keras.saving.load_model(os.path.join(MODELS, 'recommender_model.keras'))
-    interactions = pd.read_csv(os.path.join(DATASETS, 'interactions.csv'))
-    users = pd.read_csv(os.path.join(DATASETS, 'users.csv'))
-
-    # LabelEncoder order used in training = sorted unique ids
-    user_ids = sorted(interactions['user_id'].unique())
-    dest_ids = sorted(interactions['destination_id'].unique())
-    user_emb = model.get_layer('user_embedding').get_weights()[0]
-    dest_emb = model.get_layer('dest_embedding').get_weights()[0]
-    assert user_emb.shape[0] == len(user_ids) and dest_emb.shape[0] == len(dest_ids)
-    user_index = {u: i for i, u in enumerate(user_ids)}
-
-    # A new app user is placed at the centre of the training users who share their mood
-    cohorts = {}
-    for mood, profiles in MOOD_COHORTS.items():
-        members = users[users['mood_profile'].apply(lambda p: any(x in str(p).split('|') for x in profiles))]
-        idx = [user_index[u] for u in members['user_id'] if u in user_index]
-        cohorts[mood] = r(user_emb[idx].mean(axis=0))
-    cohorts['all'] = r(user_emb.mean(axis=0))
-
-    # Reference predictions: cohort vector for "culture" against the first three destinations
-    u = np.asarray(cohorts['culture'], dtype=np.float32)
-    batch_u = np.repeat(u[None, :], 3, axis=0)
-    x = np.concatenate([batch_u, dest_emb[:3]], axis=1)
-    h1 = np.maximum(0, x @ model.get_layer('dense').get_weights()[0] + model.get_layer('dense').get_weights()[1])
-    h2 = np.maximum(0, h1 @ model.get_layer('dense_1').get_weights()[0] + model.get_layer('dense_1').get_weights()[1])
-    out = h2 @ model.get_layer('prediction').get_weights()[0] + model.get_layer('prediction').get_weights()[1]
-    # Same numbers through Keras itself (checks the manual maths above)
-    keras_out = model.predict([np.array([user_index[user_ids[0]]]), np.array([0])], verbose=0)
-    manual_first_user = np.concatenate([user_emb[0], dest_emb[0]])[None, :]
-    m1 = np.maximum(0, manual_first_user @ model.get_layer('dense').get_weights()[0] + model.get_layer('dense').get_weights()[1])
-    m2 = np.maximum(0, m1 @ model.get_layer('dense_1').get_weights()[0] + model.get_layer('dense_1').get_weights()[1])
-    m3 = m2 @ model.get_layer('prediction').get_weights()[0] + model.get_layer('prediction').get_weights()[1]
-    assert abs(float(keras_out[0, 0]) - float(m3[0, 0])) < 1e-4, 'manual forward pass does not match Keras'
-
-    write_json(os.path.join(OUT_MODELS, 'recommender.json'), {
-        'name': 'CEYLO two-tower neural collaborative filtering recommender',
-        'trained': TODAY,
-        'destinationIds': dest_ids,
-        'destinationEmbedding': r(dest_emb),
-        'cohorts': cohorts,
-        'moodCohorts': MOOD_COHORTS,
-        'layers': dense_layers(model, ['dense', 'dense_1', 'prediction']),
-        'checks': [{'cohort': 'culture', 'destinationId': dest_ids[i], 'score': round(float(out[i, 0]), 5)} for i in range(3)],
-    })
-
-    # Hold-out evaluation (same chronological 80/20 split as training)
-    def score(row):
-        if row['event_type'] == 'booked':
-            return 5.0
-        if row['event_type'] == 'reviewed':
-            return float(row['rating']) if pd.notnull(row['rating']) else 4.0
-        if row['event_type'] == 'bookmarked':
-            return 3.0
-        return 1.0
-    data = interactions.sort_values('timestamp')
-    y = data.apply(score, axis=1).values
-    uu = data['user_id'].map(user_index).values
-    dd = data['destination_id'].map({d: i for i, d in enumerate(dest_ids)}).values
-    split = int(len(data) * 0.8)
-    pred = model.predict([uu[split:], dd[split:]], verbose=0, batch_size=1024).flatten()
-    mae = float(np.mean(np.abs(pred - y[split:])))
-    rmse = float(np.sqrt(np.mean((pred - y[split:]) ** 2)))
-    k = 10
-    top = np.argsort(pred)[-k:]
-    precision = float(np.mean(y[split:][top] >= 4.0))
-    print(f'  hold-out MAE {mae:.3f}, RMSE {rmse:.3f}, precision@{k} {precision:.2f}')
-    return {
-        'name': 'Destination recommender',
-        'algorithm': 'Two-tower neural collaborative filtering (Keras)',
-        'trainingExamples': split,
-        'mae': round(mae, 4),
-        'rmse': round(rmse, 4),
-        'precisionAt10': round(precision, 4),
-        'metric': 'hold-out (last 20% of interactions)',
         'trained': TODAY,
     }
 
@@ -337,19 +239,40 @@ def export_eco():
         'r2': round(r2, 4),
         'metric': 'hold-out (20%, random_state 42)',
         'featureImportance': {f: round(float(v), 4) for f, v in zip(ECO_FEATURES, rf.feature_importances_)},
+        'version': eco_version(),
         'trained': TODAY,
-    }
+    }, rf
+
+
+def eco_version():
+    # The forest was trained when the .pkl was written
+    stamp = datetime.date.fromtimestamp(os.path.getmtime(os.path.join(MODELS, 'eco_scorer_model.pkl')))
+    return f'eco-rf-{stamp.isoformat()}'
 
 
 # ---------------------------------------------------------------- datasets the backend serves
-def copy_datasets():
-    print('Copying destination and event datasets for the backend...')
+def copy_datasets(rf, crowd):
+    print('Copying datasets for the backend (with eco model scores and crowd forecast)...')
     src = os.path.join(ROOT, 'mobile', 'assets', 'data')
     with open(os.path.join(src, 'ai_destinations.json'), encoding='utf-8') as f:
         dests = json.load(f)
     keep = ['destination_id', 'name', 'category', 'province', 'lat', 'lon', 'hidden_gem', 'avg_rating',
             'popularity_rank', 'seasonal_availability', 'eco_score', 'image'] + ECO_FEATURES
-    write_json(os.path.join(OUT_DATA, 'destinations.json'), [{k: d.get(k) for k in keep} for d in dests])
+
+    # Batch-score every destination with the eco model and record which model did it
+    X = pd.DataFrame([{f: (1 if str(d[f]) == 'True' else 0) if f == 'carrying_capacity_adherence' else float(d[f])
+                       for f in ECO_FEATURES} for d in dests])
+    eco_scores = rf.predict(X[ECO_FEATURES])
+    version = eco_version()
+    rows = []
+    for d, score in zip(dests, eco_scores):
+        row = {k: d.get(k) for k in keep}
+        row['eco_model_score'] = round(float(score), 2)
+        row['eco_model_version'] = version
+        row['crowd_forecast'] = crowd.get(d['destination_id'], {})
+        rows.append(row)
+    write_json(os.path.join(OUT_DATA, 'destinations.json'), rows)
+    write_json(os.path.join(src, 'crowd_forecast.json'), crowd)
     with open(os.path.join(src, 'ai_events.json'), encoding='utf-8') as f:
         write_json(os.path.join(OUT_DATA, 'events.json'), json.load(f))
 
@@ -357,12 +280,17 @@ def copy_datasets():
 if __name__ == '__main__':
     os.makedirs(OUT_MODELS, exist_ok=True)
     os.makedirs(OUT_DATA, exist_ok=True)
+    from train_content_recommender import train_content_recommender
+    from train_crowd_forecast import train_crowd_forecast
+    eco_metrics, rf = export_eco()
+    crowd_metrics, crowd = train_crowd_forecast()
     metrics = {'generated': TODAY, 'models': {
         'chatbot': train_chatbot(),
-        'recommender': export_recommender(),
+        'recommender': train_content_recommender([OUT_MODELS, os.path.join(ROOT, 'mobile', 'assets', 'data')]),
         'demand': export_demand(),
-        'eco': export_eco(),
+        'eco': eco_metrics,
+        'crowd': crowd_metrics,
     }}
     write_json(os.path.join(OUT_MODELS, 'metrics.json'), metrics)
-    copy_datasets()
+    copy_datasets(rf, crowd)
     print('Done.')

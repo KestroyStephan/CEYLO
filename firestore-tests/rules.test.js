@@ -206,6 +206,22 @@ describe('SOS, itineraries and content', () => {
     await assertFails(setDoc(doc(as('t1'), 'destinations', 'd1'), { name: 'Fake' }));
   });
 
+  test('recommendation records: own create, staff read, no edits', async () => {
+    await seed({ 'users/t2': { role: 'tourist' }, 'users/mgr': { role: 'manager' } });
+    await assertSucceeds(addDoc(collection(as('t1'), 'recommendation_records'), { userId: 't1', strategy: 'mood', results: [] }));
+    await assertFails(addDoc(collection(as('t1'), 'recommendation_records'), { userId: 't2', strategy: 'mood', results: [] }));
+    await seed({ 'recommendation_records/r1': { userId: 't1', strategy: 'mood', results: [] } });
+    await assertSucceeds(getDoc(doc(as('t1'), 'recommendation_records', 'r1')));
+    await assertSucceeds(getDoc(doc(as('mgr'), 'recommendation_records', 'r1')));
+    await assertFails(getDoc(doc(as('t2'), 'recommendation_records', 'r1')));
+    await assertFails(updateDoc(doc(as('t1'), 'recommendation_records', 'r1'), { strategy: 'seasonal' }));
+  });
+
+  test('a traveller can store their recommendation strategy', async () => {
+    await seed({ 'users/t1': { role: 'tourist' } });
+    await assertSucceeds(setDoc(doc(as('t1'), 'users', 't1'), { recStrategy: 'location' }, { merge: true }));
+  });
+
   test('payouts are staff-only', async () => {
     await seed({ 'users/t1': { role: 'tourist' }, 'users/fin': { role: 'finance' }, 'payouts/p1': { amount: 1000 } });
     await assertFails(getDoc(doc(as('t1'), 'payouts', 'p1')));

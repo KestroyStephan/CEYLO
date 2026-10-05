@@ -42,7 +42,8 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.VIBRATE",
         "android.permission.RECORD_AUDIO",
-        "android.permission.RECEIVE_BOOT_COMPLETED"
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -71,13 +72,14 @@
         }
       ],
       "expo-camera",
-      "expo-image-picker"
+      "expo-image-picker",
+      "react-native-fast-tflite"
     ],
     "extra": {
       "eas": {
-        "projectId": "f1b074de-0edc-4bba-999f-280f0b8e6998"
+        "projectId": "eb3f0379-5016-4e76-9265-0c220b522aa0"
       }
     },
-    "owner": "alen1228"
+    "owner": "kestroy"
   }
 }

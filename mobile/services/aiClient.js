@@ -47,8 +47,27 @@ export async function destinationInsights({ id, name, lat, lon, category, provin
   return postJSON('/api/insights', { id, name, lat, lon, category, province }, 15000);
 }
 
-/** Top destinations for a mood: 5-10 items, one per trip day. */
-export async function recommendDestinations({ mood, days, destination }) {
-  const data = await postJSON('/api/recommend', { mood, days, destination }, 15000);
-  return data.top_matches || [];
+/**
+ * Ranked destinations from the trained recommender (5-10 items, one per trip day), using the
+ * weather forecast, the traveller's position and the RQ3 recommendation strategy.
+ * @returns {Promise<{top_matches: object[], modelVersion: string, strategy: string, weather: object|null}>}
+ */
+export async function recommendDestinations(params) {
+  return postJSON('/api/recommend', params, 15000);
+}
+
+/** Current weather and a 7-day forecast (Open-Meteo through the backend). */
+export async function getWeather({ lat, lon, place }) {
+  const qs = lat != null && lon != null
+    ? `lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+    : `place=${encodeURIComponent(place || '')}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/weather?${qs}`, { signal: controller.signal });
+    if (!res.ok) throw new Error(`Weather HTTP ${res.status}`);
+    return res.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

@@ -273,7 +273,7 @@ function SystemHealth() {
                                                 {m.accuracy != null && `Accuracy ${(m.accuracy * 100).toFixed(1)}%`}
                                                 {m.r2 != null && `R² ${m.r2} · MAE ${m.mae}`}
                                                 {m.mape != null && `MAPE ${m.mape}% · MAE ${m.mae}`}
-                                                {m.precisionAt10 != null && `Precision@10 ${m.precisionAt10} · MAE ${m.mae}`}
+                                                {m.precisionAt5 != null && `Precision@5 ${m.precisionAt5} · NDCG@5 ${m.ndcgAt5}`}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary">{m.metric}</Typography>
                                         </TableCell>

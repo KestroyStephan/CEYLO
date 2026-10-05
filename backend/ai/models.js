@@ -9,14 +9,12 @@ const path = require('path');
 const load = (file) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'models', file), 'utf-8'));
 
 const chatbotModel = load('chatbot.json');
-const recommenderModel = load('recommender.json');
 const demandModel = load('demand_lstm.json');
 const ecoModel = load('eco_scorer.json');
 const metrics = load('metrics.json');
 
 // ---------------------------------------------------------------- small linear algebra
 const sigmoid = (x) => 1 / (1 + Math.exp(-x));
-const relu = (v) => v.map(x => (x > 0 ? x : 0));
 
 // v (n) x W (n x m) + b (m)
 function affine(v, W, b) {
@@ -97,28 +95,6 @@ function classifyIntent(message) {
         .sort((a, b) => b.confidence - a.confidence);
 }
 
-// ---------------------------------------------------------------- recommender
-const destIndex = new Map(recommenderModel.destinationIds.map((id, i) => [id, i]));
-
-function cohortFor(mood) {
-    const m = String(mood || '').toLowerCase();
-    const key = Object.keys(recommenderModel.moodCohorts).find(k => m.includes(k)) ||
-        (m.includes('cultur') ? 'culture' : m.includes('advent') ? 'adventurer' : m.includes('relax') ? 'relaxed'
-            : m.includes('famil') ? 'family' : m.includes('spirit') ? 'spiritual' : m.includes('eco') || m.includes('nature') ? 'eco' : 'all');
-    return { key, vector: recommenderModel.cohorts[key] || recommenderModel.cohorts.all };
-}
-
-/** Predicted engagement score (1-5 scale) of a traveller cohort for one destination. */
-function predictEngagement(userVector, destinationId) {
-    const d = destIndex.get(destinationId);
-    if (d === undefined) return null;
-    const [l1, l2, out] = recommenderModel.layers;
-    const x = userVector.concat(recommenderModel.destinationEmbedding[d]);
-    const h1 = relu(affine(x, l1.w, l1.b));
-    const h2 = relu(affine(h1, l2.w, l2.b));
-    return affine(h2, out.w, out.b)[0];
-}
-
 // ---------------------------------------------------------------- demand LSTM
 function lstmLayer(sequence, layer) {
     const u = layer.units;
@@ -191,8 +167,6 @@ module.exports = {
     classifyIntent,
     chatbotResponses: chatbotModel.responses,
     faqCategories: chatbotModel.faqCategories,
-    cohortFor,
-    predictEngagement,
     forecastDemand,
     demandHistory: demandModel.history,
     predictEcoScore,
@@ -201,7 +175,6 @@ module.exports = {
     metrics,
     checks: {
         chatbot: chatbotModel.checks,
-        recommender: recommenderModel.checks,
         demand: demandModel.checks,
         eco: ecoModel.checks,
     },

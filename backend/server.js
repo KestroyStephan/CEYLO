@@ -5,7 +5,8 @@ const { recommend, setBlocked } = require('./ai/recommender');
 const { reply } = require('./ai/concierge');
 const { insightsFor } = require('./ai/insights');
 const { forecastDemand, demandHistory, predictEcoScore, ecoFeatures, metrics, classifyIntent } = require('./ai/models');
-const { destinations } = require('./ai/places');
+const { destinations, resolvePlace } = require('./ai/places');
+const { getWeather } = require('./ai/weather');
 
 const app = express();
 app.use(cors());
@@ -106,10 +107,34 @@ function timed(name, fn) {
 
 // Recommendation endpoint: best destinations for a mood, 5-10 items (one per trip day),
 // ranked by the trained two-tower recommender
-app.post('/api/recommend', (req, res) => {
-    const { mood, days, destination } = req.body || {};
-    const result = timed('recommender', () => recommend({ mood, days, destination }));
+// Body: { mood, days, destination?, budget?, ecoInterest?, month?, strategy?, lat?, lon?, avoidCrowds? }
+app.post('/api/recommend', async (req, res) => {
+    const { mood, days, destination, budget, ecoInterest, month, strategy, lat, lon, avoidCrowds } = req.body || {};
+    const origin = Number.isFinite(Number(lat)) && Number.isFinite(Number(lon)) && lat !== null && lon !== null
+        ? { lat: Number(lat), lon: Number(lon) } : null;
+    // Forecast for the trip area (the requested place, else where the traveller is); skipped when unknown
+    const place = resolvePlace(destination);
+    const area = place?.lat != null ? place : origin;
+    const weather = area ? await getWeather(area.lat, area.lon, { timeoutMs: 2500 }) : null;
+    const result = timed('recommender', () => recommend({
+        mood, days, destination, budget, ecoInterest, month, strategy, origin, weather, avoidCrowds: Boolean(avoidCrowds),
+    }));
     res.json({ success: true, mood, ...result });
+});
+
+// Current weather and 7-day forecast (Open-Meteo, no API key), by coordinates or place name
+app.get('/api/weather', async (req, res) => {
+    let lat = parseFloat(req.query.lat);
+    let lon = parseFloat(req.query.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        const place = resolvePlace(req.query.place);
+        if (!place || place.lat == null) return res.status(400).json({ error: 'lat and lon, or a known place, are required' });
+        ({ lat, lon } = place);
+    }
+    if (lat < 5 || lat > 10.5 || lon < 79 || lon > 82.5) return res.status(400).json({ error: 'Location is outside Sri Lanka' });
+    const weather = await getWeather(lat, lon);
+    if (!weather) return res.status(503).json({ error: 'Weather service unavailable' });
+    res.json(weather);
 });
 
 // Concierge chatbot, run by the trained intent classifier (no external AI service).

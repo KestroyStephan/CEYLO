@@ -731,9 +731,12 @@ plain JavaScript, and its tests check the results match Python.
 | Model | Training data | Algorithm | Endpoint |
 |---|---|---|---|
 | Concierge intent classifier | `ai_datasets/chatbot_intents.json` + `chatbot_qa.csv` | TF-IDF (words + characters) + logistic regression | `POST /api/chat`, `POST /api/models/intent` |
-| Destination recommender | `ai_datasets/interactions.csv`, `users.csv` | Two-tower neural collaborative filtering (Keras) | `POST /api/recommend` |
+| Destination recommender | `ai_datasets/interactions.csv`, `users.csv`, `destinations.csv` | Content-based neural network on traveller profile + destination features + month (Keras); also runs on the phone offline as TensorFlow Lite (`mobile/assets/models/content_recommender.tflite` via `react-native-fast-tflite`, with `mobile/utils/recommenderModel.js` as the JavaScript fallback) | `POST /api/recommend` |
 | Demand forecast | `ai_datasets/time_series_demand.csv` | 2-layer LSTM, 30-day look-back (Keras) | `GET /api/forecast` |
+| Crowd forecast | `ai_datasets/time_series_demand.csv` (monthly, per destination) | Shared LSTM, 12-month look-back + calendar month, forecasts 24 months ahead (Keras) | used inside `POST /api/recommend` and offline |
 | Eco score | `ai_datasets/destinations.csv` | Random forest regressor (scikit-learn) | `POST /api/eco-score`, `POST /api/insights` |
+
+Ranking context on top of the model: rain forecast from Open-Meteo (`GET /api/weather`, no key, 30-minute cache) down-ranks outdoor places; the per-destination crowd forecast powers the "fewer crowds" option; each traveller is assigned a strategy (mood, location or seasonal) for RQ3, and every generated itinerary is logged to `recommendation_records` (model version, inputs, results, strategy, latency).
 
 Evaluation results are in `backend/models/metrics.json` and on the admin AI Model Monitor (`GET /api/models`).
 

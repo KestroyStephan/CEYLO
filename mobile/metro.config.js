@@ -14,6 +14,9 @@ config.cacheStores = [
 // Only watch necessary folders, ignore node_modules subfolders that never change
 config.watchFolders = [__dirname];
 
+// TensorFlow Lite models are bundled as assets (react-native-fast-tflite)
+config.resolver.assetExts.push('tflite');
+
 // Block unnecessary file types from being watched/bundled
 config.resolver.blockList = [
   /.*\/__tests__\/.*/,
