@@ -20,6 +20,16 @@ matches the code, a demo script, and likely questions.
 | Preferences only on the trip form | **Travel Preferences** screen (FR-010): eco %, culture %, budget, trip length, mobility (low / walking only), fewer crowds; saved on the phone and in Firestore; used by the recommender online and offline and pre-filled in the chatbot | `TravelPreferencesScreen.js`, `PreferencesService.js` |
 | Itineraries need a connection | Last 10 itineraries **cached on the phone** and opened offline (FR-012) | `ItineraryCache.js` |
 | Admin "AI Model Monitor" with hard-coded numbers | Real metrics, baseline comparison, live strategy statistics, model test tools, demand chart | `web/src/pages/AICenter.jsx` |
+| Offline navigation = Google offline maps / future work | **Offline route guidance (FR-021)**: road route + turn-by-turn steps fetched from OSRM while online and stored per itinerary; in-app Route Guide follows live GPS (next turn, distance and direction to next stop, arrival, off-route warning, re-centre) and shows downloaded tiles with no signal; "Save map offline" downloads only the tiles along the route | `RouteCache.js`, `RouteGuideScreen.js`, `offlineMapUtils.js` |
+| Only English | Main tourist screens (tabs, Home, chatbot, preferences, profile, consent, survey) in **English, Sinhala and Tamil** (145 keys each); chatbot replies stay English | `mobile/translations/*.json` |
+| Accessibility not addressed | Labels on 44 icon-only buttons, 21 grey text styles raised to WCAG AA, app follows the phone font size (Profile → Text size) | screens, `ProfileScreen.js` |
+| No consent / usage data | **Consent screen** on first launch (with "before" eco-awareness question), opt-out in Profile; **usage events** (recommendation shown, opened, edited, place viewed / saved / checked in, booking, event, alert, chat, SOS) tagged with the strategy group, no names stored | `ConsentScreen.js`, `services/Analytics.js` |
+| SUS on paper | **In-app research survey**: 10-item SUS + relevance, discovery, local-support and "after" eco-awareness questions; **rating card** on every itinerary | `ResearchSurveyScreen.js`, `ItineraryFeedback.js` |
+| Analytics with invented figures | **Research dashboard** in the admin portal: strategy comparison (open rate, edits, booking conversion, rating, relevance, hidden-gem share, eco score), NFR-001 share under 3 s, hidden gems vs famous places, SUS mean and grade, before/after awareness, CSV export of all four collections | `web/src/pages/Research.jsx` |
+| Visited places manual | **GPS check-in** within 200 m stamps the Eco Passport; save / share places; "Add to Itinerary" plans around a place | `DestinationDetailScreen.js` |
+| Booking status only in-app | **Push notifications both ways** for guide and ride bookings (backend checks the caller is part of the booking); after 15 min without reply the traveller is offered other guides | `/api/notify-booking`, `WaitingApprovalScreen.js` |
+| SOS monitor with demo labels | **Emergency workflow** active → acknowledged → dispatched → resolved with the handling admin recorded, forward-to-authority, traveller sees the desk's response live; **SMS to the desk** via Notify.lk when configured | `SOSMonitor.jsx`, `/api/sos-sms`, `SOSScreen.js` |
+| Rejected vendor stuck | Rejection reason shown; **fix and resubmit** | `VendorPendingScreen.js`, `Vendors.jsx` |
 
 **Dataset sizes (check the thesis!)** — 5.3.3 says *54,000 users / 35,000 destinations*. The
 data the models are trained on is: **1,000 users, 275 destinations, 25,000 interactions,
@@ -43,7 +53,22 @@ the examiners will catch the mismatch.
 | Crowd forecast per destination | Shared LSTM, 12-month look-back | last 6 months vs same-month-last-year | **MAPE 3.6 %** (baseline 4.2 %) |
 
 Engineering checks: JavaScript inference reproduces Python exactly (tests); TFLite matches Keras
-to 7×10⁻⁸. **Tests:** 31 backend tests, 30 Firestore security-rule tests (emulator), web build.
+to 7×10⁻⁸. **Tests:** 35 backend tests, 34 Firestore security-rule tests (emulator), 14 mobile unit
+tests (SUS scoring, offline route cache, map tiles), admin portal build — all run in GitHub Actions
+(`.github/workflows/ci.yml`).
+
+### Load test (NFR-005: 500 concurrent users) — `backend/loadtest/results.json`
+
+500 simultaneous connections for 20 s per endpoint against the backend (local machine, rate limits off):
+
+| Endpoint | Requests/s | Mean | p50 | p99 | Errors |
+|---|---|---|---|---|---|
+| `POST /api/recommend` (trained recommender) | 437 | 1.11 s | 1.13 s | 1.41 s | 0 |
+| `POST /api/chat` (intent classifier) | 635 | 0.77 s | 0.77 s | 1.05 s | 0 |
+| `GET /api/health` | 2,907 | 0.17 s | 0.04 s | 0.94 s | 0 |
+
+*Say:* measured on a laptop, not on Render's free tier (which sleeps and is a single small instance);
+it shows the model code itself handles 500 concurrent users well inside the 3 s target.
 
 **Why are P@5 numbers low?** The synthetic interactions were generated mostly at random (only eco
 preference and popularity bias them), so there is little signal to learn. The *comparison* is
@@ -58,10 +83,10 @@ fails because it cannot score users outside its training IDs (cold start).
 |---|---|
 | **RQ1** needs & pain points | Survey of 101 respondents (Ch. 3) — unchanged |
 | **RQ2** context-aware design | Content model uses mood, eco preference, budget, trip length, **month**; ranking adds **weather** (Open-Meteo), **season**, **location** (location strategy) and **crowd forecast**. Show the AI Model Monitor: same mood, change place/strategy → different ranking with reasons |
-| **RQ3** strategies vs engagement | Strategy assigned per user (mood/location/seasonal) and logged with every itinerary in `recommendation_records`; admin shows counts, latency and offline share per strategy. *Say honestly: instrumentation is complete; results come from the UAT/pilot sessions — collect a few before the viva if possible* |
-| **RQ4** dynamic features | Event alerts, chatbot event answers, itinerary editing, marketplace — UAT feedback (Ch. 6) |
-| **RQ5** eco behaviour | Eco score model drives ranking (30 %) and Eco Passport; "Fewer crowds" favours under-visited places (Objective 6) |
-| **RQ6** usability | UAT: 95 % task completion, 4.6/5 tourist usability (Ch. 6) |
+| **RQ3** strategies vs engagement | Strategy assigned per user (mood/location/seasonal), logged with every itinerary and every usage event. **Research dashboard** compares the groups: open rate, edits, booking conversion, rating, relevance. *Say honestly: instrumentation is complete; numbers come from the pilot sessions* |
+| **RQ4** dynamic features | Event views and notification opens counted on the research dashboard; event alerts, chatbot event answers, itinerary editing, marketplace — UAT feedback (Ch. 6) |
+| **RQ5** eco behaviour | Eco score model drives ranking (30 %) and Eco Passport; "Fewer crowds" favours under-visited places; dashboard shows the share of recommended, viewed, saved and **checked-in** places that are hidden gems, and before → after eco-awareness (Objective 6) |
+| **RQ6** usability | In-app SUS (target ≥ 68) + UAT: 95 % task completion, 4.6/5 tourist usability (Ch. 6) |
 
 **NFR-001 (itinerary < 3 s):** each record stores `latencyMs`; the AI Model Monitor shows the share
 under 3 s per strategy.
@@ -92,16 +117,21 @@ under 3 s per strategy.
 - **5.5.8 In-memory heuristic** → **"Context-aware ranking"**: score = 0.5·model + 0.3·eco +
   0.2·mood category (weights per strategy), rain penalty 0.2 × rainy share for outdoor categories,
   crowd penalty 0.15 × forecast crowd when "Fewer crowds" is on.
-- **6.4** — add backend tests (31, incl. Python/JS parity), Firestore rules tests (30, emulator),
-  and a **6.x Model Evaluation** subsection with table §2.
+- **6.4** — add backend tests (35, incl. Python/JS parity), Firestore rules tests (34, emulator),
+  mobile unit tests (14), CI on GitHub Actions, a **6.x Model Evaluation** subsection with table §2,
+  and a **6.x Performance** subsection with the load-test table (NFR-005) and NFR-001 latency.
+- **6.x Evaluation method** — consent screen, usage events, in-app SUS and itinerary ratings,
+  research dashboard with CSV export (describe the four collections and that no names are stored).
 - **7.2** — replace the NCF paragraph with the content-based model + baselines; eco paragraph: drop
   "70 %-weighted heuristic".
 - **7.3** — remove the "Split API-Key Protection" shortfall (fixed); change "deep-learning
   deployment constraints" to: *NCF was replaced because of cold start; TFLite deployment achieved*.
 - **7.4** — remove "Partial API-Key Isolation" and "dynamic LLM itinerary generation"; connectivity
   limitation now applies to the chatbot only.
-- **7.5** — move TFLite from future work to done; new future work: real interaction data to retrain,
-  multilingual intent model (Sinhala/Tamil), offline route guidance.
+- **7.5** — move TFLite and offline route guidance from future work to done; new future work: real
+  interaction data to retrain, multilingual intent model (Sinhala/Tamil), phone-number OTP sign-up
+  (needs a native Firebase module), splitting profiles into public and private documents, translating
+  the vendor/guide/driver screens, a paid tile provider for nationwide offline maps.
 
 ---
 
@@ -113,9 +143,13 @@ under 3 s per strategy.
 2. **Phone** → onboarding mood → Home (weather chip) → **Chatbot**: "I want to plan a trip" →
    "Kandy" → "5 days" → "Economy" → *Generate Itinerary*. Ask "Is tap water safe?".
 3. **Itinerary** with forecast chips, drag to reorder, open in Google Maps.
-4. **Airplane mode** → Plan Trip → "Offline Mode" (on-device TFLite). Back online → admin shows the
-   record with its strategy.
-5. **SOS** → admin SOS monitor. **Destination** → Sustainability tab + reviews.
+4. **Start Multi-Stop Route** → Route Guide (turn instructions, distance to next stop) → *Save map
+   offline* → **Airplane mode**: guide keeps working on the stored route; Plan Trip → "Offline Mode"
+   (on-device TFLite). Back online → admin shows the record with its strategy.
+5. **SOS** → admin SOS monitor: Acknowledge → the phone shows "desk has seen your alert" → Dispatch → Resolve.
+6. **Destination** → Sustainability tab, reviews, heart (save), check-in.
+7. **Profile → Language → සිංහල / தமிழ்**; **Profile → Research survey** → SUS score.
+8. **Admin → Research**: strategy table, hidden-gem share, SUS, CSV export.
 
 Backup: if the phone app will not load, demo from the admin portal + backend endpoints, and show
 the TFLite file and tests.
@@ -136,15 +170,25 @@ the TFLite file and tests.
   outdoor categories by up to 0.2 and raises heritage sites by up to 0.1.
 - **Security?** Firestore rules with 30 emulator tests (no self-promotion to admin, vendors/drivers
   cannot self-approve, records immutable), staff-only push, rate limiting, no secrets in the APK.
+- **How does offline navigation work?** While online the route and its turn steps are fetched once
+  (OSRM, OpenStreetMap data) and stored; GPS works without data, so the guide compares your position
+  with the stored line (off-route if more than 150 m away) and the next turn / stop.
+- **How did you test 500 users?** autocannon with 500 connections per endpoint; zero errors, p99
+  under 1.5 s (table above).
+- **Is the research data ethical?** Opt-in consent screen, opt-out in Profile, user id only (no
+  name, email or phone), aggregated on the dashboard.
 - **What would you do next?** Collect real interaction data and retrain; Sinhala/Tamil intent
-  model; offline route guidance; payment gateway.
+  model; phone OTP; payment gateway.
 
 ---
 
 ## 7. Before the viva — checklist
 
 - [ ] Push and merge to `main`; confirm Render (https://ceylo.onrender.com/api/health shows 5 models) and Vercel redeploy
-- [ ] `firebase deploy --only firestore` (new `recommendation_records` rules)
+- [ ] `firebase deploy --only firestore` (rules for `recommendation_records`, `usage_events`, `feedback`, `sus_responses`)
+- [ ] Optional SMS: on Render set `NOTIFY_LK_USER_ID`, `NOTIFY_LK_API_KEY`, `NOTIFY_LK_SENDER_ID`, `SOS_DESK_NUMBER`
+- [ ] Booking push needs FCM credentials in EAS; test one booking between two phones
+- [ ] Ask 3–5 people to use the app and fill **Profile → Research survey**, so the SUS row has real data
 - [ ] Install the latest app on the phone and run the demo script once end to end
 - [ ] Generate 5–10 itineraries with different accounts so RQ3/NFR-001 tables have data
 - [ ] Update thesis sections in §4 and the dataset numbers
