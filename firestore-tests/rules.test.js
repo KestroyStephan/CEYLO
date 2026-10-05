@@ -217,6 +217,33 @@ describe('SOS, itineraries and content', () => {
     await assertFails(updateDoc(doc(as('t1'), 'recommendation_records', 'r1'), { strategy: 'seasonal' }));
   });
 
+  test('research data: own create only, staff read, no edits', async () => {
+    await seed({ 'users/t2': { role: 'tourist' }, 'users/mgr': { role: 'manager' } });
+    await assertSucceeds(addDoc(collection(as('t1'), 'usage_events'), { userId: 't1', type: 'itinerary_opened', strategy: 'mood' }));
+    await assertFails(addDoc(collection(as('t1'), 'usage_events'), { userId: 't2', type: 'itinerary_opened' }));
+    await seed({ 'usage_events/u1': { userId: 't1', type: 'place_saved' } });
+    await assertFails(getDoc(doc(as('t1'), 'usage_events', 'u1')));
+    await assertSucceeds(getDoc(doc(as('mgr'), 'usage_events', 'u1')));
+    await assertFails(updateDoc(doc(as('t1'), 'usage_events', 'u1'), { type: 'booking_made' }));
+  });
+
+  test('SUS responses must carry a valid score and are read by owner or staff', async () => {
+    await seed({ 'users/t2': { role: 'tourist' }, 'users/mgr': { role: 'manager' } });
+    await assertSucceeds(addDoc(collection(as('t1'), 'sus_responses'), { userId: 't1', susScore: 72.5, answers: [] }));
+    await assertFails(addDoc(collection(as('t1'), 'sus_responses'), { userId: 't1', susScore: 140, answers: [] }));
+    await assertFails(addDoc(collection(as('t1'), 'sus_responses'), { userId: 't2', susScore: 50, answers: [] }));
+    await seed({ 'sus_responses/s1': { userId: 't1', susScore: 80 }, 'feedback/f1': { userId: 't1', rating: 4 } });
+    await assertSucceeds(getDoc(doc(as('t1'), 'sus_responses', 's1')));
+    await assertFails(getDoc(doc(as('t2'), 'sus_responses', 's1')));
+    await assertSucceeds(getDoc(doc(as('mgr'), 'feedback', 'f1')));
+    await assertFails(getDoc(doc(as('t2'), 'feedback', 'f1')));
+  });
+
+  test('a traveller can record consent on their own profile', async () => {
+    await seed({ 'users/t1': { role: 'tourist' } });
+    await assertSucceeds(setDoc(doc(as('t1'), 'users', 't1'), { consent: { analytics: true, version: 1 }, ecoAwarenessBefore: 3 }, { merge: true }));
+  });
+
   test('a traveller can store their recommendation strategy', async () => {
     await seed({ 'users/t1': { role: 'tourist' } });
     await assertSucceeds(setDoc(doc(as('t1'), 'users', 't1'), { recStrategy: 'location' }, { merge: true }));

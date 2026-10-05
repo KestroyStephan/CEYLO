@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Button, Card, IconButton, ActivityIndicator, Switch } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, db } from '../firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth } from '../firebaseConfig';
 import { generateItinerary } from '../services/ItineraryService';
 import { loadPreferences, moodFromPreferences } from '../services/PreferencesService';
 
 const FOCUS_TO_MOOD = { 'Nature/Eco': 'Eco Explorer', 'Balanced': 'Family Trip', 'Culture/History': 'Culture Seeker' };
 const MAX_DAYS = 14;
 
-export default function ItineraryScreen({ navigation }) {
+export default function ItineraryScreen({ navigation, route }) {
+    const destination = route?.params?.destination || null;
     const [focus, setFocus] = useState('Nature/Eco');
     const [days, setDays] = useState(5);
     const [budget, setBudget] = useState('$$ Standard');
@@ -36,14 +35,9 @@ export default function ItineraryScreen({ navigation }) {
 
         setLoading(true);
         try {
-            // FR-010: preferences saved locally and on the server
-            const preferences = { focus, days, budget, avoidCrowds, updatedAt: new Date().toISOString() };
-            await AsyncStorage.setItem('travelPreferences', JSON.stringify(preferences)).catch(() => {});
-            setDoc(doc(db, 'users', auth.currentUser.uid), { travelPreferences: preferences }, { merge: true })
-                .catch(e => console.log('Preference sync failed:', e.message));
-
+            // Saved preferences (Profile > Travel Preferences) fill in eco interest, mobility and crowds
             const itinerary = await generateItinerary({
-                mood: FOCUS_TO_MOOD[focus], days, budget, avoidCrowds,
+                mood: FOCUS_TO_MOOD[focus], days, budget, avoidCrowds, destination,
                 ecoInterest: focus === 'Nature/Eco' ? 80 : 50,
             });
             navigation.navigate('ItineraryDetail', { routeData: itinerary });
@@ -61,6 +55,11 @@ export default function ItineraryScreen({ navigation }) {
                 <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
                 <Text variant="titleLarge" style={styles.headerTitle}>Tailor Your Journey</Text>
             </View>
+            {destination && (
+                <Text style={{ marginHorizontal: 20, marginBottom: 8, color: '#00695C', fontFamily: 'Outfit-Medium' }}>
+                    Planning around {destination}
+                </Text>
+            )}
 
             <Card style={styles.card}>
                 <Card.Content>

@@ -15,6 +15,7 @@ import { chatTurn } from '../services/aiClient';
 import { imgSource } from '../utils/images';
 import { generateItinerary as buildItinerary, moodKey } from '../services/ItineraryService';
 import { loadPreferences } from '../services/PreferencesService';
+import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 
 const MOOD_CATEGORIES = {
@@ -193,6 +194,7 @@ export default function ChatbotScreen({ navigation, route }) {
     try {
       // The trained concierge model keeps the trip profile in extractedState between turns
       const responseJson = await chatTurn(text, extractedState);
+      logEvent('chat_message', { intent: responseJson.intent || null, recommendations: responseJson.recommendations?.length || 0 });
       const nextState = { ...extractedState, ...(responseJson.extractedState || {}) };
       setExtractedState(nextState);
 

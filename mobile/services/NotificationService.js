@@ -8,6 +8,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { logEvent } from './Analytics';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 import { auth, db } from '../firebaseConfig';
@@ -133,6 +134,7 @@ class NotificationServiceClass {
     // Tap on notification -> navigate
     this._responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data || {};
+      logEvent('alert_opened', { kind: data.type || 'general' });
       this._route(data);
     });
   }

@@ -27,6 +27,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import InsightsIcon from '@mui/icons-material/Insights';
+import ScienceIcon from '@mui/icons-material/Science';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -80,6 +81,7 @@ function Layout() {
         { text: 'Notifications', icon: <NotificationsActiveIcon sx={{ fontSize: 22 }}/>, path: '/notifications' },
         { text: 'Marketing', icon: <CampaignIcon sx={{ fontSize: 22 }}/>, path: '/marketing' },
         { text: 'Analytics', icon: <InsightsIcon sx={{ fontSize: 22 }}/>, path: '/analytics' },
+        { text: 'Research', icon: <ScienceIcon sx={{ fontSize: 22 }}/>, path: '/research' },
         { text: t('reports'), icon: <AssessmentIcon sx={{ fontSize: 22 }}/>, path: '/reports' },
         { text: t('system_health'), icon: <HealthAndSafetyIcon sx={{ fontSize: 22 }}/>, path: '/health' },
         { text: 'Settings', icon: <SettingsIcon sx={{ fontSize: 22 }}/>, path: '/settings' },

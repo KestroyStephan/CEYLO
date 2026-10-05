@@ -6,6 +6,8 @@ import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { logEvent } from '../services/Analytics';
+
 export default function MessageScreen({ route, navigation }) {
   const { chatId, recipientName } = route.params;
   const insets = useSafeAreaInsets();
@@ -15,6 +17,10 @@ export default function MessageScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   
   const flatListRef = useRef();
+
+  useEffect(() => {
+    if (chatId) logEvent('vendor_contacted', { chatId });
+  }, [chatId]);
 
   useEffect(() => {
     if (!chatId) return;

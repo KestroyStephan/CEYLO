@@ -7,12 +7,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { distanceKm } from '../services/ItineraryService';
+import { logEvent } from '../services/Analytics';
 
 export default function EventDetailScreen({ route, navigation }) {
   // If navigated from push notification or map, it passes 'event' param
   const { event = {} } = route.params || {};
   const displayEvent = event || {};
   const [distance, setDistance] = useState(null);
+
+  useEffect(() => {
+    if (event.title) logEvent('event_viewed', { title: event.title, location: event.location || null });
+  }, [event.title]);
 
   useEffect(() => {
     if (!displayEvent.coords) return;

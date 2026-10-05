@@ -538,7 +538,7 @@ export default function MapScreen({ navigation }) {
                       name: place.title,
                       image: getPhotoUrl(place.photo_reference),
                       category: place.categoryText,
-                      ecoScore: 85,
+                      ecoScore: ecoScoreFor(place.title),
                       coords: place.coords
                     }
                   });

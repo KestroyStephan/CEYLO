@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { db, auth, storage } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { logEvent } from '../services/Analytics';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import * as SMS from 'expo-sms';
 import NetInfo from '@react-native-community/netinfo';
@@ -318,6 +319,7 @@ export default function SOSScreen({ navigation }) {
       ]);
       setActive(true);
       setActiveDocId(docRef.id);
+      logEvent('sos_used', { alertId: docRef.id, online: true });
       Alert.alert("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
     } catch (error) {
       console.error("Error sending SOS:", error);

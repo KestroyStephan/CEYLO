@@ -112,7 +112,7 @@ function Analytics() {
                                     <Typography variant="subtitle2" fontWeight={800} color="#00695c">ECO ADOPTION RATE</Typography>
                                     <Typography variant="h3" fontWeight={900} sx={{ my: 1 }}>{ecoRate}%</Typography>
                                     <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <TrendingUpIcon fontSize="inherit" sx={{ mr: 0.5 }} /> +8.4% from last period
+                                        <TrendingUpIcon fontSize="inherit" sx={{ mr: 0.5 }} /> Average eco score across travellers
                                     </Typography>
                                 </CardContent>
                             </Card>

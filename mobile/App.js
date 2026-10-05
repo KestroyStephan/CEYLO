@@ -52,6 +52,8 @@ import TransportScreen from './screens/TransportScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
 import EcoPassportScreen from './screens/EcoPassportScreen';
 import TravelPreferencesScreen from './screens/TravelPreferencesScreen';
+import ConsentScreen from './screens/ConsentScreen';
+import ResearchSurveyScreen from './screens/ResearchSurveyScreen';
 import CulturalEventsScreen from './screens/CulturalEventsScreen';
 import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
 import SOSScreen from './screens/SOSScreen';
@@ -223,6 +225,11 @@ export default function App() {
             {user ? (
               <Stack.Group>
                 {/* Role-based entry screens */}
+                {/* Research consent, once per account (ethics, Sprint 4) */}
+                {userRole === 'tourist' && userData && !userData.consent ? (
+                  <Stack.Screen name="Consent" component={ConsentScreen} />
+                ) : null}
+
                 {userRole === 'tourist' && !userData?.onboardingCompleted ? (
                   <Stack.Screen name="MoodSelect" component={MoodSelectScreen} />
                 ) : null}
@@ -262,6 +269,7 @@ export default function App() {
                 <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
                 <Stack.Screen name="EcoPassport" component={EcoPassportScreen} />
                 <Stack.Screen name="TravelPreferences" component={TravelPreferencesScreen} />
+                <Stack.Screen name="ResearchSurvey" component={ResearchSurveyScreen} />
                 <Stack.Screen name="CulturalEvents" component={CulturalEventsScreen} />
                 <Stack.Screen name="SOSScreen" component={SOSScreen} />
                 <Stack.Screen name="GuidesList" component={GuidesListScreen} />

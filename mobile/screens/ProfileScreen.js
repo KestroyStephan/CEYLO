@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { setAnalyticsConsent } from '../services/Analytics';
 import { Text, Surface } from 'react-native-paper';
 import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -184,6 +185,9 @@ export default function ProfileScreen({ navigation }) {
                     <MenuItem icon="map" title={t('itineraries')} subtitle={t('itineraries_sub', { n: itinerariesCount })} onPress={() => navigation.navigate('ItineraryDetail')} />
                     <MenuItem icon="sliders" title={t('prefs_title')} subtitle={t('travel_prefs_sub')} onPress={() => navigation.navigate('TravelPreferences')} />
                     <MenuItem icon="edit-2" title={t('edit_profile')} subtitle={t('edit_profile_sub')} onPress={() => navigation.navigate('EditProfile')} />
+                    <MenuItem icon="clipboard" title={t('research_survey')} subtitle={t('research_survey_sub')} onPress={() => navigation.navigate('ResearchSurvey')} />
+                    <MenuItem icon="bar-chart-2" title={t('share_usage')} subtitle={userData?.consent?.analytics ? t('usage_on') : t('usage_off')}
+                        onPress={() => setAnalyticsConsent(!userData?.consent?.analytics).catch(e => Alert.alert(t('could_not_save'), e.message))} />
                     <MenuItem icon="settings" title={t('language')} subtitle="English / සිංහල / தமிழ்" onPress={() => Alert.alert(t('language'), t('language_choose'), [
                         { text: 'English', onPress: () => i18n.changeLanguage('en') },
                         { text: 'සිංහල', onPress: () => i18n.changeLanguage('si') },

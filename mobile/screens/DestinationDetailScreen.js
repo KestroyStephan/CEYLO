@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Alert, Share } from 'react-native';
 import { Text, Surface, IconButton, Button, Chip, TextInput } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
 import { destinationInsights } from '../services/aiClient';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { logEvent } from '../services/Analytics';
 import { db, auth } from '../firebaseConfig';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +22,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
   const [myRating, setMyRating] = useState(0);
   const [myText, setMyText] = useState('');
   const [posting, setPosting] = useState(false);
+  const [savedId, setSavedId] = useState(null);
 
   // Traveller reviews of this destination (reviews collection, keyed by destination name)
   useEffect(() => {
@@ -89,6 +91,76 @@ export default function DestinationDetailScreen({ route, navigation }) {
     return (R * c).toFixed(1);
   };
 
+
+  const [checkedIn, setCheckedIn] = useState(false);
+  const placeLat = Number(place.lat ?? place.coords?.latitude);
+  const placeLon = Number(place.lon ?? place.coords?.longitude);
+  const hasCoords = Number.isFinite(placeLat) && Number.isFinite(placeLon);
+
+  // Saved and visited state for this place (FR-060, Eco Passport stamps)
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !place.name) return;
+    logEvent('destination_viewed', { name: place.name, hiddenGem: String(place.hidden_gem).toLowerCase() === 'true', eco: place.ecoScore ?? null });
+    getDocs(query(collection(db, 'saved_places'), where('userId', '==', uid), where('name', '==', place.name)))
+      .then(s => setSavedId(s.empty ? null : s.docs[0].id)).catch(() => {});
+    getDocs(query(collection(db, 'visited_places'), where('userId', '==', uid), where('name', '==', place.name)))
+      .then(s => setCheckedIn(!s.empty)).catch(() => {});
+  }, [place.name]);
+
+  const toggleSaved = async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return Alert.alert('Sign in required', 'Please sign in to save places.');
+    try {
+      if (savedId) {
+        await deleteDoc(doc(db, 'saved_places', savedId));
+        setSavedId(null);
+      } else {
+        const ref = await addDoc(collection(db, 'saved_places'), {
+          userId: uid, name: place.name, category: place.category || null, image: place.image || null,
+          lat: hasCoords ? placeLat : null, lon: hasCoords ? placeLon : null, savedAt: serverTimestamp(),
+        });
+        setSavedId(ref.id);
+        logEvent('place_saved', { name: place.name, hiddenGem: String(place.hidden_gem).toLowerCase() === 'true' });
+      }
+    } catch (e) {
+      Alert.alert('Could not save', e.message);
+    }
+  };
+
+  const sharePlace = () => {
+    const where = hasCoords ? `\nhttps://www.google.com/maps/search/?api=1&query=${placeLat},${placeLon}` : '';
+    Share.share({ message: `${place.name} - found with CEYLO, the eco and cultural guide to Sri Lanka.${where}` }).catch(() => {});
+  };
+
+  // GPS check-in: within 200 m of the place it stamps the Eco Passport
+  const kmBetween = (a, b, c, d) => { const v = getDistance(a, b, c, d); return v == null ? Infinity : Number(v); };
+  const CHECK_IN_METRES = 200;
+  const metresAway = hasCoords && userLoc ? Math.round(kmBetween(userLoc.latitude, userLoc.longitude, placeLat, placeLon) * 1000) : null;
+  const checkIn = async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return Alert.alert('Sign in required', 'Please sign in to check in.');
+    try {
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const metres = kmBetween(loc.coords.latitude, loc.coords.longitude, placeLat, placeLon) * 1000;
+      if (metres > CHECK_IN_METRES) {
+        Alert.alert('Not there yet', `You are ${(metres / 1000).toFixed(1)} km away. Check-in opens within ${CHECK_IN_METRES} m of ${place.name}.`);
+        return;
+      }
+      await addDoc(collection(db, 'visited_places'), {
+        userId: uid, name: place.name, category: place.category || null,
+        lat: placeLat, lon: placeLon, accuracyM: Math.round(loc.coords.accuracy || 0),
+        visitedAt: serverTimestamp(), date: new Date().toLocaleDateString(),
+      });
+      setCheckedIn(true);
+      logEvent('place_checked_in', { name: place.name, hiddenGem: String(place.hidden_gem).toLowerCase() === 'true' });
+      Alert.alert('Checked in', `${place.name} is now stamped in your Eco Passport. How was it? Leave a review below.`);
+      setActiveTab('Reviews');
+    } catch (e) {
+      Alert.alert('Could not check in', e.message);
+    }
+  };
+
   // Facts, nearby places and the eco model's breakdown from the CEYLO backend models
   const fetchInsights = async () => {
     try {
@@ -127,8 +199,8 @@ export default function DestinationDetailScreen({ route, navigation }) {
           <LinearGradient colors={['rgba(0,0,0,0.5)', 'transparent']} style={styles.topGradient} />
 
           <IconButton icon="arrow-left" iconColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />
-          <IconButton icon="share-variant" iconColor="#FFF" style={styles.shareBtn} />
-          <IconButton icon="heart-outline" iconColor="#FFF" style={styles.favBtn} />
+          <IconButton icon="share-variant" iconColor="#FFF" style={styles.shareBtn} onPress={sharePlace} accessibilityLabel="Share this place" />
+          <IconButton icon={savedId ? 'heart' : 'heart-outline'} iconColor={savedId ? '#FF5A5F' : '#FFF'} style={styles.favBtn} onPress={toggleSaved} accessibilityLabel={savedId ? 'Remove from saved places' : 'Save this place'} />
 
           <View style={styles.heroTags}>
             <View style={styles.pillBadge}><Text style={styles.pillText}>{place.category || 'Destination'}</Text></View>
@@ -138,6 +210,26 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
         {/* Content Section */}
         <View style={styles.content}>
+          {hasCoords && (
+            <TouchableOpacity
+              style={[styles.checkIn, checkedIn && styles.checkInDone]}
+              onPress={checkedIn ? undefined : checkIn}
+              activeOpacity={checkedIn ? 1 : 0.8}
+              accessibilityRole="button"
+            >
+              <MaterialCommunityIcons name={checkedIn ? 'passport' : 'map-marker-check-outline'} size={22} color={checkedIn ? '#2E7D32' : '#00695C'} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.checkInTitle}>{checkedIn ? 'Visited - stamped in your Eco Passport' : 'Check in here'}</Text>
+                {!checkedIn && (
+                  <Text style={styles.checkInSub}>
+                    {metresAway == null ? `Opens within ${CHECK_IN_METRES} m of this place`
+                      : metresAway <= CHECK_IN_METRES ? 'You are here - tap to stamp your Eco Passport'
+                      : `${(metresAway / 1000).toFixed(1)} km away - opens within ${CHECK_IN_METRES} m`}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{place.name || 'Destination'}</Text>
@@ -305,7 +397,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
       {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
-        <Button mode="outlined" icon="calendar-plus" textColor="#333" style={styles.outlineBtn} contentStyle={{ height: 50 }}>
+        <Button mode="outlined" icon="calendar-plus" textColor="#333" style={styles.outlineBtn} contentStyle={{ height: 50 }} onPress={() => navigation.navigate('Itinerary', { destination: place.name })}>
           Add to Itinerary
         </Button>
         <Button mode="contained" icon="car" buttonColor="#00695C" style={styles.solidBtn} contentStyle={{ height: 50 }} onPress={() => navigation.navigate('Transport', { destination: place })}>
@@ -367,6 +459,10 @@ const styles = StyleSheet.create({
   masonryImgSmall: { width: '100%', height: 100, borderRadius: 15 },
   masonryImgSmallWrapper: { position: 'relative', width: '100%', height: 100 },
   pinOverlay: { position: 'absolute', bottom: -5, right: 10, backgroundColor: '#FF5252', padding: 10, borderRadius: 20 },
+  checkIn: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#E0F2F1', borderRadius: 16, padding: 14, marginTop: 6, marginBottom: 6 },
+  checkInDone: { backgroundColor: '#E8F5E9' },
+  checkInTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#004D40' },
+  checkInSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#4A5A56', marginTop: 2 },
   bottomBar: { position: 'absolute', bottom: 0, width: '100%', flexDirection: 'row', padding: 15, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE', gap: 10, zIndex: 100, elevation: 10 },
   outlineBtn: { flex: 1, borderRadius: 10, borderColor: '#DDD', backgroundColor: '#F5F5F5' },
   solidBtn: { flex: 1, borderRadius: 10 },

@@ -227,6 +227,26 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Research data (Sprint 4): written by the traveller in their own name after consent,
+    // read only by staff for the evaluation, never edited afterwards
+    match /usage_events/{id} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+    match /feedback/{id} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if false;
+    }
+    match /sus_responses/{id} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid
+        && request.resource.data.susScore is number
+        && request.resource.data.susScore >= 0 && request.resource.data.susScore <= 100;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if false;
+    }
+
     // Per-user traveller history
     match /visited_places/{id} {
       allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;

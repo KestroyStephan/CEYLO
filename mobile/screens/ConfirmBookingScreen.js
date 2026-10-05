@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { logEvent } from '../services/Analytics';
 import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -94,6 +95,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
         createdAt: serverTimestamp(),
       });
 
+      logEvent('booking_made', { bookingId: bookingRef.id, kind: 'guide' });
       navigation.replace('WaitingApproval', {
         bookingId: bookingRef.id,
         guideName: guide?.name || 'Arjuna Perera',

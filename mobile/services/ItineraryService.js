@@ -12,6 +12,7 @@ import { auth, db } from '../firebaseConfig';
 import { recommendDestinations } from './aiClient';
 import { loadPreferences } from './PreferencesService';
 import { cacheItinerary } from './ItineraryCache';
+import { logEvent } from './Analytics';
 import localDestinations from '../assets/data/ai_destinations.json';
 import contentModel from '../assets/data/content_recommender.json';
 import crowdForecast from '../assets/data/crowd_forecast.json';
@@ -129,6 +130,14 @@ async function localRecommendations({ mood, days, destination, budget, ecoIntere
       matchScore: Math.round(score * 100),
     }));
   return { stops, engine };
+}
+
+// Facts the evaluation needs about a recommended place (RQ5, Objective 6)
+const BY_NAME = new Map(localDestinations.map(d => [d.name, d]));
+function destinationFacts(name) {
+  const d = BY_NAME.get(name);
+  if (!d) return { hiddenGem: false, eco: null };
+  return { hiddenGem: String(d.hidden_gem).toLowerCase() === 'true', eco: Math.round(d.eco_score) };
 }
 
 // RQ3: each traveller is assigned one recommendation strategy, kept on their profile
@@ -307,9 +316,16 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
         ecoInterest: ecoInterest ?? null, month, avoidCrowds, mobility, hasLocation: Boolean(position),
       },
       rainyShare,
-      results: stops.map(s => ({ id: s.id, name: s.name, matchScore: s.matchScore ?? null })),
+      results: stops.map(s => ({ id: s.id, name: s.name, matchScore: s.matchScore ?? null, ...destinationFacts(s.name) })),
     }).catch(e => console.log('Could not log recommendation record:', e.message));
   }
+
+  const facts = stops.map(s => destinationFacts(s.name));
+  logEvent('recommendation_shown', {
+    itineraryId: docRef.id, stops: stops.length, engine, offline, latencyMs,
+    hiddenGems: facts.filter(f => f.hiddenGem).length,
+    avgEco: facts.length ? Math.round(facts.reduce((a, f) => a + (f.eco || 0), 0) / facts.length) : null,
+  });
 
   const saved = { id: docRef.id, offline, latencyMs, ...itinerary };
   // FR-012: keep a copy on the phone so it opens without a connection

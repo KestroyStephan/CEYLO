@@ -10,6 +10,7 @@ const VendorDashboard = lazy(() => import('./pages/dashboards/VendorDashboard'))
 const TourProviderDashboard = lazy(() => import('./pages/dashboards/TourProviderDashboard'));
 const ProviderRegister = lazy(() => import('./pages/ProviderRegister'));
 const Users = lazy(() => import('./pages/Users'));
+const Research = lazy(() => import('./pages/Research'));
 const Vendors = lazy(() => import('./pages/Vendors'));
 const Bookings = lazy(() => import('./pages/Bookings'));
 const SOSAlerts = lazy(() => import('./pages/SOSAlerts'));
@@ -115,6 +116,7 @@ function App() {
                 <Route path="destinations" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><Destinations /></PrivateRoute>} />
                 <Route path="events" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><CulturalEvents /></PrivateRoute>} />
                 <Route path="analytics" element={<PrivateRoute allowedRoles={['finance', 'manager']}><Analytics /></PrivateRoute>} />
+                <Route path="research" element={<PrivateRoute allowedRoles={['manager']}><Research /></PrivateRoute>} />
                 <Route path="marketing" element={<PrivateRoute allowedRoles={['content_manager', 'manager']}><Marketing /></PrivateRoute>} />
                 <Route path="ai-center" element={<PrivateRoute allowedRoles={['manager']}><AICenter /></PrivateRoute>} />
                 <Route path="notifications" element={<PrivateRoute allowedRoles={['support', 'content_manager', 'manager']}><Notifications /></PrivateRoute>} />

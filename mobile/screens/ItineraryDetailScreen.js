@@ -11,6 +11,8 @@ import { buildPlan, summarizePlan, distanceKm } from '../services/ItineraryServi
 import { getWeather } from '../services/aiClient';
 import { cacheItinerary, getLatestCachedItinerary } from '../services/ItineraryCache';
 import WeatherChip from '../components/WeatherChip';
+import ItineraryFeedback from '../components/ItineraryFeedback';
+import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 
 const { width } = Dimensions.get('window');
@@ -76,6 +78,10 @@ export default function ItineraryDetailScreen({ route, navigation }) {
     }
   }, [incomingData]);
 
+  useEffect(() => {
+    if (data?.id) logEvent('itinerary_opened', { itineraryId: data.id, fromCache: Boolean(data.fromCache) });
+  }, [data?.id]);
+
   // Forecast for the trip area, matched to each day when the trip starts within the forecast window
   const [forecast, setForecast] = useState(null);
   const firstStop = plan[0];
@@ -103,8 +109,9 @@ export default function ItineraryDetailScreen({ route, navigation }) {
   const title = data?.title || 'Your Eco Itinerary';
 
   // Saved itineraries (those with a Firestore id owned by this user) keep edits
-  const updatePlan = (newPlan) => {
+  const updatePlan = (newPlan, change = 'reorder') => {
     setPlan(newPlan);
+    if (data?.id) logEvent('itinerary_edited', { itineraryId: data.id, change });
     if (data?.id) cacheItinerary({ ...data, plan: newPlan, ...summarizePlan(newPlan, data.budget) });
     if (data?.id && data.userId === auth.currentUser?.uid) {
       updateDoc(doc(db, 'itineraries', data.id), { plan: newPlan, ...summarizePlan(newPlan, data.budget) })
@@ -144,7 +151,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
               lat: parseFloat(gem.lat),
               lon: parseFloat(gem.lon),
               destinationId: gem.destination_id,
-            } : item));
+            } : item), 'swap');
           }
         }
       ]
@@ -295,6 +302,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.dayHeader}>No stops in this itinerary yet.</Text>}
+        ListFooterComponent={<ItineraryFeedback itinerary={data} />}
       />
 
       <Surface style={styles.footer} elevation={8}>
