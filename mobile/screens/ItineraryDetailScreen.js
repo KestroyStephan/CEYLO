@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, Linking } from 'react-native';
 import { Text, Surface, IconButton, Button, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -273,17 +274,17 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryVal}>{duration}</Text>
-            <Text style={styles.summaryLab}>Duration</Text>
+            <Text style={styles.summaryLab}>{i18n.t('ui_duration')}</Text>
           </View>
           <View style={styles.vDivider} />
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryVal, { color: '#4CAF50' }]}>{ecoAvg}%</Text>
-            <Text style={styles.summaryLab}>Carbon Score</Text>
+            <Text style={styles.summaryLab}>{i18n.t('ui_carbon_score')}</Text>
           </View>
           <View style={styles.vDivider} />
           <View style={styles.summaryItem}>
             <Text style={styles.summaryVal}>{cost}</Text>
-            <Text style={styles.summaryLab}>Est. Cost</Text>
+            <Text style={styles.summaryLab}>{i18n.t('ui_est_cost')}</Text>
           </View>
         </View>
 
@@ -308,7 +309,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={styles.dayHeader}>No stops in this itinerary yet.</Text>}
+        ListEmptyComponent={<Text style={styles.dayHeader}>{i18n.t('ui_no_stops_in_this_itinerary_yet')}</Text>}
         ListFooterComponent={<ItineraryFeedback itinerary={data} />}
       />
 
@@ -322,7 +323,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         >
           Start Multi-Stop Route
         </Button>
-        <Button mode="outlined" icon="file-pdf-box" style={styles.exportBtn} onPress={exportToPDF}>Export PDF</Button>
+        <Button mode="outlined" icon="file-pdf-box" style={styles.exportBtn} onPress={exportToPDF}>{i18n.t('ui_export_pdf')}</Button>
       </Surface>
     </View>
   );

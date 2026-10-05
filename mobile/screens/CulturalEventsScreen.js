@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions, Alert } from 'react-native';
 import { Text, Searchbar, Chip, Card, IconButton, Surface, ActivityIndicator } from 'react-native-paper';
 import * as Location from 'expo-location';
@@ -131,7 +132,7 @@ export default function CulturalEventsScreen({ navigation }) {
             <Surface style={styles.header} elevation={4}>
                 <View style={styles.headerTop}>
                     <IconButton accessibilityLabel="Go back" icon="arrow-left" onPress={() => navigation.goBack()} />
-                    <Text style={styles.headerTitle}>Sri Lanka Festivals</Text>
+                    <Text style={styles.headerTitle}>{i18n.t('ui_sri_lanka_festivals')}</Text>
                     <View style={{ flexDirection: 'row' }}>
                         <IconButton accessibilityLabel="Remind me" icon="bell-ring-outline" onPress={enableNearbyAlerts} />
                         <IconButton
@@ -166,7 +167,7 @@ export default function CulturalEventsScreen({ navigation }) {
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#00695C" />
-                    <Text style={styles.loadingText}>Loading cultural calendar...</Text>
+                    <Text style={styles.loadingText}>{i18n.t('ui_loading_cultural_calendar')}</Text>
                 </View>
             ) : viewMode === 'list' ? (
                 <FlatList

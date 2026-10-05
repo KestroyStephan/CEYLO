@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import i18n from '../i18n';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, Platform, ScrollView, ActivityIndicator, Modal, Alert, Linking, TextInput } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections, LocalTile } from '../components/Map';
@@ -394,7 +395,7 @@ export default function MapScreen({ navigation }) {
             <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.openDrawer ? navigation.openDrawer() : console.log('Menu pressed')}>
               <MaterialCommunityIcons name="menu" size={26} color="#00695C" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Explore Sri Lanka</Text>
+            <Text style={styles.headerTitle}>{i18n.t('ui_explore_sri_lanka')}</Text>
             <TouchableOpacity style={styles.searchBtn} onPress={() => setIsSearching(true)}>
               <MaterialCommunityIcons name="magnify" size={26} color="#00695C" />
             </TouchableOpacity>
@@ -484,7 +485,7 @@ export default function MapScreen({ navigation }) {
 
           <View style={styles.sheetHeaderRow}>
             <View>
-              <Text style={styles.sheetTitle}>Nearby Discoveries</Text>
+              <Text style={styles.sheetTitle}>{i18n.t('ui_nearby_discoveries')}</Text>
               <Text style={styles.sheetSubtitle}>
                 {loadingPlaces ? "Searching area..." : `Found ${nearbyPlaces.length} locations within 5km`}
               </Text>
@@ -512,7 +513,7 @@ export default function MapScreen({ navigation }) {
                     <View style={{flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4}}>
                       <Text style={{fontSize: 12, fontFamily: 'Outfit-Bold', color: '#00695C'}}>{routeInfo.duration} mins</Text>
                       <TouchableOpacity style={{backgroundColor: '#FFE0E0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12}} onPress={() => setShowDirections(false)}>
-                        <Text style={{color: '#D32F2F', fontSize: 11, fontFamily: 'Outfit-Bold'}}>Clear Route</Text>
+                        <Text style={{color: '#D32F2F', fontSize: 11, fontFamily: 'Outfit-Bold'}}>{i18n.t('ui_clear_route')}</Text>
                       </TouchableOpacity>
                     </View>
                   ) : (
@@ -520,7 +521,7 @@ export default function MapScreen({ navigation }) {
                       style={{backgroundColor: '#00695C', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginTop: 4}}
                       onPress={() => setShowDirections(true)}
                     >
-                      <Text style={{color: '#FFF', fontSize: 11, fontFamily: 'Outfit-Bold'}}>Get Directions</Text>
+                      <Text style={{color: '#FFF', fontSize: 11, fontFamily: 'Outfit-Bold'}}>{i18n.t('ui_get_directions')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -568,7 +569,7 @@ export default function MapScreen({ navigation }) {
       <Modal visible={showTypeFilterModal} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTypeFilterModal(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter by Type</Text>
+            <Text style={styles.modalTitle}>{i18n.t('ui_filter_by_type')}</Text>
 
             {['All', 'cultural', 'nature', 'restaurant', 'gem'].map(type => (
               <TouchableOpacity

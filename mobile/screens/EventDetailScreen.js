@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import i18n from '../i18n';
 import { imgSource } from '../utils/images';
 import { View, Text, StyleSheet, Image, ScrollView, Alert, Linking } from 'react-native';
 import { Surface, IconButton, Button, Chip } from 'react-native-paper';
@@ -32,7 +33,7 @@ export default function EventDetailScreen({ route, navigation }) {
   if (!displayEvent.title) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text>No event data provided.</Text>
+        <Text>{i18n.t('ui_no_event_data_provided')}</Text>
       </View>
     );
   }
@@ -111,19 +112,19 @@ export default function EventDetailScreen({ route, navigation }) {
           {displayEvent.ecoScore != null && (
             <Surface style={styles.ecoBadge} elevation={2}>
               <Text style={styles.ecoScore}>{displayEvent.ecoScore}</Text>
-              <Text style={styles.ecoLabel}>ECO SCORE</Text>
+              <Text style={styles.ecoLabel}>{i18n.t('ui_eco_score')}</Text>
             </Surface>
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>About</Text>
+        <Text style={styles.sectionTitle}>{i18n.t('ui_about')}</Text>
         <Text style={styles.description}>{displayEvent.description}</Text>
 
         {isNearby && (
           <Surface style={styles.alertBox} elevation={1}>
             <MaterialCommunityIcons name="bell-ring-outline" size={24} color="#D84315" />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.alertTitle}>You are nearby!</Text>
+              <Text style={styles.alertTitle}>{i18n.t('ui_you_are_nearby')}</Text>
               <Text style={styles.alertText}>
                 This event is {distance.toFixed(1)} km from your location.
               </Text>

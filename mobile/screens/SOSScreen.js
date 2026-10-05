@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, TouchableOpacity, Animated, Linking, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Alert } from 'react-native';
 import { Text, Surface, Button, IconButton, List, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -427,8 +428,8 @@ export default function SOSScreen({ navigation }) {
           <TouchableOpacity onPress={() => navigation?.canGoBack() && navigation.goBack()} style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Emergency Support</Text>
-          <Text style={styles.headerSubtitle}>Immediate assistance across Sri Lanka</Text>
+          <Text style={styles.headerTitle}>{i18n.t('ui_emergency_support')}</Text>
+          <Text style={styles.headerSubtitle}>{i18n.t('ui_immediate_assistance_across_sri_lanka')}</Text>
         </LinearGradient>
 
         <View style={styles.sosSection}>
@@ -444,7 +445,7 @@ export default function SOSScreen({ navigation }) {
             ) : countdown !== null ? (
               <>
                 <Text style={styles.sosText}>{countdown}</Text>
-                <Text style={styles.tapText}>Tap to Cancel</Text>
+                <Text style={styles.tapText}>{i18n.t('ui_tap_to_cancel')}</Text>
               </>
             ) : (
               <>
@@ -469,24 +470,24 @@ export default function SOSScreen({ navigation }) {
         {active && (
           <TouchableOpacity style={styles.addPhotoBtn} onPress={handleOptionalPhoto}>
             <MaterialCommunityIcons name="camera-plus" size={20} color="#D32F2F" />
-            <Text style={styles.addPhotoText}>Attach Evidence (Video/Photo)</Text>
+            <Text style={styles.addPhotoText}>{i18n.t('ui_attach_evidence_video_photo')}</Text>
           </TouchableOpacity>
         )}
 
         <View style={styles.actionGrid}>
           <Surface style={styles.actionCard} elevation={2}>
             <IconButton accessibilityLabel="Call police, 119" icon="phone-classic" mode="contained" containerColor="#D32F2F" iconColor="#FFF" onPress={() => handleCall('119')} />
-            <Text style={styles.actionLabel}>Police</Text>
+            <Text style={styles.actionLabel}>{i18n.t('ui_police')}</Text>
             <Text style={styles.actionNum}>119</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
             <IconButton accessibilityLabel="Call ambulance, 1990" icon="ambulance" mode="contained" containerColor="#00695C" iconColor="#FFF" onPress={() => handleCall('1990')} />
-            <Text style={styles.actionLabel}>Ambulance</Text>
+            <Text style={styles.actionLabel}>{i18n.t('ui_ambulance')}</Text>
             <Text style={styles.actionNum}>1990</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
             <IconButton accessibilityLabel="Fire service" icon="fire" mode="contained" containerColor="#E65100" iconColor="#FFF" onPress={() => handleCall('110')} />
-            <Text style={styles.actionLabel}>Fire</Text>
+            <Text style={styles.actionLabel}>{i18n.t('ui_fire')}</Text>
             <Text style={styles.actionNum}>110</Text>
           </Surface>
         </View>
@@ -494,17 +495,17 @@ export default function SOSScreen({ navigation }) {
         <View style={[styles.actionGrid, { marginTop: 15 }]}>
           <Surface style={styles.actionCard} elevation={2}>
             <IconButton accessibilityLabel="Police" icon="shield-account" mode="contained" containerColor="#FFB300" iconColor="#FFF" onPress={() => handleCall('0112421052')} />
-            <Text style={styles.actionLabel}>Tourist Police</Text>
+            <Text style={styles.actionLabel}>{i18n.t('ui_tourist_police')}</Text>
             <Text style={styles.actionNum}>011 242 1052</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
             <IconButton accessibilityLabel="Women's helpline" icon="face-woman" mode="contained" containerColor="#C2185B" iconColor="#FFF" onPress={() => handleCall('1929')} />
-            <Text style={styles.actionLabel}>Women Aid</Text>
+            <Text style={styles.actionLabel}>{i18n.t('ui_women_aid')}</Text>
             <Text style={styles.actionNum}>1929</Text>
           </Surface>
           <Surface style={styles.actionCard} elevation={2}>
             <IconButton accessibilityLabel="Hospital" icon="hospital-box" mode="contained" containerColor="#1976D2" iconColor="#FFF" onPress={() => handleCall('0112691111')} />
-            <Text style={styles.actionLabel}>Gen. Hospital</Text>
+            <Text style={styles.actionLabel}>{i18n.t('ui_gen_hospital')}</Text>
             <Text style={styles.actionNum}>011 269 1111</Text>
           </Surface>
         </View>
@@ -512,15 +513,15 @@ export default function SOSScreen({ navigation }) {
         <View style={styles.aiSection}>
           <View style={styles.aiHeader}>
             <MaterialCommunityIcons name="robot-outline" size={24} color="#00695C" />
-            <Text style={styles.aiTitle}>Nearest Emergency Services</Text>
+            <Text style={styles.aiTitle}>{i18n.t('ui_nearest_emergency_services')}</Text>
           </View>
-          <Text style={styles.aiSubtitle}>Nearest facilities based on your live GPS</Text>
+          <Text style={styles.aiSubtitle}>{i18n.t('ui_nearest_facilities_based_on_your_live_gp')}</Text>
 
           <Surface style={styles.aiCard} elevation={1}>
             {aiLoading ? (
               <View style={{ padding: 20, alignItems: 'center' }}>
                 <ActivityIndicator color="#00695C" size="small" />
-                <Text style={{ marginTop: 10, fontFamily: 'Outfit-Medium', color: '#666' }}>Scanning area...</Text>
+                <Text style={{ marginTop: 10, fontFamily: 'Outfit-Medium', color: '#666' }}>{i18n.t('ui_scanning_area')}</Text>
               </View>
             ) : aiSuggestions ? (
               <View style={{ padding: 15, gap: 15 }}>
@@ -554,7 +555,7 @@ export default function SOSScreen({ navigation }) {
                 </View>
               </View>
             ) : (
-              <Text style={{ padding: 20, textAlign: 'center', color: '#999', fontFamily: 'Outfit-Medium' }}>Could not fetch AI suggestions right now.</Text>
+              <Text style={{ padding: 20, textAlign: 'center', color: '#999', fontFamily: 'Outfit-Medium' }}>{i18n.t('ui_could_not_fetch_ai_suggestions_right_now')}</Text>
             )}
           </Surface>
         </View>
@@ -595,14 +596,14 @@ export default function SOSScreen({ navigation }) {
               {mediaType === 'video' ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                   <MaterialCommunityIcons name="video-check" size={80} color="#FFF" />
-                  <Text style={{ color: '#FFF', marginTop: 10, fontFamily: 'Outfit-Bold' }}>Video Ready to Upload</Text>
+                  <Text style={{ color: '#FFF', marginTop: 10, fontFamily: 'Outfit-Bold' }}>{i18n.t('ui_video_ready_to_upload')}</Text>
                 </View>
               ) : (
                 <Image source={{ uri: capturedUri }} style={{ flex: 1, resizeMode: 'cover' }} />
               )}
               <View style={styles.previewOverlay}>
                 <View style={styles.previewHeader}>
-                  <Text style={styles.previewTitle}>Emergency Photo</Text>
+                  <Text style={styles.previewTitle}>{i18n.t('ui_emergency_photo')}</Text>
                 </View>
                 <View style={styles.previewFooter}>
                   {uploading ? (
@@ -614,11 +615,11 @@ export default function SOSScreen({ navigation }) {
                     <>
                       <TouchableOpacity style={styles.retakeBtn} onPress={() => setCapturedUri(null)}>
                         <Ionicons name="refresh" size={20} color="#FFF" />
-                        <Text style={styles.retakeBtnText}>Retake</Text>
+                        <Text style={styles.retakeBtnText}>{i18n.t('ui_retake')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.submitBtn, { backgroundColor: '#D32F2F' }]} onPress={submitPhotoEvidence}>
                         <Ionicons name="cloud-upload" size={20} color="#FFF" />
-                        <Text style={styles.submitBtnText}>Upload Evidence</Text>
+                        <Text style={styles.submitBtnText}>{i18n.t('ui_upload_evidence')}</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -643,7 +644,7 @@ export default function SOSScreen({ navigation }) {
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={{ marginTop: 20 }} onPress={skipPhoto}>
-                    <Text style={{ color: '#FFF', fontSize: 16, fontFamily: 'Outfit-Bold' }}>Cancel</Text>
+                    <Text style={{ color: '#FFF', fontSize: 16, fontFamily: 'Outfit-Bold' }}>{i18n.t('ui_cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

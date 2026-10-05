@@ -1,4 +1,5 @@
 import React from 'react';
+import i18n from '../i18n';
 import { SUSTAINABLE_ROUTES } from '../utils/destinations';
 import { View, StyleSheet, FlatList, TouchableOpacity, ImageBackground } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
@@ -63,8 +64,8 @@ export default function SustainableRoutesListScreen({ navigation }) {
       <View style={styles.header}>
         <IconButton accessibilityLabel="Go back" icon="arrow-left" size={24} onPress={() => navigation.goBack()} iconColor={COLORS.dark} style={{ marginLeft: -10 }} />
         <View>
-          <Text style={styles.headerTitle}>Sustainable Routes</Text>
-          <Text style={styles.headerSub}>Curated low-carbon itineraries</Text>
+          <Text style={styles.headerTitle}>{i18n.t('ui_sustainable_routes')}</Text>
+          <Text style={styles.headerSub}>{i18n.t('ui_curated_low_carbon_itineraries')}</Text>
         </View>
       </View>
       <FlatList

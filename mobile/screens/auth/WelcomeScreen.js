@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import i18n from '../../i18n';
 import {
   View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity,
   Alert, Animated, StatusBar
@@ -77,9 +78,9 @@ export default function WelcomeScreen({ navigation }) {
 
           {/* Main hero text */}
           <View style={styles.heroSection}>
-            <Text style={styles.eyebrowText}>SRI LANKA'S PREMIER</Text>
+            <Text style={styles.eyebrowText}>{i18n.t('ui_sri_lanka_s_premier')}</Text>
             <Text style={styles.heroTitle}>Ceylo</Text>
-            <Text style={styles.heroTagline}>Eco-Luxury Discovery</Text>
+            <Text style={styles.heroTagline}>{i18n.t('ui_eco_luxury_discovery_')}</Text>
             <Text style={styles.heroBody}>
               Discover authentic Sri Lankan heritage through the eyes of expert local guides — sustainably, responsibly, unforgettably.
             </Text>
@@ -92,7 +93,7 @@ export default function WelcomeScreen({ navigation }) {
               onPress={() => navigation.navigate('Login')}
               activeOpacity={0.87}
             >
-              <Text style={styles.loginBtnText}>Login</Text>
+              <Text style={styles.loginBtnText}>{i18n.t('ui_login')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -100,11 +101,11 @@ export default function WelcomeScreen({ navigation }) {
               onPress={() => navigation.navigate('RolePicker')}
               activeOpacity={0.87}
             >
-              <Text style={styles.registerBtnText}>Create Account</Text>
+              <Text style={styles.registerBtnText}>{i18n.t('ui_create_account')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleContinueGuest} style={styles.guestBtn}>
-              <Text style={styles.guestBtnText}>Continue as Guest</Text>
+              <Text style={styles.guestBtnText}>{i18n.t('ui_continue_as_guest')}</Text>
             </TouchableOpacity>
           </View>
 

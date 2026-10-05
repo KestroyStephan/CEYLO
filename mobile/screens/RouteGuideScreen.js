@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -159,7 +160,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator color={ACCENT} />
-        <Text style={styles.loadingText}>Preparing your route…</Text>
+        <Text style={styles.loadingText}>{i18n.t('ui_preparing_your_route')}</Text>
       </View>
     );
   }
@@ -167,7 +168,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
     return (
       <View style={[styles.container, styles.center, { padding: 32 }]}>
         <MaterialCommunityIcons name="map-marker-off-outline" size={48} color="#90A4AE" />
-        <Text style={styles.loadingText}>This itinerary needs at least two stops with a location to guide you.</Text>
+        <Text style={styles.loadingText}>{i18n.t('ui_this_itinerary_needs_at_least_two_stops')}</Text>
       </View>
     );
   }
@@ -199,7 +200,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           {done ? (
-            <Text style={styles.instruction}>All stops reached</Text>
+            <Text style={styles.instruction}>{i18n.t('ui_all_stops_reached')}</Text>
           ) : (
             <>
               <Text style={styles.instruction} numberOfLines={2}>

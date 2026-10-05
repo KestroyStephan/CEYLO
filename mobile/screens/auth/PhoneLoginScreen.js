@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import i18n from '../../i18n';
 import { View, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -94,7 +95,7 @@ export default function PhoneLoginScreen({ navigation }) {
 
           {step === 'phone' ? (
             <>
-              <Text style={styles.label}>Mobile number</Text>
+              <Text style={styles.label}>{i18n.t('ui_mobile_number')}</Text>
               <TextInput
                 style={styles.input}
                 value={phone}
@@ -106,7 +107,7 @@ export default function PhoneLoginScreen({ navigation }) {
                 textContentType="telephoneNumber"
                 accessibilityLabel="Mobile number"
               />
-              <Text style={styles.label}>Your name (for new accounts)</Text>
+              <Text style={styles.label}>{i18n.t('ui_your_name_for_new_accounts')}</Text>
               <TextInput
                 style={styles.input}
                 value={name}

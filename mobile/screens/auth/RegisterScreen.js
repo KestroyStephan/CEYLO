@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import i18n from '../../i18n';
 import { View, StyleSheet, TouchableOpacity, Platform, ScrollView, Alert, TextInput, StatusBar } from 'react-native';
 import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
@@ -134,33 +135,33 @@ export default function RegisterScreen({ navigation, route }) {
             <Text style={styles.brandName}>
               Create {role === 'vendor_onboarding' ? 'Vendor' : role.charAt(0).toUpperCase() + role.slice(1)} Account
             </Text>
-            <Text style={styles.brandTagline}>JOIN THE ECO-LUXURY COMMUNITY</Text>
+            <Text style={styles.brandTagline}>{i18n.t('ui_join_the_eco_luxury_community')}</Text>
           </View>
 
           <View style={styles.formCard}>
             {/* Full Name */}
-            <Text style={styles.fieldLabel}>Full Name</Text>
+            <Text style={styles.fieldLabel}>{i18n.t('ui_full_name')}</Text>
             {renderField("name", "Arjuna Perera", name, setName)}
 
             {/* Email */}
-            <Text style={styles.fieldLabel}>Email Address</Text>
+            <Text style={styles.fieldLabel}>{i18n.t('ui_email_address')}</Text>
             {renderField("email", "you@example.com", email, setEmail, false, "email-address", { autoCapitalize: 'none' })}
 
             {/* Phone */}
-            <Text style={styles.fieldLabel}>Phone Number</Text>
+            <Text style={styles.fieldLabel}>{i18n.t('ui_phone_number')}</Text>
             {renderField("phone", "+94 XX XXX XXXX", phone, setPhone, false, "phone-pad", { autoCapitalize: 'none' })}
 
             {/* Password */}
-            <Text style={styles.fieldLabel}>Password</Text>
+            <Text style={styles.fieldLabel}>{i18n.t('ui_password')}</Text>
             {renderField("password", "Min. 6 characters", password, setPassword, true)}
 
 
             {/* Driver Extra Fields */}
             {role === 'driver' && (
               <View style={styles.extraFields}>
-                <Text style={styles.fieldLabel}>Vehicle Type</Text>
+                <Text style={styles.fieldLabel}>{i18n.t('ui_vehicle_type')}</Text>
                 {renderField("vehicleType", "e.g. Tuk, Car, Van", vehicleType, setVehicleType)}
-                <Text style={styles.fieldLabel}>License Plate</Text>
+                <Text style={styles.fieldLabel}>{i18n.t('ui_license_plate')}</Text>
                 {renderField("licensePlate", "e.g. CAB-1234", licensePlate, setLicensePlate, false, "default", { autoCapitalize: 'characters' })}
               </View>
             )}
@@ -175,16 +176,16 @@ export default function RegisterScreen({ navigation, route }) {
               {loading ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text style={styles.registerBtnText}>Create Account</Text>
+                <Text style={styles.registerBtnText}>{i18n.t('ui_create_account')}</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
+            <Text style={styles.footerText}>{i18n.t('ui_already_have_an_account')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Login</Text>
+              <Text style={styles.footerLink}>{i18n.t('ui_login')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

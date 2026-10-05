@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, TouchableOpacity, Image, Dimensions, StatusBar } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -80,7 +81,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
         <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.closeBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A2E1A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Booking Status</Text>
+        <Text style={styles.headerTitle}>{i18n.t('ui_booking_status')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -94,7 +95,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
         {status === 'pending' && (
           <>
             <MaterialCommunityIcons name="clock-fast" size={60} color="#F57C00" style={styles.icon} />
-            <Text style={styles.title}>Waiting for Approval</Text>
+            <Text style={styles.title}>{i18n.t('ui_waiting_for_approval')}</Text>
             <Text style={styles.subtitle}>
               Your request has been sent to {guideName}. We'll notify you as soon as they respond!
             </Text>
@@ -103,18 +104,18 @@ export default function WaitingApprovalScreen({ route, navigation }) {
               <TouchableOpacity style={styles.noReply} onPress={handleFindAnother} accessibilityRole="button">
                 <MaterialCommunityIcons name="account-search-outline" size={22} color="#004D40" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.noReplyTitle}>No reply after 15 minutes</Text>
-                  <Text style={styles.noReplySub}>Other local guides are available now. Tap to see them.</Text>
+                  <Text style={styles.noReplyTitle}>{i18n.t('ui_no_reply_after_15_minutes')}</Text>
+                  <Text style={styles.noReplySub}>{i18n.t('ui_other_local_guides_are_available_now_tap')}</Text>
                 </View>
               </TouchableOpacity>
             )}
             
             <View style={styles.actionRow}>
               <TouchableOpacity style={[styles.cancelBtn, { flex: 1, marginRight: 8 }]} onPress={handleCancelAndGoHome}>
-                <Text style={styles.cancelBtnText}>Cancel Request</Text>
+                <Text style={styles.cancelBtnText}>{i18n.t('ui_cancel_request')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.secondaryBtn, { flex: 1, marginLeft: 8 }]} onPress={handleFindAnother}>
-                <Text style={styles.secondaryBtnText}>Pick Another</Text>
+                <Text style={styles.secondaryBtnText}>{i18n.t('ui_pick_another')}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -123,12 +124,12 @@ export default function WaitingApprovalScreen({ route, navigation }) {
         {status === 'accepted' && (
           <>
             <MaterialCommunityIcons name="check-decagram" size={60} color="#006A3B" style={styles.icon} />
-            <Text style={styles.title}>Request Approved!</Text>
+            <Text style={styles.title}>{i18n.t('ui_request_approved')}</Text>
             <Text style={styles.subtitle}>
               {guideName} is available and has accepted your request. Confirm the booking{booking?.totalAmount ? ` and pay $${Number(booking.totalAmount).toFixed(2)} to your guide on the day` : ' and agree the price with your guide in chat'}.
             </Text>
             <TouchableOpacity style={styles.primaryBtn} onPress={handlePayNow}>
-              <Text style={styles.primaryBtnText}>Confirm Booking</Text>
+              <Text style={styles.primaryBtnText}>{i18n.t('ui_confirm_booking')}</Text>
               <MaterialCommunityIcons name="check-circle-outline" size={18} color="#FFF" />
             </TouchableOpacity>
             
@@ -145,7 +146,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
               }}
             >
               <MaterialCommunityIcons name="message-text-outline" size={18} color="#006A3B" />
-              <Text style={styles.secondaryBtnText}>Message Guide</Text>
+              <Text style={styles.secondaryBtnText}>{i18n.t('ui_message_guide')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -153,12 +154,12 @@ export default function WaitingApprovalScreen({ route, navigation }) {
         {status === 'declined' && (
           <>
             <MaterialCommunityIcons name="close-circle-outline" size={60} color="#D32F2F" style={styles.icon} />
-            <Text style={styles.title}>Request Declined</Text>
+            <Text style={styles.title}>{i18n.t('ui_request_declined')}</Text>
             <Text style={styles.subtitle}>
               Unfortunately, {guideName} is unable to accept your request at this time.
             </Text>
             <TouchableOpacity style={styles.secondaryBtn} onPress={handleFindAnother}>
-              <Text style={styles.secondaryBtnText}>Find Another Guide</Text>
+              <Text style={styles.secondaryBtnText}>{i18n.t('ui_find_another_guide')}</Text>
             </TouchableOpacity>
           </>
         )}

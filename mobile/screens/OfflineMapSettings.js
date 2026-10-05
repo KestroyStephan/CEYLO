@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import i18n from '../i18n';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, Modal, Animated, Easing
@@ -133,8 +134,8 @@ export default function OfflineMapSettings({ navigation }) {
         <View style={styles.headerRow}>
           <IconButton accessibilityLabel="Go back" icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
           <View>
-            <Text style={styles.headerTitle}>Offline Maps</Text>
-            <Text style={styles.headerSub}>Available without internet</Text>
+            <Text style={styles.headerTitle}>{i18n.t('ui_offline_maps')}</Text>
+            <Text style={styles.headerSub}>{i18n.t('ui_available_without_internet')}</Text>
           </View>
         </View>
         <View style={styles.storageRow}>
@@ -167,7 +168,7 @@ export default function OfflineMapSettings({ navigation }) {
           !loading && (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="map-marker-off-outline" size={72} color="#CBD5C0" />
-              <Text style={styles.emptyText}>No offline maps yet</Text>
+              <Text style={styles.emptyText}>{i18n.t('ui_no_offline_maps_yet')}</Text>
               <Text style={styles.emptySubtext}>
                 Tap the button below to download a Sri Lanka region for use without internet.
               </Text>
@@ -180,7 +181,7 @@ export default function OfflineMapSettings({ navigation }) {
       {!downloading && (
         <TouchableOpacity style={styles.fab} onPress={() => setShowDownloadModal(true)}>
           <MaterialCommunityIcons name="cloud-download-outline" size={26} color="#FFF" />
-          <Text style={styles.fabLabel}>Download Region</Text>
+          <Text style={styles.fabLabel}>{i18n.t('ui_download_region')}</Text>
         </TouchableOpacity>
       )}
 
@@ -198,8 +199,8 @@ export default function OfflineMapSettings({ navigation }) {
         />
         <View style={styles.modalSheet}>
           <View style={styles.modalDragBar} />
-          <Text style={styles.modalTitle}>Choose a Region</Text>
-          <Text style={styles.modalSubtitle}>Tiles from OpenStreetMap — works offline, no Google needed</Text>
+          <Text style={styles.modalTitle}>{i18n.t('ui_choose_a_region')}</Text>
+          <Text style={styles.modalSubtitle}>{i18n.t('ui_tiles_from_openstreetmap_works_offline_n')}</Text>
 
           <FlatList
             data={SRI_LANKA_REGIONS}

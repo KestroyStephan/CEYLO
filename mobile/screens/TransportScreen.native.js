@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import i18n from '../i18n';
 import {
   View, StyleSheet, Dimensions, Animated, TouchableOpacity,
   Image, ScrollView, TextInput, FlatList, Alert, Linking
@@ -633,7 +634,7 @@ export default function TransportScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.mainHeading}>Let's Ride</Text>
+      <Text style={styles.mainHeading}>{i18n.t('ui_let_s_ride')}</Text>
 
       <MapView
         ref={mapRef}
@@ -709,7 +710,7 @@ export default function TransportScreen({ route, navigation }) {
 
         {bookingStep === 'input' && (
           <View style={styles.content}>
-            <Text style={styles.sheetTitle}>Where to?</Text>
+            <Text style={styles.sheetTitle}>{i18n.t('ui_where_to')}</Text>
 
             {/* Pickup input */}
             <View style={styles.searchContainer}>
@@ -809,11 +810,11 @@ export default function TransportScreen({ route, navigation }) {
               <Ionicons name="location" size={18} color="#BA1A1A" />
               <Text style={styles.selectedDestText} numberOfLines={1}>{dropAddress}</Text>
               <TouchableOpacity onPress={() => setBookingStep('input')}>
-                <Text style={styles.editBtn}>Edit</Text>
+                <Text style={styles.editBtn}>{i18n.t('ui_edit')}</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.sectionTitle}>Select Vehicle</Text>
+            <Text style={styles.sectionTitle}>{i18n.t('ui_select_vehicle')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vehicleScroll}>
               {VEHICLE_OPTIONS.map(v => <RenderVehicle key={v.id} item={v} />)}
             </ScrollView>
@@ -837,7 +838,7 @@ export default function TransportScreen({ route, navigation }) {
                 <Ionicons name="radio" size={48} color="#006A3B" />
               </View>
             </Animated.View>
-            <Text style={styles.loadingText}>Searching for nearby drivers...</Text>
+            <Text style={styles.loadingText}>{i18n.t('ui_searching_for_nearby_drivers')}</Text>
             <Button mode="outlined" style={styles.cancelBtn} textColor="#BA1A1A" onPress={handleCancelBooking}>
               Cancel Request
             </Button>
@@ -879,7 +880,7 @@ export default function TransportScreen({ route, navigation }) {
               </View>
 
               <View style={styles.fareRow}>
-                <Text style={styles.fareLabel}>Estimated Fare</Text>
+                <Text style={styles.fareLabel}>{i18n.t('ui_estimated_fare')}</Text>
                 <Text style={styles.fareAmount}>
                   LKR {activeBooking?.price?.toLocaleString()}
                 </Text>
@@ -893,7 +894,7 @@ export default function TransportScreen({ route, navigation }) {
                 onPress={handleTouristCancel}
               >
                 <Ionicons name="close-circle-outline" size={18} color="#BA1A1A" />
-                <Text style={styles.cancelRideText}>Cancel Ride</Text>
+                <Text style={styles.cancelRideText}>{i18n.t('ui_cancel_ride')}</Text>
               </TouchableOpacity>
             )}
 

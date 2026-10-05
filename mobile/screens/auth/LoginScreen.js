@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../../i18n';
 import { View, StyleSheet, TouchableOpacity, Platform, ScrollView, Alert, TextInput, StatusBar, Dimensions } from 'react-native';
 import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
@@ -139,7 +140,7 @@ export default function LoginScreen({ navigation }) {
               </View>
             </View>
             <Text style={styles.brandName}>Ceylo</Text>
-            <Text style={styles.brandTagline}>ECO-LUXURY DISCOVERY</Text>
+            <Text style={styles.brandTagline}>{i18n.t('ui_eco_luxury_discovery')}</Text>
           </View>
 
           {/* ── Form Card ── */}
@@ -187,7 +188,7 @@ export default function LoginScreen({ navigation }) {
 
             {/* Forgot Password */}
             <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotRow}>
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>{i18n.t('ui_forgot_password')}</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
@@ -200,7 +201,7 @@ export default function LoginScreen({ navigation }) {
               {loading ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text style={styles.loginBtnText}>Login</Text>
+                <Text style={styles.loginBtnText}>{i18n.t('ui_login')}</Text>
               )}
             </TouchableOpacity>
 
@@ -219,7 +220,7 @@ export default function LoginScreen({ navigation }) {
               disabled={loading}
             >
               <Text style={styles.googleG}>G</Text>
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
+              <Text style={styles.googleBtnText}>{i18n.t('ui_continue_with_google')}</Text>
             </TouchableOpacity>
 
             {/* Continue with phone number (FR-001), shown once the server can send codes */}
@@ -231,15 +232,15 @@ export default function LoginScreen({ navigation }) {
               accessibilityRole="button"
             >
               <MaterialCommunityIcons name="cellphone" size={20} color="#00695C" style={{ marginRight: 10 }} />
-              <Text style={styles.googleBtnText}>Continue with phone number</Text>
+              <Text style={styles.googleBtnText}>{i18n.t('ui_continue_with_phone_number')}</Text>
             </TouchableOpacity>}
           </View>
 
           {/* ── Create Account ── */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>New to Ceylo? </Text>
+            <Text style={styles.footerText}>{i18n.t('ui_new_to_ceylo')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.footerLink}>Create Account</Text>
+              <Text style={styles.footerLink}>{i18n.t('ui_create_account')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

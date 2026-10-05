@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import {
   View, StyleSheet, ScrollView, Image, TouchableOpacity,
   Alert, StatusBar, Dimensions, TextInput
@@ -145,7 +146,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={22} color="#1A2E1A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Confirm Booking</Text>
+          <Text style={styles.headerTitle}>{i18n.t('ui_confirm_booking')}</Text>
           <Image
             source={{ uri: auth.currentUser?.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
             style={styles.headerAvatar}
@@ -182,7 +183,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
           <View style={styles.sectionCard}>
             <View style={styles.calHeader}>
               <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#006A3B" />
-              <Text style={styles.calTitle}>Selected Date</Text>
+              <Text style={styles.calTitle}>{i18n.t('ui_selected_date')}</Text>
               <View style={styles.calNav}>
                 <TouchableOpacity onPress={prevMonth} style={styles.calNavBtn}>
                   <MaterialCommunityIcons name="chevron-left" size={18} color="#4A5E4A" />
@@ -233,15 +234,15 @@ export default function ConfirmBookingScreen({ route, navigation }) {
 
             <View style={styles.calLegend}>
               <View style={styles.legendDot} />
-              <Text style={styles.legendText}>Selected Day</Text>
+              <Text style={styles.legendText}>{i18n.t('ui_selected_day')}</Text>
             </View>
           </View>
 
           {/* Expedition Details */}
-          <Text style={styles.expTitle}>Expedition Details</Text>
+          <Text style={styles.expTitle}>{i18n.t('ui_expedition_details')}</Text>
           <View style={styles.sectionCard}>
             {/* Explorers Counter */}
-            <Text style={styles.fieldLabel}>Number of Explorers</Text>
+            <Text style={styles.fieldLabel}>{i18n.t('ui_number_of_explorers')}</Text>
             <View style={styles.counterRow}>
               <TouchableOpacity
                 onPress={() => setExplorers(e => Math.max(1, e - 1))}
@@ -259,7 +260,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
             </View>
 
             {/* Pickup Location */}
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Pick-up Location</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{i18n.t('ui_pick_up_location')}</Text>
             <TouchableOpacity
               style={styles.dropdownBtn}
               onPress={() => setShowPickupDropdown(!showPickupDropdown)}
@@ -286,9 +287,9 @@ export default function ConfirmBookingScreen({ route, navigation }) {
           </View>
 
           {/* Reviews from travellers who booked this guide */}
-          <Text style={styles.expTitle}>Traveller Reviews</Text>
+          <Text style={styles.expTitle}>{i18n.t('ui_traveller_reviews')}</Text>
           {reviews.length === 0 ? (
-            <Text style={[styles.journalMeta, { marginBottom: 16 }]}>No reviews yet for this guide.</Text>
+            <Text style={[styles.journalMeta, { marginBottom: 16 }]}>{i18n.t('ui_no_reviews_yet_for_this_guide')}</Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {reviews.map(r => (
@@ -328,18 +329,18 @@ export default function ConfirmBookingScreen({ route, navigation }) {
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <>
-                  <Text style={styles.confirmBtnText}>Request to Book</Text>
+                  <Text style={styles.confirmBtnText}>{i18n.t('ui_request_to_book')}</Text>
                   <MaterialCommunityIcons name="send" size={18} color="#FFF" />
                 </>
               )}
             </TouchableOpacity>
-            <Text style={styles.footerNote}>You won't be charged until the guide accepts.</Text>
+            <Text style={styles.footerNote}>{i18n.t('ui_you_won_t_be_charged_until_the_guide_acc')}</Text>
           </View>
 
           {/* Trust Footer */}
           <View style={styles.trustFooter}>
             <MaterialCommunityIcons name="shield-check-outline" size={14} color="#8A9E8A" />
-            <Text style={styles.trustText}>You only pay after the guide accepts your request</Text>
+            <Text style={styles.trustText}>{i18n.t('ui_you_only_pay_after_the_guide_accepts_you')}</Text>
           </View>
 
           <View style={{ height: 30 }} />

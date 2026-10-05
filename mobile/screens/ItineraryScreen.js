@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Button, Card, IconButton, ActivityIndicator, Switch } from 'react-native-paper';
 import { auth } from '../firebaseConfig';
@@ -53,7 +54,7 @@ export default function ItineraryScreen({ navigation, route }) {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
                 <IconButton accessibilityLabel="Go back" icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
-                <Text variant="titleLarge" style={styles.headerTitle}>Tailor Your Journey</Text>
+                <Text variant="titleLarge" style={styles.headerTitle}>{i18n.t('ui_tailor_your_journey')}</Text>
             </View>
             {destination && (
                 <Text style={{ marginHorizontal: 20, marginBottom: 8, color: '#00695C', fontFamily: 'Outfit-Medium' }}>
@@ -63,7 +64,7 @@ export default function ItineraryScreen({ navigation, route }) {
 
             <Card style={styles.card}>
                 <Card.Content>
-                    <Text variant="titleMedium" style={styles.label}>Trip Focus</Text>
+                    <Text variant="titleMedium" style={styles.label}>{i18n.t('ui_trip_focus')}</Text>
                     <View style={styles.budgetRow}>
                         <Button mode={focus === 'Nature/Eco' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={focus === 'Nature/Eco' ? '#00695c' : undefined} onPress={() => setFocus('Nature/Eco')}>
                             Nature/Eco
@@ -78,7 +79,7 @@ export default function ItineraryScreen({ navigation, route }) {
 
                     <View style={styles.spacer} />
 
-                    <Text variant="titleMedium" style={styles.label}>How many days?</Text>
+                    <Text variant="titleMedium" style={styles.label}>{i18n.t('ui_how_many_days')}</Text>
                     <View style={styles.counterRow}>
                         <IconButton accessibilityLabel="Remove" icon="minus" mode="contained-tonal" size={20} onPress={() => setDays(Math.max(1, days - 1))} />
                         <Text variant="headlineMedium">{days}</Text>
@@ -87,7 +88,7 @@ export default function ItineraryScreen({ navigation, route }) {
 
                     <View style={styles.spacer} />
 
-                    <Text variant="titleMedium" style={styles.label}>Your Budget</Text>
+                    <Text variant="titleMedium" style={styles.label}>{i18n.t('ui_your_budget')}</Text>
                     <View style={styles.budgetRow}>
                         <Button mode={budget === '$ Budget' ? 'contained' : 'outlined'} style={styles.budgetBtn} buttonColor={budget === '$ Budget' ? '#00695c' : undefined} onPress={() => setBudget('$ Budget')}>
                             $ Budget
@@ -104,8 +105,8 @@ export default function ItineraryScreen({ navigation, route }) {
 
                     <View style={styles.crowdRow}>
                         <View style={{ flex: 1 }}>
-                            <Text variant="titleMedium" style={styles.label}>Fewer crowds</Text>
-                            <Text variant="bodySmall" style={{ color: '#666' }}>Favour places our crowd forecast model expects to be quiet this month.</Text>
+                            <Text variant="titleMedium" style={styles.label}>{i18n.t('ui_fewer_crowds')}</Text>
+                            <Text variant="bodySmall" style={{ color: '#666' }}>{i18n.t('ui_favour_places_our_crowd_forecast_model_e')}</Text>
                         </View>
                         <Switch value={avoidCrowds} onValueChange={setAvoidCrowds} color="#00695c" />
                     </View>

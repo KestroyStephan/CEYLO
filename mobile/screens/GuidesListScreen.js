@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import i18n from '../i18n';
 import {
   View, StyleSheet, FlatList, TouchableOpacity, Image,
   TextInput, StatusBar, ScrollView, Platform, Alert
@@ -150,21 +151,21 @@ export default function GuidesListScreen({ navigation }) {
               </View>
             )) : (
               <View style={styles.areaChip}>
-                <Text style={styles.areaChipText}>Island-wide</Text>
+                <Text style={styles.areaChipText}>{i18n.t('ui_island_wide')}</Text>
               </View>
             )}
           </View>
 
           <View style={styles.cardFooter}>
             <View>
-              <Text style={styles.startLabel}>STARTS FROM</Text>
+              <Text style={styles.startLabel}>{i18n.t('ui_starts_from')}</Text>
               <Text style={styles.priceLabel}>{startingPrice ? `$${startingPrice}` : 'N/A'}<Text style={styles.priceUnit}>{startingPrice ? '/service' : ''}</Text></Text>
             </View>
             <TouchableOpacity
               style={styles.viewBtn}
               onPress={() => navigation.navigate('GuideProfile', { guide: item })}
             >
-              <Text style={styles.viewBtnText}>View Profile</Text>
+              <Text style={styles.viewBtnText}>{i18n.t('ui_view_profile')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -190,7 +191,7 @@ export default function GuidesListScreen({ navigation }) {
             <MaterialCommunityIcons name="clock-fast" size={20} color="#FFF" style={{ marginRight: 8 }} />
             <View>
               <Text style={styles.pendingBannerText}>Pending Request with {pendingBooking.guideName}</Text>
-              <Text style={styles.pendingBannerSub}>Tap to view status</Text>
+              <Text style={styles.pendingBannerSub}>{i18n.t('ui_tap_to_view_status')}</Text>
             </View>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#FFF" />
@@ -213,7 +214,7 @@ export default function GuidesListScreen({ navigation }) {
 
       {/* Hero Title */}
       <View style={styles.heroSection}>
-        <Text style={styles.heroTitle}>Find Your Eco-Expert</Text>
+        <Text style={styles.heroTitle}>{i18n.t('ui_find_your_eco_expert')}</Text>
         <Text style={styles.heroSub}>
           Connect with certified local guides dedicated{'\n'}to sustainable heritage.
         </Text>

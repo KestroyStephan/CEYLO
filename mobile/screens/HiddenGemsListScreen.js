@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { Text, Surface, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -157,7 +158,7 @@ export default function HiddenGemsListScreen({ navigation, route }) {
           <View style={styles.cardFooterRow}>
             <View style={styles.badgeRow}>
               <View style={styles.ecoBadge}>
-                <Text style={styles.ecoText}>ECO-CERTIFIED</Text>
+                <Text style={styles.ecoText}>{i18n.t('ui_eco_certified')}</Text>
               </View>
             </View>
             <View style={styles.distanceBox}>
@@ -182,20 +183,20 @@ export default function HiddenGemsListScreen({ navigation, route }) {
       
       <View style={styles.filterRow}>
         <TouchableOpacity style={[styles.filterChip, sortBy === 'distance' && styles.filterChipActive]} onPress={() => handleSort('distance')}>
-          <Text style={[styles.filterChipText, sortBy === 'distance' && styles.filterChipTextActive]}>Distance</Text>
+          <Text style={[styles.filterChipText, sortBy === 'distance' && styles.filterChipTextActive]}>{i18n.t('ui_distance')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.filterChip, sortBy === 'rating' && styles.filterChipActive]} onPress={() => handleSort('rating')}>
-          <Text style={[styles.filterChipText, sortBy === 'rating' && styles.filterChipTextActive]}>Rating</Text>
+          <Text style={[styles.filterChipText, sortBy === 'rating' && styles.filterChipTextActive]}>{i18n.t('ui_rating')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.filterChip, sortBy === 'eco' && styles.filterChipActive]} onPress={() => handleSort('eco')}>
-          <Text style={[styles.filterChipText, sortBy === 'eco' && styles.filterChipTextActive]}>Eco-Score</Text>
+          <Text style={[styles.filterChipText, sortBy === 'eco' && styles.filterChipTextActive]}>{i18n.t('ui_eco_score_')}</Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00695C" />
-          <Text style={styles.loadingText}>Calculating distances...</Text>
+          <Text style={styles.loadingText}>{i18n.t('ui_calculating_distances')}</Text>
         </View>
       ) : (
         <FlatList

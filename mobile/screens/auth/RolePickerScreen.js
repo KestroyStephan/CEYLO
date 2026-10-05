@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import i18n from '../../i18n';
 import {
   View, StyleSheet, TouchableOpacity, StatusBar,
   Dimensions, Animated, ScrollView, Alert
@@ -167,7 +168,7 @@ export default function RolePickerScreen({ navigation }) {
       >
         {/* Hero Text */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={styles.heroTitle}>Choose Your Journey</Text>
+          <Text style={styles.heroTitle}>{i18n.t('ui_choose_your_journey')}</Text>
           <Text style={styles.heroSub}>
             Experience the teardrop of the Indian{'\n'}Ocean exactly the way you want to.
           </Text>
@@ -196,11 +197,11 @@ export default function RolePickerScreen({ navigation }) {
           onPress={handleContinue}
           activeOpacity={0.87}
         >
-          <Text style={styles.continueBtnText}>Continue</Text>
+          <Text style={styles.continueBtnText}>{i18n.t('ui_continue')}</Text>
         </TouchableOpacity>
 
         {/* Footer policy */}
-        <Text style={styles.policyText}>BY CONTINUING, YOU AGREE TO OUR ECO-POLICY</Text>
+        <Text style={styles.policyText}>{i18n.t('ui_by_continuing_you_agree_to_our_eco_polic')}</Text>
       </ScrollView>
 
       {/* Floating action dot (decorative orange) */}

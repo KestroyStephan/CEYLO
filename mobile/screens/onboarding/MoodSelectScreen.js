@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import i18n from '../../i18n';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
 import { Text, Surface, Button, IconButton } from 'react-native-paper';
@@ -46,8 +47,8 @@ export default function MoodSelectScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#004D40', '#00695C']} style={[styles.header, { paddingTop: insets.top + 24 }]}>
-        <Text style={styles.headerTitle}>Choose Your Vibe</Text>
-        <Text style={styles.headerSubtitle}>We'll personalize your Ceylo experience</Text>
+        <Text style={styles.headerTitle}>{i18n.t('ui_choose_your_vibe')}</Text>
+        <Text style={styles.headerSubtitle}>{i18n.t('ui_we_ll_personalize_your_ceylo_experience')}</Text>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -96,7 +97,7 @@ export default function MoodSelectScreen({ navigation }) {
           Begin Journey
         </Button>
         <TouchableOpacity onPress={() => navigation.replace('Main')}>
-          <Text style={styles.skipText}>Skip for now</Text>
+          <Text style={styles.skipText}>{i18n.t('ui_skip_for_now')}</Text>
         </TouchableOpacity>
       </Surface>
     </View>

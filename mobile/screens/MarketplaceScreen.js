@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Text, Surface, Searchbar } from 'react-native-paper';
@@ -82,7 +83,7 @@ export default function MarketplaceScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.openDrawer ? navigation.openDrawer() : null}>
           <MaterialCommunityIcons name="menu" size={28} color="#00695C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Marketplace</Text>
+        <Text style={styles.headerTitle}>{i18n.t('ui_marketplace')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -116,14 +117,14 @@ export default function MarketplaceScreen({ navigation }) {
         {loading ? (
           <View style={{ padding: 50, alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#00695C" />
-            <Text style={{ marginTop: 15, color: '#00695C', fontFamily: 'Outfit-Medium' }}>Loading marketplace...</Text>
+            <Text style={{ marginTop: 15, color: '#00695C', fontFamily: 'Outfit-Medium' }}>{i18n.t('ui_loading_marketplace')}</Text>
           </View>
         ) : filteredProducts.length === 0 ? (
           <View style={styles.emptyContainer}>
             <LotusWatermark />
             <MaterialCommunityIcons name="store-remove-outline" size={48} color="#BECABE" style={{ marginTop: 20 }} />
-            <Text style={styles.emptyText}>No products listed yet</Text>
-            <Text style={styles.emptySub}>Check back soon for authentic local products!</Text>
+            <Text style={styles.emptyText}>{i18n.t('ui_no_products_listed_yet')}</Text>
+            <Text style={styles.emptySub}>{i18n.t('ui_check_back_soon_for_authentic_local_prod')}</Text>
           </View>
         ) : (
           <View style={styles.handcraftedContainer}>
@@ -144,7 +145,7 @@ export default function MarketplaceScreen({ navigation }) {
                     {item.isEcoFriendly && (
                       <View style={styles.ecoBadge}>
                         <MaterialCommunityIcons name="leaf" size={12} color="#FFF" />
-                        <Text style={styles.ecoBadgeText}>ECO-FRIENDLY</Text>
+                        <Text style={styles.ecoBadgeText}>{i18n.t('ui_eco_friendly')}</Text>
                       </View>
                     )}
                   </View>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Platform, TextInput } from 'react-native';
 import KeyboardAvoider from '../components/KeyboardAvoider';
 import { Text } from 'react-native-paper';
@@ -214,7 +215,7 @@ export default function EditProfileScreen({ navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.dark} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerTitle}>{i18n.t('ui_edit_profile')}</Text>
           <TouchableOpacity
             onPress={handleSave}
             disabled={saving}
@@ -228,7 +229,7 @@ export default function EditProfileScreen({ navigation }) {
                 </Text>
               </View>
             ) : (
-              <Text style={styles.saveBtnText}>Save</Text>
+              <Text style={styles.saveBtnText}>{i18n.t('ui_save')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -255,11 +256,11 @@ export default function EditProfileScreen({ navigation }) {
                 <MaterialCommunityIcons name="camera" size={18} color="#FFF" />
               </View>
             </TouchableOpacity>
-            <Text style={styles.photoHint}>Tap to change photo</Text>
+            <Text style={styles.photoHint}>{i18n.t('ui_tap_to_change_photo')}</Text>
             {isGuide && (
               <View style={styles.roleBadge}>
                 <MaterialCommunityIcons name="shield-check" size={14} color={COLORS.primary} />
-                <Text style={styles.roleBadgeText}>Verified Guide</Text>
+                <Text style={styles.roleBadgeText}>{i18n.t('ui_verified_guide')}</Text>
               </View>
             )}
           </LinearGradient>
@@ -309,7 +310,7 @@ export default function EditProfileScreen({ navigation }) {
                 <MaterialCommunityIcons name="briefcase-outline" size={16} color={COLORS.primary} /> Guide Details
               </Text>
 
-              <Text style={styles.label}>Specialization</Text>
+              <Text style={styles.label}>{i18n.t('ui_specialization')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

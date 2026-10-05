@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, ScrollView, Dimensions, Image, Alert } from 'react-native';
 import { Text, Surface, ProgressBar, IconButton, Button, Avatar, Chip, Divider } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,7 +68,7 @@ export default function EcoPassportScreen({ navigation }) {
       <LinearGradient colors={['#1B5E20', '#4CAF50']} style={styles.header}>
         <View style={styles.headerTop}>
           <IconButton accessibilityLabel="Go back" icon="arrow-left" iconColor="#FFF" onPress={() => navigation.goBack()} />
-          <Text style={styles.headerTitle}>Eco Passport</Text>
+          <Text style={styles.headerTitle}>{i18n.t('ui_eco_passport')}</Text>
           <IconButton accessibilityLabel="Share" icon="share-variant" iconColor="#FFF" onPress={shareCertificate} />
         </View>
 
@@ -87,12 +88,12 @@ export default function EcoPassportScreen({ navigation }) {
           <View style={styles.statRow}>
             <View style={styles.statItem}>
               <Text style={styles.statVal}>{s.co2SavedKg}kg</Text>
-              <Text style={styles.statLab}>CO2 Saved</Text>
+              <Text style={styles.statLab}>{i18n.t('ui_co2_saved')}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.statItem}>
               <Text style={styles.statVal}>{badges.filter(b => b.earned).length}</Text>
-              <Text style={styles.statLab}>Badges</Text>
+              <Text style={styles.statLab}>{i18n.t('ui_badges')}</Text>
             </View>
           </View>
           <Divider style={{ marginVertical: 15 }} />
@@ -101,23 +102,23 @@ export default function EcoPassportScreen({ navigation }) {
           <Text style={styles.progSub}>{s.nextRank ? `${s.pointsToNext} pts to go` : 'Keep exploring sustainably'}</Text>
         </Surface>
 
-        <Text style={styles.sectionTitle}>Your Achievements</Text>
+        <Text style={styles.sectionTitle}>{i18n.t('ui_your_achievements')}</Text>
         <View style={styles.badgeGrid}>
           {badges.map(b => <Badge key={b.label} icon={b.icon} label={b.label} locked={!b.earned} />)}
         </View>
 
         <Surface style={styles.impactCard} elevation={1}>
-          <Text style={styles.impactTitle}>Your Impact is Equal to:</Text>
+          <Text style={styles.impactTitle}>{i18n.t('ui_your_impact_is_equal_to')}</Text>
           <View style={styles.impactRow}>
             <View style={styles.impactItem}>
               <MaterialCommunityIcons name="tree" size={40} color="#4CAF50" />
               <Text style={styles.impactVal}>{treesEquivalent}</Text>
-              <Text style={styles.impactLab}>Tree-Years of CO2</Text>
+              <Text style={styles.impactLab}>{i18n.t('ui_tree_years_of_co2')}</Text>
             </View>
             <View style={styles.impactItem}>
               <MaterialCommunityIcons name="bus" size={40} color="#FFB300" />
               <Text style={styles.impactVal}>{s.greenKm}</Text>
-              <Text style={styles.impactLab}>Low-Carbon km</Text>
+              <Text style={styles.impactLab}>{i18n.t('ui_low_carbon_km')}</Text>
             </View>
           </View>
         </Surface>

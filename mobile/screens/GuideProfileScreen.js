@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import i18n from '../i18n';
 import {
   View, StyleSheet, ScrollView, Image, TouchableOpacity,
   Alert, Dimensions, StatusBar
@@ -188,12 +189,12 @@ export default function GuideProfileScreen({ route, navigation }) {
             {/* Eco Score Ring */}
             <View style={styles.ecoRing}>
               <Text style={styles.ecoScore}>{guide.reviewCount || 94}</Text>
-              <Text style={styles.ecoLabel}>Reviews</Text>
+              <Text style={styles.ecoLabel}>{i18n.t('ui_reviews')}</Text>
             </View>
           </View>
 
           {/* Biography */}
-          <Text style={styles.sectionTitle}>Biography</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('ui_biography')}</Text>
           <Text style={styles.bioText}>
             {guide.bio ? guide.bio : "This guide hasn't added a biography yet. However, they are a verified local expert dedicated to providing great sustainable experiences."}
           </Text>
@@ -208,7 +209,7 @@ export default function GuideProfileScreen({ route, navigation }) {
           </View>
 
           {/* Languages */}
-          <Text style={styles.sectionTitle}>Languages</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('ui_languages')}</Text>
           <View style={styles.languagesCard}>
             {languages.map((lang, i) => (
               <View key={i} style={styles.langRow}>
@@ -222,13 +223,13 @@ export default function GuideProfileScreen({ route, navigation }) {
           <View style={styles.expCard}>
             <View>
               <Text style={styles.expNum}>{guide.experience || '1'}+</Text>
-              <Text style={styles.expLabel}>YEARS EXP.</Text>
+              <Text style={styles.expLabel}>{i18n.t('ui_years_exp')}</Text>
             </View>
             <MaterialCommunityIcons name="leaf" size={40} color="rgba(0,106,59,0.15)" />
           </View>
           
           {/* Services Offered */}
-          <Text style={styles.sectionTitle}>Services Offered</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('ui_services_offered')}</Text>
           {guide.offeredServices && guide.offeredServices.length > 0 ? (
             guide.offeredServices.map(service => (
               <View key={service.id} style={{ backgroundColor: '#F4F7F4', borderRadius: 12, padding: 15, marginBottom: 10 }}>
@@ -240,19 +241,19 @@ export default function GuideProfileScreen({ route, navigation }) {
               </View>
             ))
           ) : (
-             <Text style={styles.bioText}>No specific services listed. Contact for custom tours.</Text>
+             <Text style={styles.bioText}>{i18n.t('ui_no_specific_services_listed_contact_for')}</Text>
           )}
 
           {/* Availability Calendar */}
-          <Text style={styles.sectionTitle}>Availability</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('ui_availability')}</Text>
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#006A3B' }]} />
-              <Text style={styles.legendLabel}>Available</Text>
+              <Text style={styles.legendLabel}>{i18n.t('ui_available')}</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#D0D0D0' }]} />
-              <Text style={styles.legendLabel}>Booked</Text>
+              <Text style={styles.legendLabel}>{i18n.t('ui_booked')}</Text>
             </View>
           </View>
 
@@ -281,9 +282,9 @@ export default function GuideProfileScreen({ route, navigation }) {
           </View>
 
           {/* Reviews */}
-          <Text style={styles.sectionTitle}>Traveler Feedback</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('ui_traveler_feedback')}</Text>
           {reviews.length === 0 ? (
-            <Text style={styles.bioText}>No reviews yet. Be the first to leave feedback!</Text>
+            <Text style={styles.bioText}>{i18n.t('ui_no_reviews_yet_be_the_first_to_leave_fee')}</Text>
           ) : (
             reviews.map(r => (
               <View key={r.id} style={styles.reviewCard}>
@@ -306,7 +307,7 @@ export default function GuideProfileScreen({ route, navigation }) {
           {/* Leave Feedback Form */}
           {auth.currentUser && (
             <View style={styles.feedbackForm}>
-              <Text style={styles.feedbackTitle}>Leave Feedback</Text>
+              <Text style={styles.feedbackTitle}>{i18n.t('ui_leave_feedback')}</Text>
               <View style={styles.starSelectRow}>
                 {[1,2,3,4,5].map((star) => (
                   <TouchableOpacity key={star} onPress={() => setNewReviewRating(star)}>
@@ -326,7 +327,7 @@ export default function GuideProfileScreen({ route, navigation }) {
                 activeOutlineColor="#006A3B"
               />
               <TouchableOpacity style={styles.submitFeedbackBtn} onPress={handleSubmitReview} disabled={submittingReview}>
-                {submittingReview ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.submitFeedbackText}>Submit Feedback</Text>}
+                {submittingReview ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.submitFeedbackText}>{i18n.t('ui_submit_feedback')}</Text>}
               </TouchableOpacity>
             </View>
           )}

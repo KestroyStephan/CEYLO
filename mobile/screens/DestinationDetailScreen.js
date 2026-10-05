@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import i18n from '../i18n';
 import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Alert, Share } from 'react-native';
 import { Text, Surface, IconButton, Button, Chip, TextInput } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -254,7 +255,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
           {loading ? (
             <View style={styles.loadingArea}>
               <ActivityIndicator size="large" color="#00695C" />
-              <Text style={styles.loadingText}>Loading insights from the CEYLO models...</Text>
+              <Text style={styles.loadingText}>{i18n.t('ui_loading_insights_from_the_ceylo_models')}</Text>
             </View>
           ) : null}
 
@@ -263,7 +264,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
               {/* AI Insights Section */}
               <View style={styles.sectionHeader}>
                 <MaterialCommunityIcons name="robot-outline" size={24} color="#00695C" />
-                <Text style={styles.sectionTitle}>AI Insights</Text>
+                <Text style={styles.sectionTitle}>{i18n.t('ui_ai_insights')}</Text>
               </View>
               <Surface style={styles.aiCard} elevation={0}>
                 <Text style={styles.aiText}>{aiData?.ai_insight}</Text>
@@ -274,16 +275,16 @@ export default function DestinationDetailScreen({ route, navigation }) {
                 <Surface style={styles.quickInfoCard} elevation={0}>
                   <View style={styles.quickInfoLabelRow}>
                     <MaterialCommunityIcons name="calendar-month-outline" size={16} color="#00695C" />
-                    <Text style={styles.quickInfoLabel}>Season</Text>
+                    <Text style={styles.quickInfoLabel}>{i18n.t('ui_season')}</Text>
                   </View>
                   <Text style={styles.quickInfoValue}>{aiData?.season || '—'}</Text>
-                  <Text style={styles.quickInfoSub}>From the CEYLO dataset</Text>
+                  <Text style={styles.quickInfoSub}>{i18n.t('ui_from_the_ceylo_dataset')}</Text>
                 </Surface>
 
                 <Surface style={styles.quickInfoCard} elevation={0}>
                   <View style={styles.quickInfoLabelRow}>
                     <MaterialCommunityIcons name="white-balance-sunny" size={16} color="#B8860B" />
-                    <Text style={styles.quickInfoLabel}>Best Time</Text>
+                    <Text style={styles.quickInfoLabel}>{i18n.t('ui_best_time')}</Text>
                   </View>
                   <Text style={styles.quickInfoValue} numberOfLines={3}>{aiData?.best_time ? aiData.best_time.split('. ')[0] : '—'}</Text>
                   <Text style={styles.quickInfoSub}>{place.category || 'Destination'}</Text>
@@ -295,7 +296,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
                 <Surface style={styles.distanceBox} elevation={0}>
                   <MaterialCommunityIcons name="car" size={20} color="#FFF" style={styles.distanceIconBg} />
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.distanceLabel}>Distance from your location</Text>
+                    <Text style={styles.distanceLabel}>{i18n.t('ui_distance_from_your_location')}</Text>
                     <Text style={styles.distanceValue}>
                       {place.coords && userLoc ? `${getDistance(userLoc.latitude, userLoc.longitude, place.coords.latitude, place.coords.longitude)} km away` : aiData?.distance_from_hub}
                     </Text>
@@ -305,7 +306,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
               </TouchableOpacity>
 
               {/* Explore Nearby Grid */}
-              <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Explore Nearby</Text>
+              <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{i18n.t('ui_explore_nearby')}</Text>
               <View style={styles.masonryGrid}>
                 {aiData?.explore_nearby && aiData.explore_nearby.length >= 3 && (
                   <>
@@ -313,7 +314,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
                     <View style={styles.masonryLeft}>
                       <ProgressiveImage source={{ uri: aiData.explore_nearby[0].image }} style={styles.masonryImgLarge} />
                       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.masonryGradient} />
-                      <Text style={styles.masonryTag}>RECOMMENDED</Text>
+                      <Text style={styles.masonryTag}>{i18n.t('ui_recommended')}</Text>
                       <Text style={styles.masonryTitle}>{aiData.explore_nearby[0].name}</Text>
                     </View>
 
@@ -335,16 +336,16 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
           {!loading && activeTab === 'Sustainability' && (
             <View style={styles.tabContent}>
-              <Text style={styles.sectionTitle}>Eco Score Breakdown</Text>
+              <Text style={styles.sectionTitle}>{i18n.t('ui_eco_score_breakdown')}</Text>
               <Text style={styles.description}>{aiData?.sustainability || 'No sustainability data for this place yet.'}</Text>
             </View>
           )}
 
           {!loading && activeTab === 'Practical Info' && (
             <View style={styles.tabContent}>
-              <Text style={styles.sectionTitle}>Visitor Tips</Text>
+              <Text style={styles.sectionTitle}>{i18n.t('ui_visitor_tips')}</Text>
               <Text style={styles.description}>{aiData?.practical_info}</Text>
-              <Text style={[styles.sectionTitle, {marginTop: 20}]}>Best Time to Visit</Text>
+              <Text style={[styles.sectionTitle, {marginTop: 20}]}>{i18n.t('ui_best_time_to_visit')}</Text>
               <Text style={styles.description}>{aiData?.best_time}</Text>
             </View>
           )}
@@ -356,7 +357,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
               </Text>
 
               <View style={styles.reviewCard}>
-                <Text style={styles.reviewName}>Rate this place</Text>
+                <Text style={styles.reviewName}>{i18n.t('ui_rate_this_place')}</Text>
                 <View style={{ flexDirection: 'row', marginVertical: 6 }}>
                   {[1, 2, 3, 4, 5].map(n => (
                     <TouchableOpacity key={n} onPress={() => setMyRating(n)} style={{ marginRight: 6 }}>
