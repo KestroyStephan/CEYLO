@@ -93,6 +93,7 @@ export default function MessageScreen({ route, navigation }) {
         ) : (
           <FlatList
             ref={flatListRef}
+            removeClippedSubviews={false}
             data={messages}
             keyExtractor={item => item.id}
             renderItem={renderMessage}

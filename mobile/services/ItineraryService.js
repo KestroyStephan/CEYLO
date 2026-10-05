@@ -74,6 +74,12 @@ export function moodKey(mood) {
   return 'eco';
 }
 
+const MOOD_TITLES = { eco: 'Eco Explorer', culture: 'Culture Seeker', spiritual: 'Spiritual', family: 'Family', adventurer: 'Adventure' };
+/** Display label for a mood key or label ("culture" -> "Culture Seeker"). */
+export function moodLabel(mood) {
+  return mood ? MOOD_TITLES[moodKey(mood)] : 'Eco';
+}
+
 function budgetKey(budget) {
   const b = String(budget || '').toLowerCase();
   if (b.includes('lux')) return 'luxury';
@@ -283,7 +289,7 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
 
   const plan = buildPlan(stops, budget, dayCount);
   const itinerary = {
-    title: `Your ${mood || 'Eco'} trip to ${destination || 'Sri Lanka'}`,
+    title: `Your ${moodLabel(mood)} trip to ${destination || 'Sri Lanka'}`,
     userId: uid,
     createdAt: new Date().toISOString(),
     startDate: new Date().toISOString().slice(0, 10),

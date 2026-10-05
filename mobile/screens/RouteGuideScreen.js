@@ -58,7 +58,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
   const [route, setRoute] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pos, setPos] = useState(null);
-  const [stopIndex, setStopIndex] = useState(1);   // stop 0 is the start
+  const [stopIndex, setStopIndex] = useState(0);   // 0 = getting to the first stop from wherever the traveller is
   const [stepIndex, setStepIndex] = useState(0);
   const [online, setOnline] = useState(true);
   const [regions, setRegions] = useState([]);
@@ -109,7 +109,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
     if (nextStop && metres(pos, nextStop) < ARRIVE_M) {
       logEvent('route_stop_reached', { itineraryId, stop: nextStop.name, offline: !online });
       if (stopIndex < stops.length - 1) {
-        Alert.alert('Arrived', `You have reached ${nextStop.name}. Next: ${stops[stopIndex + 1].name}.`);
+        Alert.alert(stopIndex === 0 ? 'At the start' : 'Arrived', `You have reached ${nextStop.name}. Next: ${stops[stopIndex + 1].name}.`);
         setStopIndex(i => i + 1);
         setStepIndex(0);
       } else {
@@ -120,9 +120,12 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
     if (follow) mapRef.current?.animateToRegion({ ...pos, latitudeDelta: 0.012, longitudeDelta: 0.012 }, 500);
   }, [pos]);
 
-  const offRoute = pos && route && !route.straight ? distanceToLine(pos, route.line) > OFF_ROUTE_M : false;
+  // Before the first stop the traveller is not on the trip route yet, so there is nothing to be off
+  const onTripLegs = stopIndex > 0;
+  const offRoute = onTripLegs && pos && route && !route.straight ? distanceToLine(pos, route.line) > OFF_ROUTE_M : false;
+  const turnByTurn = onTripLegs && !route?.straight && step;
   const toStop = pos && nextStop ? metres(pos, nextStop) : null;
-  const toStep = pos && step ? metres(pos, step) : null;
+  const toStep = pos && step && onTripLegs ? metres(pos, step) : null;
   const done = stopIndex >= stops.length;
 
   const recenter = () => {
@@ -132,7 +135,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
 
   const skipStop = (dir) => {
     setStepIndex(0);
-    setStopIndex(i => Math.max(1, Math.min(stops.length - 1, i + dir)));
+    setStopIndex(i => Math.max(0, Math.min(stops.length - 1, i + dir)));
   };
 
   const downloadMap = async () => {
@@ -204,9 +207,9 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
           ) : (
             <>
               <Text style={styles.instruction} numberOfLines={2}>
-                {route.straight ? `Head ${pos && nextStop ? compass(bearing(pos, nextStop)) : ''} to ${nextStop?.name}` : step?.text}
+                {turnByTurn ? step.text : `Head ${pos && nextStop ? compass(bearing(pos, nextStop)) : ''} to ${nextStop?.name}`}
               </Text>
-              {toStep != null && !route.straight && <Text style={styles.instructionSub}>in {showDistance(toStep)}</Text>}
+              {turnByTurn && toStep != null && <Text style={styles.instructionSub}>in {showDistance(toStep)}</Text>}
             </>
           )}
         </View>
@@ -229,11 +232,11 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
 
       {/* Next stop panel */}
       <View style={[styles.panel, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
-        <Text style={styles.progress}>{done ? 'Trip complete' : `Stop ${stopIndex} of ${stops.length - 1}`}{route.straight ? ' · straight-line guide' : ''}</Text>
+        <Text style={styles.progress}>{done ? 'Trip complete' : stopIndex === 0 ? 'Getting to the first stop' : `Stop ${stopIndex} of ${stops.length - 1}`}{route.straight ? ' · straight-line guide' : ''}</Text>
         {!done && (
           <View style={styles.nextRow}>
-            <TouchableOpacity onPress={() => skipStop(-1)} style={styles.iconBtn} accessibilityLabel="Previous stop" disabled={stopIndex <= 1}>
-              <MaterialCommunityIcons name="chevron-left" size={26} color={stopIndex <= 1 ? '#CFD8DC' : '#1B2B28'} />
+            <TouchableOpacity onPress={() => skipStop(-1)} style={styles.iconBtn} accessibilityLabel="Previous stop" disabled={stopIndex <= 0}>
+              <MaterialCommunityIcons name="chevron-left" size={26} color={stopIndex <= 0 ? '#CFD8DC' : '#1B2B28'} />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.nextName} numberOfLines={1}>{nextStop?.name}</Text>

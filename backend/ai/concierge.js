@@ -56,11 +56,21 @@ function extractMood(text) {
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
+// The app stores short mood keys (eco, culture...) from onboarding; replies use the full label
+const MOOD_LABELS = {
+    eco: 'Eco Explorer', 'eco explorer': 'Eco Explorer',
+    culture: 'Culture Seeker', 'culture seeker': 'Culture Seeker',
+    adventurer: 'Adventurer', adventure: 'Adventurer',
+    family: 'Family Trip', 'family trip': 'Family Trip',
+    spiritual: 'Spiritual', relax: 'Relaxation', relaxation: 'Relaxation',
+};
+const moodLabel = (m) => (m ? MOOD_LABELS[String(m).toLowerCase()] || m : null);
+
 function summary(state) {
     const parts = [];
     if (state.days) parts.push(`${state.days} day${state.days === 1 ? '' : 's'}`);
     if (state.destination) parts.push(`in ${state.destination}`);
-    if (state.mood) parts.push(`as ${/^[aeiou]/i.test(state.mood) ? 'an' : 'a'} ${state.mood}`);
+    if (state.mood) parts.push(`as ${/^[aeiou]/i.test(state.mood) ? 'an' : 'a'} ${state.mood}`.replace('as a Family Trip', 'as a family'));
     if (state.budget) parts.push(`on ${/^[aeiou]/i.test(state.budget) ? 'an' : 'a'} ${state.budget.toLowerCase()} budget`);
     return parts.join(' ');
 }
@@ -138,7 +148,7 @@ function reply(message, state = {}) {
         destination: state.destination || null,
         days: state.days || null,
         budget: state.budget || null,
-        mood: state.mood || null,
+        mood: moodLabel(state.mood),
         eco_interest: state.eco_interest ?? 50,
     };
 

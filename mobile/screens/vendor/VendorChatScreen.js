@@ -163,7 +163,7 @@ export default function VendorChatScreen({ route }) {
       {loading
         ? <View style={styles.center}><ActivityIndicator size="large" color={PRIMARY}/></View>
         : <FlatList
-            ref={flatRef} data={messages} keyExtractor={i=>i.id}
+            ref={flatRef} data={messages} keyExtractor={i=>i.id} removeClippedSubviews={false}
             renderItem={renderBubble} contentContainerStyle={{padding:16,paddingBottom:20}}
             onContentSizeChange={()=>flatRef.current?.scrollToEnd({animated:false})}/>}
 

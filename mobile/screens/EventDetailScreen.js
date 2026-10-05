@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import i18n from '../i18n';
-import { imgSource } from '../utils/images';
+import ProgressiveImage from '../components/ProgressiveImage';
 import { View, Text, StyleSheet, Image, ScrollView, Alert, Linking } from 'react-native';
 import { Surface, IconButton, Button, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -81,7 +81,7 @@ export default function EventDetailScreen({ route, navigation }) {
   return (
     <ScrollView style={styles.container} bounces={false}>
       <View style={styles.imageContainer}>
-        <Image source={imgSource(displayEvent.imageUrl)} style={styles.image} />
+        <ProgressiveImage source={{ uri: displayEvent.imageUrl }} style={styles.image} />
         <LinearGradient
           colors={['rgba(0,0,0,0.6)', 'transparent', 'rgba(0,0,0,0.8)']}
           style={styles.gradient}

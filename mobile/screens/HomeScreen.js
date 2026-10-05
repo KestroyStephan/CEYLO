@@ -16,8 +16,8 @@ import WeatherChip from '../components/WeatherChip';
 import { ecoScoreFor, SUSTAINABLE_ROUTES } from '../utils/destinations';
 import { loadEvents, eventsNear } from '../utils/events';
 import { NotificationService } from '../services/NotificationService';
+import { distanceKm as haversineKm } from '../services/ItineraryService';
 
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // Import AI Generated Datasets
 import destinationsData from '../assets/data/ai_destinations.json';
@@ -90,22 +90,36 @@ export default function HomeScreen({ navigation }) {
     }
   }, []);
 
-  const loadAIData = () => {
-    const hidden = destinationsData.filter(d => d.hidden_gem === true || d.hidden_gem === "True" || d.hidden_gem === "true");
-    const shuffledHidden = hidden.sort(() => 0.5 - Math.random());
-    setHiddenGems(shuffledHidden.slice(0, 3));
+  // Real places from the CEYLO dataset (Wikidata / Wikipedia / Google ratings), nearest first
+  // when the traveller's position is known
+  const isHidden = d => String(d.hidden_gem) === 'true' || d.hidden_gem === true;
+  const NATURE = ['Nature & Viewpoint', 'Waterfall', 'Wildlife', 'Beach'];
+  const withDistance = (list, pos) => list.map(d => {
+    const lat = parseFloat(d.lat);
+    const lon = parseFloat(d.lon);
+    return {
+      ...d,
+      coords: { latitude: lat, longitude: lon },
+      dist: pos ? haversineKm(pos.latitude, pos.longitude, lat, lon) : null,
+    };
+  });
 
-    const famous = destinationsData.filter(d => (d.hidden_gem === false || d.hidden_gem === "False") && parseFloat(d.avg_rating) >= 4.5);
-    const sortedEco = famous.sort((a, b) => b.eco_score - a.eco_score);
-    setAIPicks(sortedEco.slice(0, 5));
+  const loadAIData = (pos = null) => {
+    // Well-known places travellers rate highly
+    const famous = withDistance(destinationsData.filter(d => !isHidden(d) && (parseFloat(d.avg_rating) >= 4.4 || parseInt(d.popularity_rank, 10) <= 40)), pos);
+    setAIPicks(pos
+      ? famous.sort((a, b) => a.dist - b.dist).slice(0, 6)
+      : famous.sort((a, b) => b.eco_score - a.eco_score).slice(0, 6));
+
+    // Lesser-visited natural places: the real hidden gems
+    const hidden = withDistance(destinationsData.filter(d => isHidden(d) && NATURE.includes(d.category)), pos);
+    setHiddenGems(pos
+      ? hidden.sort((a, b) => a.dist - b.dist).slice(0, 3)
+      : hidden.sort((a, b) => b.eco_score - a.eco_score).slice(0, 3));
 
     loadEvents().then(events => {
       if (events.length > 0) setFeaturedEvent(events[0]);
     });
-
-    const centralPlaces = destinationsData.filter(d => d.province === 'Central Province').slice(0, 3);
-    const southernPlaces = destinationsData.filter(d => d.province === 'Southern Province').slice(0, 3);
-
     setTrendingRoutes(SUSTAINABLE_ROUTES);
   };
 
@@ -115,65 +129,15 @@ export default function HomeScreen({ navigation }) {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
       notifyNearbyEvents(loc.coords);
       getWeather({ lat, lon: lng })
         .then(w => setWeatherNow(w.current))
         .catch(e => console.log('Weather unavailable:', e.message));
-
-      const aiQuery = 'popular tourist attraction OR heritage site OR famous landmark';
-      const aiUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(aiQuery)}&location=${lat},${lng}&radius=20000&key=${GOOGLE_API_KEY}`;
-      const aiRes = await fetch(aiUrl);
-      const aiData = await aiRes.json();
-
-      if(aiData.results && aiData.results.length > 0) {
-        const places = aiData.results.slice(0, 5).map(p => {
-          let dist = 9999;
-          if (p.geometry && p.geometry.location) {
-             const R = 6371;
-             const dLatRad = (p.geometry.location.lat - lat) * Math.PI / 180;
-             const dLonRad = (p.geometry.location.lng - lng) * Math.PI / 180;
-             const a = Math.sin(dLatRad/2) * Math.sin(dLatRad/2) + Math.cos(lat * Math.PI / 180) * Math.cos(p.geometry.location.lat * Math.PI / 180) * Math.sin(dLonRad/2) * Math.sin(dLonRad/2);
-             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-             dist = R * c;
-          }
-          return {
-            destination_id: p.place_id,
-            name: p.name,
-            category: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Heritage',
-            province: 'Nearby',
-            eco_score: ecoScoreFor(p.name),
-            image: p.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${p.photos[0].photo_reference}&key=${GOOGLE_API_KEY}` : null,
-            dist: dist,
-            coords: { latitude: p.geometry?.location?.lat, longitude: p.geometry?.location?.lng }
-          };
-        });
-        places.sort((a, b) => a.dist - b.dist);
-        setAIPicks(places);
-      }
-
-      const query = 'waterfall OR nature reserve OR beach OR viewpoint OR hidden gem';
-      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=15000&key=${GOOGLE_API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if(data.results && data.results.length > 0) {
-        const places = data.results.slice(0, 3).map(p => ({
-          destination_id: p.place_id,
-          name: p.name,
-          category: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Nature',
-          province: 'Nearby',
-          eco_score: ecoScoreFor(p.name),
-          image: p.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${p.photos[0].photo_reference}&key=${GOOGLE_API_KEY}` : null,
-          description: `A beautiful spot located near your current location.`,
-          coords: { latitude: p.geometry.location.lat, longitude: p.geometry.location.lng }
-        }));
-        setHiddenGems(places);
-      }
+      loadAIData({ latitude: lat, longitude: lng });
     } catch (e) {
-      console.warn("Failed to fetch real nearby gems", e);
+      console.warn('Location unavailable, showing top places', e);
     } finally {
       setLoadingGems(false);
     }
@@ -358,7 +322,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.gemTagRow}>
                 <View style={styles.ecoCertifiedBadge}>
                   <MaterialCommunityIcons name="shield-check-outline" size={12} color={COLORS.ecoGreen} />
-                  <Text style={styles.ecoCertifiedText}>{t('preserved_zone')}</Text>
+                  <Text style={styles.ecoCertifiedText}>{t('hidden_gem_label')}</Text>
                 </View>
               </View>
               <Text style={styles.gemTitle} numberOfLines={1}>{gem.name}</Text>

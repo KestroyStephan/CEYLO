@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, FlatList, Alert, Image, Keyboard } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, Image, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import KeyboardAvoider from '../components/KeyboardAvoider';
 import { Text, TextInput, Avatar, IconButton, Surface, Chip, Button } from 'react-native-paper';
@@ -12,11 +12,17 @@ import { doc, getDoc } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatTurn } from '../services/aiClient';
-import { imgSource } from '../utils/images';
+import ProgressiveImage from '../components/ProgressiveImage';
 import { generateItinerary as buildItinerary, moodKey } from '../services/ItineraryService';
 import { loadPreferences } from '../services/PreferencesService';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
+
+// Mood keys from onboarding and labels from the concierge, shown with the translated label
+const MOOD_CHIP = {
+  eco: 'eco_explorer', 'eco explorer': 'eco_explorer', culture: 'culture_seeker', 'culture seeker': 'culture_seeker',
+  adventurer: 'adventurer', family: 'family_trip', 'family trip': 'family_trip', spiritual: 'spiritual',
+};
 
 const MOOD_CATEGORIES = {
   eco: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
@@ -54,7 +60,7 @@ function findRecommendations(state) {
 const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
   <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
     {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
-    <View style={{ flex: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
+    <View style={{ flexShrink: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
       <Surface style={[styles.bubble, item.sender === 'user' ? styles.userBubble : styles.botBubble]} elevation={1}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={[styles.msgText, { color: item.sender === 'user' ? '#FFF' : '#333', flexShrink: 1 }]}>{item.text}</Text>
@@ -75,7 +81,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsContainer}>
           {item.recommendations.map((rec) => (
             <Surface key={rec.id} style={styles.recCard} elevation={2}>
-              <Image source={imgSource(rec.image)} style={styles.recImage} />
+              <ProgressiveImage source={{ uri: rec.image }} style={styles.recImage} />
               <View style={rec.ecoScore >= 95 ? styles.recBadge : [styles.recBadge, { backgroundColor: '#FFA726' }]}>
                 <Text style={styles.recBadgeText}>{rec.ecoScore}% ECO</Text>
               </View>
@@ -258,14 +264,6 @@ export default function ChatbotScreen({ navigation, route }) {
   const handleSetDestination = useCallback((name) => {
     setExtractedState(prev => ({ ...prev, destination: name }));
   }, []);
-  const renderItem = useCallback(({ item }) => (
-    <RenderMessage
-      item={item}
-      onSpeak={handleSpeak}
-      onSend={handleSendCallback}
-      onSetDestination={handleSetDestination}
-    />
-  ), [handleSpeak, handleSendCallback, handleSetDestination]);
 
   const lastMessage = messages[messages.length - 1];
   const showHud = Boolean(extractedState.destination || extractedState.days || extractedState.mood);
@@ -294,22 +292,30 @@ export default function ChatbotScreen({ navigation, route }) {
               <Text style={styles.hudVal}>{extractedState.eco_interest}%</Text>
             </View>
           </View>
-          {extractedState.mood && <Chip compact style={styles.moodBadge} textStyle={{ fontSize: 10 }}>{extractedState.mood}</Chip>}
+          {extractedState.mood && <Chip compact style={styles.moodBadge} textStyle={{ fontSize: 10 }}>{t(MOOD_CHIP[String(extractedState.mood).toLowerCase()] || 'culture_seeker', { defaultValue: extractedState.mood })}</Chip>}
         </Surface>
       </View>
       )}
 
-      <FlatList
+      {/* A plain ScrollView: a chat holds a few dozen messages, and FlatList's windowing left
+          rows added after the first render blank on the new architecture */}
+      <ScrollView
         ref={flatListRef}
-        data={messages}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
         style={styles.chatList}
         contentContainerStyle={styles.chatScroll}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="none"
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-      />
+      >
+        {messages.map(item => (
+          <RenderMessage
+            key={item.id}
+            item={item}
+            onSpeak={handleSpeak}
+            onSend={handleSendCallback}
+            onSetDestination={handleSetDestination}
+          />
+        ))}
+      </ScrollView>
 
       {canGenerate && (
         <Button

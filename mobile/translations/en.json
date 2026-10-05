@@ -399,5 +399,6 @@
   "ui_choose_your_vibe": "Choose Your Vibe",
   "ui_find_your_eco_expert": "Find Your Eco-Expert",
   "ui_how_guides_are_verified": "How guides are verified",
-  "ui_how_guides_are_verified_body": "Every guide uploads their SLTDA licence and national ID. CEYLO staff check them before the guide can accept bookings."
+  "ui_how_guides_are_verified_body": "Every guide uploads their SLTDA licence and national ID. CEYLO staff check them before the guide can accept bookings.",
+  "hidden_gem_label": "HIDDEN GEM"
 }

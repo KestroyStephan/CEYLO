@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Image, StyleSheet, Animated } from 'react-native';
-import { imgSource, FALLBACK_IMAGE } from '../utils/images';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { imgSource } from '../utils/images';
 
 // Shimmer animation that pulses between two grays to indicate loading
 const ShimmerPlaceholder = () => {
@@ -24,62 +25,50 @@ const ShimmerPlaceholder = () => {
   );
 };
 
-const DEFAULT_FALLBACK = FALLBACK_IMAGE;
-const TIMEOUT_MS = 8000; // 8 seconds before giving up and showing fallback
+// Wikimedia answers "429 Too Many Requests" when a screen asks for many photos at once,
+// so a failed photo is retried after a short, growing pause before giving up
+const RETRY_DELAYS_MS = [1500, 4000, 9000];
 
 /**
  * ProgressiveImage
  * Drop-in replacement for <Image source={{ uri }} style={...} />
- * Shows an animated shimmer skeleton while loading, and a fallback image on error or timeout.
- *
- * Props:
- *   - source: { uri: string }
- *   - style: ViewStyle / ImageStyle
- *   - fallback: (optional) { uri: string }
- *   - resizeMode: (optional) defaults to 'cover'
+ * Shows an animated shimmer while loading, retries failed loads, and finally a neutral
+ * placeholder (or the `fallback` source) instead of a photo of some other place.
  */
 const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => {
+  const uri = source?.uri && source.uri !== 'null' && source.uri !== 'undefined' ? source.uri : null;
   const [loaded, setLoaded] = useState(false);
-  const [imgSrc, setImgSrc] = useState(null);
-  const timeoutRef = useRef(null);
+  const [attempt, setAttempt] = useState(0);
+  const [failed, setFailed] = useState(!uri);
+  const retryRef = useRef(null);
 
   useEffect(() => {
     setLoaded(false);
-    const uri = source?.uri;
-
-    if (!uri || uri === 'null' || uri === 'undefined') {
-      // No valid URI — skip fetch, jump straight to fallback
-      setImgSrc(fallback || { uri: DEFAULT_FALLBACK });
-      setLoaded(true);
-      return;
-    }
-
-    setImgSrc({ uri });
-
-    // Start a timeout: if onLoad/onError hasn't fired within 8s, use fallback
-    timeoutRef.current = setTimeout(() => {
-      setImgSrc(fallback || { uri: DEFAULT_FALLBACK });
-      setLoaded(true);
-    }, TIMEOUT_MS);
-
-    return () => clearTimeout(timeoutRef.current);
-  }, [source?.uri]);
-
-  const handleLoad = () => {
-    clearTimeout(timeoutRef.current);
-    setLoaded(true);
-  };
+    setAttempt(0);
+    setFailed(!uri);
+    return () => clearTimeout(retryRef.current);
+  }, [uri]);
 
   const handleError = () => {
-    clearTimeout(timeoutRef.current);
-    setImgSrc(fallback || { uri: DEFAULT_FALLBACK });
-    setLoaded(true);
+    if (attempt < RETRY_DELAYS_MS.length) {
+      retryRef.current = setTimeout(() => setAttempt(a => a + 1), RETRY_DELAYS_MS[attempt]);
+    } else {
+      setFailed(true);
+    }
   };
 
-  if (!imgSrc) {
+  if (failed && fallback?.uri) {
     return (
       <View style={[style, styles.container]}>
-        <ShimmerPlaceholder />
+        <Image source={imgSource(fallback.uri)} style={StyleSheet.absoluteFillObject} resizeMode={resizeMode} />
+      </View>
+    );
+  }
+
+  if (failed) {
+    return (
+      <View style={[style, styles.container, styles.placeholder]}>
+        <MaterialCommunityIcons name="image-filter-hdr" size={36} color="#9AA8A2" />
       </View>
     );
   }
@@ -88,10 +77,11 @@ const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => 
     <View style={[style, styles.container]}>
       {!loaded && <ShimmerPlaceholder />}
       <Image
-        source={imgSource(imgSrc?.uri)}
+        key={`${uri}#${attempt}`}
+        source={imgSource(uri)}
         style={StyleSheet.absoluteFillObject}
         resizeMode={resizeMode}
-        onLoad={handleLoad}
+        onLoad={() => setLoaded(true)}
         onError={handleError}
       />
     </View>
@@ -102,6 +92,11 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#D8DDD8',
     overflow: 'hidden',
+  },
+  placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E3E9E6',
   },
   shimmer: {
     backgroundColor: '#C0C8C0',
