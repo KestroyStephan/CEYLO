@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Text, Surface, IconButton, Button, Chip } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Text, Surface, IconButton, Button, Chip, TextInput } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
 import { destinationInsights } from '../services/aiClient';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '../firebaseConfig';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +17,55 @@ export default function DestinationDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [aiData, setAiData] = useState(null);
   const [userLoc, setUserLoc] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [myRating, setMyRating] = useState(0);
+  const [myText, setMyText] = useState('');
+  const [posting, setPosting] = useState(false);
+
+  // Traveller reviews of this destination (reviews collection, keyed by destination name)
+  useEffect(() => {
+    if (!place.name) return undefined;
+    const q = query(collection(db, 'reviews'), where('destinationName', '==', place.name));
+    return onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setReviews(list);
+    }, (e) => console.log('Reviews unavailable:', e.message));
+  }, [place.name]);
+
+  const submitReview = async () => {
+    if (!auth.currentUser) {
+      Alert.alert('Sign in required', 'Please sign in to write a review.');
+      return;
+    }
+    if (myRating < 1) {
+      Alert.alert('Rating needed', 'Tap the stars to rate this place.');
+      return;
+    }
+    setPosting(true);
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        type: 'destination_review',
+        destinationName: place.name,
+        destinationId: place.id || null,
+        touristId: auth.currentUser.uid,
+        name: auth.currentUser.displayName || 'Traveller',
+        rating: myRating,
+        text: myText.trim(),
+        createdAt: serverTimestamp(),
+      });
+      setMyRating(0);
+      setMyText('');
+    } catch (e) {
+      Alert.alert('Could not post review', e.message);
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const avgRating = reviews.length
+    ? (reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
+    : null;
 
   useEffect(() => {
     (async () => {
@@ -208,17 +259,44 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
           {!loading && activeTab === 'Reviews' && (
             <View style={styles.tabContent}>
-              <Text style={styles.sectionTitle}>Recent Reviews</Text>
+              <Text style={styles.sectionTitle}>
+                {avgRating ? `Traveller Reviews · ${avgRating}★ (${reviews.length})` : 'Traveller Reviews'}
+              </Text>
+
               <View style={styles.reviewCard}>
-                <Text style={styles.reviewName}>Sarah Jenkins</Text>
-                <Text style={styles.reviewStars}>⭐⭐⭐⭐⭐</Text>
-                <Text style={styles.reviewText}>"Absolutely breathtaking! The climb was tough but the view from the top is unlike anything else."</Text>
+                <Text style={styles.reviewName}>Rate this place</Text>
+                <View style={{ flexDirection: 'row', marginVertical: 6 }}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <TouchableOpacity key={n} onPress={() => setMyRating(n)} style={{ marginRight: 6 }}>
+                      <MaterialCommunityIcons name={n <= myRating ? 'star' : 'star-outline'} size={28} color="#FFB300" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  mode="outlined"
+                  placeholder="Share a tip for other travellers (optional)"
+                  value={myText}
+                  onChangeText={setMyText}
+                  multiline
+                  dense
+                  outlineColor="#DDE5DD"
+                  activeOutlineColor="#00695C"
+                  style={{ backgroundColor: '#FFF', marginBottom: 8 }}
+                />
+                <Button mode="contained" buttonColor="#00695C" onPress={submitReview} loading={posting} disabled={posting}>
+                  Post Review
+                </Button>
               </View>
-              <View style={styles.reviewCard}>
-                <Text style={styles.reviewName}>David M.</Text>
-                <Text style={styles.reviewStars}>⭐⭐⭐⭐</Text>
-                <Text style={styles.reviewText}>"Very crowded during the weekend, but the historical value is incredible. Bring plenty of water!"</Text>
-              </View>
+
+              {reviews.length === 0 ? (
+                <Text style={styles.description}>No reviews yet. Be the first to review {place.name || 'this place'}.</Text>
+              ) : reviews.map(r => (
+                <View key={r.id} style={styles.reviewCard}>
+                  <Text style={styles.reviewName}>{r.name || 'Traveller'}</Text>
+                  <Text style={styles.reviewStars}>{'★'.repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}</Text>
+                  {r.text ? <Text style={styles.reviewText}>"{r.text}"</Text> : null}
+                </View>
+              ))}
             </View>
           )}
 
@@ -296,6 +374,6 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, fontFamily: 'Outfit-Regular', color: '#555', lineHeight: 24 },
   reviewCard: { backgroundColor: '#F9FBF9', padding: 15, borderRadius: 10, marginBottom: 15 },
   reviewName: { fontSize: 14, fontFamily: 'Outfit-Bold', color: '#333' },
-  reviewStars: { fontSize: 12, marginVertical: 4 },
+  reviewStars: { fontSize: 14, marginVertical: 4, color: '#FFB300' },
   reviewText: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#666', fontStyle: 'italic' }
 });
