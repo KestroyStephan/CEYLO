@@ -47,7 +47,7 @@ const defaultDestinations = destinationsData.map((d, index) => {
         nameTamil: nameTamil,
         province: d.province.replace(" Province", ""),
         category: cat,
-        ecoScore: Math.round(d.eco_score || 70),
+        ecoScore: Math.round(d.eco_score || 0),
         description: `${d.name} is a renowned ${cat.toLowerCase()} destination located in the ${d.province}.`,
         latitude: parseFloat(d.lat || 6.9271),
         longitude: parseFloat(d.lon || 79.8612),

@@ -50,7 +50,7 @@ export default function Users() {
                     role: mappedRole,
                     createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
                     lastActivity: data.lastLogin ? 'Recent' : '3 days ago',
-                    ecoScore: Math.round(data.ecoScore || 75),
+                    ecoScore: Math.round(data.ecoScore || 0),
                     isBanned: data.isBanned || false,
                     flagged: data.status === 'rejected' || data.flagged || false
                 };
