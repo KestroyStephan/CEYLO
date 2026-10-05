@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import i18n from '../i18n';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import ProgressiveImage from '../components/ProgressiveImage';
 import { Text, Surface, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -65,7 +66,13 @@ export default function MarketplaceScreen({ navigation }) {
   ];
 
   // Filter products based on search query and active filter
+  const today = new Date().toISOString().slice(0, 10);
+  const inWindow = (p) => {
+    const ok = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+    return !(ok(p.availableUntil) && p.availableUntil < today) && !(ok(p.availableFrom) && p.availableFrom > today);
+  };
   const filteredProducts = products.filter((p) => {
+    if (!inWindow(p)) return false;
     const matchesSearch = 
       (p.name_en || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (p.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -84,7 +91,9 @@ export default function MarketplaceScreen({ navigation }) {
           <MaterialCommunityIcons name="menu" size={28} color="#00695C" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{i18n.t('ui_marketplace')}</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => navigation.navigate('MyOrders')} accessibilityLabel="My orders">
+          <MaterialCommunityIcons name="receipt-text-outline" size={26} color="#00695C" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -129,19 +138,13 @@ export default function MarketplaceScreen({ navigation }) {
         ) : (
           <View style={styles.handcraftedContainer}>
             {filteredProducts.map((item, index) => {
-              const imgUri = item.images?.[0] || 'https://images.unsplash.com/photo-1601248464673-9eb1f5850444?w=500';
+              const imgUri = (item.images || []).find(u => typeof u === 'string' && u.startsWith('http'));
+              const openProduct = () => navigation.navigate('ProductDetail', { product: item });
               return (
-                <Surface key={item.id || index} style={styles.hcCard} elevation={2}>
+                <TouchableOpacity key={item.id || index} activeOpacity={0.9} onPress={openProduct}>
+                <Surface style={styles.hcCard} elevation={2}>
                   <View style={styles.hcImageContainer}>
-                    <Image 
-                      source={
-                        imgUri && imgUri.startsWith('http') 
-                          ? { uri: imgUri } 
-                          : require('../assets/icon.png')
-                      }
-                      style={styles.hcImage}
-                      onError={(e) => console.log('Marketplace image error:', e.nativeEvent.error)}
-                    />
+                    <ProgressiveImage source={{ uri: imgUri }} style={styles.hcImage} />
                     {item.isEcoFriendly && (
                       <View style={styles.ecoBadge}>
                         <MaterialCommunityIcons name="leaf" size={12} color="#FFF" />
@@ -160,23 +163,16 @@ export default function MarketplaceScreen({ navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
                         <MaterialCommunityIcons name="storefront-outline" size={14} color="#00695C" />
                         <Text style={styles.hcRating} numberOfLines={1}>
-                          {item.vendorBusinessName || 'Ranatunga Arts & Crafts'}
+                          {item.vendorBusinessName || 'Local vendor'}
                         </Text>
                       </View>
-                      <TouchableOpacity 
-                        style={styles.cartBtnSm} 
-                        onPress={() => {
-                          Alert.alert(
-                            item.name_en || "Product Details",
-                            `Business: ${item.vendorBusinessName || 'Vendor'}\n\nCategory: ${item.category}\n\nStock Available: ${item.stock}\n\nPickup Location: ${item.pickupLocation || 'Colombo'}\n\nDescription: ${item.description || 'No description available'}`
-                          );
-                        }}
-                      >
-                        <MaterialCommunityIcons name="information-outline" size={16} color="#FFF" />
+                      <TouchableOpacity style={styles.cartBtnSm} onPress={openProduct} accessibilityLabel={`Order ${item.name_en || 'product'}`}>
+                        <MaterialCommunityIcons name="shopping-outline" size={16} color="#FFF" />
                       </TouchableOpacity>
                     </View>
                   </View>
                 </Surface>
+                </TouchableOpacity>
               );
             })}
           </View>

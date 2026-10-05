@@ -412,5 +412,7 @@
   "weather_snow": "හිම",
   "weather_rain_pct": "වැසි {{n}}%",
   "about_source": "මූලාශ්‍රය: විකිපීඩියා",
-  "getting_there": "යන ආකාරය"
+  "getting_there": "යන ආකාරය",
+  "my_orders": "මගේ ඇණවුම්",
+  "my_orders_sub": "වෙළඳපොළ ඇණවුම් සහ ලබාගැනීමේ තත්ත්වය"
 }

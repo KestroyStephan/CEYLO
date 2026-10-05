@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Svg, Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { auth, db, storage } from '../../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -89,10 +90,20 @@ export default function AddNewProductScreen({ navigation }) {
     } catch (e) {} finally { setGpsLoading(false); }
   };
 
-  const step1Valid = nameEn.trim() && category && price.trim();
+  const [dateField, setDateField] = useState(null); // 'from' | 'until' while the picker is open
+  const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const onPickDate = (event, date) => {
+    const field = dateField;
+    setDateField(null);
+    if (event.type !== 'set' || !date) return;
+    if (field === 'from') setAvailFrom(isoDate(date)); else setAvailUntil(isoDate(date));
+  };
+
+  const step1Valid = nameEn.trim() && category && price.trim() && parseFloat(price) > 0;
 
   const handleSubmit = async () => {
-    if (!step1Valid) { Alert.alert('Required', 'Product name, category and price are required.'); return; }
+    if (!step1Valid) { Alert.alert('Required', 'Product name, category and a price above zero are required.'); return; }
+    if (availFrom && availUntil && availUntil < availFrom) { Alert.alert('Check the dates', '"Available until" must be after "Available from".'); return; }
     setUploading(true);
     try {
       // Fetch vendor details to get businessName
@@ -244,15 +255,25 @@ export default function AddNewProductScreen({ navigation }) {
             <View style={styles.rowFields}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Available From</Text>
-                <TextInput style={styles.input} value={availFrom} onChangeText={setAvailFrom}
-                  placeholder="YYYY-MM-DD" placeholderTextColor="#AAB8AA" />
+                <TouchableOpacity style={[styles.input, { justifyContent: 'center' }]} onPress={() => setDateField('from')}>
+                  <Text style={{ color: availFrom ? '#181D19' : '#AAB8AA' }}>{availFrom || 'Today'}</Text>
+                </TouchableOpacity>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Available Until</Text>
-                <TextInput style={styles.input} value={availUntil} onChangeText={setAvailUntil}
-                  placeholder="YYYY-MM-DD" placeholderTextColor="#AAB8AA" />
+                <TouchableOpacity style={[styles.input, { justifyContent: 'center' }]} onPress={() => setDateField('until')}>
+                  <Text style={{ color: availUntil ? '#181D19' : '#AAB8AA' }}>{availUntil || 'No end date'}</Text>
+                </TouchableOpacity>
               </View>
             </View>
+            {dateField && (
+              <DateTimePicker
+                value={new Date()}
+                mode="date"
+                minimumDate={dateField === 'until' && availFrom ? new Date(availFrom) : new Date()}
+                onChange={onPickDate}
+              />
+            )}
 
             <Text style={styles.fieldLabel}>Pickup Location</Text>
             <View style={styles.addressRow}>

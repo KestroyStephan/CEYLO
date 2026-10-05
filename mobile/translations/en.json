@@ -412,5 +412,7 @@
   "weather_snow": "Snow",
   "weather_rain_pct": "{{n}}% rain",
   "about_source": "Source: Wikipedia",
-  "getting_there": "Getting there"
+  "getting_there": "Getting there",
+  "my_orders": "My Orders",
+  "my_orders_sub": "Marketplace orders and pickup status"
 }

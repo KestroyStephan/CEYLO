@@ -187,16 +187,21 @@ service cloud.firestore {
 
     // Orders (global collection)
     match /orders/{orderId} {
-      allow create: if isSignedIn() && request.resource.data.touristId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.touristId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.vendorId != request.auth.uid;
       allow read:   if isSignedIn() && (
         request.auth.uid == resource.data.vendorId ||
         request.auth.uid == resource.data.touristId ||
         isAdmin()
       );
+      // The vendor moves the order along; the traveller may only cancel it while it is pending
       allow update: if isSignedIn() && (
         request.auth.uid == resource.data.vendorId ||
-        request.auth.uid == resource.data.touristId ||
-        isAdmin()
+        isAdmin() ||
+        (request.auth.uid == resource.data.touristId && resource.data.status == 'pending' &&
+          request.resource.data.status == 'cancelled' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
       );
     }
 

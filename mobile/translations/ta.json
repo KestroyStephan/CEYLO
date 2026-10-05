@@ -412,5 +412,7 @@
   "weather_snow": "பனி",
   "weather_rain_pct": "{{n}}% மழை",
   "about_source": "மூலம்: விக்கிப்பீடியா",
-  "getting_there": "செல்லும் வழி"
+  "getting_there": "செல்லும் வழி",
+  "my_orders": "எனது ஆர்டர்கள்",
+  "my_orders_sub": "சந்தை ஆர்டர்கள் மற்றும் பெறும் நிலை"
 }

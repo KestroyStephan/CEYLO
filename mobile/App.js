@@ -57,6 +57,8 @@ import PhoneLoginScreen from './screens/auth/PhoneLoginScreen';
 import ResearchSurveyScreen from './screens/ResearchSurveyScreen';
 import RouteGuideScreen from './screens/RouteGuideScreen';
 import SavedPlacesScreen from './screens/SavedPlacesScreen';
+import ProductDetailScreen from './screens/ProductDetailScreen';
+import MyOrdersScreen from './screens/MyOrdersScreen';
 import CulturalEventsScreen from './screens/CulturalEventsScreen';
 import MoodSelectScreen from './screens/onboarding/MoodSelectScreen';
 import SOSScreen from './screens/SOSScreen';
@@ -274,6 +276,8 @@ export default function App() {
                 <Stack.Screen name="ResearchSurvey" component={ResearchSurveyScreen} />
                 <Stack.Screen name="RouteGuide" component={RouteGuideScreen} />
                 <Stack.Screen name="SavedPlaces" component={SavedPlacesScreen} />
+                <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+                <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
                 <Stack.Screen name="CulturalEvents" component={CulturalEventsScreen} />
                 <Stack.Screen name="SOSScreen" component={SOSScreen} />
                 <Stack.Screen name="GuidesList" component={GuidesListScreen} />

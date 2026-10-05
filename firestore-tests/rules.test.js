@@ -318,3 +318,24 @@ describe('SOS, itineraries and content', () => {
     await assertSucceeds(deleteDoc(doc(as('h1'), 'rooms', 'r1')));
   });
 });
+
+describe('marketplace orders', () => {
+  const order = { vendorId: 'v1', touristId: 't1', items: [{ name: 'Tea', price: 500, qty: 1 }], totalPrice: 500, status: 'pending' };
+
+  test('a traveller places a pending order but cannot fake its status or order from themselves', async () => {
+    await assertSucceeds(setDoc(doc(as('t1'), 'orders', 'o1'), order));
+    await assertFails(setDoc(doc(as('t1'), 'orders', 'o2'), { ...order, status: 'completed' }));
+    await assertFails(setDoc(doc(as('t1'), 'orders', 'o3'), { ...order, touristId: 't2' }));
+    await assertFails(setDoc(doc(as('v1'), 'orders', 'o4'), { ...order, touristId: 'v1' }));
+  });
+
+  test('the traveller can only cancel a pending order; the vendor moves it along', async () => {
+    await seed({ 'orders/o1': order, 'orders/o2': { ...order, status: 'accepted' } });
+    await assertFails(updateDoc(doc(as('t1'), 'orders', 'o1'), { status: 'completed' }));
+    await assertFails(updateDoc(doc(as('t1'), 'orders', 'o1'), { status: 'cancelled', totalPrice: 1 }));
+    await assertSucceeds(updateDoc(doc(as('t1'), 'orders', 'o1'), { status: 'cancelled' }));
+    await assertFails(updateDoc(doc(as('t1'), 'orders', 'o2'), { status: 'cancelled' }));
+    await assertSucceeds(updateDoc(doc(as('v1'), 'orders', 'o2'), { status: 'preparing' }));
+    await assertFails(getDoc(doc(as('t2'), 'orders', 'o2')));
+  });
+});
