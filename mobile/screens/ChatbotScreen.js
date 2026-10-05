@@ -6,6 +6,7 @@ import KeyboardAvoider from '../components/KeyboardAvoider';
 import { Text, TextInput, Avatar, IconButton, Surface, Chip, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import i18next from '../i18n';
 import { db, auth } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
@@ -94,7 +95,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
                     Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
                   }}
                 >
-                  <Text style={styles.recBtnText}>Add to Route</Text>
+                  <Text style={styles.recBtnText}>{i18next.t('add_to_route')}</Text>
                 </TouchableOpacity>
               </View>
             </Surface>
@@ -115,9 +116,9 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
 
 export default function ChatbotScreen({ navigation, route }) {
   useStatusBarStyle('light-content');
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [messages, setMessages] = useState([
-    { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
+    { id: '1', text: t('chat_welcome'), sender: 'bot' }
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -198,7 +199,7 @@ export default function ChatbotScreen({ navigation, route }) {
       const destinationChanged = nextState.destination && nextState.destination !== extractedState.destination;
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: responseJson.resp || "Tell me a little more about your trip.",
+        text: responseJson.resp || t('chat_fallback'),
         sender: 'bot',
         options: responseJson.ui_options,
         isFinal: responseJson.isReady,
@@ -210,7 +211,7 @@ export default function ChatbotScreen({ navigation, route }) {
       console.warn('Concierge request failed:', error.message);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: "I'm having a bit of trouble connecting to my signals. Please check your internet connection.",
+        text: t('chat_error'),
         sender: 'bot'
       }]);
     } finally {
@@ -222,7 +223,7 @@ export default function ChatbotScreen({ navigation, route }) {
   // over to the keyboard's built-in dictation instead of faking a transcript.
   const startVoiceInput = () => {
     inputRef.current?.focus();
-    Alert.alert('Voice Input', 'Tap the microphone on your keyboard to dictate your message.');
+    Alert.alert(t('voice_title'), t('voice_body'));
   };
 
   const generateItinerary = async () => {
@@ -235,15 +236,15 @@ export default function ChatbotScreen({ navigation, route }) {
         destination: extractedState.destination,
       });
       Alert.alert(
-        itinerary.offline ? "Itinerary Ready (Offline Mode)" : "Itinerary Ready",
+        itinerary.offline ? t('itinerary_ready_offline') : t('itinerary_ready'),
         itinerary.offline
-          ? "The recommendation server could not be reached, so your itinerary was built from the on-device destination dataset."
-          : `Your itinerary was built from ${itinerary.plan.length} AI-ranked eco-cultural destinations.`,
-        [{ text: "View Itinerary", onPress: () => navigation.navigate('ItineraryDetail', { routeData: itinerary }) }]
+          ? t('itinerary_offline_body')
+          : t('itinerary_body', { n: itinerary.plan.length }),
+        [{ text: t('view_itinerary'), onPress: () => navigation.navigate('ItineraryDetail', { routeData: itinerary }) }]
       );
     } catch (e) {
       console.error("Itinerary generation failed:", e);
-      Alert.alert("Cannot generate itinerary", "Please try again.");
+      Alert.alert(t('itinerary_failed'), t('try_again'));
     } finally {
       setLoading(false);
     }
@@ -271,7 +272,7 @@ export default function ChatbotScreen({ navigation, route }) {
   return (
     <KeyboardAvoider behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
       <LinearGradient colors={['#004D40', '#00695C']} style={[styles.topBar, { paddingTop: insets.top + 14 }]}>
-        <Text style={styles.barTitle}>Ceylo AI Concierge</Text>
+        <Text style={styles.barTitle}>{t('chat_title')}</Text>
       </LinearGradient>
 
       {showHud && (
@@ -280,11 +281,11 @@ export default function ChatbotScreen({ navigation, route }) {
           <View style={styles.hudRow}>
             <View style={styles.hudItem}>
               <MaterialCommunityIcons name="map-marker" size={16} color="#00695C" />
-              <Text style={styles.hudVal} numberOfLines={1}>{extractedState.destination || 'Anywhere'}</Text>
+              <Text style={styles.hudVal} numberOfLines={1}>{extractedState.destination || t('anywhere')}</Text>
             </View>
             <View style={styles.hudItem}>
               <MaterialCommunityIcons name="calendar" size={16} color="#00695C" />
-              <Text style={styles.hudVal}>{extractedState.days ? `${extractedState.days} days` : 'Days?'}</Text>
+              <Text style={styles.hudVal}>{extractedState.days ? (extractedState.days === 1 ? t('one_day') : t('n_days', { n: extractedState.days })) : t('days_q')}</Text>
             </View>
             <View style={styles.hudItem}>
               <MaterialCommunityIcons name="leaf" size={16} color="#4CAF50" />
@@ -317,7 +318,7 @@ export default function ChatbotScreen({ navigation, route }) {
           loading={loading}
           disabled={loading}
         >
-          Generate Premium Itinerary
+          {t('generate_itinerary')}
         </Button>
       )}
 
@@ -333,7 +334,7 @@ export default function ChatbotScreen({ navigation, route }) {
           />
           <TextInput
             ref={inputRef}
-            placeholder="Type your preferences..."
+            placeholder={t('chat_placeholder')}
             value={inputText}
             onChangeText={setInputText}
             mode="flat"

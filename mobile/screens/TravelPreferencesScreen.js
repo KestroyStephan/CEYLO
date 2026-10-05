@@ -3,18 +3,20 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-nat
 import { Text, Button, Switch, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { loadPreferences, savePreferences, moodFromPreferences, DEFAULT_PREFERENCES } from '../services/PreferencesService';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 
 const LEVELS = [0, 25, 50, 75, 100];
 const BUDGETS = ['Economy', 'Standard', 'Luxury'];
 const MOBILITY = [
-  { id: 'standard', label: 'No limits', icon: 'hiking' },
-  { id: 'low', label: 'Low mobility', icon: 'wheelchair-accessibility' },
-  { id: 'walking', label: 'Walking only', icon: 'walk' },
+  { id: 'standard', label: 'mob_standard', icon: 'hiking' },
+  { id: 'low', label: 'mob_low', icon: 'wheelchair-accessibility' },
+  { id: 'walking', label: 'mob_walking', icon: 'walk' },
 ];
 
 const ACCENT = '#00695C';
+const MOOD_KEYS = { 'Culture Seeker': 'culture_seeker', 'Eco Explorer': 'eco_explorer', Family: 'family_trip' };
 
 function Segment({ options, value, onChange, format = v => v, accessibilityHint }) {
   return (
@@ -40,6 +42,7 @@ function Segment({ options, value, onChange, format = v => v, accessibilityHint 
 
 export default function TravelPreferencesScreen({ navigation }) {
   useStatusBarStyle('dark-content');
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [prefs, setPrefs] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -56,10 +59,10 @@ export default function TravelPreferencesScreen({ navigation }) {
     setSaving(true);
     try {
       await savePreferences(prefs);
-      Alert.alert('Preferences saved', 'Your recommendations, trip planner and chatbot will use these.');
+      Alert.alert(t('prefs_saved'), t('prefs_saved_body'));
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Could not save', e.message);
+      Alert.alert(t('could_not_save'), e.message);
     } finally {
       setSaving(false);
     }
@@ -75,38 +78,38 @@ export default function TravelPreferencesScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} accessibilityLabel="Go back" style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1B2B28" />
         </TouchableOpacity>
-        <Text style={styles.title}>Travel Preferences</Text>
+        <Text style={styles.title}>{t('prefs_title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 110 }]}>
-        <Text style={styles.label}>Nature and eco interest</Text>
-        <Text style={styles.help}>Higher favours wildlife, rainforest and low-impact places.</Text>
+        <Text style={styles.label}>{t('prefs_eco')}</Text>
+        <Text style={styles.help}>{t('prefs_eco_help')}</Text>
         <Segment options={LEVELS} value={prefs.ecoPct} onChange={v => set({ ecoPct: v })} format={v => `${v}%`} />
 
-        <Text style={styles.label}>Culture and heritage interest</Text>
-        <Text style={styles.help}>Higher favours temples, ruins and historic towns.</Text>
+        <Text style={styles.label}>{t('prefs_culture')}</Text>
+        <Text style={styles.help}>{t('prefs_culture_help')}</Text>
         <Segment options={LEVELS} value={prefs.culturePct} onChange={v => set({ culturePct: v })} format={v => `${v}%`} />
 
         <View style={styles.moodRow}>
           <MaterialCommunityIcons name="compass-outline" size={18} color={ACCENT} />
-          <Text style={styles.moodText}>Your trips will lean towards: {moodFromPreferences(prefs)}</Text>
+          <Text style={styles.moodText}>{t('prefs_lean', { mood: t(MOOD_KEYS[moodFromPreferences(prefs)]) })}</Text>
         </View>
 
-        <Text style={styles.label}>Budget</Text>
-        <Segment options={BUDGETS} value={prefs.budget} onChange={v => set({ budget: v })} />
+        <Text style={styles.label}>{t('budget')}</Text>
+        <Segment options={BUDGETS} value={prefs.budget} onChange={v => set({ budget: v })} format={v => t(`budget_${v}`)} />
 
-        <Text style={styles.label}>Usual trip length</Text>
+        <Text style={styles.label}>{t('trip_length')}</Text>
         <View style={styles.stepper}>
           <TouchableOpacity style={styles.stepBtn} onPress={() => set({ days: Math.max(1, prefs.days - 1) })} accessibilityLabel="Fewer days">
             <MaterialCommunityIcons name="minus" size={22} color={ACCENT} />
           </TouchableOpacity>
-          <Text style={styles.stepValue}>{prefs.days} {prefs.days === 1 ? 'day' : 'days'}</Text>
+          <Text style={styles.stepValue}>{prefs.days === 1 ? t('one_day') : t('n_days', { n: prefs.days })}</Text>
           <TouchableOpacity style={styles.stepBtn} onPress={() => set({ days: Math.min(14, prefs.days + 1) })} accessibilityLabel="More days">
             <MaterialCommunityIcons name="plus" size={22} color={ACCENT} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Mobility</Text>
+        <Text style={styles.label}>{t('mobility')}</Text>
         <View style={styles.mobility}>
           {MOBILITY.map(m => {
             const selected = prefs.mobility === m.id;
@@ -119,7 +122,7 @@ export default function TravelPreferencesScreen({ navigation }) {
                 accessibilityState={{ selected }}
               >
                 <MaterialCommunityIcons name={m.icon} size={24} color={selected ? '#FFF' : ACCENT} />
-                <Text style={[styles.mobText, selected && styles.segTextOn]}>{m.label}</Text>
+                <Text style={[styles.mobText, selected && styles.segTextOn]}>{t(m.label)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -127,21 +130,21 @@ export default function TravelPreferencesScreen({ navigation }) {
 
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Fewer crowds</Text>
-            <Text style={styles.help}>Prefer places our crowd forecast expects to be quiet.</Text>
+            <Text style={styles.label}>{t('fewer_crowds')}</Text>
+            <Text style={styles.help}>{t('fewer_crowds_help')}</Text>
           </View>
           <Switch value={prefs.avoidCrowds} onValueChange={v => set({ avoidCrowds: v })} color={ACCENT} />
         </View>
 
         <TouchableOpacity onPress={() => setPrefs({ ...DEFAULT_PREFERENCES })} style={styles.reset}>
-          <Text style={styles.resetText}>Reset to defaults</Text>
+          <Text style={styles.resetText}>{t('reset_defaults')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
         <Button mode="contained" buttonColor={ACCENT} onPress={save} loading={saving} disabled={saving}
           contentStyle={{ height: 52 }} labelStyle={{ fontSize: 16 }} style={{ borderRadius: 14 }}>
-          Save Preferences
+          {t('save_prefs')}
         </Button>
       </View>
     </View>

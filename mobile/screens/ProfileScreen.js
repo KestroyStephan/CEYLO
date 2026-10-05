@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
-import i18n from '../i18n';
+import { useTranslation } from 'react-i18next';
 import { Text, Surface } from 'react-native-paper';
 import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -12,6 +12,7 @@ const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
   useStatusBarStyle('dark-content');
+    const { t, i18n } = useTranslation();
     const user = auth.currentUser;
     const [userData, setUserData] = useState(null);
     const [itinerariesCount, setItinerariesCount] = useState(0);
@@ -73,7 +74,7 @@ export default function ProfileScreen({ navigation }) {
             <TouchableOpacity onPress={() => navigation.openDrawer()}>
                 <Feather name="menu" size={24} color="#004D40" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Explore Sri Lanka</Text>
+            <Text style={styles.headerTitle}>{t('explore_sri_lanka')}</Text>
             <TouchableOpacity>
                 <Feather name="search" size={24} color="#004D40" />
             </TouchableOpacity>
@@ -133,28 +134,28 @@ export default function ProfileScreen({ navigation }) {
                             <Text style={styles.levelText}>LVL {userData?.level || 1}</Text>
                         </View>
                     </View>
-                    <Text style={styles.name}>{userData?.displayName || user?.displayName || "Traveler"}</Text>
+                    <Text style={styles.name}>{userData?.displayName || user?.displayName || t('traveler')}</Text>
                     <View style={styles.ecoTag}>
                         <MaterialCommunityIcons name="leaf" size={16} color="#00897B" />
-                        <Text style={styles.ecoTagText}>{userData?.rank || 'Eco-Traveler'}</Text>
+                        <Text style={styles.ecoTagText}>{userData?.rank || t('eco_traveler')}</Text>
                     </View>
                     {userData?.bio ? <Text style={styles.bioText}>{userData.bio}</Text> : null}
                     <TouchableOpacity style={styles.editProfileBtn} onPress={() => navigation.navigate('EditProfile')}>
                         <Feather name="edit-2" size={14} color="#00695C" />
-                        <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+                        <Text style={styles.editProfileBtnText}>{t('edit_profile')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.statsContainer}>
-                    <StatCard value={visitedCount} label={"Places\nVisited"} valueColor="#00897B" />
-                    <StatCard value={ecoPoints} label="Eco Points" valueColor="#B8860B" />
-                    <StatCard value={reviewsCount} label="Reviews" valueColor="#00695C" />
+                    <StatCard value={visitedCount} label={t('places_visited')} valueColor="#00897B" />
+                    <StatCard value={ecoPoints} label={t('eco_points')} valueColor="#B8860B" />
+                    <StatCard value={reviewsCount} label={t('reviews')} valueColor="#00695C" />
                 </View>
 
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>My Eco Passport</Text>
+                    <Text style={styles.sectionTitle}>{t('my_eco_passport')}</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
-                        <Text style={styles.viewAll}>View All</Text>
+                        <Text style={styles.viewAll}>{t('view_all')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -165,7 +166,7 @@ export default function ProfileScreen({ navigation }) {
                                 key={index}
                                 icon="map-marker-check"
                                 title={place.name}
-                                date={place.date || 'Recently'}
+                                date={place.date || t('recently')}
                                 borderColor="#B2DFDB"
                             />
                         ))}
@@ -173,17 +174,17 @@ export default function ProfileScreen({ navigation }) {
                 ) : (
                     <View style={styles.emptyPassport}>
                         <MaterialCommunityIcons name="passport" size={32} color="#CCC" />
-                        <Text style={styles.emptyPassportText}>You haven't visited any destinations yet.</Text>
-                        <Text style={styles.emptyPassportSub}>Start exploring to earn stamps!</Text>
+                        <Text style={styles.emptyPassportText}>{t('no_visits')}</Text>
+                        <Text style={styles.emptyPassportSub}>{t('no_visits_sub')}</Text>
                     </View>
                 )}
 
                 <View style={styles.menuList}>
-                    <MenuItem icon="bookmark" title="Saved Places" subtitle={`${savedPlacesCount} Hidden Gems saved`} onPress={() => {}} />
-                    <MenuItem icon="map" title="Itineraries" subtitle={`${itinerariesCount} Upcoming journeys`} onPress={() => navigation.navigate('ItineraryDetail')} />
-                    <MenuItem icon="sliders" title="Travel Preferences" subtitle="Interests, budget, mobility, crowds" onPress={() => navigation.navigate('TravelPreferences')} />
-                    <MenuItem icon="edit-2" title="Edit Profile" subtitle="Update your info & photo" onPress={() => navigation.navigate('EditProfile')} />
-                    <MenuItem icon="settings" title="Language" subtitle="English / සිංහල / தமிழ்" onPress={() => Alert.alert('Language', 'Choose your app language', [
+                    <MenuItem icon="bookmark" title={t('saved_places')} subtitle={t('saved_places_sub', { n: savedPlacesCount })} onPress={() => {}} />
+                    <MenuItem icon="map" title={t('itineraries')} subtitle={t('itineraries_sub', { n: itinerariesCount })} onPress={() => navigation.navigate('ItineraryDetail')} />
+                    <MenuItem icon="sliders" title={t('prefs_title')} subtitle={t('travel_prefs_sub')} onPress={() => navigation.navigate('TravelPreferences')} />
+                    <MenuItem icon="edit-2" title={t('edit_profile')} subtitle={t('edit_profile_sub')} onPress={() => navigation.navigate('EditProfile')} />
+                    <MenuItem icon="settings" title={t('language')} subtitle="English / සිංහල / தமிழ்" onPress={() => Alert.alert(t('language'), t('language_choose'), [
                         { text: 'English', onPress: () => i18n.changeLanguage('en') },
                         { text: 'සිංහල', onPress: () => i18n.changeLanguage('si') },
                         { text: 'தமிழ்', onPress: () => i18n.changeLanguage('ta') },
@@ -192,7 +193,7 @@ export default function ProfileScreen({ navigation }) {
 
                 <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
                     <MaterialCommunityIcons name="logout" size={20} color="#D32F2F" />
-                    <Text style={styles.logoutText}>Logout</Text>
+                    <Text style={styles.logoutText}>{t('logout')}</Text>
                 </TouchableOpacity>
             </ScrollView>
 

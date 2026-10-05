@@ -3,6 +3,7 @@ import useTabBarStyle from '../utils/useTabBarStyle';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; // Using Expo's vector icons
+import { useTranslation } from 'react-i18next';
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
 import ChatbotScreen from '../screens/ChatbotScreen';
@@ -38,6 +39,7 @@ function TouristHomeStack() {
 }
 
 export default function MainTabNavigator() {
+    const { t } = useTranslation();
     const tabBarStyle = useTabBarStyle({
         backgroundColor: '#FFF',
         borderTopWidth: 1,
@@ -61,7 +63,7 @@ export default function MainTabNavigator() {
                 name="HomeTab"
                 component={TouristHomeStack}
                 options={{
-                    tabBarLabel: 'Home',
+                    tabBarLabel: t('tab_home'),
                     tabBarIcon: ({ focused, color, size }) => (
                         <MaterialCommunityIcons name={focused ? "home" : "home-outline"} color={color} size={26} />
                     ),
@@ -71,7 +73,7 @@ export default function MainTabNavigator() {
                 name="ExploreTab"
                 component={MapScreen}
                 options={{
-                    tabBarLabel: 'Explore',
+                    tabBarLabel: t('tab_explore'),
                     tabBarIcon: ({ focused, color, size }) => (
                         <MaterialCommunityIcons name={focused ? "compass" : "compass-outline"} color={color} size={26} />
                     ),
@@ -81,7 +83,7 @@ export default function MainTabNavigator() {
                 name="AITab"
                 component={ChatbotScreen}
                 options={{
-                    tabBarLabel: 'AI Guide',
+                    tabBarLabel: t('tab_ai'),
                     tabBarIcon: ({ focused, color, size }) => (
                         <MaterialCommunityIcons name={focused ? "robot" : "robot-outline"} color={color} size={26} />
                     ),
@@ -91,7 +93,7 @@ export default function MainTabNavigator() {
                 name="MarketTab"
                 component={MarketplaceScreen}
                 options={{
-                    tabBarLabel: 'Market',
+                    tabBarLabel: t('tab_market'),
                     tabBarIcon: ({ focused, color, size }) => (
                         <MaterialCommunityIcons name={focused ? "shopping" : "shopping-outline"} color={color} size={24} />
                     ),
@@ -101,7 +103,7 @@ export default function MainTabNavigator() {
                 name="ProfileTab"
                 component={ProfileScreen}
                 options={{
-                    tabBarLabel: 'Profile',
+                    tabBarLabel: t('tab_profile'),
                     tabBarIcon: ({ focused, color, size }) => (
                         <MaterialCommunityIcons name={focused ? "account" : "account-outline"} color={color} size={26} />
                     ),

@@ -38,7 +38,7 @@ const COLORS = {
 export default function HomeScreen({ navigation }) {
   useStatusBarStyle('dark-content');
   const { t } = useTranslation();
-  const [userName, setUserName] = useState('Traveler');
+  const [userName, setUserName] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Dynamic State
@@ -238,9 +238,9 @@ export default function HomeScreen({ navigation }) {
   const WelcomeSection = () => (
     <View style={styles.welcomeSection}>
       <View>
-        <Text style={styles.greeting}>AYUBOWAN,</Text>
-        <Text style={styles.name}>{userName}</Text>
-        <Text style={styles.subtitle}>Ready for a sustainable journey?</Text>
+        <Text style={styles.greeting}>{t('ayubowan').toUpperCase()},</Text>
+        <Text style={styles.name}>{userName || t('traveler')}</Text>
+        <Text style={styles.subtitle}>{t('home_subtitle')}</Text>
         <WeatherChip weather={weatherNow} style={{ marginTop: 8 }} />
       </View>
     </View>
@@ -252,31 +252,31 @@ export default function HomeScreen({ navigation }) {
         <View style={[styles.actionIconBg, { backgroundColor: '#E0F2F1' }]}>
           <MaterialCommunityIcons name="map-marker-path" size={26} color={COLORS.primary} />
         </View>
-        <Text style={styles.actionText}>Plan Trip</Text>
+        <Text style={styles.actionText}>{t('plan_trip')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('EcoPassport')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#E8F5E9' }]}>
           <MaterialCommunityIcons name="leaf-circle-outline" size={26} color={COLORS.ecoGreen} />
         </View>
-        <Text style={styles.actionText}>Passport</Text>
+        <Text style={styles.actionText}>{t('passport')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Marketplace')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#FFF8E1' }]}>
           <MaterialCommunityIcons name="basket-outline" size={26} color={COLORS.accent} />
         </View>
-        <Text style={styles.actionText}>Local Crafts</Text>
+        <Text style={styles.actionText}>{t('local_crafts')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Transport')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#E3F2FD' }]}>
           <MaterialCommunityIcons name="train-car" size={26} color="#1565C0" />
         </View>
-        <Text style={styles.actionText}>Transport</Text>
+        <Text style={styles.actionText}>{t('transport')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('GuidesList')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#F3E5F5' }]}>
           <MaterialCommunityIcons name="account-group-outline" size={26} color="#7B1FA2" />
         </View>
-        <Text style={styles.actionText}>Local Guides</Text>
+        <Text style={styles.actionText}>{t('local_guides')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -285,11 +285,11 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Eco-Destinations</Text>
-          <Text style={styles.sectionSubtitle}>Top rated sustainable spots</Text>
+          <Text style={styles.sectionTitle}>{t('eco_destinations')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('eco_destinations_sub')}</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList', { filterType: 'all' })}>
-          <Text style={styles.seeAll}>See All</Text>
+          <Text style={styles.seeAll}>{t('see_all')}</Text>
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
@@ -312,10 +312,10 @@ export default function HomeScreen({ navigation }) {
               <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.pickOverlay}>
                 <View style={styles.ecoBadgeRow}>
                   <MaterialCommunityIcons name="leaf" size={14} color={COLORS.ecoGreen} />
-                  <Text style={styles.ecoBadgeTextEco}>{item.eco_score != null ? `${Math.round(item.eco_score)} Eco Score` : 'Eco score n/a'}</Text>
+                  <Text style={styles.ecoBadgeTextEco}>{item.eco_score != null ? t('eco_score', { score: Math.round(item.eco_score) }) : t('eco_score_na')}</Text>
                 </View>
                 <Text style={styles.pickName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.pickLocation}>{item.dist ? `${item.dist.toFixed(1)} km away` : item.province.replace(' Province', '')}</Text>
+                <Text style={styles.pickLocation}>{item.dist ? t('km_away', { km: item.dist.toFixed(1) }) : item.province.replace(' Province', '')}</Text>
               </LinearGradient>
             </View>
           </TouchableOpacity>
@@ -328,14 +328,14 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Untouched Nature</Text>
-          <Text style={styles.sectionSubtitle}>Discover hidden biodiversity</Text>
+          <Text style={styles.sectionTitle}>{t('untouched_nature')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('untouched_nature_sub')}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList')}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>
       </View>
       {loadingGems ? (
         <View style={{ padding: 20, alignItems: 'center' }}>
-          <Text style={{ fontFamily: 'Outfit-Regular', color: '#666' }}>Locating nearby gems...</Text>
+          <Text style={{ fontFamily: 'Outfit-Regular', color: '#666' }}>{t('locating_gems')}</Text>
         </View>
       ) : hiddenGems.map((gem) => (
         <TouchableOpacity
@@ -358,7 +358,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.gemTagRow}>
                 <View style={styles.ecoCertifiedBadge}>
                   <MaterialCommunityIcons name="shield-check-outline" size={12} color={COLORS.ecoGreen} />
-                  <Text style={styles.ecoCertifiedText}>PRESERVED ZONE</Text>
+                  <Text style={styles.ecoCertifiedText}>{t('preserved_zone')}</Text>
                 </View>
               </View>
               <Text style={styles.gemTitle} numberOfLines={1}>{gem.name}</Text>
@@ -379,10 +379,10 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Cultural Heritage</Text>
-            <Text style={styles.sectionSubtitle}>Experience local traditions</Text>
+            <Text style={styles.sectionTitle}>{t('cultural_heritage')}</Text>
+            <Text style={styles.sectionSubtitle}>{t('cultural_heritage_sub')}</Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('CulturalEvents')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('CulturalEvents')}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>
         </View>
         <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('CulturalEvents')}>
           <ImageBackground
@@ -397,7 +397,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.tagText}>{featuredEvent.date ? new Date(featuredEvent.date).toLocaleString('en-US', { month: 'long' }) : 'TBC'}</Text>
                 </View>
                 <View style={styles.eventTagGold}>
-                  <Text style={styles.tagTextGold}>Cultural</Text>
+                  <Text style={styles.tagTextGold}>{t('cultural')}</Text>
                 </View>
               </View>
               <View>
@@ -405,7 +405,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.eventDesc} numberOfLines={2}>{featuredEvent.location} • Join the community and learn local crafts and traditions.</Text>
                 <View style={{ flexDirection: 'row', marginTop: 12 }}>
                   <TouchableOpacity style={styles.remindBtn} onPress={() => navigation.navigate('EventDetail', { event: featuredEvent })}>
-                    <Text style={styles.remindBtnText}>Learn More</Text>
+                    <Text style={styles.remindBtnText}>{t('learn_more')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -420,10 +420,10 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Sustainable Routes</Text>
-          <Text style={styles.sectionSubtitle}>Low carbon footprint journeys</Text>
+          <Text style={styles.sectionTitle}>{t('sustainable_routes')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('sustainable_routes_sub')}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('SustainableRoutesList')}><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('SustainableRoutesList')}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
         {trendingRoutes.map((route) => (
@@ -460,8 +460,8 @@ export default function HomeScreen({ navigation }) {
         <Surface style={styles.bannerContainer} elevation={0}>
           <LinearGradient colors={['#E8F5E9', '#C8E6C9']} style={styles.bannerGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bannerTitle}>Support Local Communities</Text>
-              <Text style={styles.bannerSub}>Every booking contributes to conservation efforts.</Text>
+              <Text style={styles.bannerTitle}>{t('support_local')}</Text>
+              <Text style={styles.bannerSub}>{t('support_local_sub')}</Text>
             </View>
             <MaterialCommunityIcons name="hand-heart" size={40} color={COLORS.ecoGreen} style={{ opacity: 0.8 }} />
           </LinearGradient>
