@@ -94,7 +94,7 @@ export default function EventDetailScreen({ route, navigation }) {
           onPress={() => navigation.goBack()}
         />
         <View style={styles.imageOverlay}>
-          <Chip icon="calendar" style={styles.dateChip} textStyle={styles.dateChipText}>
+          <Chip icon={({ size }) => <MaterialCommunityIcons name="calendar" size={size} color="#FFF" />} style={styles.dateChip} textStyle={styles.dateChipText}>
             {dateLabel}
           </Chip>
           <Text style={styles.title}>{displayEvent.title}</Text>
@@ -161,10 +161,10 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   gradient: { ...StyleSheet.absoluteFillObject },
   backBtn: { position: 'absolute', top: 40, left: 10 },
-  imageOverlay: { position: 'absolute', bottom: 20, left: 20, right: 20 },
+  imageOverlay: { position: 'absolute', bottom: 48, left: 20, right: 20 },
   dateChip: { alignSelf: 'flex-start', backgroundColor: '#00695C', marginBottom: 10 },
   dateChipText: { color: '#FFF', fontWeight: 'bold' },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#FFF', textShadow: '1px 1px 3px rgba(0,0,0,0.5)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+  title: { fontSize: 32, fontFamily: 'Outfit-Bold', color: '#FFF', textShadow: '1px 1px 3px rgba(0,0,0,0.5)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
   content: { padding: 20, borderTopLeftRadius: 30, borderTopRightRadius: 30, backgroundColor: '#FFF', marginTop: -30 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   metaItem: { flexDirection: 'row', alignItems: 'center', flex: 1 },

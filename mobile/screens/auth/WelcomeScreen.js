@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import i18n from '../../i18n';
 import {
-  View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity,
+  View, StyleSheet, ImageBackground, TouchableOpacity,
   Alert, Animated, StatusBar
 } from 'react-native';
 import { Text } from 'react-native-paper';
@@ -12,7 +12,6 @@ import { signInAnonymously } from 'firebase/auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const { width, height } = Dimensions.get('window');
 
 const FEATURE_BADGES = [
   { icon: 'leaf', label: 'Eco-Certified\nGuides' },
@@ -47,7 +46,7 @@ export default function WelcomeScreen({ navigation }) {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?q=80&w=1000&auto=format&fit=crop' }}
+        source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Beauty_of_Sigiriya_by_Binuka.jpg/960px-Beauty_of_Sigiriya_by_Binuka.jpg' }}
         style={styles.bg}
         resizeMode="cover"
       >
@@ -118,7 +117,7 @@ export default function WelcomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  bg: { flex: 1, width, height },
+  bg: { flex: 1 },
 
   content: {
     flex: 1,

@@ -15,6 +15,7 @@ const formatDate = (dateString, formatType) => {
 
     if (formatType === 'dd') return d.getDate().toString().padStart(2, '0');
     if (formatType === 'MMM') return d.toLocaleString('en-US', { month: 'short' });
+    if (formatType === 'yyyy') return String(d.getFullYear());
     if (formatType === 'EEE') return d.toLocaleString('en-US', { weekday: 'short' });
     if (formatType === 'MMMM yyyy') return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
@@ -80,16 +81,18 @@ export default function CulturalEventsScreen({ navigation }) {
         <View style={styles.cardImageWrapper}>
             <ProgressiveImage source={{ uri: item.imageUrl }} style={styles.cardImage} />
             <Surface style={styles.dateBadge} elevation={4}>
-                <Text style={styles.dateDay}>{item.date ? (item.dateApprox ? '~' : formatDate(item.date, 'dd')) : '??'}</Text>
-                <Text style={styles.dateMonth}>{item.date ? formatDate(item.date, 'MMM') : '???'}</Text>
+                <Text style={styles.dateDay}>{item.date ? formatDate(item.date, item.dateApprox ? 'MMM' : 'dd') : 'TBA'}</Text>
+                <Text style={styles.dateMonth}>{item.date ? formatDate(item.date, item.dateApprox ? 'yyyy' : 'MMM') : ''}</Text>
             </Surface>
         </View>
             <Card.Content style={styles.cardContent}>
                 <View style={styles.typeRow}>
-                    <Chip size={10} style={styles.typeChip} textStyle={styles.typeChipText}>{item.type || 'Event'}</Chip>
+                    <View style={styles.typeChip}>
+                        <Text style={styles.typeChipText} numberOfLines={1}>{item.type || 'Event'}</Text>
+                    </View>
                     <View style={styles.locationRow}>
                         <MaterialCommunityIcons name="map-marker" size={14} color="#666" />
-                        <Text style={styles.locationText}>
+                        <Text style={styles.locationText} numberOfLines={1}>
                             {item.distanceKm != null ? `${item.distanceKm.toFixed(1)} km • ` : ''}{item.location}
                         </Text>
                     </View>
@@ -111,7 +114,7 @@ export default function CulturalEventsScreen({ navigation }) {
                         {filteredEvents.filter(e => e.date && formatDate(e.date, 'MMMM yyyy') === month).map(event => (
                             <TouchableOpacity key={event.id} style={styles.calendarListItem} onPress={() => openEvent(event)}>
                                 <View style={styles.calendarDateBox}>
-                                    <Text style={styles.calendarDay}>{event.dateApprox ? '~' : formatDate(event.date, 'dd')}</Text>
+                                    <Text style={styles.calendarDay}>{formatDate(event.date, event.dateApprox ? 'MMM' : 'dd')}</Text>
                                     <Text style={styles.calendarWeekday}>{event.dateApprox ? 'TBC' : formatDate(event.date, 'EEE')}</Text>
                                 </View>
                                 <View style={styles.calendarEventInfo}>
@@ -222,11 +225,11 @@ const styles = StyleSheet.create({
     dateDay: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#00695C' },
     dateMonth: { fontSize: 12, fontFamily: 'Outfit-Bold', color: '#666', textTransform: 'uppercase' },
     cardContent: { padding: 15 },
-    typeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-    typeChip: { height: 24, backgroundColor: '#E0F2F1' },
-    typeChipText: { fontSize: 10, color: '#00695C', fontFamily: 'Outfit-Bold' },
-    locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    locationText: { fontSize: 12, color: '#666', fontFamily: 'Outfit-Medium' },
+    typeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+    typeChip: { backgroundColor: '#E0F2F1', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 0 },
+    typeChipText: { fontSize: 11, color: '#00695C', fontFamily: 'Outfit-Bold' },
+    locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 },
+    locationText: { fontSize: 12, color: '#666', fontFamily: 'Outfit-Medium', flexShrink: 1 },
     eventTitle: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#333', marginBottom: 5 },
     description: { fontSize: 14, color: '#666', fontFamily: 'Outfit-Regular', lineHeight: 20 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },

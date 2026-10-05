@@ -12,6 +12,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebaseConfig';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import { OfflineQueue } from './services/OfflineQueue';
 import { NotificationService } from './services/NotificationService';
 // Registers the background geofencing task; must run at start-up
@@ -106,6 +107,13 @@ export default function App() {
   const [userRole, setUserRole] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // The screens style text with these family names
+  const [fontsLoaded, fontError] = useFonts({
+    'Outfit-Regular': Outfit_400Regular,
+    'Outfit-Medium': Outfit_500Medium,
+    'Outfit-SemiBold': Outfit_600SemiBold,
+    'Outfit-Bold': Outfit_700Bold,
+  });
   const [isOnboarded, setIsOnboarded] = useState(false);
 
   useEffect(() => {
@@ -205,7 +213,7 @@ export default function App() {
     }
   }, [user]);
 
-  if (loading) {
+  if (loading || (!fontsLoaded && !fontError)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#00695c" />
