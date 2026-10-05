@@ -81,7 +81,7 @@ export default function GuideProfileScreen({ route, navigation }) {
         guideId: guide.id,
         touristId: auth.currentUser.uid,
         name: auth.currentUser.displayName || 'Guest',
-        avatar: auth.currentUser.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+        avatar: auth.currentUser.photoURL || null,
         text: newReviewText,
         rating: newReviewRating,
         createdAt: serverTimestamp()
@@ -126,7 +126,7 @@ export default function GuideProfileScreen({ route, navigation }) {
         {/* Hero Cover Image */}
         <View style={styles.coverContainer}>
           <Image
-            source={{ uri: guide.coverImage || guide.photoUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800' }}
+            source={{ uri: guide.coverImage || guide.photoUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Beauty_of_Sigiriya_by_Binuka.jpg/960px-Beauty_of_Sigiriya_by_Binuka.jpg' }}
             style={styles.coverImage}
           />
           <LinearGradient
@@ -150,10 +150,13 @@ export default function GuideProfileScreen({ route, navigation }) {
 
           {/* Profile Avatar overlapping the hero */}
           <View style={styles.avatarOverlapContainer}>
-            <Image
-              source={{ uri: guide.photoUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200' }}
-              style={styles.profileAvatar}
-            />
+            {guide.photoUrl ? (
+              <Image source={{ uri: guide.photoUrl }} style={styles.profileAvatar} />
+            ) : (
+              <View style={[styles.profileAvatar, styles.initialAvatar]}>
+                <Text style={styles.initialAvatarText}>{(guide.name || 'G').trim()[0].toUpperCase()}</Text>
+              </View>
+            )}
             {guide.verifiedBadge && (
               <View style={styles.avatarBadge}>
                 <MaterialCommunityIcons name="check-decagram" size={16} color="#006A3B" />
@@ -167,7 +170,7 @@ export default function GuideProfileScreen({ route, navigation }) {
           {/* Name & Rating centered under avatar */}
           <View style={styles.avatarInfoCenter}>
             <Text style={styles.guideName}>{guide.name}</Text>
-            <Text style={styles.guideSubtitle}>{guide.specializations || 'Sri Lankan Tour Guide'}</Text>
+            <Text style={styles.guideSubtitle}>{(Array.isArray(guide.specializations) ? guide.specializations.join(', ') : guide.specializations) || 'Sri Lankan Tour Guide'}</Text>
             <View style={styles.starsCenter}>
               {[1,2,3,4,5].map(s => (
                 <MaterialCommunityIcons
@@ -184,7 +187,7 @@ export default function GuideProfileScreen({ route, navigation }) {
           <View style={styles.nameRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <MaterialCommunityIcons name="map-marker-outline" size={14} color="#8A9E8A" />
-              <Text style={styles.guideLocation}>{guide.location || 'Sri Lanka'}</Text>
+              <Text style={styles.guideLocation}>{guide.location || (Array.isArray(guide.serviceAreas) ? guide.serviceAreas.join(', ') : guide.serviceAreas) || 'Island-wide'}</Text>
             </View>
             {/* Eco Score Ring */}
             <View style={styles.ecoRing}>
@@ -289,7 +292,13 @@ export default function GuideProfileScreen({ route, navigation }) {
             reviews.map(r => (
               <View key={r.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
-                  <Image source={{ uri: r.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }} style={styles.reviewAvatar} />
+                  {r.avatar && !r.avatar.includes('unsplash.com') ? (
+                    <Image source={{ uri: r.avatar }} style={styles.reviewAvatar} />
+                  ) : (
+                    <View style={[styles.reviewAvatar, styles.initialAvatar]}>
+                      <Text style={{ color: '#FFF', fontFamily: 'Outfit-Bold' }}>{(r.name || 'G').trim()[0].toUpperCase()}</Text>
+                    </View>
+                  )}
                   <View style={{ marginLeft: 10 }}>
                     <Text style={styles.reviewName}>{r.name}</Text>
                     <View style={styles.starsRow}>
@@ -368,7 +377,9 @@ export default function GuideProfileScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F7F4' },
 
-  coverContainer: { height: 280, position: 'relative' },
+  coverContainer: { height: 280, position: 'relative', zIndex: 2 },
+  initialAvatar: { backgroundColor: '#2E6B5A', alignItems: 'center', justifyContent: 'center' },
+  initialAvatarText: { fontSize: 44, fontFamily: 'Outfit-Bold', color: '#FFF' },
   coverImage: { width: '100%', height: '100%' },
   topNav: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   backCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
@@ -379,7 +390,7 @@ const styles = StyleSheet.create({
   profileAvatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 4, borderColor: '#FFF', backgroundColor: '#DDD' },
   avatarBadge: { position: 'absolute', bottom: 2, right: 2, backgroundColor: '#FFF', borderRadius: 12, padding: 2 },
 
-  profileCard: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -24, paddingHorizontal: 20, paddingTop: 70 },
+  profileCard: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -24, paddingHorizontal: 20, paddingTop: 84, zIndex: 1 },
 
   avatarInfoCenter: { alignItems: 'center', marginBottom: 20 },
   starsCenter: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },

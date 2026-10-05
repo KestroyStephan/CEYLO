@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 const CATEGORY_FILTERS = ['All Guides', 'Wildlife', 'Cultural', 'Heritage', 'Adventure', 'Marine'];
 
@@ -62,9 +63,20 @@ export default function GuidesListScreen({ navigation }) {
       const snap = await getDocs(q);
       const live = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setGuides(live);
-      if (live.length === 0) {
-        // Alert.alert('Debug', 'Query succeeded but 0 guides were found in the users collection with role="guide".');
+      // Ratings come from real traveller reviews (same collection as the guide profile)
+      const ids = live.map(g => g.id);
+      const stats = {};
+      for (let i = 0; i < ids.length; i += 30) {
+        const rs = await getDocs(query(collection(db, 'reviews'), where('guideId', 'in', ids.slice(i, i + 30)))).catch(() => null);
+        rs?.forEach(r => {
+          const { guideId, rating } = r.data();
+          if (!Number(rating)) return;
+          stats[guideId] = stats[guideId] || { sum: 0, n: 0 };
+          stats[guideId].sum += Number(rating);
+          stats[guideId].n += 1;
+        });
       }
+      setGuides(live.map(g => (stats[g.id] ? { ...g, reviewAvg: stats[g.id].sum / stats[g.id].n, reviewCount: stats[g.id].n } : g)));
     } catch (e) {
       console.error('Guides fetch error:', e);
       Alert.alert('Fetch Error', e.message);
@@ -97,7 +109,7 @@ export default function GuidesListScreen({ navigation }) {
       areaString?.toLowerCase()?.includes(activeFilter.toLowerCase());
       
     // Check if the selected date is in the guide's unavailableDates array
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
     const isAvailable = !(g.unavailableDates && g.unavailableDates.includes(dateStr));
 
     return matchesSearch && matchesFilter && isAvailable;
@@ -105,7 +117,9 @@ export default function GuidesListScreen({ navigation }) {
 
   const renderGuide = useCallback(({ item }) => {
     const badge = item.badge ? BADGE_META[item.badge] : null;
-    const stars = item.rating || 0;
+    const photo = item.coverImage || item.photoUrl || item.photoURL;
+    const specs = Array.isArray(item.specializations) ? item.specializations.join(', ') : item.specializations;
+    const areas = (Array.isArray(item.serviceAreas) ? item.serviceAreas : String(item.serviceAreas || '').split(',')).map(a => a.trim()).filter(Boolean);
     
     // Calculate lowest price from services
     let startingPrice = item.packageCost;
@@ -120,10 +134,13 @@ export default function GuidesListScreen({ navigation }) {
         style={styles.card}
       >
         <View style={styles.cardImageWrapper}>
-          <Image
-            source={{ uri: item.coverImage || item.photoUrl || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=600' }}
-            style={styles.cardImage}
-          />
+          {photo ? (
+            <ProgressiveImage source={{ uri: photo }} style={styles.cardImage} />
+          ) : (
+            <View style={[styles.cardImage, styles.initialCover]}>
+              <Text style={styles.initialText}>{(item.name || 'G').trim()[0].toUpperCase()}</Text>
+            </View>
+          )}
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.65)']}
             style={StyleSheet.absoluteFillObject}
@@ -136,18 +153,18 @@ export default function GuidesListScreen({ navigation }) {
           )}
           <View style={styles.ratingBadge}>
             <MaterialCommunityIcons name="star" size={11} color="#FFCA28" />
-            <Text style={styles.ratingText}>{stars.toFixed(1)}</Text>
+            <Text style={styles.ratingText}>{item.reviewCount ? `${item.reviewAvg.toFixed(1)} (${item.reviewCount})` : 'New'}</Text>
           </View>
         </View>
 
         <View style={styles.cardBody}>
           <Text style={styles.guideName}>{item.name}</Text>
-          <Text style={styles.guideSpec}>{item.specializations || 'Sri Lankan Tour Guide'}</Text>
+          <Text style={styles.guideSpec}>{specs || 'Sri Lankan Tour Guide'}</Text>
 
           <View style={styles.chipRow}>
-            {item.serviceAreas ? item.serviceAreas.split(',').slice(0, 2).map((area, i) => (
+            {areas.length ? areas.slice(0, 3).map((area, i) => (
               <View key={i} style={styles.areaChip}>
-                <Text style={styles.areaChipText}>{area.trim()}</Text>
+                <Text style={styles.areaChipText}>{area}</Text>
               </View>
             )) : (
               <View style={styles.areaChip}>
@@ -200,16 +217,11 @@ export default function GuidesListScreen({ navigation }) {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <MaterialCommunityIcons name="menu" size={24} color="#1A2E1A" />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} accessibilityLabel="Go back">
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#1A2E1A" />
         </TouchableOpacity>
-        <Text style={styles.appName}>Ceylon Echoes</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'AppTabs', params: { screen: 'ProfileTab' } })}>
-          <Image
-            source={{ uri: auth.currentUser?.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
-            style={styles.avatar}
-          />
-        </TouchableOpacity>
+        <Text style={styles.appName}>{i18n.t('local_guides')}</Text>
+        <View style={{ width: 32 }} />
       </View>
 
       {/* Hero Title */}
@@ -251,7 +263,7 @@ export default function GuidesListScreen({ navigation }) {
           />
         )}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={{ paddingRight: 20 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterRow}>
         {CATEGORY_FILTERS.map(f => (
           <TouchableOpacity
             key={f}
@@ -321,7 +333,8 @@ const styles = StyleSheet.create({
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F4F0', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: 'Outfit-Regular', color: '#333' },
 
-  filterRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 8, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#EAEAEA' },
+  filterScroll: { flexGrow: 0, flexShrink: 0 },
+  filterRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8, alignItems: 'center' },
   filterChip: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F0F4F0', borderWidth: 1, borderColor: '#E0E8E0' },
   filterChipActive: { backgroundColor: '#E8F5E9', borderColor: '#006A3B' },
   filterChipText: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#666' },
@@ -350,6 +363,8 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
   cardImageWrapper: { height: 180, position: 'relative' },
   cardImage: { width: '100%', height: '100%' },
+  initialCover: { backgroundColor: '#2E6B5A', alignItems: 'center', justifyContent: 'center' },
+  initialText: { fontSize: 64, fontFamily: 'Outfit-Bold', color: 'rgba(255,255,255,0.9)' },
   badgePill: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   badgeText: { fontSize: 11, fontFamily: 'Outfit-Bold' },
   ratingBadge: { position: 'absolute', top: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },

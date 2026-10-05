@@ -11,16 +11,12 @@ import { notifyBooking } from '../services/aiClient';
 import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
-const PICKUP_OPTIONS = [
-  'Rainforest Edge Hotel, Sinharaja',
-  'Colombo Fort Station',
-  'Galle Fort Entrance',
-  'Kandy City Centre',
-  'Custom Location',
-];
+const MY_LOCATION = 'My current location';
+const OTHER = 'Another address…';
 
 // Eco levy added to every guided tour (carbon offset), shown as its own line
 const ECO_LEVY_RATE = 0.07;
@@ -43,7 +39,13 @@ export default function ConfirmBookingScreen({ route, navigation }) {
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(today.getDate());
   const [explorers, setExplorers] = useState(2);
+  // Pickup points: the towns this guide works in, the traveller's own position, or an address they type
+  const guideAreas = (Array.isArray(guide?.serviceAreas) ? guide.serviceAreas : String(guide?.serviceAreas || '').split(','))
+    .map(a => a.trim()).filter(Boolean).map(a => `${a} town centre`);
+  const pickupOptions = [...guideAreas, MY_LOCATION, OTHER];
   const [pickupIdx, setPickupIdx] = useState(0);
+  const [customPickup, setCustomPickup] = useState('');
+  const [myLocation, setMyLocation] = useState(null);
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
@@ -85,9 +87,37 @@ export default function ConfirmBookingScreen({ route, navigation }) {
 
   const monthName = new Date(calYear, calMonth).toLocaleString('default', { month: 'long' });
 
+  const choosePickup = async (i) => {
+    setPickupIdx(i);
+    setShowPickupDropdown(false);
+    if (pickupOptions[i] !== MY_LOCATION || myLocation) return;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const [g] = await Location.reverseGeocodeAsync(pos.coords).catch(() => []);
+      setMyLocation({
+        label: g ? [g.name, g.street, g.city || g.subregion].filter(Boolean).join(', ') : `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`,
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+      });
+    } catch (e) {
+      console.log('Pickup location unavailable:', e.message);
+    }
+  };
+
+  const pickupChoice = pickupOptions[pickupIdx];
+  const pickupLabel = pickupChoice === OTHER ? customPickup.trim()
+    : pickupChoice === MY_LOCATION ? (myLocation?.label || '')
+    : pickupChoice;
+
   const handleConfirm = async () => {
     if (!auth.currentUser) {
       Alert.alert('Sign In Required', 'Please sign in to complete your booking.');
+      return;
+    }
+    if (!pickupLabel) {
+      Alert.alert('Pick-up location', pickupChoice === MY_LOCATION ? 'Allow location access, or type the address instead.' : 'Please enter where the guide should meet you.');
       return;
     }
     setLoading(true);
@@ -105,7 +135,8 @@ export default function ConfirmBookingScreen({ route, navigation }) {
         packageCost: hasPrice ? baseRatePerPerson : null,
         explorers,
         selectedDate: `${selectedDate} ${monthName} ${calYear}`,
-        pickupLocation: PICKUP_OPTIONS[pickupIdx],
+        pickupLocation: pickupLabel,
+        pickupCoords: pickupChoice === MY_LOCATION && myLocation ? { lat: myLocation.lat, lon: myLocation.lon } : null,
         totalAmount: hasPrice ? parseFloat(finalTotal) : null,
         bookingDate: dateKey(selectedDate),
         ecoLevy: parseFloat(carbonOffset),
@@ -174,9 +205,11 @@ export default function ConfirmBookingScreen({ route, navigation }) {
               </View>
             </View>
             {/* Eco Ring */}
-            <View style={styles.ecoRing}>
-              <Text style={styles.ecoRingNum}>{guide?.ecoScore ?? '-'}</Text>
-            </View>
+            {guide?.ecoScore != null && (
+              <View style={styles.ecoRing}>
+                <Text style={styles.ecoRingNum}>{guide.ecoScore}</Text>
+              </View>
+            )}
           </View>
 
           {/* Calendar */}
@@ -265,16 +298,16 @@ export default function ConfirmBookingScreen({ route, navigation }) {
               style={styles.dropdownBtn}
               onPress={() => setShowPickupDropdown(!showPickupDropdown)}
             >
-              <Text style={styles.dropdownText}>{PICKUP_OPTIONS[pickupIdx]}</Text>
+              <Text style={styles.dropdownText}>{pickupChoice === MY_LOCATION && myLocation ? `${MY_LOCATION}: ${myLocation.label}` : pickupChoice}</Text>
               <MaterialCommunityIcons name="chevron-down" size={20} color="#4A5E4A" />
             </TouchableOpacity>
             {showPickupDropdown && (
               <View style={styles.dropdownList}>
-                {PICKUP_OPTIONS.map((opt, i) => (
+                {pickupOptions.map((opt, i) => (
                   <TouchableOpacity
-                    key={i}
+                    key={opt}
                     style={styles.dropdownOption}
-                    onPress={() => { setPickupIdx(i); setShowPickupDropdown(false); }}
+                    onPress={() => choosePickup(i)}
                   >
                     <Text style={[styles.dropdownOptionText, i === pickupIdx && styles.dropdownOptionTextActive]}>
                       {opt}
@@ -283,6 +316,15 @@ export default function ConfirmBookingScreen({ route, navigation }) {
                   </TouchableOpacity>
                 ))}
               </View>
+            )}
+            {pickupChoice === OTHER && (
+              <TextInput
+                style={[styles.dropdownBtn, styles.dropdownText, { marginTop: 10 }]}
+                value={customPickup}
+                onChangeText={setCustomPickup}
+                placeholder="Hotel name or address"
+                placeholderTextColor="#8A9A8A"
+              />
             )}
           </View>
 
