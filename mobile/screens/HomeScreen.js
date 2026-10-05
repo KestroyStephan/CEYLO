@@ -216,31 +216,31 @@ export default function HomeScreen({ navigation }) {
         <View style={[styles.actionIconBg, { backgroundColor: '#E0F2F1' }]}>
           <MaterialCommunityIcons name="map-marker-path" size={26} color={COLORS.primary} />
         </View>
-        <Text style={styles.actionText}>{t('plan_trip')}</Text>
+        <Text style={styles.actionText} numberOfLines={2}>{t('plan_trip')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('EcoPassport')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#E8F5E9' }]}>
           <MaterialCommunityIcons name="leaf-circle-outline" size={26} color={COLORS.ecoGreen} />
         </View>
-        <Text style={styles.actionText}>{t('passport')}</Text>
+        <Text style={styles.actionText} numberOfLines={2}>{t('passport')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Marketplace')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#FFF8E1' }]}>
           <MaterialCommunityIcons name="basket-outline" size={26} color={COLORS.accent} />
         </View>
-        <Text style={styles.actionText}>{t('local_crafts')}</Text>
+        <Text style={styles.actionText} numberOfLines={2}>{t('local_crafts')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Transport')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#E3F2FD' }]}>
           <MaterialCommunityIcons name="train-car" size={26} color="#1565C0" />
         </View>
-        <Text style={styles.actionText}>{t('transport')}</Text>
+        <Text style={styles.actionText} numberOfLines={2}>{t('transport')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('GuidesList')}>
         <View style={[styles.actionIconBg, { backgroundColor: '#F3E5F5' }]}>
           <MaterialCommunityIcons name="account-group-outline" size={26} color="#7B1FA2" />
         </View>
-        <Text style={styles.actionText}>{t('local_guides')}</Text>
+        <Text style={styles.actionText} numberOfLines={2}>{t('local_guides')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -517,9 +517,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 4 },
 
   quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  actionItem: { alignItems: 'center', gap: 10 },
+  actionItem: { alignItems: 'center', gap: 8, width: '19%' },
   actionIconBg: { width: 56, height: 56, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 1 },
-  actionText: { fontSize: 12, fontFamily: 'Outfit-Medium', color: COLORS.text },
+  actionText: { fontSize: 12, fontFamily: 'Outfit-Medium', color: COLORS.text, textAlign: 'center' },
 
   bannerContainer: { borderRadius: 16, overflow: 'hidden', marginBottom: 35 },
   bannerGradient: { flexDirection: 'row', alignItems: 'center', padding: 20 },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import i18n from '../i18n';
 
 /**
  * Small weather badge. Pass either current conditions ({ icon, label, temperatureC })
@@ -12,12 +13,13 @@ export default function WeatherChip({ weather, compact = false, style }) {
   const temp = weather.temperatureC != null
     ? `${Math.round(weather.temperatureC)}°C`
     : weather.maxC != null ? `${Math.round(weather.maxC)}°/${Math.round(weather.minC)}°` : '';
-  const rain = weather.rainProbability != null && weather.rainProbability >= 30 ? ` · ${weather.rainProbability}% rain` : '';
+  const rain = weather.rainProbability != null && weather.rainProbability >= 30 ? ` · ${i18n.t('weather_rain_pct', { n: weather.rainProbability })}` : '';
+  const label = i18n.t(`weather_${String(weather.label || '').toLowerCase().replace(/ /g, '_')}`, { defaultValue: weather.label });
   return (
     <View style={[styles.chip, rainy ? styles.rainy : styles.dry, style]}>
       <MaterialCommunityIcons name={weather.icon || 'weather-cloudy'} size={compact ? 12 : 14} color={rainy ? '#1565C0' : '#B26A00'} />
       <Text style={[styles.text, compact && styles.compactText, { color: rainy ? '#1565C0' : '#8D5300' }]}>
-        {compact ? temp : `${weather.label} ${temp}${rain}`}
+        {compact ? temp : `${label} ${temp}${rain}`}
       </Text>
     </View>
   );

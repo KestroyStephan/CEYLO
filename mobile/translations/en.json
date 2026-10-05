@@ -400,5 +400,15 @@
   "ui_find_your_eco_expert": "Find Your Eco-Expert",
   "ui_how_guides_are_verified": "How guides are verified",
   "ui_how_guides_are_verified_body": "Every guide uploads their SLTDA licence and national ID. CEYLO staff check them before the guide can accept bookings.",
-  "hidden_gem_label": "HIDDEN GEM"
+  "hidden_gem_label": "HIDDEN GEM",
+  "weather_clear": "Clear",
+  "weather_partly_cloudy": "Partly cloudy",
+  "weather_cloudy": "Cloudy",
+  "weather_fog": "Fog",
+  "weather_drizzle": "Drizzle",
+  "weather_rain": "Rain",
+  "weather_showers": "Showers",
+  "weather_thunderstorm": "Thunderstorm",
+  "weather_snow": "Snow",
+  "weather_rain_pct": "{{n}}% rain"
 }
