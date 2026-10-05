@@ -16,6 +16,19 @@ import * as Location from 'expo-location';
 const { width } = Dimensions.get('window');
 
 const MY_LOCATION = 'My current location';
+
+// Reviewer photo, or their initial when there is none or it fails to load
+function ReviewerAvatar({ uri, name, style }) {
+  const [failed, setFailed] = useState(false);
+  if (uri && !failed && !uri.includes('unsplash.com')) {
+    return <Image source={{ uri }} style={style} onError={() => setFailed(true)} />;
+  }
+  return (
+    <View style={[style, { backgroundColor: '#2E6B5A', alignItems: 'center', justifyContent: 'center' }]}>
+      <Text style={{ color: '#FFF', fontFamily: 'Outfit-Bold' }}>{(name || 'T').trim()[0].toUpperCase()}</Text>
+    </View>
+  );
+}
 const OTHER = 'Another address…';
 
 // Eco levy added to every guided tour (carbon offset), shown as its own line
@@ -337,7 +350,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
               {reviews.map(r => (
                 <View key={r.id} style={styles.journalCard}>
                   <View style={styles.journalHeader}>
-                    {r.avatar ? <Image source={{ uri: r.avatar }} style={styles.journalAvatar} /> : null}
+                    <ReviewerAvatar uri={r.avatar} name={r.name} style={styles.journalAvatar} />
                     <View style={{ marginLeft: 10 }}>
                       <Text style={styles.journalName}>{r.name || 'Traveller'}</Text>
                       <Text style={styles.journalMeta}>
@@ -376,7 +389,6 @@ export default function ConfirmBookingScreen({ route, navigation }) {
                 </>
               )}
             </TouchableOpacity>
-            <Text style={styles.footerNote}>{i18n.t('ui_you_won_t_be_charged_until_the_guide_acc')}</Text>
           </View>
 
           {/* Trust Footer */}
