@@ -410,5 +410,7 @@
   "weather_showers": "Showers",
   "weather_thunderstorm": "Thunderstorm",
   "weather_snow": "Snow",
-  "weather_rain_pct": "{{n}}% rain"
+  "weather_rain_pct": "{{n}}% rain",
+  "about_source": "Source: Wikipedia",
+  "getting_there": "Getting there"
 }

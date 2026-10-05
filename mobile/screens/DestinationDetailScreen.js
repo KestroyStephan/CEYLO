@@ -9,6 +9,8 @@ import ProgressiveImage from '../components/ProgressiveImage';
 import { destinationInsights } from '../services/aiClient';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { logEvent } from '../services/Analytics';
+import destinationsData from '../assets/data/ai_destinations.json';
+import { distanceKm } from '../services/ItineraryService';
 import { db, auth } from '../firebaseConfig';
 
 const { width } = Dimensions.get('window');
@@ -97,6 +99,13 @@ export default function DestinationDetailScreen({ route, navigation }) {
   const placeLat = Number(place.lat ?? place.coords?.latitude);
   const placeLon = Number(place.lon ?? place.coords?.longitude);
   const hasCoords = Number.isFinite(placeLat) && Number.isFinite(placeLon);
+  const nearbyPlaces = React.useMemo(() => (hasCoords
+    ? destinationsData
+        .filter(d => d.name !== place.name)
+        .map(d => ({ ...d, km: distanceKm(placeLat, placeLon, parseFloat(d.lat), parseFloat(d.lon)) }))
+        .sort((a, b) => a.km - b.km)
+        .slice(0, 4)
+    : []), [place.name, placeLat, placeLon]);
 
   // Saved and visited state for this place (FR-060, Eco Passport stamps)
   useEffect(() => {
@@ -211,6 +220,17 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
         {/* Content Section */}
         <View style={styles.content}>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{place.name || 'Destination'}</Text>
+              {aiData?.distance_from_hub ? <Text style={styles.subTitle}>{aiData.distance_from_hub}</Text> : null}
+            </View>
+            <Surface style={styles.ecoRing} elevation={2}>
+              <Text style={styles.ecoValue}>{place.ecoScore ?? '—'}</Text>
+              <Text style={styles.ecoLabel}>ECO</Text>
+            </Surface>
+          </View>
+
           {hasCoords && (
             <TouchableOpacity
               style={[styles.checkIn, checkedIn && styles.checkInDone]}
@@ -231,17 +251,6 @@ export default function DestinationDetailScreen({ route, navigation }) {
               </View>
             </TouchableOpacity>
           )}
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>{place.name || 'Destination'}</Text>
-              {aiData?.distance_from_hub ? <Text style={styles.subTitle}>{aiData.distance_from_hub}</Text> : null}
-            </View>
-            <Surface style={styles.ecoRing} elevation={2}>
-              <Text style={styles.ecoValue}>{place.ecoScore ?? '—'}</Text>
-              <Text style={styles.ecoLabel}>ECO</Text>
-            </Surface>
-          </View>
-
           {/* Tabs */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
             {TABS.map(tab => (
@@ -261,14 +270,30 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
           {!loading && activeTab === 'Overview' && (
             <View>
-              {/* AI Insights Section */}
-              <View style={styles.sectionHeader}>
-                <MaterialCommunityIcons name="robot-outline" size={24} color="#00695C" />
-                <Text style={styles.sectionTitle}>{i18n.t('ui_ai_insights')}</Text>
-              </View>
-              <Surface style={styles.aiCard} elevation={0}>
-                <Text style={styles.aiText}>{aiData?.ai_insight}</Text>
-              </Surface>
+              {/* About: the place's Wikipedia summary from the CEYLO dataset */}
+              {place.description && !/^(Explore the natural beauty|Discover the hidden beauty)/.test(place.description) ? (
+                <>
+                  <View style={styles.sectionHeader}>
+                    <MaterialCommunityIcons name="information-outline" size={24} color="#00695C" />
+                    <Text style={styles.sectionTitle}>{i18n.t('ui_about')}</Text>
+                  </View>
+                  <Text style={[styles.aiText, { marginBottom: 6 }]}>{place.description}</Text>
+                  <Text style={styles.sourceNote}>{i18n.t('about_source')}</Text>
+                </>
+              ) : null}
+
+              {/* AI Insights Section (hidden when the backend has no data for this place) */}
+              {aiData?.ai_insight && !/not in the CEYLO destination dataset/.test(aiData.ai_insight) ? (
+                <>
+                  <View style={styles.sectionHeader}>
+                    <MaterialCommunityIcons name="robot-outline" size={24} color="#00695C" />
+                    <Text style={styles.sectionTitle}>{i18n.t('ui_ai_insights')}</Text>
+                  </View>
+                  <Surface style={styles.aiCard} elevation={0}>
+                    <Text style={styles.aiText}>{aiData.ai_insight}</Text>
+                  </Surface>
+                </>
+              ) : null}
 
               {/* Quick Info Grid */}
               <View style={styles.quickInfoRow}>
@@ -277,7 +302,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
                     <MaterialCommunityIcons name="calendar-month-outline" size={16} color="#00695C" />
                     <Text style={styles.quickInfoLabel}>{i18n.t('ui_season')}</Text>
                   </View>
-                  <Text style={styles.quickInfoValue}>{aiData?.season || '—'}</Text>
+                  <Text style={styles.quickInfoValue}>{aiData?.season || place.seasonal_availability || '—'}</Text>
                   <Text style={styles.quickInfoSub}>{i18n.t('ui_from_the_ceylo_dataset')}</Text>
                 </Surface>
 
@@ -296,7 +321,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
                 <Surface style={styles.distanceBox} elevation={0}>
                   <MaterialCommunityIcons name="car" size={20} color="#FFF" style={styles.distanceIconBg} />
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.distanceLabel}>{i18n.t('ui_distance_from_your_location')}</Text>
+                    <Text style={styles.distanceLabel}>{place.coords && userLoc ? i18n.t('ui_distance_from_your_location') : i18n.t('getting_there')}</Text>
                     <Text style={styles.distanceValue}>
                       {place.coords && userLoc ? `${getDistance(userLoc.latitude, userLoc.longitude, place.coords.latitude, place.coords.longitude)} km away` : aiData?.distance_from_hub}
                     </Text>
@@ -305,32 +330,25 @@ export default function DestinationDetailScreen({ route, navigation }) {
                 </Surface>
               </TouchableOpacity>
 
-              {/* Explore Nearby Grid */}
-              <Text style={[styles.sectionTitle, { marginTop: 20 }]}>{i18n.t('ui_explore_nearby')}</Text>
-              <View style={styles.masonryGrid}>
-                {aiData?.explore_nearby && aiData.explore_nearby.length >= 3 && (
-                  <>
-                    {/* Large Left Item */}
-                    <View style={styles.masonryLeft}>
-                      <ProgressiveImage source={{ uri: aiData.explore_nearby[0].image }} style={styles.masonryImgLarge} />
-                      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.masonryGradient} />
-                      <Text style={styles.masonryTag}>{i18n.t('ui_recommended')}</Text>
-                      <Text style={styles.masonryTitle}>{aiData.explore_nearby[0].name}</Text>
-                    </View>
-
-                    {/* Right Stack */}
-                    <View style={styles.masonryRight}>
-                      <ProgressiveImage source={{ uri: aiData.explore_nearby[1].image }} style={styles.masonryImgSmall} />
-                      <View style={styles.masonryImgSmallWrapper}>
-                        <ProgressiveImage source={{ uri: aiData.explore_nearby[2].image }} style={styles.masonryImgSmall} />
-                        <View style={styles.pinOverlay}>
-                          <MaterialCommunityIcons name="map-marker" size={16} color="#FFF" />
+              {/* Explore Nearby: the closest real places in the CEYLO dataset */}
+              {nearbyPlaces.length > 0 && (
+                <>
+                  <Text style={[styles.sectionTitle, { marginTop: 20, marginBottom: 12 }]}>{i18n.t('ui_explore_nearby')}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                    {nearbyPlaces.map(n => (
+                      <TouchableOpacity key={n.destination_id} style={styles.nearbyCard} activeOpacity={0.85}
+                        onPress={() => navigation.push('DestinationDetail', { place: { ...n, ecoScore: Math.round(n.eco_score), coords: { latitude: parseFloat(n.lat), longitude: parseFloat(n.lon) } } })}>
+                        <ProgressiveImage source={{ uri: n.image }} style={styles.nearbyImg} />
+                        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.nearbyShade} />
+                        <View style={styles.nearbyText}>
+                          <Text style={styles.nearbyName} numberOfLines={2}>{n.name}</Text>
+                          <Text style={styles.nearbyMeta}>{n.km.toFixed(1)} km · {n.category}</Text>
                         </View>
-                      </View>
-                    </View>
-                  </>
-                )}
-              </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </>
+              )}
             </View>
           )}
 
@@ -460,6 +478,13 @@ const styles = StyleSheet.create({
   masonryImgSmall: { width: '100%', height: 100, borderRadius: 15 },
   masonryImgSmallWrapper: { position: 'relative', width: '100%', height: 100 },
   pinOverlay: { position: 'absolute', bottom: -5, right: 10, backgroundColor: '#FF5252', padding: 10, borderRadius: 20 },
+  nearbyCard: { width: 170, height: 200, borderRadius: 16, overflow: 'hidden', backgroundColor: '#D8DDD8' },
+  nearbyImg: { width: '100%', height: '100%' },
+  nearbyShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 },
+  nearbyText: { position: 'absolute', left: 10, right: 10, bottom: 10 },
+  nearbyName: { color: '#FFF', fontSize: 15, fontFamily: 'Outfit-Bold' },
+  nearbyMeta: { color: 'rgba(255,255,255,0.9)', fontSize: 11, fontFamily: 'Outfit-Medium', marginTop: 2 },
+  sourceNote: { fontSize: 11, color: '#6B7280', marginBottom: 16 },
   checkIn: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#E0F2F1', borderRadius: 16, padding: 14, marginTop: 6, marginBottom: 6 },
   checkInDone: { backgroundColor: '#E8F5E9' },
   checkInTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#004D40' },

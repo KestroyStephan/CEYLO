@@ -410,5 +410,7 @@
   "weather_showers": "மழைச் சாரல்",
   "weather_thunderstorm": "இடியுடன் மழை",
   "weather_snow": "பனி",
-  "weather_rain_pct": "{{n}}% மழை"
+  "weather_rain_pct": "{{n}}% மழை",
+  "about_source": "மூலம்: விக்கிப்பீடியா",
+  "getting_there": "செல்லும் வழி"
 }

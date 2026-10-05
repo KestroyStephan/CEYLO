@@ -410,5 +410,7 @@
   "weather_showers": "ඇද හැලෙන වැසි",
   "weather_thunderstorm": "ගිගුරුම් සහිත වැසි",
   "weather_snow": "හිම",
-  "weather_rain_pct": "වැසි {{n}}%"
+  "weather_rain_pct": "වැසි {{n}}%",
+  "about_source": "මූලාශ්‍රය: විකිපීඩියා",
+  "getting_there": "යන ආකාරය"
 }
