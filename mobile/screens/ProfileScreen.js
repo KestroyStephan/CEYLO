@@ -3,6 +3,7 @@ import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert, Linking, Platform, PixelRatio } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { setAnalyticsConsent } from '../services/Analytics';
+import { loadEcoStats, RANKS } from '../utils/ecoStats';
 import { Text, Surface } from 'react-native-paper';
 import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
@@ -21,6 +22,13 @@ export default function ProfileScreen({ navigation }) {
     const [reviewsCount, setReviewsCount] = useState(0);
     const [visitedCount, setVisitedCount] = useState(0);
     const [visitedPlaces, setVisitedPlaces] = useState([]);
+    const [eco, setEco] = useState(null);
+    const [avatarFailed, setAvatarFailed] = useState(false);
+
+    // Same activity-based eco points as Home and the Eco Passport
+    useEffect(() => {
+        if (user) loadEcoStats(user.uid).then(setEco).catch(() => {});
+    }, [user]);
 
     useEffect(() => {
         if (!user) return;
@@ -76,7 +84,7 @@ export default function ProfileScreen({ navigation }) {
                 <Feather name="menu" size={24} color="#004D40" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{t('explore_sri_lanka')}</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList', { filterType: 'all' })} accessibilityLabel="Browse destinations">
                 <Feather name="search" size={24} color="#004D40" />
             </TouchableOpacity>
         </View>
@@ -113,7 +121,8 @@ export default function ProfileScreen({ navigation }) {
     );
 
     // Real Data Fallbacks
-    const ecoPoints = userData?.ecoPoints || 0;
+    const ecoPoints = eco?.points ?? 0;
+    const level = eco ? RANKS.findIndex(r => r.name === eco.rank) + 1 : 1;
 
     return (
         <View style={styles.mainContainer}>
@@ -123,22 +132,27 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.profileSection}>
                     <View style={styles.avatarContainer}>
                         <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
-                            <Image
-                                source={{ uri: userData?.photoUrl || user?.photoURL || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80' }}
-                                style={styles.avatar}
-                            />
+                            {(userData?.photoUrl || user?.photoURL) && !avatarFailed ? (
+                                <Image source={{ uri: userData?.photoUrl || user?.photoURL }} style={styles.avatar} onError={() => setAvatarFailed(true)} />
+                            ) : (
+                                <View style={[styles.avatar, styles.avatarInitial]}>
+                                    <Text style={styles.avatarInitialText}>
+                                        {String(userData?.displayName || userData?.name || user?.displayName || 'T').trim().charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                            )}
                             <View style={styles.editAvatarBtn}>
                                 <Feather name="camera" size={14} color="#FFF" />
                             </View>
                         </TouchableOpacity>
                         <View style={styles.levelBadge}>
-                            <Text style={styles.levelText}>LVL {userData?.level || 1}</Text>
+                            <Text style={styles.levelText}>LVL {level}</Text>
                         </View>
                     </View>
                     <Text style={styles.name}>{userData?.displayName || user?.displayName || t('traveler')}</Text>
                     <View style={styles.ecoTag}>
                         <MaterialCommunityIcons name="leaf" size={16} color="#00897B" />
-                        <Text style={styles.ecoTagText}>{userData?.rank || t('eco_traveler')}</Text>
+                        <Text style={styles.ecoTagText}>{eco?.rank || t('eco_traveler')}</Text>
                     </View>
                     {userData?.bio ? <Text style={styles.bioText}>{userData.bio}</Text> : null}
                     <TouchableOpacity style={styles.editProfileBtn} onPress={() => navigation.navigate('EditProfile')}>
@@ -226,6 +240,8 @@ const styles = StyleSheet.create({
     profileSection: { alignItems: 'center', marginBottom: 25 },
     avatarContainer: { position: 'relative', marginBottom: 15 },
     avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: '#A7FFEB' },
+    avatarInitial: { backgroundColor: '#00695C', alignItems: 'center', justifyContent: 'center' },
+    avatarInitialText: { color: '#FFF', fontSize: 44, fontFamily: 'Outfit-Bold' },
     levelBadge: { position: 'absolute', bottom: 0, right: -5, backgroundColor: '#DAA520', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, borderWidth: 2, borderColor: '#FFF' },
     levelText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 10, letterSpacing: 0.5 },
     editAvatarBtn: { position: 'absolute', top: 0, right: -5, backgroundColor: '#00695C', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
