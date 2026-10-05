@@ -21,7 +21,10 @@ matches the code, a demo script, and likely questions.
 | Itineraries need a connection | Last 10 itineraries **cached on the phone** and opened offline (FR-012) | `ItineraryCache.js` |
 | Admin "AI Model Monitor" with hard-coded numbers | Real metrics, baseline comparison, live strategy statistics, model test tools, demand chart | `web/src/pages/AICenter.jsx` |
 | Offline navigation = Google offline maps / future work | **Offline route guidance (FR-021)**: road route + turn-by-turn steps fetched from OSRM while online and stored per itinerary; in-app Route Guide follows live GPS (next turn, distance and direction to next stop, arrival, off-route warning, re-centre) and shows downloaded tiles with no signal; "Save map offline" downloads only the tiles along the route | `RouteCache.js`, `RouteGuideScreen.js`, `offlineMapUtils.js` |
-| Only English | Main tourist screens (tabs, Home, chatbot, preferences, profile, consent, survey) in **English, Sinhala and Tamil** (145 keys each); chatbot replies stay English | `mobile/translations/*.json` |
+| Only English | Tourist screens (tabs, Home, chatbot, preferences, profile, consent, survey) and provider screens (vendor / guide / driver tabs, dashboards, ride requests, approval screens) in **English, Sinhala and Tamil** (241 keys each); chatbot replies stay English | `mobile/translations/*.json` |
+| Email or Google sign-in only (FR-001 partial) | **Phone-number sign-in**: the backend texts a 6-digit code (textbee), checks it (5-min expiry, 5 attempts, single use, resend limits) and returns a Firebase custom token; first sign-in creates a traveller account. `phoneVerified` can only be set for the number Firebase verified | `backend/phoneAuth.js`, `PhoneLoginScreen.js`, `firestore.rules` |
+| Any signed-in user could read any profile | **Private traveller profiles**: email, phone, preferences and consent readable only by the traveller and staff; guide / driver / business profiles stay public listings; push tokens moved to `push_tokens` | `firestore.rules` |
+| Dashboards with fixed figures (driver "LKR 12,500 / 14 trips / 92 %", guide "Top 5 %", "+12.5 %") | Driver earnings, trips and low-emission share from completed rides; guide level and paid bookings from real bookings | `DriverDashboard.native.js`, `GuideDashboard.js` |
 | Accessibility not addressed | Labels on 44 icon-only buttons, 21 grey text styles raised to WCAG AA, app follows the phone font size (Profile → Text size) | screens, `ProfileScreen.js` |
 | No consent / usage data | **Consent screen** on first launch (with "before" eco-awareness question), opt-out in Profile; **usage events** (recommendation shown, opened, edited, place viewed / saved / checked in, booking, event, alert, chat, SOS) tagged with the strategy group, no names stored | `ConsentScreen.js`, `services/Analytics.js` |
 | SUS on paper | **In-app research survey**: 10-item SUS + relevance, discovery, local-support and "after" eco-awareness questions; **rating card** on every itinerary | `ResearchSurveyScreen.js`, `ItineraryFeedback.js` |
@@ -53,7 +56,7 @@ the examiners will catch the mismatch.
 | Crowd forecast per destination | Shared LSTM, 12-month look-back | last 6 months vs same-month-last-year | **MAPE 3.6 %** (baseline 4.2 %) |
 
 Engineering checks: JavaScript inference reproduces Python exactly (tests); TFLite matches Keras
-to 7×10⁻⁸. **Tests:** 35 backend tests, 34 Firestore security-rule tests (emulator), 14 mobile unit
+to 7×10⁻⁸. **Tests:** 51 backend tests, 37 Firestore security-rule tests (emulator), 14 mobile unit
 tests (SUS scoring, offline route cache, map tiles), admin portal build — all run in GitHub Actions
 (`.github/workflows/ci.yml`).
 
@@ -117,7 +120,7 @@ under 3 s per strategy.
 - **5.5.8 In-memory heuristic** → **"Context-aware ranking"**: score = 0.5·model + 0.3·eco +
   0.2·mood category (weights per strategy), rain penalty 0.2 × rainy share for outdoor categories,
   crowd penalty 0.15 × forecast crowd when "Fewer crowds" is on.
-- **6.4** — add backend tests (35, incl. Python/JS parity), Firestore rules tests (34, emulator),
+- **6.4** — add backend tests (51, incl. Python/JS parity, phone sign-in, SMS, weather fallback), Firestore rules tests (37, emulator, incl. private profiles),
   mobile unit tests (14), CI on GitHub Actions, a **6.x Model Evaluation** subsection with table §2,
   and a **6.x Performance** subsection with the load-test table (NFR-005) and NFR-001 latency.
 - **6.x Evaluation method** — consent screen, usage events, in-app SUS and itinerary ratings,
@@ -129,9 +132,9 @@ under 3 s per strategy.
 - **7.4** — remove "Partial API-Key Isolation" and "dynamic LLM itinerary generation"; connectivity
   limitation now applies to the chatbot only.
 - **7.5** — move TFLite and offline route guidance from future work to done; new future work: real
-  interaction data to retrain, multilingual intent model (Sinhala/Tamil), phone-number OTP sign-up
-  (needs a native Firebase module), splitting profiles into public and private documents, translating
-  the vendor/guide/driver screens, a paid tile provider for nationwide offline maps.
+  interaction data to retrain, multilingual intent model (Sinhala/Tamil), translating the remaining
+  form screens (product, service and registration forms), a paid tile provider for nationwide offline
+  maps, a production SMS sender ID.
 
 ---
 
@@ -177,8 +180,13 @@ the TFLite file and tests.
   under 1.5 s (table above).
 - **Is the research data ethical?** Opt-in consent screen, opt-out in Profile, user id only (no
   name, email or phone), aggregated on the dashboard.
+- **How does phone sign-in work without Firebase's native phone auth?** The server generates the
+  code, stores only an HMAC of it, texts it through the gateway and, when it matches, creates a
+  Firebase custom token with the Admin SDK; the app signs in with `signInWithCustomToken`.
+- **Who can see my phone number?** Only you and staff: Firestore rules make traveller profiles
+  private; 37 rules tests cover it.
 - **What would you do next?** Collect real interaction data and retrain; Sinhala/Tamil intent
-  model; phone OTP; payment gateway.
+  model; payment gateway.
 
 ---
 
@@ -190,7 +198,10 @@ the TFLite file and tests.
   create an API key, then on Render set `TEXTBEE_API_KEY` and `SOS_DESK_NUMBER` (e.g. `+9477xxxxxxx`).
   Free plan: 50 SMS a day, 300 a month; the SMS costs whatever that SIM's plan charges.
   (Notify.lk still works instead: `SMS_PROVIDER=notifylk` plus `NOTIFY_LK_USER_ID`, `NOTIFY_LK_API_KEY`, `NOTIFY_LK_SENDER_ID`.)
-- [ ] Booking push needs FCM credentials in EAS; test one booking between two phones
+- [ ] Booking push: the phone registered a push token (FCM works); test one booking between two accounts
+- [ ] Phone sign-in: Firebase console → Project settings → Service accounts → *Generate new private key*;
+  on Render set `FIREBASE_SERVICE_ACCOUNT` to the file's contents (plain JSON or base64) — plus `TEXTBEE_API_KEY`
+- [ ] `firebase deploy --only firestore` again after pulling (private profiles, `push_tokens`, phone rule)
 - [ ] Ask 3–5 people to use the app and fill **Profile → Research survey**, so the SUS row has real data
 - [ ] Install the latest app on the phone and run the demo script once end to end
 - [ ] Generate 5–10 itineraries with different accounts so RQ3/NFR-001 tables have data
