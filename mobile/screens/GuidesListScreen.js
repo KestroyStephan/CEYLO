@@ -284,13 +284,8 @@ export default function GuidesListScreen({ navigation }) {
                 style={styles.certGradient}
               >
                 <MaterialCommunityIcons name="certificate-outline" size={36} color="rgba(255,255,255,0.4)" style={{ marginBottom: 8 }} />
-                <Text style={styles.certTitle}>Verified Eco-Certification</Text>
-                <Text style={styles.certBody}>
-                  Every guide in our network undergoes rigorous sustainability training and local heritage certification to ensure your journey gives back.
-                </Text>
-                <TouchableOpacity style={styles.certBtn}>
-                  <Text style={styles.certBtnText}>Learn about Certification</Text>
-                </TouchableOpacity>
+                <Text style={styles.certTitle}>{i18n.t('ui_how_guides_are_verified')}</Text>
+                <Text style={styles.certBody}>{i18n.t('ui_how_guides_are_verified_body')}</Text>
               </LinearGradient>
             </View>
           }

@@ -397,5 +397,7 @@
   "ui_no_reply_after_15_minutes": "මිනිත්තු 15 කින් පිළිතුරක් නැත",
   "ui_no_offline_maps_yet": "තවම නොබැඳි සිතියම් නැත",
   "ui_choose_your_vibe": "ඔබේ මනෝභාවය තෝරන්න",
-  "ui_find_your_eco_expert": "ඔබේ පරිසර විශේෂඥයා සොයන්න"
+  "ui_find_your_eco_expert": "ඔබේ පරිසර විශේෂඥයා සොයන්න",
+  "ui_how_guides_are_verified": "මඟපෙන්වන්නන් තහවුරු කරන ආකාරය",
+  "ui_how_guides_are_verified_body": "සෑම මඟපෙන්වන්නෙකුම තම SLTDA බලපත්‍රය සහ ජාතික හැඳුනුම්පත උඩුගත කරයි. වෙන්කිරීම් පිළිගැනීමට පෙර CEYLO කාර්ය මණ්ඩලය ඒවා පරීක්ෂා කරයි."
 }
