@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-05T09:02:01.533Z",
+  "base": "http://localhost:5055",
+  "node": "v22.18.0",
+  "results": [
+    {
+      "endpoint": "POST /api/recommend",
+      "connections": 500,
+      "seconds": 20,
+      "requests": 8745,
+      "perSecond": 437,
+      "latencyMsMean": 1113.94,
+      "latencyMsP50": 1131,
+      "latencyMsP97_5": 1342,
+      "latencyMsP99": 1406,
+      "errors": 0,
+      "timeouts": 0,
+      "non2xx": 0
+    },
+    {
+      "endpoint": "POST /api/chat",
+      "connections": 500,
+      "seconds": 20,
+      "requests": 12694,
+      "perSecond": 635,
+      "latencyMsMean": 774.75,
+      "latencyMsP50": 774,
+      "latencyMsP97_5": 1015,
+      "latencyMsP99": 1050,
+      "errors": 0,
+      "timeouts": 0,
+      "non2xx": 0
+    },
+    {
+      "endpoint": "GET /api/health",
+      "connections": 500,
+      "seconds": 20,
+      "requests": 58124,
+      "perSecond": 2907,
+      "latencyMsMean": 169.59,
+      "latencyMsP50": 35,
+      "latencyMsP97_5": 899,
+      "latencyMsP99": 943,
+      "errors": 0,
+      "timeouts": 0,
+      "non2xx": 0
+    }
+  ]
+}

@@ -64,8 +64,10 @@ async function requireStaff(req, res, next) {
     }
 }
 
-const apiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false });
-const aiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
+// Per-IP limits. A load test from one machine (loadtest/run.js) switches them off with DISABLE_RATE_LIMIT=1.
+const skipLimits = () => process.env.DISABLE_RATE_LIMIT === '1';
+const apiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false, skip: skipLimits });
+const aiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false, skip: skipLimits });
 app.use('/api/', apiLimiter);
 
 // Destinations staff paused in the admin portal are left out of recommendations.
