@@ -120,6 +120,7 @@ export default function ActiveRideScreen({ route, navigation }) {
       });
       notifyBooking(bookingId);
       stopLocationTracking();
+      updateDoc(doc(db, 'drivers', auth.currentUser.uid), { isBusy: false }).catch(() => {});
     } catch (error) {
       Alert.alert('Error', 'Failed to complete trip: ' + error.message);
     }

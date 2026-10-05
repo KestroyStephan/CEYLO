@@ -11,6 +11,9 @@ const { sendSms, isConfigured: smsConfigured } = require('./sms');
 const phoneAuth = require('./phoneAuth');
 
 const app = express();
+// Render (and most hosts) sit behind one proxy hop; without this every user shares the proxy's IP
+// and therefore one rate-limit bucket
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json({ limit: '200kb' }));
 
@@ -226,13 +229,49 @@ app.post('/api/push', requireAuth, requireStaff, async (req, res) => {
 // Booking notifications (Sprint 3). The booking is read with the caller's own token, so
 // Firestore rules guarantee the caller is part of it; the message is derived from the
 // booking's real status, never from the request body.
+// Firestore REST values -> plain JS (maps and arrays included)
+function fromFirestore(v) {
+    if (!v || typeof v !== 'object') return null;
+    if ('stringValue' in v) return v.stringValue;
+    if ('integerValue' in v) return Number(v.integerValue);
+    if ('doubleValue' in v) return Number(v.doubleValue);
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('timestampValue' in v) return v.timestampValue;
+    if ('nullValue' in v) return null;
+    if ('mapValue' in v) return Object.fromEntries(Object.entries(v.mapValue.fields || {}).map(([k, x]) => [k, fromFirestore(x)]));
+    if ('arrayValue' in v) return (v.arrayValue.values || []).map(fromFirestore);
+    return null;
+}
+
 async function readDoc(path, idToken) {
     const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
     if (!res.ok) return null;
     const data = await res.json();
-    return Object.fromEntries(Object.entries(data.fields || {}).map(([k, v]) => [k, v.stringValue ?? v.integerValue ?? v.doubleValue ?? v.booleanValue ?? null]));
+    return Object.fromEntries(Object.entries(data.fields || {}).map(([k, v]) => [k, fromFirestore(v)]));
 }
+
+// Online drivers of one vehicle type (drivers are readable by any signed-in user)
+async function onlineDrivers(vehicleType, idToken) {
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const body = { structuredQuery: {
+        from: [{ collectionId: 'drivers' }],
+        where: { compositeFilter: { op: 'AND', filters: [
+            { fieldFilter: { field: { fieldPath: 'isOnline' }, op: 'EQUAL', value: { booleanValue: true } } },
+            { fieldFilter: { field: { fieldPath: 'vehicleType' }, op: 'EQUAL', value: { stringValue: vehicleType } } },
+        ] } },
+        limit: 200,
+    } };
+    const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return rows.filter(r => r.document).map(r => ({
+        id: r.document.name.split('/').pop(),
+        ...Object.fromEntries(Object.entries(r.document.fields || {}).map(([k, v]) => [k, fromFirestore(v)])),
+    }));
+}
+
+const { nearbyDrivers: nearbyForPickup } = require('./dispatch');
 
 function bookingMessage(booking, callerIsTraveller) {
     const kind = booking.driverId !== undefined || booking.vehicleType ? 'ride' : 'tour';
@@ -261,6 +300,26 @@ app.post('/api/notify-booking', requireAuth, async (req, res) => {
         if (!callerIsTraveller && req.uid !== provider) return res.status(403).json({ error: 'Not part of this booking' });
         const recipient = callerIsTraveller ? provider : traveller;
         const message = bookingMessage(booking, callerIsTraveller);
+        // A new ride request goes to free online drivers of that vehicle type near the pickup
+        if (callerIsTraveller && !provider && booking.vehicleType && String(booking.status).toLowerCase() === 'pending') {
+            const drivers = nearbyForPickup(await onlineDrivers(booking.vehicleType, req.idToken), booking.pickupCoords);
+            const tokens = [];
+            for (const d of drivers.slice(0, 20)) {
+                const t = (await readDoc(`push_tokens/${d.id}`, req.idToken))?.token;
+                if (t && String(t).startsWith('ExponentPushToken')) tokens.push({ t, km: d.km });
+            }
+            if (!tokens.length) return res.json({ sent: 0, nearbyDrivers: drivers.length });
+            const price = booking.price ? ` · LKR ${Number(booking.price).toLocaleString()}` : '';
+            const messages = tokens.map(({ t, km }) => ({
+                to: t, sound: 'default', title: `New ${booking.vehicleType} request`,
+                body: `Pickup ${km.toFixed(1)} km away${price}. Open CEYLO to accept.`,
+                data: { type: 'ride_request', bookingId },
+            }));
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(messages),
+            });
+            return res.json({ sent: messages.length, nearbyDrivers: drivers.length });
+        }
         if (!recipient || !message) return res.json({ sent: 0 });
         // Tokens live in push_tokens (travellers' profiles are private); older accounts only in users
         const tokenDoc = await readDoc(`push_tokens/${recipient}`, req.idToken);

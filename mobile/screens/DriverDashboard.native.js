@@ -8,7 +8,8 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { signOut } from 'firebase/auth';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { startLocationTracking } from '../services/DriverLocationService';
+import { startLocationTracking, startAvailability, stopAvailability } from '../services/DriverLocationService';
+import { requestsForDriver, acceptRide, RideTakenError, MATCH_RADIUS_KM } from '../utils/rideDispatch';
 import { notifyBooking } from '../services/aiClient';
 
 const { width } = Dimensions.get('window');
@@ -23,6 +24,26 @@ export default function DriverDashboard({ navigation }) {
   const [driverName, setDriverName] = useState('Driver');
   const [driverData, setDriverData] = useState(null);
   const [accepting, setAccepting] = useState(null);
+  const [driverPos, setDriverPos] = useState(null);
+  const [now, setNow] = useState(Date.now());
+
+  // Share an approximate position while online so riders see nearby cars and requests can be matched
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !isOnline) {
+      stopAvailability();
+      return undefined;
+    }
+    startAvailability(uid, setDriverPos);
+    const tick = setInterval(() => setNow(Date.now()), 20000);
+    return () => {
+      clearInterval(tick);
+      stopAvailability();
+    };
+  }, [isOnline]);
+
+  // Only fresh requests near this driver, nearest first
+  const visibleRequests = requestsForDriver(rideRequests, driverPos, now);
 
   useEffect(() => {
     (async () => {
@@ -108,6 +129,7 @@ export default function DriverDashboard({ navigation }) {
     try {
       await updateDoc(doc(db, 'drivers', auth.currentUser.uid), {
         isOnline: value,
+        ...(value ? {} : { isBusy: false }),
       });
     } catch (error) {
       setIsOnline(!value); // revert on failure
@@ -118,11 +140,9 @@ export default function DriverDashboard({ navigation }) {
   const handleAcceptFromDashboard = async (bookingId) => {
     setAccepting(bookingId);
     try {
-      await updateDoc(doc(db, 'bookings', bookingId), {
-        driverId: auth.currentUser.uid,
-        status: 'Confirmed',
-        acceptedAt: new Date().toISOString(),
-      });
+      // Atomic claim: fails cleanly if another driver accepted first or the rider cancelled
+      await acceptRide(bookingId, auth.currentUser.uid);
+      await updateDoc(doc(db, 'drivers', auth.currentUser.uid), { isBusy: true }).catch(() => {});
       notifyBooking(bookingId);
       startLocationTracking(auth.currentUser.uid, bookingId);
       // Navigate to Ride tab (tab index 2 in DriverNavigator)
@@ -131,7 +151,8 @@ export default function DriverDashboard({ navigation }) {
         fromDashboard: true 
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to accept: ' + error.message);
+      if (error instanceof RideTakenError) Alert.alert('Ride taken', error.message);
+      else Alert.alert('Error', 'Failed to accept: ' + error.message);
     } finally {
       setAccepting(null);
     }
@@ -217,13 +238,14 @@ export default function DriverDashboard({ navigation }) {
               </View>
             </View>
 
-            {rideRequests.length === 0 ? (
+            {visibleRequests.length === 0 ? (
               <View style={styles.scanningState}>
                 <Ionicons name="radio-outline" size={32} color="#6F7A70" />
                 <Text style={styles.scanningText}>{t('d_scanning')}</Text>
+                <Text style={[styles.scanningText, { fontSize: 12, marginTop: 4 }]}>Requests within {MATCH_RADIUS_KM} km of you appear here</Text>
               </View>
             ) : (
-              rideRequests.map((request) => (
+              visibleRequests.map((request) => (
                 <View key={request.id} style={styles.requestItem}>
                   <View style={styles.requestRoute}>
                     <Ionicons name="ellipse" size={8} color="#006A3B" />
@@ -238,9 +260,16 @@ export default function DriverDashboard({ navigation }) {
                     </Text>
                   </View>
                   <View style={styles.requestFooter}>
-                    <Text style={styles.requestPrice}>
-                      LKR {request.price?.toLocaleString() || 'TBD'}
-                    </Text>
+                    <View>
+                      <Text style={styles.requestPrice}>
+                        LKR {request.price?.toLocaleString() || 'TBD'}
+                      </Text>
+                      {request.km != null && (
+                        <Text style={{ fontSize: 12, color: '#3F4941', marginTop: 2 }}>
+                          {request.km.toFixed(1)} km to pickup · ~{request.eta} min
+                        </Text>
+                      )}
+                    </View>
                     <TouchableOpacity
                       style={styles.acceptButton}
                       onPress={() => handleAcceptFromDashboard(request.id)}

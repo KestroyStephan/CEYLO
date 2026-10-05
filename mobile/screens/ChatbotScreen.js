@@ -314,7 +314,7 @@ export default function ChatbotScreen({ navigation, route }) {
       {canGenerate && (
         <Button
           mode="contained"
-          icon="sparkles"
+          icon="creation"
           onPress={generateItinerary}
           style={styles.genBtn}
           loading={loading}

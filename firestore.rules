@@ -99,17 +99,22 @@ service cloud.firestore {
                request.auth.uid == data.get('vendorId', null) ||
                request.auth.uid == data.get('guideId', null);
       }
+      // Ride requests carry a vehicleType; guide and vendor bookings do not
+      function isOpenRide(data) {
+        return data.status == 'pending' && ('vehicleType' in data) && data.get('driverId', null) == null;
+      }
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow read:   if isSignedIn() && (
         isParticipant(resource.data) ||
         isAdmin() ||
-        (isDriver() && resource.data.status == 'pending')
+        (isDriver() && isOpenRide(resource.data))
       );
       allow update: if isSignedIn() && (
         isParticipant(resource.data) ||
         isAdmin() ||
-        // a driver may claim an open ride for themselves
-        (isDriver() && resource.data.status == 'pending' && request.resource.data.driverId == request.auth.uid)
+        // a driver may claim an open ride for themselves (never a guide booking)
+        (isDriver() && isOpenRide(resource.data) && request.resource.data.driverId == request.auth.uid
+          && request.resource.data.status == 'Confirmed')
       );
     }
 

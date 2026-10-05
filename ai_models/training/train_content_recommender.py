@@ -57,6 +57,11 @@ def user_features(moods, eco_preference, budget, trip_days, month):
     return f
 
 
+# Places without a Google rating get the median rating as a model input (median imputation);
+# set from the dataset in main() and exported as ratingImpute so the app and backend match
+RATING_IMPUTE = 4.5
+
+
 def destination_features(d, month, n_dest):
     """Same order as destinationFeatures() in recommenderModel.js."""
     f = [1.0 if d['category'] == c else 0.0 for c in CATEGORIES]
@@ -64,7 +69,8 @@ def destination_features(d, month, n_dest):
     f += [float(d[x]) / 100 for x in ECO_FEATURES]
     f.append(1.0 if str(d['carrying_capacity_adherence']) in ('True', 'true', '1') else 0.0)
     f.append(1 - (int(d['popularity_rank']) - 1) / (n_dest - 1))
-    f.append(float(d['avg_rating']) / 5)
+    rating = d['avg_rating']
+    f.append((RATING_IMPUTE if pd.isnull(rating) or rating == '' else float(rating)) / 5)
     f.append(1.0 if str(d['hidden_gem']) in ('True', 'true', '1') else 0.0)
     f.append(in_season(d['seasonal_availability'], month))
     return f
@@ -117,7 +123,10 @@ def train_content_recommender(out_dirs=None):
     out_dirs = out_dirs or [os.path.join(ROOT, 'backend', 'models'), os.path.join(ROOT, 'mobile', 'assets', 'data')]
 
     print('Training content-based recommender...')
-    dests = pd.read_csv(os.path.join(DATASETS, 'destinations.csv')).to_dict('records')
+    global RATING_IMPUTE
+    dest_df = pd.read_csv(os.path.join(DATASETS, 'destinations.csv'))
+    RATING_IMPUTE = round(float(dest_df['avg_rating'].median()), 2)
+    dests = dest_df.to_dict('records')
     dest_by_id = {d['destination_id']: d for d in dests}
     dest_ids = [d['destination_id'] for d in dests]
     n_dest = len(dests)
@@ -266,6 +275,7 @@ def train_content_recommender(out_dirs=None):
         'trained': TODAY,
         'moods': MOODS, 'budgets': BUDGETS, 'categories': CATEGORIES, 'ecoFeatures': ECO_FEATURES,
         'destinationCount': n_dest,
+        'ratingImpute': RATING_IMPUTE,
         'tflite': {'file': 'assets/models/content_recommender.tflite', 'batch': n_dest, 'features': int(n_features)},
         'layers': [{'w': r(l.get_weights()[0]), 'b': r(l.get_weights()[1]), 'activation': l.get_config()['activation']} for l in dense],
         'checks': checks,

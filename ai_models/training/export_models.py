@@ -251,13 +251,33 @@ def eco_version():
 
 
 # ---------------------------------------------------------------- datasets the backend serves
+def build_app_destinations():
+    """mobile/assets/data/ai_destinations.json from destinations.csv (real places, photos, descriptions)."""
+    df = pd.read_csv(os.path.join(DATASETS, 'destinations.csv'), keep_default_na=False)
+    rows = []
+    for d in df.to_dict('records'):
+        rows.append({
+            'destination_id': d['destination_id'], 'name': d['name'], 'category': d['category'],
+            'province': d['province'], 'lat': str(d['lat']), 'lon': str(d['lon']),
+            'hidden_gem': str(d['hidden_gem']) == 'True',
+            'avg_rating': str(d['avg_rating']), 'popularity_rank': str(d['popularity_rank']),
+            'seasonal_availability': d['seasonal_availability'],
+            **{f: str(d[f]) for f in ECO_FEATURES if f != 'carrying_capacity_adherence'},
+            'carrying_capacity_adherence': str(d['carrying_capacity_adherence']),
+            'eco_score': float(d['eco_score']), 'image': d['image'], 'description': d['description'],
+            'google_reviews': int(d['google_reviews'] or 0), 'wikidata': d['wikidata'],
+        })
+    write_json(os.path.join(ROOT, 'mobile', 'assets', 'data', 'ai_destinations.json'), rows)
+    print(f'  ai_destinations.json: {len(rows)} places')
+
+
 def copy_datasets(rf, crowd):
     print('Copying datasets for the backend (with eco model scores and crowd forecast)...')
     src = os.path.join(ROOT, 'mobile', 'assets', 'data')
     with open(os.path.join(src, 'ai_destinations.json'), encoding='utf-8') as f:
         dests = json.load(f)
     keep = ['destination_id', 'name', 'category', 'province', 'lat', 'lon', 'hidden_gem', 'avg_rating',
-            'popularity_rank', 'seasonal_availability', 'eco_score', 'image'] + ECO_FEATURES
+            'popularity_rank', 'seasonal_availability', 'eco_score', 'image', 'description', 'google_reviews'] + ECO_FEATURES
 
     # Batch-score every destination with the eco model and record which model did it
     X = pd.DataFrame([{f: (1 if str(d[f]) == 'True' else 0) if f == 'carrying_capacity_adherence' else float(d[f])
@@ -292,5 +312,6 @@ if __name__ == '__main__':
         'crowd': crowd_metrics,
     }}
     write_json(os.path.join(OUT_MODELS, 'metrics.json'), metrics)
+    build_app_destinations()
     copy_datasets(rf, crowd)
     print('Done.')

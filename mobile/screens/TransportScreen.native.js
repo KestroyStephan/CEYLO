@@ -11,6 +11,9 @@ import * as Location from 'expo-location';
 import { doc, addDoc, collection, onSnapshot, getDoc, serverTimestamp, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { calculateDistance, estimateFare, estimateAllFares } from '../utils/fareCalculator';
+import { nearbyDrivers, REQUEST_TTL_MS, MATCH_RADIUS_KM } from '../utils/rideDispatch';
+import { notifyBooking } from '../services/aiClient';
+import { logEvent } from '../services/Analytics';
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -45,6 +48,24 @@ export default function TransportScreen({ route, navigation }) {
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [canTouristCancel, setCanTouristCancel] = useState(true);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [onlineDrivers, setOnlineDrivers] = useState([]);
+  const [now, setNow] = useState(Date.now());
+  const [ratingFor, setRatingFor] = useState(null);     // completed booking waiting for a rating
+  const [myRating, setMyRating] = useState(0);
+  const [driverRating, setDriverRating] = useState(null);
+  const expiryTimer = useRef(null);
+  useEffect(() => () => clearTimeout(expiryTimer.current), []);
+
+  // Online drivers and their approximate positions (PickMe-style cars on the map)
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, 'drivers'), where('isOnline', '==', true)), (snap) => {
+      setOnlineDrivers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (e) => console.log('Online drivers unavailable:', e.message));
+    const tick = setInterval(() => setNow(Date.now()), 30000);
+    return () => { unsub(); clearInterval(tick); };
+  }, []);
+  const nearby = nearbyDrivers(onlineDrivers, pickupCoords, null, now);
+  const nearbyByType = (type) => nearby.filter(d => d.vehicleType === type);
 
   const mapRef = useRef(null);
   const demoDriverTimer = useRef(null);
@@ -142,6 +163,7 @@ export default function TransportScreen({ route, navigation }) {
 
         if (data.status === 'Confirmed' && data.driverId) {
           clearTimeout(demoDriverTimer.current);
+          clearTimeout(expiryTimer.current);
           setBookingStep('driverAssigned');
           // Fetch driver details
           if (data.demoDriver) {
@@ -151,10 +173,26 @@ export default function TransportScreen({ route, navigation }) {
             if (driverSnap.exists()) {
               setAssignedDriver(driverSnap.data());
             }
+            // Driver's rating from riders' reviews
+            getDocs(query(collection(db, 'reviews'), where('driverId', '==', data.driverId)))
+              .then(rs => {
+                const vals = rs.docs.map(r => Number(r.data().rating)).filter(Boolean);
+                setDriverRating(vals.length ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null);
+              })
+              .catch(() => setDriverRating(null));
           }
         }
 
+        if (data.status === 'Expired') {
+          setBookingStep('vehicleSelect');
+          setActiveBookingId(null);
+          setActiveBooking(null);
+          Alert.alert('No driver yet', 'No nearby driver accepted in time. Try again, or choose another vehicle type.');
+          return;
+        }
+
         if (data.status === 'Cancelled') {
+          clearTimeout(expiryTimer.current);
           setBookingStep('input');
           setActiveBookingId(null);
           setActiveBooking(null);
@@ -167,11 +205,10 @@ export default function TransportScreen({ route, navigation }) {
           setActiveBookingId(null);
           setActiveBooking(null);
           setAssignedDriver(null);
-          Alert.alert(
-            'Ride Completed!',
-            `Total Fare: LKR ${data.finalFare?.toLocaleString() || data.price?.toLocaleString()}`,
-            [{ text: 'OK' }]
-          );
+          // Ask for a driver rating (shown as a card on the map screen)
+          setRatingFor({ id: snap.id, driverId: data.driverId, fare: data.finalFare || data.price });
+          setMyRating(0);
+          logEvent('ride_completed', { bookingId: snap.id, vehicleType: data.vehicleType });
         }
       }
     );
@@ -423,6 +460,10 @@ export default function TransportScreen({ route, navigation }) {
   };
 
   const handleBookRide = async () => {
+    if (!pickupCoords || !dropoffCoords) {
+      Alert.alert('Choose a destination', 'Set where you are going first.');
+      return;
+    }
     try {
       // Fetch the user's phone from users collection
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -441,10 +482,27 @@ export default function TransportScreen({ route, navigation }) {
         dropoffCoords: dropoffCoords,
         vehicleType: selectedVehicle, // matches driver filtered query
         price: estimatedFares[selectedVehicle],
+        routeDistanceKm: routeInfo?.distanceValue ? Math.round(routeInfo.distanceValue / 100) / 10 : null,
+        routeDurationMin: routeInfo?.durationMin || null,
         createdAt: serverTimestamp(),
       });
       setActiveBookingId(bookingRef.id);
       setBookingStep('searching');
+      logEvent('ride_requested', { bookingId: bookingRef.id, vehicleType: selectedVehicle, nearbyDrivers: nearbyByType(selectedVehicle).length });
+      // The backend pushes the request to online drivers of this type near the pickup
+      notifyBooking(bookingRef.id);
+      // Nobody accepted in time: expire the request so no driver can take a stale ride
+      clearTimeout(expiryTimer.current);
+      expiryTimer.current = setTimeout(async () => {
+        try {
+          const latest = await getDoc(bookingRef);
+          if (latest.exists() && latest.data().status === 'pending') {
+            await updateDoc(bookingRef, { status: 'Expired', expiredAt: new Date().toISOString() });
+          }
+        } catch (e) {
+          console.log('Could not expire the request:', e.message);
+        }
+      }, REQUEST_TTL_MS);
 
       // Demo builds only (EXPO_PUBLIC_DEMO_MODE=true): if no real driver accepts within 15s,
       // assign a clearly-labelled demo driver so the ride flow can be presented.
@@ -481,6 +539,7 @@ export default function TransportScreen({ route, navigation }) {
 
   const handleCancelBooking = async () => {
     clearTimeout(demoDriverTimer.current);
+    clearTimeout(expiryTimer.current);
     if (activeBookingId) {
       try {
         await updateDoc(doc(db, 'bookings', activeBookingId), {
@@ -546,17 +605,24 @@ export default function TransportScreen({ route, navigation }) {
         <Text style={[styles.vPrice, isSelected && { color: '#FFF' }]}>
           LKR {estimatedFares[item.id] ? estimatedFares[item.id].toLocaleString() : '...'}
         </Text>
+        <Text style={[styles.vEta, isSelected && { color: '#FFF' }]}>
+          {nearbyByType(item.id).length ? `${nearbyByType(item.id).length} near · ${nearbyByType(item.id)[0].eta} min` : 'None nearby'}
+        </Text>
       </TouchableOpacity>
     );
   };
 
+  // Resolves the destination and shows the vehicle choice with fares and nearby drivers
   const handleFindRide = async () => {
     try {
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, timeout: 10000 });
-      const currentLat = loc.coords.latitude;
-      const currentLng = loc.coords.longitude;
-      setPickupCoords({ latitude: currentLat, longitude: currentLng });
-      const pickupStr = `${currentLat},${currentLng}`;
+      let pick = pickupCoords;
+      if (!pick) {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        pick = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+        setPickupCoords(pick);
+      }
+      const currentLat = pick.latitude;
+      const currentLng = pick.longitude;
 
       let destLat, destLng;
       if (dropoffCoords) {
@@ -586,49 +652,12 @@ export default function TransportScreen({ route, navigation }) {
         setRouteInfo({ distance: distanceKm.toFixed(1), duration: durationMins });
       }
 
-      const price = Math.round((150 + distanceKm * 80) / 50) * 50;
-      const bookingRef = await addDoc(collection(db, 'bookings'), {
-        userId: auth.currentUser.uid,
-        userName: auth.currentUser.displayName || auth.currentUser.email || 'Tourist',
-        pickup: pickupStr,
-        dropoff: dropAddress,
-        pickupLat: currentLat,
-        pickupLng: currentLng,
-        dropoffLat: destLat,
-        dropoffLng: destLng,
-        status: 'pending',
-        price: price,
-        createdAt: serverTimestamp(),
-        driverId: null,
-      });
-      setActiveBookingId(bookingRef.id);
-
-      const q = query(collection(db, 'users'), where('role', '==', 'driver'), where('isOnline', '==', true));
-      const querySnapshot = await getDocs(q);
-      const messages = [];
-      querySnapshot.forEach((docSnap) => {
-        const token = docSnap.data().expoPushToken;
-        if (token) {
-          messages.push({
-            to: token,
-            sound: 'default',
-            title: 'New Ride Request',
-            body: `Pickup nearby to ${dropAddress}`,
-          });
-        }
-      });
-      if (messages.length > 0) {
-        await fetch('https://exp.host/--/api/v2/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(messages),
-        });
-      }
-
-      setBookingStep('searching');
+      const km = distanceKm || calculateDistance(currentLat, currentLng, destLat, destLng);
+      setEstimatedFares(estimateAllFares(km));
+      setBookingStep('vehicleSelect');
     } catch (error) {
       console.error('Find Ride Error:', error);
-      Alert.alert('Error', 'Failed to request ride.');
+      Alert.alert('Error', 'Could not plan this ride. Check the destination and your connection.');
     }
   };
 
@@ -663,10 +692,22 @@ export default function TransportScreen({ route, navigation }) {
                 distance: `${result.distance.toFixed(1)} km`,
                 duration: `${Math.ceil(result.duration)} mins`,
                 distanceValue: result.distance * 1000,
+                durationMin: Math.ceil(result.duration),
               });
+              // Fares follow the road distance, not the straight line
+              setEstimatedFares(estimateAllFares(result.distance));
             }}
           />
         )}
+
+        {/* Nearby online drivers (positions rounded to ~100 m) */}
+        {(bookingStep === 'input' || bookingStep === 'vehicleSelect' || bookingStep === 'searching') && nearby.map(d => (
+          <Marker key={d.id} coordinate={{ latitude: d.location.latitude, longitude: d.location.longitude }} title={`${d.vehicleType || 'Driver'} · ~${d.eta} min`}>
+            <View style={styles.nearbyCar}>
+              <Ionicons name={d.vehicleType === 'Bike' ? 'bicycle' : 'car'} size={14} color="#FFF" />
+            </View>
+          </Marker>
+        ))}
 
         {/* Pickup marker */}
         {pickupCoords && (
@@ -839,6 +880,11 @@ export default function TransportScreen({ route, navigation }) {
               </View>
             </Animated.View>
             <Text style={styles.loadingText}>{i18n.t('ui_searching_for_nearby_drivers')}</Text>
+            <Text style={{ fontSize: 13, color: '#3F4941', marginBottom: 8, textAlign: 'center' }}>
+              {nearbyByType(selectedVehicle).length
+                ? `Offered to ${nearbyByType(selectedVehicle).length} ${selectedVehicle} driver${nearbyByType(selectedVehicle).length > 1 ? 's' : ''} within ${MATCH_RADIUS_KM} km`
+                : `No ${selectedVehicle} drivers online near you right now. We'll keep looking for 3 minutes.`}
+            </Text>
             <Button mode="outlined" style={styles.cancelBtn} textColor="#BA1A1A" onPress={handleCancelBooking}>
               Cancel Request
             </Button>
@@ -869,6 +915,7 @@ export default function TransportScreen({ route, navigation }) {
                   </Text>
                   <Text style={styles.driverVehicle}>
                     {assignedDriver?.vehicleType} • {assignedDriver?.licensePlate}
+                    {driverRating ? `  •  ★ ${driverRating.avg.toFixed(1)} (${driverRating.n})` : '  •  New driver'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -886,6 +933,11 @@ export default function TransportScreen({ route, navigation }) {
                 </Text>
               </View>
             </View>
+
+            <TouchableOpacity style={styles.rideSos} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
+              <Ionicons name="warning" size={16} color="#FFF" />
+              <Text style={styles.rideSosText}>SOS</Text>
+            </TouchableOpacity>
 
             {/* Cancel button — with half-way restriction */}
             {canTouristCancel && (
@@ -908,12 +960,50 @@ export default function TransportScreen({ route, navigation }) {
             )}
           </>
         )}
+        {ratingFor && (
+          <View style={styles.rateCard}>
+            <Text style={styles.rateTitle}>Trip complete · LKR {Number(ratingFor.fare || 0).toLocaleString()}</Text>
+            <Text style={styles.rateSub}>How was your driver?</Text>
+            <View style={styles.rateStars}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <TouchableOpacity key={n} onPress={() => setMyRating(n)} accessibilityLabel={`${n} stars`}>
+                  <Ionicons name={n <= myRating ? 'star' : 'star-outline'} size={34} color={n <= myRating ? '#F5A623' : '#B0BEC5'} />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button mode="text" onPress={() => setRatingFor(null)}>Skip</Button>
+              <Button mode="contained" buttonColor="#006A3B" disabled={!myRating} onPress={async () => {
+                const r = ratingFor;
+                setRatingFor(null);
+                try {
+                  await addDoc(collection(db, 'reviews'), {
+                    type: 'ride', bookingId: r.id, driverId: r.driverId || null,
+                    touristId: auth.currentUser.uid, name: auth.currentUser.displayName || 'Rider',
+                    rating: myRating, createdAt: serverTimestamp(),
+                  });
+                  await updateDoc(doc(db, 'bookings', r.id), { riderRating: myRating });
+                } catch (e) {
+                  console.log('Rating not saved:', e.message);
+                }
+              }}>Submit</Button>
+            </View>
+          </View>
+        )}
       </Surface>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  nearbyCar: { backgroundColor: '#1B2B28', borderRadius: 12, padding: 5, borderWidth: 2, borderColor: '#FFF' },
+  vEta: { fontSize: 11, color: '#3F4941', marginTop: 2, fontFamily: 'Outfit-Medium' },
+  rideSos: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: '#C62828', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, marginTop: 10 },
+  rideSosText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 },
+  rateCard: { backgroundColor: '#FFF', borderRadius: 18, padding: 16, marginTop: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E0F2F1' },
+  rateTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#1B2B28' },
+  rateSub: { fontSize: 13, color: '#3F4941', marginTop: 4 },
+  rateStars: { flexDirection: 'row', gap: 6, marginVertical: 10 },
   container: { flex: 1, backgroundColor: '#F6FBF3' },
   mainHeading: {
     fontSize: 28, fontWeight: '800', color: '#181D19',

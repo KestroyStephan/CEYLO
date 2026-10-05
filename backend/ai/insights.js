@@ -79,7 +79,9 @@ function insightsFor({ id, name, lat, lon, category, province }) {
 
     const sentences = [];
     if (d) {
-        sentences.push(`${d.name} is a ${d.category.toLowerCase()} destination in ${d.province}, rated ${d.avg_rating}/5 by travellers.`);
+        sentences.push(Number(d.avg_rating)
+            ? `${d.name} is a ${d.category.toLowerCase()} destination in ${d.province}, rated ${d.avg_rating}/5 on Google.`
+            : `${d.name} is a ${d.category.toLowerCase()} destination in ${d.province}.`);
         if (d.hidden_gem) sentences.push('It is one of CEYLO\'s hidden gems, away from the busiest tourist routes.');
         if (eco) {
             const strongest = eco.factors[0];

@@ -132,8 +132,8 @@ describe('bookings', () => {
   test('a driver can claim an open ride for themselves but not for another driver', async () => {
     await seed({
       'users/d1': { role: 'driver_active' },
-      'bookings/r1': { userId: 't1', driverId: null, status: 'pending' },
-      'bookings/r2': { userId: 't1', driverId: null, status: 'pending' },
+      'bookings/r1': { userId: 't1', driverId: null, status: 'pending', vehicleType: 'Car' },
+      'bookings/r2': { userId: 't1', driverId: null, status: 'pending', vehicleType: 'Car' },
     });
     await assertSucceeds(getDoc(doc(as('d1'), 'bookings', 'r1')));
     await assertSucceeds(updateDoc(doc(as('d1'), 'bookings', 'r1'), { driverId: 'd1', status: 'Confirmed' }));
@@ -152,6 +152,20 @@ describe('vendors and drivers', () => {
     await assertSucceeds(setDoc(doc(as('v2'), 'vendors', 'v2'), { businessName: 'Tea Stall', status: 'pending_verification' }));
     await assertSucceeds(updateDoc(doc(as('v2'), 'users', 'v2'), { role: 'vendor_pending', status: 'pending_verification' }));
     await assertFails(updateDoc(doc(as('v2'), 'users', 'v2'), { role: 'vendor_active' }));
+  });
+
+  test('drivers can see and claim open rides but never guide bookings', async () => {
+    await seed({
+      'users/d1': { role: 'driver_active' }, 'users/d2': { role: 'driver_active' }, 'users/t1': { role: 'tourist' },
+      'bookings/ride1': { userId: 't1', status: 'pending', vehicleType: 'Tuk', driverId: null, price: 450 },
+      'bookings/guide1': { userId: 't1', touristId: 't1', type: 'guide', guideId: 'g1', status: 'pending' },
+    });
+    await assertSucceeds(getDoc(doc(as('d1'), 'bookings', 'ride1')));
+    await assertFails(getDoc(doc(as('d1'), 'bookings', 'guide1')));
+    await assertFails(updateDoc(doc(as('d1'), 'bookings', 'guide1'), { driverId: 'd1', status: 'Confirmed' }));
+    await assertSucceeds(updateDoc(doc(as('d1'), 'bookings', 'ride1'), { driverId: 'd1', status: 'Confirmed' }));
+    // Second driver is too late
+    await assertFails(updateDoc(doc(as('d2'), 'bookings', 'ride1'), { driverId: 'd2', status: 'Confirmed' }));
   });
 
   test('a vendor registers as pending and cannot approve themselves', async () => {

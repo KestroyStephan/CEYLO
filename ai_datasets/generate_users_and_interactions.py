@@ -73,7 +73,7 @@ def generate_interactions(users, destinations, num_interactions=10000):
         if event_type == 'booked' and random.random() > 0.5:
             event_type = 'reviewed'
             # Give rating based on destination average rating roughly
-            base_rating = float(dest['avg_rating'])
+            base_rating = float(dest['avg_rating']) if dest['avg_rating'] else 4.5   # median for unrated places
             rating = min(5, max(1, int(random.gauss(base_rating, 0.5))))
             
         interactions.append({
@@ -137,6 +137,11 @@ def generate_time_series_bookings(destinations):
 if __name__ == "__main__":
     dests = load_destinations()
     if dests:
+        random.seed(42)
         users = generate_users(1000)
         generate_interactions(users, dests, 25000)
-        generate_time_series_bookings(dests)
+        # Demand now comes from real daily Wikipedia page views (build_real_destinations.py);
+        # pass --synthetic-demand to regenerate the old random series instead
+        import sys
+        if '--synthetic-demand' in sys.argv:
+            generate_time_series_bookings(dests)

@@ -87,7 +87,7 @@ export default function HiddenGemsListScreen({ navigation, route }) {
           province: gem.province,
           image: gem.image || 'https://images.unsplash.com/photo-1563290231-155097486e9b',
           ecoScore: Math.round(gem.eco_score || 80),
-          rating: parseFloat(gem.avg_rating) || 4.0,
+          rating: parseFloat(gem.avg_rating) || 0,   // unrated places sort last
           coords: { latitude: gemLat, longitude: gemLon }
         };
       });

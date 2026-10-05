@@ -69,7 +69,7 @@ function destinationFeatures(model, d, month) {
   model.ecoFeatures.forEach(x => f.push(Number(d[x]) / 100));
   f.push(truthy(d.carrying_capacity_adherence) ? 1 : 0);
   f.push(1 - (parseInt(d.popularity_rank, 10) - 1) / (model.destinationCount - 1));
-  f.push(Number(d.avg_rating) / 5);
+  f.push((Number(d.avg_rating) || model.ratingImpute || 4.5) / 5);   // median for unrated places
   f.push(truthy(d.hidden_gem) ? 1 : 0);
   f.push(inSeasonMonth(d.seasonal_availability, month));
   return f;

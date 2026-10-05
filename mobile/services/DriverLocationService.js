@@ -40,3 +40,46 @@ export function stopLocationTracking() {
     locationSubscription = null;
   }
 }
+
+// ---------------------------------------------------------------- availability while online
+// While a driver is online their approximate position (about 100 m, rounded for privacy) is kept
+// on drivers/{uid}.location so riders see nearby cars and only nearby drivers get requests.
+let availabilitySubscription = null;
+
+export async function startAvailability(driverId, onPosition) {
+  stopAvailability();
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') return false;
+  const publish = async (coords) => {
+    onPosition && onPosition({ latitude: coords.latitude, longitude: coords.longitude });
+    try {
+      await updateDoc(doc(db, 'drivers', driverId), {
+        location: {
+          latitude: Math.round(coords.latitude * 1000) / 1000,
+          longitude: Math.round(coords.longitude * 1000) / 1000,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (e) {
+      console.log('Availability update failed:', e.message);
+    }
+  };
+  try {
+    const first = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    await publish(first.coords);
+  } catch (e) {
+    console.log('No first position:', e.message);
+  }
+  availabilitySubscription = await Location.watchPositionAsync(
+    { accuracy: Location.Accuracy.Balanced, timeInterval: 30000, distanceInterval: 100 },
+    (loc) => publish(loc.coords),
+  );
+  return true;
+}
+
+export function stopAvailability() {
+  if (availabilitySubscription) {
+    availabilitySubscription.remove();
+    availabilitySubscription = null;
+  }
+}

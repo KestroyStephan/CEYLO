@@ -29,16 +29,16 @@ const TOWNS = [
     ['Hikkaduwa', 6.1395, 80.1063, 'Southern Province'], ['Bentota', 6.4210, 80.0000, 'Southern Province'],
     ['Weligama', 5.9667, 80.4167, 'Southern Province'], ['Matara', 5.9549, 80.5550, 'Southern Province'],
     ['Tangalle', 6.0240, 80.7946, 'Southern Province'], ['Hambantota', 6.1241, 81.1185, 'Southern Province'],
-    ['Yala', 6.3728, 81.5016, 'Southern Province'], ['Sigiriya', 7.9570, 80.7603, 'North Central Province'],
+    ['Yala', 6.3728, 81.5016, 'Uva Province'], ['Sigiriya', 7.9570, 80.7603, 'Central Province'],
     ['Habarana', 8.0350, 80.7490, 'North Central Province'], ['Minneriya', 8.0360, 80.9000, 'North Central Province'],
     ['Anuradhapura', 8.3114, 80.4037, 'North Central Province'], ['Polonnaruwa', 7.9403, 81.0188, 'North Central Province'],
     ['Trincomalee', 8.5874, 81.2152, 'Eastern Province'], ['Pasikudah', 7.9290, 81.5610, 'Eastern Province'],
     ['Batticaloa', 7.7310, 81.6747, 'Eastern Province'], ['Arugam Bay', 6.8400, 81.8360, 'Eastern Province'],
     ['Jaffna', 9.6615, 80.0255, 'Northern Province'], ['Mannar', 8.9770, 79.9040, 'Northern Province'],
     ['Kalpitiya', 8.2333, 79.7667, 'North Western Province'], ['Kurunegala', 7.4863, 80.3647, 'North Western Province'],
-    ['Wilpattu', 8.4560, 80.0130, 'North Western Province'], ['Ratnapura', 6.6828, 80.3992, 'Sabaragamuwa Province'],
-    ['Sinharaja', 6.4000, 80.5000, 'Sabaragamuwa Province'], ['Udawalawe', 6.4740, 80.8880, 'Sabaragamuwa Province'],
-    ['Kitulgala', 6.9890, 80.4170, 'Sabaragamuwa Province'], ["Adam's Peak", 6.8096, 80.4994, 'Sabaragamuwa Province'],
+    ['Wilpattu', 8.4560, 80.0130, 'North Central Province'], ['Ratnapura', 6.6828, 80.3992, 'Sabaragamuwa Province'],
+    ['Sinharaja', 6.4000, 80.5000, 'Southern Province'], ['Udawalawe', 6.4740, 80.8880, 'Sabaragamuwa Province'],
+    ['Kitulgala', 6.9890, 80.4170, 'Sabaragamuwa Province'], ["Adam's Peak", 6.8096, 80.4994, 'Central Province'],
 ].map(([name, lat, lon, province]) => ({ name, lat, lon, province }));
 
 const PROVINCES = [...new Set(destinations.map(d => d.province))];

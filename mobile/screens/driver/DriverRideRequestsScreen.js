@@ -104,6 +104,7 @@ export default function DriverRideRequestsScreen() {
         completedAt: new Date().toISOString(),
         finalFare: activeRide.price,
       });
+      updateDoc(doc(db, 'drivers', auth.currentUser.uid), { isBusy: false }).catch(() => {});
       notifyBooking(activeRide.id);
       Alert.alert(
         'Trip Completed!',
@@ -127,6 +128,7 @@ export default function DriverRideRequestsScreen() {
         cancelReason: cancelReason,
         cancelledAt: new Date().toISOString(),
       });
+      updateDoc(doc(db, 'drivers', auth.currentUser.uid), { isBusy: false }).catch(() => {});
       notifyBooking(activeRide.id);
       stopLocationTracking();
       setCancelDialogVisible(false);

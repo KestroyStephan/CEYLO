@@ -236,7 +236,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
               <Text style={styles.itemTitle}>{item.title || item.activity}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <IconButton accessibilityLabel="Suggest a greener alternative"
-                  icon="sparkles"
+                  icon="leaf-circle-outline"
                   iconColor="#FF7043"
                   size={16}
                   style={{ margin: 0 }}
@@ -253,8 +253,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
               <Chip style={[styles.ecoChip, { backgroundColor: (item.eco || 80) >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>
                 {item.eco || 80}% ECO
               </Chip>
-              <Chip icon="currency-usd" style={styles.feeChip} textStyle={{ fontSize: 10 }}>{item.fee || 'Free'}</Chip>
-              <MaterialCommunityIcons name={item.transport === 'walk' ? 'walk' : 'taxi'} size={18} color="#00695C" />
+              {item.category ? <Chip style={styles.feeChip} textStyle={{ fontSize: 10 }}>{item.category}</Chip> : null}
             </View>
           </View>
         </Surface>
