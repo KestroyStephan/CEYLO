@@ -63,7 +63,6 @@ import GuidesListScreen from './screens/GuidesListScreen';
 import MessageScreen from './screens/MessageScreen';
 
 import GuideProfileScreen from './screens/GuideProfileScreen';
-import ReviewBookingScreen from './screens/ReviewBookingScreen';
 import ConfirmBookingScreen from './screens/ConfirmBookingScreen';
 import GuidePendingScreen from './screens/onboarding/GuidePendingScreen';
 import WaitingApprovalScreen from './screens/WaitingApprovalScreen';
@@ -277,7 +276,6 @@ export default function App() {
                 <Stack.Screen name="SOSScreen" component={SOSScreen} />
                 <Stack.Screen name="GuidesList" component={GuidesListScreen} />
                 <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
-                <Stack.Screen name="ReviewBooking" component={ReviewBookingScreen} />
                 <Stack.Screen name="ConfirmBooking" component={ConfirmBookingScreen} />
                 <Stack.Screen name="WaitingApproval" component={WaitingApprovalScreen} />
                 <Stack.Screen name="MessageScreen" component={MessageScreen} />

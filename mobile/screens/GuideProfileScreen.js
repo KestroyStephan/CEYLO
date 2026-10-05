@@ -26,7 +26,11 @@ export default function GuideProfileScreen({ route, navigation }) {
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  const stars = guide.rating || 4.8;
+  // Rating from this guide's reviews (falls back to the profile's stored rating; none means "New")
+  const reviewAvg = reviews.length
+    ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length
+    : (Number(guide.rating) || null);
+  const stars = reviewAvg || 0;
 
   React.useEffect(() => {
     if (auth.currentUser) {
@@ -167,12 +171,12 @@ export default function GuideProfileScreen({ route, navigation }) {
               {[1,2,3,4,5].map(s => (
                 <MaterialCommunityIcons
                   key={s}
-                  name={s <= Math.round(guide.rating || 4.8) ? 'star' : 'star-outline'}
+                  name={s <= Math.round(stars) ? 'star' : 'star-outline'}
                   size={18}
                   color="#FFD700"
                 />
               ))}
-              <Text style={styles.ratingNum}>{(guide.rating || 4.8).toFixed(1)}</Text>
+              <Text style={styles.ratingNum}>{reviewAvg ? `${reviewAvg.toFixed(1)} (${reviews.length})` : 'New'}</Text>
             </View>
           </View>
 

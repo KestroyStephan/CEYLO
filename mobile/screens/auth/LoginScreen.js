@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, ScrollView, Alert, TextInput, StatusBar, Dimensions } from 'react-native';
 import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
@@ -8,6 +8,7 @@ import { auth, db } from '../../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { phoneSignInAvailable } from '../../services/aiClient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,6 +31,11 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [phoneReady, setPhoneReady] = useState(false);
+
+  useEffect(() => {
+    phoneSignInAvailable().then(setPhoneReady);
+  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -216,8 +222,8 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.googleBtnText}>Continue with Google</Text>
             </TouchableOpacity>
 
-            {/* Continue with phone number (FR-001) */}
-            <TouchableOpacity
+            {/* Continue with phone number (FR-001), shown once the server can send codes */}
+            {phoneReady && <TouchableOpacity
               style={[styles.googleBtn, { marginTop: 12 }]}
               activeOpacity={0.85}
               onPress={() => navigation.navigate('PhoneLogin')}
@@ -226,7 +232,7 @@ export default function LoginScreen({ navigation }) {
             >
               <MaterialCommunityIcons name="cellphone" size={20} color="#00695C" style={{ marginRight: 10 }} />
               <Text style={styles.googleBtnText}>Continue with phone number</Text>
-            </TouchableOpacity>
+            </TouchableOpacity>}
           </View>
 
           {/* ── Create Account ── */}

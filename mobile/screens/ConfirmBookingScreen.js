@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, StyleSheet, ScrollView, Image, TouchableOpacity,
   Alert, StatusBar, Dimensions, TextInput
 } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
 import { logEvent } from '../services/Analytics';
 import { notifyBooking } from '../services/aiClient';
 import { db, auth } from '../firebaseConfig';
@@ -21,13 +21,12 @@ const PICKUP_OPTIONS = [
   'Custom Location',
 ];
 
-const EXPEDITION_REVIEWS = [
-  { id: 1, name: 'Sarah Jenkins', country: 'UK', date: "May '24", quote: '"Arjuna\'s knowledge is unmatched.', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100' },
-  { id: 2, name: 'Arjun M.', country: 'India', date: "Apr '24", quote: '"Life-changing eco experience!', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100' },
-];
+// Eco levy added to every guided tour (carbon offset), shown as its own line
+const ECO_LEVY_RATE = 0.07;
 
 function buildCalendar(year, month) {
-  const firstDay = new Date(year, month, 1).getDay();
+  // The header starts on Monday; getDay() counts from Sunday
+  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = Array(firstDay).fill(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
@@ -46,6 +45,18 @@ export default function ConfirmBookingScreen({ route, navigation }) {
   const [pickupIdx, setPickupIdx] = useState(0);
   const [showPickupDropdown, setShowPickupDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reviews, setReviews] = useState([]);
+
+  // This guide's real reviews (same collection the guide profile uses)
+  useEffect(() => {
+    if (!guide?.id) return undefined;
+    return onSnapshot(query(collection(db, 'reviews'), where('guideId', '==', guide.id)), (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setReviews(list.slice(0, 5));
+    }, (e) => console.log('Guide reviews unavailable:', e.message));
+  }, [guide?.id]);
+  const reviewAvg = reviews.length ? reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviews.length : Number(guide?.rating) || 0;
 
   const todayDay = today.getDate();
   const todayMonth = today.getMonth();
@@ -53,7 +64,9 @@ export default function ConfirmBookingScreen({ route, navigation }) {
   const DAYS_HEADER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
   const calCells = buildCalendar(calYear, calMonth);
 
-  const BOOKED_DAYS = [6, 13, 20]; // mock booked days
+  // Days the guide marked as unavailable (GuideAvailabilityScreen stores YYYY-MM-DD)
+  const unavailable = new Set(guide?.unavailableDates || []);
+  const dateKey = (day) => `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   const isCurrent = calMonth === todayMonth;
 
   // Find base rate from offeredServices or fallback
@@ -62,11 +75,12 @@ export default function ConfirmBookingScreen({ route, navigation }) {
     minServicePrice = Math.min(...guide.offeredServices.map(s => s.price));
   }
   
-  const baseRatePerPerson = parseFloat(minServicePrice || guide?.packageCost || 45);
+  // The guide's lowest service price (or package cost) per person; unknown prices are agreed in chat
+  const baseRatePerPerson = parseFloat(minServicePrice || guide?.packageCost) || 0;
+  const hasPrice = baseRatePerPerson > 0;
   const baseTotal = (baseRatePerPerson * explorers).toFixed(2);
-  const carbonOffset = (baseRatePerPerson * explorers * 0.07).toFixed(2);
-  const originalTotal = (parseFloat(baseTotal) + parseFloat(carbonOffset) + 15).toFixed(2);
-  const finalTotal = (parseFloat(originalTotal) * 0.92).toFixed(2);
+  const carbonOffset = (baseRatePerPerson * explorers * ECO_LEVY_RATE).toFixed(2);
+  const finalTotal = (parseFloat(baseTotal) + parseFloat(carbonOffset)).toFixed(2);
 
   const monthName = new Date(calYear, calMonth).toLocaleString('default', { month: 'long' });
 
@@ -79,19 +93,20 @@ export default function ConfirmBookingScreen({ route, navigation }) {
     try {
       const bookingRef = await addDoc(collection(db, 'bookings'), {
         type: 'guide',
-        guideId: guide?.id || 'demo',
-        guideName: guide?.name || 'Arjuna Perera',
-        guideSpecialization: guide?.specializations || 'Sinharaja Rainforest Specialist',
+        guideId: guide?.id,
+        guideName: guide?.name || 'Guide',
+        guideSpecialization: guide?.specializations || null,
         touristId: auth.currentUser.uid,
         userId: auth.currentUser.uid,
         touristName: auth.currentUser.displayName || 'Explorer',
         touristPhoto: auth.currentUser.photoURL || null,
         status: 'pending',
-        packageCost: minServicePrice || guide?.packageCost || '45',
+        packageCost: hasPrice ? baseRatePerPerson : null,
         explorers,
         selectedDate: `${selectedDate} ${monthName} ${calYear}`,
         pickupLocation: PICKUP_OPTIONS[pickupIdx],
-        totalAmount: parseFloat(finalTotal),
+        totalAmount: hasPrice ? parseFloat(finalTotal) : null,
+        bookingDate: dateKey(selectedDate),
         ecoLevy: parseFloat(carbonOffset),
         createdAt: serverTimestamp(),
       });
@@ -100,7 +115,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
       notifyBooking(bookingRef.id);
       navigation.replace('WaitingApproval', {
         bookingId: bookingRef.id,
-        guideName: guide?.name || 'Arjuna Perera',
+        guideName: guide?.name || 'your guide',
         guidePhoto: guide?.photoUrl,
       });
     } catch (e) {
@@ -146,20 +161,20 @@ export default function ConfirmBookingScreen({ route, navigation }) {
             />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <View style={styles.guideTitleRow}>
-                <Text style={styles.guideName}>{guide?.name || 'Arjuna Perera'}</Text>
+                <Text style={styles.guideName}>{guide?.name || 'Guide'}</Text>
                 <MaterialCommunityIcons name="check-decagram" size={16} color="#006A3B" />
               </View>
-              <Text style={styles.guideSpec}>{guide?.specializations || 'Sinharaja Rainforest Specialist'}</Text>
+              <Text style={styles.guideSpec}>{guide?.specializations || 'Local tour guide'}</Text>
               <View style={styles.starsRow}>
                 {[...Array(5)].map((_, i) => (
-                  <MaterialCommunityIcons key={i} name="star" size={13} color={i < Math.floor(guide?.rating || 4.9) ? '#FFCA28' : '#DDD'} />
+                  <MaterialCommunityIcons key={i} name="star" size={13} color={i < Math.round(reviewAvg) ? '#FFCA28' : '#DDD'} />
                 ))}
-                <Text style={styles.guideReviewCount}> ({guide?.reviewCount || 128})</Text>
+                <Text style={styles.guideReviewCount}> {reviews.length ? `${reviewAvg.toFixed(1)} (${reviews.length})` : 'New guide'}</Text>
               </View>
             </View>
             {/* Eco Ring */}
             <View style={styles.ecoRing}>
-              <Text style={styles.ecoRingNum}>{guide?.ecoScore || 94}</Text>
+              <Text style={styles.ecoRingNum}>{guide?.ecoScore ?? '-'}</Text>
             </View>
           </View>
 
@@ -191,7 +206,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
                 if (!cell) return <View key={`e-${i}`} style={styles.calCell} />;
                 const isToday = isCurrent && cell === todayDay;
                 const isSelected = cell === selectedDate;
-                const isBooked = BOOKED_DAYS.includes(cell);
+                const isBooked = unavailable.has(dateKey(cell));
                 return (
                   <TouchableOpacity
                     key={i}
@@ -270,30 +285,35 @@ export default function ConfirmBookingScreen({ route, navigation }) {
             )}
           </View>
 
-          {/* Expedition Journals */}
-          <Text style={styles.expTitle}>Recent Expedition Journals</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            {EXPEDITION_REVIEWS.map(r => (
-              <View key={r.id} style={styles.journalCard}>
-                <View style={styles.journalHeader}>
-                  <Image source={{ uri: r.avatar }} style={styles.journalAvatar} />
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={styles.journalName}>{r.name}</Text>
-                    <Text style={styles.journalMeta}>{r.country} • {r.date}</Text>
+          {/* Reviews from travellers who booked this guide */}
+          <Text style={styles.expTitle}>Traveller Reviews</Text>
+          {reviews.length === 0 ? (
+            <Text style={[styles.journalMeta, { marginBottom: 16 }]}>No reviews yet for this guide.</Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {reviews.map(r => (
+                <View key={r.id} style={styles.journalCard}>
+                  <View style={styles.journalHeader}>
+                    {r.avatar ? <Image source={{ uri: r.avatar }} style={styles.journalAvatar} /> : null}
+                    <View style={{ marginLeft: 10 }}>
+                      <Text style={styles.journalName}>{r.name || 'Traveller'}</Text>
+                      <Text style={styles.journalMeta}>
+                        {'★'.repeat(Math.round(Number(r.rating) || 0))}{r.createdAt?.toDate ? ` • ${r.createdAt.toDate().toLocaleDateString()}` : ''}
+                      </Text>
+                    </View>
                   </View>
+                  <Text style={styles.journalQuote} numberOfLines={3}>{r.text || r.comment || ''}</Text>
                 </View>
-                <Text style={styles.journalQuote}>{r.quote}</Text>
-              </View>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          )}
 
           {/* Total Footer */}
           <View style={styles.totalRow}>
             <View>
               <Text style={styles.totalLabel}>Total for {explorers} Explorer{explorers > 1 ? 's' : ''}</Text>
               <View style={styles.priceRow}>
-                <Text style={styles.originalPrice}>${originalTotal}</Text>
-                <Text style={styles.finalPrice}>${finalTotal}</Text>
+                <Text style={styles.finalPrice}>{hasPrice ? `$${finalTotal}` : 'Agreed with guide'}</Text>
               </View>
             </View>
             <View style={styles.carbonBadge}>

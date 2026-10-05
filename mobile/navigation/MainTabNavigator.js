@@ -12,7 +12,6 @@ import ProfileScreen from '../screens/ProfileScreen';
 
 import GuidesListScreen from '../screens/GuidesListScreen';
 import GuideProfileScreen from '../screens/GuideProfileScreen';
-import ReviewBookingScreen from '../screens/ReviewBookingScreen';
 import ConfirmBookingScreen from '../screens/ConfirmBookingScreen';
 import WaitingApprovalScreen from '../screens/WaitingApprovalScreen';
 import MessageScreen from '../screens/MessageScreen';
@@ -28,7 +27,6 @@ function TouristHomeStack() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="GuidesList" component={GuidesListScreen} />
             <Stack.Screen name="GuideProfile" component={GuideProfileScreen} />
-            <Stack.Screen name="ReviewBooking" component={ReviewBookingScreen} />
             <Stack.Screen name="ConfirmBooking" component={ConfirmBookingScreen} />
             <Stack.Screen name="WaitingApproval" component={WaitingApprovalScreen} />
             <Stack.Screen name="MessageScreen" component={MessageScreen} />
