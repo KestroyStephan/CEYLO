@@ -5,11 +5,8 @@
 // outline:#6F7A70 outlineVariant:#BECABE
 
 import React, { useState, useRef } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Image, StatusBar,
-  Dimensions, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, StatusBar, Dimensions, Platform } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Ionicons } from '@expo/vector-icons';
 import { Svg, Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
@@ -138,7 +135,7 @@ export default function AddNewProductScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: BG }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoider style={{ flex: 1, backgroundColor: BG }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
@@ -304,7 +301,7 @@ export default function AddNewProductScreen({ navigation }) {
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

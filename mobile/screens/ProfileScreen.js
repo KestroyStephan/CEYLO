@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
 import i18n from '../i18n';
 import { Text, Surface } from 'react-native-paper';
@@ -10,6 +11,7 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
+  useStatusBarStyle('dark-content');
     const user = auth.currentUser;
     const [userData, setUserData] = useState(null);
     const [itinerariesCount, setItinerariesCount] = useState(0);

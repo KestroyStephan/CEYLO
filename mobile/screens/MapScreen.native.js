@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, Dimensions, Animated, TouchableOpacity, Image, Platform, ScrollView, ActivityIndicator, Modal, Alert, Linking, TextInput } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections, LocalTile } from '../components/Map';
 import NetInfo from '@react-native-community/netinfo';
@@ -15,6 +16,7 @@ const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 
 export default function MapScreen({ navigation }) {
+  useStatusBarStyle('dark-content');
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
   const [location, setLocation] = useState(null);

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View, StyleSheet, ScrollView, TouchableOpacity, Alert,
-  KeyboardAvoidingView, Platform, TextInput, StatusBar, Image
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, StatusBar, Image } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebaseConfig';
@@ -116,7 +114,7 @@ export default function GuideOnboardingScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoider
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
@@ -334,7 +332,7 @@ export default function GuideOnboardingScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

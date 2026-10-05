@@ -75,6 +75,7 @@ import VendorNavigator from './navigation/VendorNavigator';
 import VendorRegistrationScreen from './screens/vendor/VendorRegistrationScreen';
 import VendorPendingScreen from './screens/vendor/VendorPendingScreen';
 import { warmUpBackend } from './services/aiClient';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Driver approval gate
 import DriverPendingScreen from './screens/driver/DriverPendingScreen';
@@ -207,6 +208,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
       <PaperProvider theme={theme}>
         <NavigationContainer
           ref={navigationRef}
@@ -289,6 +291,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

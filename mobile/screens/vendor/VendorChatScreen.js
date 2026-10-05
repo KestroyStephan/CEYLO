@@ -5,10 +5,8 @@
 // outline:#6F7A70 outlineVariant:#BECABE
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Image, StatusBar,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Platform, ActivityIndicator, Image, StatusBar } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db, storage } from '../../firebaseConfig';
@@ -138,7 +136,7 @@ export default function VendorChatScreen({ route }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{flex:1,backgroundColor:BG}} behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={0}>
+    <KeyboardAvoider style={{flex:1,backgroundColor:BG}} behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={0}>
       <StatusBar barStyle="dark-content"/>
 
       {/* Header */}
@@ -184,7 +182,7 @@ export default function VendorChatScreen({ route }) {
           <Ionicons name="send" size={18} color="#FFF"/>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

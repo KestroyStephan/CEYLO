@@ -1,4 +1,5 @@
 import React from 'react';
+import useTabBarStyle from '../utils/useTabBarStyle';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,20 +12,15 @@ import DriverProfileScreen from '../screens/driver/DriverProfileScreen';
 const Tab = createBottomTabNavigator();
 
 export default function DriverNavigator() {
+  const tabBarStyle = useTabBarStyle({ backgroundColor: 'rgba(246,251,243,0.95)', borderTopWidth: 0, elevation: 8 });
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#006A3B',
         tabBarInactiveTintColor: 'rgba(63,73,65,0.4)',
-        tabBarStyle: {
-          backgroundColor: 'rgba(246,251,243,0.95)',
-          borderTopWidth: 0,
-          elevation: 8,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
+        tabBarHideOnKeyboard: true,
+        tabBarStyle,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarIcon: ({ color, size }) => {
           const icons = {

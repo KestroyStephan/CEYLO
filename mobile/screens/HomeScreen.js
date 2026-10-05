@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, RefreshControl, ImageBackground, Image, Modal, FlatList } from 'react-native';
 import { Text, Surface, Card, Avatar } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +36,7 @@ const COLORS = {
 };
 
 export default function HomeScreen({ navigation }) {
+  useStatusBarStyle('dark-content');
   const { t } = useTranslation();
   const [userName, setUserName] = useState('Traveler');
   const [refreshing, setRefreshing] = useState(false);

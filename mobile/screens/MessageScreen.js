@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View, StyleSheet, KeyboardAvoidingView, Platform,
-  TextInput, TouchableOpacity, FlatList, ActivityIndicator,
-  Text, SafeAreaView
-} from 'react-native';
+import { View, StyleSheet, Platform, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Text, SafeAreaView } from 'react-native';
+import KeyboardAvoider from '../components/KeyboardAvoider';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -79,7 +76,7 @@ export default function MessageScreen({ route, navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoider 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
@@ -116,7 +113,7 @@ export default function MessageScreen({ route, navigation }) {
             <MaterialCommunityIcons name="send" size={20} color="#FFF" />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </SafeAreaView>
   );
 }

@@ -5,6 +5,7 @@
 // outline:#6F7A70 outlineVariant:#BECABE
 
 import React, { useEffect, useState } from 'react';
+import useTabBarStyle from '../utils/useTabBarStyle';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -33,21 +34,20 @@ const INACTIVE  = 'rgba(63,73,65,0.4)';
 const BG_NAV    = 'rgba(246,251,243,0.95)';
 
 function VendorTabs() {
+  const tabBarStyle = useTabBarStyle({
+    backgroundColor: BG_NAV,
+    borderTopWidth: 0.5,
+    borderTopColor: '#BECABE',
+    position: 'absolute',
+  });
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: PRIMARY,
         tabBarInactiveTintColor: INACTIVE,
-        tabBarStyle: {
-          height: 68,
-          paddingBottom: 12,
-          paddingTop: 8,
-          backgroundColor: BG_NAV,
-          borderTopWidth: 0.5,
-          borderTopColor: '#BECABE',
-          position: 'absolute',
-        },
+        tabBarHideOnKeyboard: true,
+        tabBarStyle,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarIcon: ({ color, size, focused }) => {
           const icons = {

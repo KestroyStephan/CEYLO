@@ -1,4 +1,5 @@
 import React from 'react';
+import useTabBarStyle from '../utils/useTabBarStyle';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; // Using Expo's vector icons
@@ -37,20 +38,19 @@ function TouristHomeStack() {
 }
 
 export default function MainTabNavigator() {
+    const tabBarStyle = useTabBarStyle({
+        backgroundColor: '#FFF',
+        borderTopWidth: 1,
+        borderTopColor: '#EEE',
+    });
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
+                tabBarHideOnKeyboard: true,
                 tabBarActiveTintColor: '#00695C',
                 tabBarInactiveTintColor: 'gray',
-                tabBarStyle: {
-                    height: 65,
-                    paddingBottom: 12,
-                    paddingTop: 8,
-                    backgroundColor: '#FFF',
-                    borderTopWidth: 1,
-                    borderTopColor: '#EEE',
-                },
+                tabBarStyle,
                 tabBarLabelStyle: {
                     fontFamily: 'Outfit-Medium',
                     fontSize: 11,

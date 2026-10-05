@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, FlatList, Alert, Image } from 'react-native';
+import useStatusBarStyle from '../utils/useStatusBarStyle';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, FlatList, Alert, Image, Keyboard } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import KeyboardAvoider from '../components/KeyboardAvoider';
 import { Text, TextInput, Avatar, IconButton, Surface, Chip, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -109,6 +112,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
 ));
 
 export default function ChatbotScreen({ navigation, route }) {
+  useStatusBarStyle('light-content');
   const { i18n } = useTranslation();
   const [messages, setMessages] = useState([
     { id: '1', text: "Ayubowan! I'm Ceylo, your spirit guide through the island. Where shall we begin your journey?", sender: 'bot' }
@@ -123,7 +127,7 @@ export default function ChatbotScreen({ navigation, route }) {
     mood: null
   });
 
-  const hudAnim = useRef(new Animated.Value(-100)).current;
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef();
   const inputRef = useRef(null);
 
@@ -163,12 +167,13 @@ export default function ChatbotScreen({ navigation, route }) {
     fetchUserMood();
   }, []);
 
+  // Keep the newest message visible when the keyboard opens
   useEffect(() => {
-    // Animate HUD in when valid data exists
-    if (extractedState.destination || extractedState.mood) {
-      Animated.spring(hudAnim, { toValue: 0, useNativeDriver: true }).start();
-    }
-  }, [extractedState]);
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+    });
+    return () => sub.remove();
+  }, []);
 
   const handleSend = async (text = inputText) => {
     if (!text.trim() || loading) return;
@@ -254,39 +259,43 @@ export default function ChatbotScreen({ navigation, route }) {
   ), [handleSpeak, handleSendCallback, handleSetDestination]);
 
   const lastMessage = messages[messages.length - 1];
+  const showHud = Boolean(extractedState.destination || extractedState.days || extractedState.mood);
   const canGenerate = lastMessage.isFinal || (extractedState.days && (extractedState.destination || extractedState.mood));
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-      <LinearGradient colors={['#004D40', '#00695C']} style={styles.topBar}>
+    <KeyboardAvoider behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+      <LinearGradient colors={['#004D40', '#00695C']} style={[styles.topBar, { paddingTop: insets.top + 14 }]}>
         <Text style={styles.barTitle}>Ceylo AI Concierge</Text>
       </LinearGradient>
 
-      <Animated.View style={[styles.hud, { transform: [{ translateY: hudAnim }] }]}>
-        <Surface style={styles.hudCard} elevation={3}>
+      {showHud && (
+      <View style={styles.hud}>
+        <Surface style={styles.hudCard} elevation={2}>
           <View style={styles.hudRow}>
             <View style={styles.hudItem}>
               <MaterialCommunityIcons name="map-marker" size={16} color="#00695C" />
-              <Text style={styles.hudVal}>{extractedState.destination || '???'}</Text>
+              <Text style={styles.hudVal} numberOfLines={1}>{extractedState.destination || 'Anywhere'}</Text>
             </View>
             <View style={styles.hudItem}>
               <MaterialCommunityIcons name="calendar" size={16} color="#00695C" />
-              <Text style={styles.hudVal}>{extractedState.days || '??'}</Text>
+              <Text style={styles.hudVal}>{extractedState.days ? `${extractedState.days} days` : 'Days?'}</Text>
             </View>
             <View style={styles.hudItem}>
               <MaterialCommunityIcons name="leaf" size={16} color="#4CAF50" />
               <Text style={styles.hudVal}>{extractedState.eco_interest}%</Text>
             </View>
           </View>
-          {extractedState.mood && <Chip style={styles.moodBadge} textStyle={{ fontSize: 10 }}>{extractedState.mood}</Chip>}
+          {extractedState.mood && <Chip compact style={styles.moodBadge} textStyle={{ fontSize: 10 }}>{extractedState.mood}</Chip>}
         </Surface>
-      </Animated.View>
+      </View>
+      )}
 
       <FlatList
         ref={flatListRef}
         data={messages}
         renderItem={renderItem}
         keyExtractor={item => item.id}
+        style={styles.chatList}
         contentContainerStyle={styles.chatScroll}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
@@ -336,21 +345,22 @@ export default function ChatbotScreen({ navigation, route }) {
           />
         </View>
       </Surface>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F0F2F5' },
-  topBar: { padding: 50, paddingTop: 60, paddingBottom: 20, alignItems: 'center' },
+  topBar: { paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
   barTitle: { color: '#FFF', fontSize: 20, fontFamily: 'Outfit-Bold' },
-  hud: { position: 'absolute', top: 110, width: '100%', zIndex: 10, paddingHorizontal: 20 },
-  hudCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  hudRow: { flexDirection: 'row', gap: 20 },
-  hudItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  hud: { paddingHorizontal: 16, marginTop: 12 },
+  hudCard: { backgroundColor: '#FFF', borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  hudRow: { flexDirection: 'row', gap: 14, flexShrink: 1 },
+  hudItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   hudVal: { fontSize: 12, fontFamily: 'Outfit-Bold', color: '#333' },
   moodBadge: { backgroundColor: '#E1F5FE' },
-  chatScroll: { padding: 20, paddingTop: 80, paddingBottom: 100 },
+  chatList: { flex: 1 },
+  chatScroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
   msgWrapper: { marginBottom: 20, maxWidth: '85%' },
   userRow: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   botRow: { alignSelf: 'flex-start', flexDirection: 'row', gap: 10 },
@@ -363,10 +373,10 @@ const styles = StyleSheet.create({
   recordingOverlay: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10, backgroundColor: '#FFEBEE', borderRadius: 20, marginHorizontal: 20, marginBottom: 10 },
   recordingText: { color: '#D32F2F', fontFamily: 'Outfit-Bold', marginLeft: 10 },
   recordingIcon: { opacity: 0.8 },
-  inputArea: { padding: 15, borderTopLeftRadius: 30, borderTopRightRadius: 30, backgroundColor: '#FFF' },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  textInput: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 25, height: 50 },
-  genBtn: { margin: 20, borderRadius: 15, backgroundColor: '#FF7043' },
+  inputArea: { paddingHorizontal: 12, paddingVertical: 10, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: '#FFF' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  textInput: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: 48, overflow: 'hidden' },
+  genBtn: { marginHorizontal: 16, marginBottom: 10, borderRadius: 15, backgroundColor: '#FF7043' },
 
   // Voice Modal Styles
   voiceModal: { backgroundColor: 'transparent', margin: 20, justifyContent: 'center', alignItems: 'center' },

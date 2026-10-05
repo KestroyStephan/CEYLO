@@ -5,11 +5,8 @@
 // outline:#6F7A70 outlineVariant:#BECABE
 
 import React, { useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, ActivityIndicator, Image, Modal, TextInput,
-  ScrollView, StatusBar, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Image, Modal, TextInput, ScrollView, StatusBar, Platform } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
@@ -189,7 +186,7 @@ export default function VendorServiceListingScreen() {
 
       {/* Add/Edit Modal */}
       <Modal visible={modal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModal(false)}>
-        <KeyboardAvoidingView style={{ flex:1, backgroundColor:BG }} behavior={Platform.OS==='ios'?'padding':undefined}>
+        <KeyboardAvoider style={{ flex:1, backgroundColor:BG }} behavior={Platform.OS==='ios'?'padding':undefined}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setModal(false)}>
               <Ionicons name="close" size={22} color={ON_SURF} />
@@ -233,7 +230,7 @@ export default function VendorServiceListingScreen() {
               {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>{editing ? 'Save Changes' : 'Add Service'}</Text>}
             </TouchableOpacity>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
       </Modal>
     </View>
   );

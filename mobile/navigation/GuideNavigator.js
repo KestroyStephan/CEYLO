@@ -1,8 +1,8 @@
 import React from 'react';
+import useTabBarStyle from '../utils/useTabBarStyle';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
 
 import GuideDashboard from '../screens/GuideDashboard';
 import GuideBookingsScreen from '../screens/GuideBookingsScreen';
@@ -30,6 +30,7 @@ function GuideHomeStack() {
 }
 
 export default function GuideNavigator() {
+  const tabBarStyle = useTabBarStyle({ backgroundColor: '#FFF', borderTopColor: '#EEF2EE', borderTopWidth: 1 });
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -53,14 +54,8 @@ export default function GuideNavigator() {
         },
         tabBarActiveTintColor: '#006A3B',
         tabBarInactiveTintColor: '#8A9E8A',
-        tabBarStyle: {
-          backgroundColor: '#FFF',
-          borderTopColor: '#EEF2EE',
-          borderTopWidth: 1,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-          paddingTop: 10,
-          height: Platform.OS === 'ios' ? 85 : 65,
-        },
+        tabBarHideOnKeyboard: true,
+        tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 10,
           fontFamily: 'Outfit-Medium',

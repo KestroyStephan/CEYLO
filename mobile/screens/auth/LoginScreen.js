@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View, StyleSheet, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ScrollView, Alert, TextInput, StatusBar, Dimensions
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, ScrollView, Alert, TextInput, StatusBar, Dimensions } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithCredential, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -118,7 +116,7 @@ export default function LoginScreen({ navigation }) {
         end={{ x: 0.5, y: 0.5 }}
       />
 
-      <KeyboardAvoidingView
+      <KeyboardAvoider
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
@@ -227,7 +225,7 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </View>
   );
 }

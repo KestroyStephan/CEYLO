@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, StyleSheet, ScrollView, TouchableOpacity, Image,
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, TextInput
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Platform, TextInput } from 'react-native';
+import KeyboardAvoider from '../components/KeyboardAvoider';
 import { Text } from 'react-native-paper';
 import { auth, db, storage } from '../firebaseConfig';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -206,7 +204,7 @@ export default function EditProfileScreen({ navigation }) {
   const isGuide = role === 'guide';
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoider
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -367,7 +365,7 @@ export default function EditProfileScreen({ navigation }) {
           <View style={{ height: 40 }} />
         </ScrollView>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

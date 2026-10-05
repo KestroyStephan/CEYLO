@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
 import { Text, Surface, Button, IconButton } from 'react-native-paper';
 import { doc, setDoc } from 'firebase/firestore';
@@ -17,6 +18,7 @@ const MOODS = [
 ];
 
 export default function MoodSelectScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [selectedMood, setSelectedMood] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +45,7 @@ export default function MoodSelectScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#004D40', '#00695C']} style={styles.header}>
+      <LinearGradient colors={['#004D40', '#00695C']} style={[styles.header, { paddingTop: insets.top + 24 }]}>
         <Text style={styles.headerTitle}>Choose Your Vibe</Text>
         <Text style={styles.headerSubtitle}>We'll personalize your Ceylo experience</Text>
       </LinearGradient>
@@ -66,8 +68,10 @@ export default function MoodSelectScreen({ navigation }) {
                 <View style={[styles.iconCircle, { backgroundColor: mood.color + '20' }]}>
                   <MaterialCommunityIcons name={mood.icon} size={32} color={mood.color} />
                 </View>
-                <Text style={styles.moodTitle}>{mood.title}</Text>
-                <Text style={styles.moodDesc}>{mood.desc}</Text>
+                <View style={styles.moodText}>
+                  <Text style={styles.moodTitle} numberOfLines={1}>{mood.title}</Text>
+                  <Text style={styles.moodDesc} numberOfLines={2}>{mood.desc}</Text>
+                </View>
                 {selectedMood === mood.id && (
                   <View style={styles.checkBadge}>
                     <MaterialCommunityIcons name="check" size={16} color="#FFF" />
@@ -79,15 +83,15 @@ export default function MoodSelectScreen({ navigation }) {
         </View>
       </ScrollView>
 
-      <Surface style={styles.footer} elevation={4}>
+      <Surface style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]} elevation={4}>
         <Button
           mode="contained"
           disabled={!selectedMood || loading}
           loading={loading}
           onPress={handleConfirm}
-          style={styles.confirmButton}
+          style={[styles.confirmButton, (!selectedMood || loading) && styles.confirmButtonDisabled]}
           contentStyle={{ height: 55 }}
-          labelStyle={{ fontFamily: 'Outfit-Bold', fontSize: 18 }}
+          labelStyle={{ fontFamily: 'Outfit-Bold', fontSize: 18, color: '#FFF' }}
         >
           Begin Journey
         </Button>
@@ -105,8 +109,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
   },
   header: {
-    padding: 40,
-    paddingTop: 60,
+    paddingHorizontal: 28,
+    paddingBottom: 32,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
@@ -122,8 +126,8 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   scrollContent: {
-    padding: 24,
-    paddingBottom: 120,
+    padding: 20,
+    paddingBottom: 190,
   },
   grid: {
     gap: 15,
@@ -144,7 +148,11 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 16,
+  },
+  moodText: {
+    flex: 1,
+    paddingRight: 24,
   },
   moodTitle: {
     fontSize: 18,
@@ -172,7 +180,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
     backgroundColor: '#FFF',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -183,6 +192,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: '#00695C',
     marginBottom: 15,
+  },
+  confirmButtonDisabled: {
+    backgroundColor: '#9DB8B3',
   },
   skipText: {
     color: '#666',

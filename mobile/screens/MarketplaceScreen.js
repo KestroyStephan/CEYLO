@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Text, Surface, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ const LotusWatermark = () => (
 );
 
 export default function MarketplaceScreen({ navigation }) {
+  useStatusBarStyle('dark-content');
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All Marketplace');

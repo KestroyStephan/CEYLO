@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View, StyleSheet, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ScrollView, Alert, TextInput, StatusBar
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, ScrollView, Alert, TextInput, StatusBar } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -115,7 +113,7 @@ export default function RegisterScreen({ navigation, route }) {
         end={{ x: 0.5, y: 0.45 }}
       />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoider behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]}
           showsVerticalScrollIndicator={false}
@@ -190,7 +188,7 @@ export default function RegisterScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </View>
   );
 }

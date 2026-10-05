@@ -5,11 +5,8 @@
 // outline:#6F7A70 outlineVariant:#BECABE
 
 import React, { useState, useRef } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Image, Animated,
-  Dimensions, KeyboardAvoidingView, Platform, StatusBar,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, Animated, Dimensions, Platform, StatusBar } from 'react-native';
+import KeyboardAvoider from '../../components/KeyboardAvoider';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -234,7 +231,7 @@ export default function VendorRegistrationScreen({ navigation }) {
   );
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoider style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar barStyle="light-content" />
       <LinearGradient colors={[PRIMARY, '#004D2C']} style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.8}>
@@ -427,7 +424,7 @@ export default function VendorRegistrationScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 
