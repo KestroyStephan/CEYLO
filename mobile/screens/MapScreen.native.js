@@ -10,7 +10,38 @@ import * as Location from 'expo-location';
 import { IconButton, Text, Surface, Chip, Avatar } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ecoScoreFor } from '../utils/destinations';
+import destinationsData from '../assets/data/ai_destinations.json';
+import { distanceKm } from '../services/ItineraryService';
+import ProgressiveImage from '../components/ProgressiveImage';
+
+// Real attractions from the CEYLO dataset (Wikidata places, Wikipedia photos, Google ratings)
+const PLACES = destinationsData.map(d => ({
+  ...d,
+  lat: parseFloat(d.lat),
+  lon: parseFloat(d.lon),
+  rating: parseFloat(d.avg_rating) || null,
+  isHidden: String(d.hidden_gem) === 'true',
+  // Review-weighted rating, so a 5.0 from two reviews does not outrank a 4.7 from twenty thousand
+  score: ((Number(d.google_reviews) || 0) * (parseFloat(d.avg_rating) || 4.4) + 50 * 4.4) / ((Number(d.google_reviews) || 0) + 50),
+}));
+const TYPE_OF = {
+  'Heritage & Culture': 'cultural',
+  'Nature & Viewpoint': 'nature',
+  Waterfall: 'nature',
+  Wildlife: 'wildlife',
+  Beach: 'beach',
+};
+const TYPE_LABELS = { All: 'All types', cultural: 'Heritage & culture', nature: 'Nature & waterfalls', wildlife: 'Wildlife', beach: 'Beaches', gem: 'Hidden gems' };
+const NEARBY_KM = 25;
+const PROVINCES = ['Western', 'Central', 'Southern', 'North Central', 'Northern', 'Eastern', 'Uva', 'Sabaragamuwa', 'North Western'];
+// Centre of each province's places, so a province chip frames its attractions
+const PROVINCE_CENTERS = Object.fromEntries(PROVINCES.map(name => {
+  const list = PLACES.filter(d => d.province === `${name} Province`);
+  const lats = list.map(d => d.lat);
+  const lons = list.map(d => d.lon);
+  const delta = Math.max(0.3, Math.max(...lats) - Math.min(...lats), Math.max(...lons) - Math.min(...lons)) * 1.15;
+  return [name, { latitude: (Math.max(...lats) + Math.min(...lats)) / 2, longitude: (Math.max(...lons) + Math.min(...lons)) / 2, delta }];
+}));
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -22,7 +53,8 @@ export default function MapScreen({ navigation }) {
   const mapRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
-  const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [loadingPlaces, setLoadingPlaces] = useState(true);
+  const [listLabel, setListLabel] = useState('');
   const [activeFilter, setActiveFilter] = useState('All Island');
   const [typeFilter, setTypeFilter] = useState('All');
   const [showTypeFilterModal, setShowTypeFilterModal] = useState(false);
@@ -38,14 +70,10 @@ export default function MapScreen({ navigation }) {
   const [offlineRegions, setOfflineRegions] = useState([]);
   const [isOffline, setIsOffline] = useState(false);
 
-  const filters = ['All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'];
+  const filters = ['All Island', ...PROVINCES];
   const REGION_CENTERS = {
-    'All Island': { latitude: 7.8731, longitude: 80.7718, delta: 2.0 },
-    Western: { latitude: 6.9271, longitude: 79.8612, delta: 0.4 },
-    Central: { latitude: 7.2906, longitude: 80.6337, delta: 0.4 },
-    Southern: { latitude: 6.0535, longitude: 80.2210, delta: 0.4 },
-    Northern: { latitude: 9.6615, longitude: 80.0255, delta: 0.4 },
-    Eastern: { latitude: 7.7310, longitude: 81.6747, delta: 0.4 },
+    'All Island': { latitude: 7.8731, longitude: 80.7718, delta: 3.2 },
+    ...PROVINCE_CENTERS,
   };
 
   // Downloaded regions are drawn from local tiles whenever the device is offline
@@ -65,11 +93,7 @@ export default function MapScreen({ navigation }) {
       latitudeDelta: center.delta,
       longitudeDelta: center.delta,
     }, 800);
-    if (filter === 'All Island') {
-      if (location) fetchNearbyPlaces(location.latitude, location.longitude);
-    } else {
-      fetchNearbyPlaces(center.latitude, center.longitude, 30000);
-    }
+    loadPlaces(location, filter === 'All Island' ? null : filter);
   };
 
   useEffect(() => {
@@ -78,6 +102,8 @@ export default function MapScreen({ navigation }) {
         const { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
+          loadPlaces(null);
+          setLoadingPlaces(false);
           Alert.alert(
             'Location Permission Required',
             'CEYLO needs your location to show nearby places on the map. Please enable location in Settings ? Apps ? CEYLO ? Permissions ? Location.',
@@ -102,25 +128,43 @@ export default function MapScreen({ navigation }) {
           mapRef.current.animateToRegion({
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
+            latitudeDelta: 0.3,
+            longitudeDelta: 0.3,
           });
         }
 
-        fetchNearbyPlaces(loc.coords.latitude, loc.coords.longitude);
+        loadPlaces(loc.coords);
       } catch (error) {
         console.error('Location error in Map:', error);
+        loadPlaces(null);
         Alert.alert(
           'Location Error',
           'Could not get your location. Please check your GPS is turned on.',
           [{ text: 'OK' }]
         );
+      } finally {
+        setLoadingPlaces(false);
       }
     })();
   }, []);
 
   const searchPlace = async (query) => {
     if (!query || query.trim().length < 2) return;
+
+    const q = query.trim().toLowerCase();
+    const known = PLACES.find(d => d.name.toLowerCase() === q) || PLACES.find(d => d.name.toLowerCase().includes(q));
+    if (known) {
+      mapRef.current?.animateToRegion({ latitude: known.lat, longitude: known.lon, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 1000);
+      setSearchResult({
+        coords: { latitude: known.lat, longitude: known.lon },
+        name: known.name,
+        address: `${known.category} · ${known.province}`,
+        rating: known.rating,
+        place: { ...known, id: known.destination_id, title: known.name, coords: { latitude: known.lat, longitude: known.lon } },
+        distance: location ? `${distanceKm(location.latitude, location.longitude, known.lat, known.lon).toFixed(1)}km away` : undefined,
+      });
+      return;
+    }
 
     setIsSearchLoading(true);
 
@@ -132,14 +176,6 @@ export default function MapScreen({ navigation }) {
 
       const response = await fetch(textSearchUrl);
       const data = await response.json();
-
-      console.log('=== MAP SEARCH DEBUG ===');
-      console.log('Query:', query); // Using 'query' instead of 'searchQuery' to avoid stale state in closure
-      console.log('URL:', textSearchUrl);
-      console.log('Response status:', data.status);
-      console.log('Error message:', data.error_message || 'none');
-      console.log('Results count:', data.results?.length || 0);
-      console.log('========================');
 
       if (data.status === 'OK' && data.results?.length > 0) {
         const place = data.results[0];
@@ -204,62 +240,61 @@ export default function MapScreen({ navigation }) {
     return (R * c).toFixed(1);
   };
 
-  const fetchNearbyPlaces = async (lat, lng, radius = 5000) => {
-    setLoadingPlaces(true);
-    try {
-      const query = 'restaurant OR museum OR temple OR church OR botanical garden OR tourist attraction OR hidden gem';
-      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius}&key=${GOOGLE_API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if(data.results) {
-        const places = data.results.slice(0, 15).map(p => ({
-          id: p.place_id,
-          title: p.name,
-          type: getPlaceType(p.types || []),
-          coords: { latitude: p.geometry.location.lat, longitude: p.geometry.location.lng },
-          rating: p.rating || null,
-          photo_reference: p.photos ? p.photos[0].photo_reference : null,
-          categoryText: (p.types && p.types[0]) ? p.types[0].replace(/_/g, ' ') : 'Destination',
-          distance: getDistance(lat, lng, p.geometry.location.lat, p.geometry.location.lng)
-        }));
-        setNearbyPlaces(places);
+  // Attractions near the traveller, or the best-rated ones in a province
+  const loadPlaces = (pos, province = null) => {
+    const withDist = PLACES.map(d => ({
+      ...d,
+      id: d.destination_id,
+      title: d.name,
+      type: TYPE_OF[d.category] || 'cultural',
+      coords: { latitude: d.lat, longitude: d.lon },
+      distance: pos ? distanceKm(pos.latitude, pos.longitude, d.lat, d.lon) : null,
+    }));
+    let list;
+    if (province) {
+      list = withDist.filter(d => d.province === `${province} Province`)
+        .sort((a, b) => b.score - a.score);
+      setListLabel(`${list.length} places in ${province} Province`);
+    } else if (pos) {
+      const sorted = withDist.sort((a, b) => a.distance - b.distance);
+      list = sorted.filter(d => d.distance <= NEARBY_KM);
+      if (list.length < 5) {
+        list = sorted.slice(0, 10);
+        setListLabel('Nearest places to you');
+      } else {
+        setListLabel(`${list.length} places within ${NEARBY_KM} km`);
       }
-    } catch(e) {
-      console.error(e);
-    } finally {
-      setLoadingPlaces(false);
+    } else {
+      list = withDist.sort((a, b) => b.score - a.score).slice(0, 30);
+      setListLabel('Top rated across Sri Lanka');
     }
+    setNearbyPlaces(list);
   };
 
-  const getPlaceType = (types) => {
-    if(types.includes('restaurant') || types.includes('cafe')) return 'restaurant';
-    if(types.includes('museum') || types.includes('hindu_temple') || types.includes('church') || types.includes('place_of_worship')) return 'cultural';
-    if(types.includes('park') || types.includes('natural_feature') || types.includes('botanical_garden')) return 'nature';
-    return 'gem';
-  };
+  const matchesType = (p) => typeFilter === 'All' || (typeFilter === 'gem' ? p.isHidden : p.type === typeFilter);
+
+  const openPlace = (p) => navigation.navigate('DestinationDetail', {
+    place: { ...p, name: p.name, ecoScore: p.eco_score != null ? Math.round(p.eco_score) : null, coords: p.coords },
+  });
 
   const getMarkerIcon = (type) => {
     switch(type) {
-      case 'cultural': return 'asterisk'; // the red asterisk/flower from the screenshot
-      case 'nature': return 'castle'; // the green castle from screenshot
-      case 'restaurant': return 'silverware-fork-knife';
+      case 'cultural': return 'temple-buddhist';
+      case 'nature': return 'pine-tree';
+      case 'wildlife': return 'paw';
+      case 'beach': return 'beach';
       default: return 'map-marker-star';
     }
   };
 
   const getMarkerColor = (type) => {
     switch(type) {
-      case 'cultural': return '#D32F2F'; // Red
-      case 'nature': return '#00695C'; // Green
-      case 'restaurant': return '#F57C00'; // Orange
-      default: return '#7B1FA2'; // Purple
+      case 'cultural': return '#B23A2E';
+      case 'nature': return '#00695C';
+      case 'wildlife': return '#8D6E00';
+      case 'beach': return '#0277BD';
+      default: return '#6A1B9A';
     }
-  };
-
-  const getPhotoUrl = (ref) => {
-    if (!ref) return 'https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a'; // Fallback
-    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=${GOOGLE_API_KEY}`;
   };
 
   return (
@@ -283,21 +318,13 @@ export default function MapScreen({ navigation }) {
         {isOffline && offlineRegions.map(region => (
           <LocalTile key={region.id} pathTemplate={getRegionTilePathTemplate(region.id)} tileSize={256} zIndex={-1} />
         ))}
-        {nearbyPlaces.filter(p => typeFilter === 'All' || p.type === typeFilter).map((marker) => (
+        {nearbyPlaces.filter(matchesType).map((marker) => (
           <Marker
             key={marker.id}
             coordinate={marker.coords}
-            onPress={() => {
-              navigation.navigate('DestinationDetail', {
-                place: {
-                  name: marker.title,
-                  image: getPhotoUrl(marker.photo_reference),
-                  category: marker.categoryText,
-                  ecoScore: ecoScoreFor(marker.title),
-                  coords: marker.coords
-                }
-              });
-            }}
+            title={marker.title}
+            description={marker.rating ? `★ ${marker.rating} · ${marker.category}` : marker.category}
+            onCalloutPress={() => openPlace(marker)}
           >
             <View style={[styles.customMarker, { backgroundColor: getMarkerColor(marker.type) }]}>
               <MaterialCommunityIcons
@@ -367,6 +394,25 @@ export default function MapScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {searchResult.place && (
+              <TouchableOpacity onPress={() => openPlace(searchResult.place)} style={styles.searchOpen}>
+                <Text style={styles.searchOpenText}>View place</Text>
+              </TouchableOpacity>
+            )}
+            {location && (
+              <TouchableOpacity
+                style={[styles.searchOpen, { backgroundColor: '#E0F2F1' }]}
+                onPress={() => {
+                  setSearchedPlace({ title: searchResult.name, address: searchResult.address, rating: searchResult.rating, coords: searchResult.coords, distance: (searchResult.distance || '').replace('km away', '') });
+                  setShowDirections(true);
+                  setSearchResult(null);
+                }}
+              >
+                <Text style={[styles.searchOpenText, { color: '#00695C' }]}>{i18n.t('ui_get_directions')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <View style={styles.searchResultStats}>
             {searchResult.distance && (
               <View style={styles.searchStat}>
@@ -380,7 +426,7 @@ export default function MapScreen({ navigation }) {
               <View style={styles.searchStat}>
                 <Ionicons name="star" size={14} color="#735C00" />
                 <Text style={styles.searchStatText}>
-                  {searchResult.rating.toFixed(1)}
+                  {Number(searchResult.rating).toFixed(1)}
                 </Text>
               </View>
             )}
@@ -401,7 +447,7 @@ export default function MapScreen({ navigation }) {
             </TouchableOpacity>
           </>
         ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, flex: 1, paddingHorizontal: 10, elevation: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingHorizontal: 10 }}>
             <MaterialCommunityIcons name="magnify" size={22} color="#00695C" />
             <TextInput
               style={{ flex: 1, height: 40, paddingHorizontal: 10, fontFamily: 'Outfit-Regular', color: '#333' }}
@@ -438,7 +484,7 @@ export default function MapScreen({ navigation }) {
       </View>
 
       {/* Filter Chips */}
-      <View style={[styles.filterRowContainer, { top: insets.top + 60 }]}>
+      <View style={[styles.filterRowContainer, { top: insets.top + 68 }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {filters.map(filter => (
             <TouchableOpacity
@@ -455,7 +501,7 @@ export default function MapScreen({ navigation }) {
       </View>
 
       {/* Right Side Floating Buttons */}
-      <View style={[styles.rightFloatingStack, { top: insets.top + 120 }]}>
+      <View style={[styles.rightFloatingStack, { top: insets.top + 124 }]}>
         <TouchableOpacity style={styles.floatingBtnWhite} onPress={() => navigation.navigate('OfflineMapSettings')}>
           <MaterialCommunityIcons name="wifi-off" size={22} color="#333" />
         </TouchableOpacity>
@@ -484,7 +530,7 @@ export default function MapScreen({ navigation }) {
             <View>
               <Text style={styles.sheetTitle}>{i18n.t('ui_nearby_discoveries')}</Text>
               <Text style={styles.sheetSubtitle}>
-                {loadingPlaces ? "Searching area..." : `Found ${nearbyPlaces.length} locations within 5km`}
+                {loadingPlaces ? 'Finding places near you…' : listLabel}
               </Text>
             </View>
             <TouchableOpacity style={styles.filterIconBtn} onPress={() => setShowTypeFilterModal(true)}>
@@ -526,31 +572,23 @@ export default function MapScreen({ navigation }) {
             )}
             {loadingPlaces ? (
               <ActivityIndicator size="large" color="#00695C" style={{marginTop: 40}} />
-            ) : nearbyPlaces.filter(p => typeFilter === 'All' || p.type === typeFilter).map(place => (
+            ) : nearbyPlaces.filter(matchesType).map(place => (
               <TouchableOpacity
                 key={place.id}
                 style={styles.discoveryCard}
-                onPress={() => {
-                  navigation.navigate('DestinationDetail', {
-                    place: {
-                      name: place.title,
-                      image: getPhotoUrl(place.photo_reference),
-                      category: place.categoryText,
-                      ecoScore: ecoScoreFor(place.title),
-                      coords: place.coords
-                    }
-                  });
-                }}
+                onPress={() => openPlace(place)}
+                onLongPress={() => mapRef.current?.animateToRegion({ ...place.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 600)}
               >
-                <Image source={{ uri: getPhotoUrl(place.photo_reference) }} style={styles.cardImage} />
+                <ProgressiveImage source={{ uri: place.image }} style={styles.cardImage} />
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardTitle} numberOfLines={1}>{place.title}</Text>
                   <Text style={styles.cardMeta}>
-                    <MaterialCommunityIcons name="star-circle-outline" size={12} color="#666" /> {place.rating ? `${place.rating} • ` : ''}{place.distance} km away
+                    {place.rating ? `★ ${place.rating}` : place.category}
+                    {place.distance != null ? ` • ${place.distance.toFixed(1)} km away` : ` • ${place.province.replace(' Province', '')}`}
                   </Text>
                   <View style={styles.cardTagRow}>
                     <View style={styles.hiddenGemTag}>
-                      <Text style={styles.hiddenGemText}>{place.type === 'gem' ? 'HIDDEN GEM' : 'POPULAR'}</Text>
+                      <Text style={styles.hiddenGemText}>{place.isHidden ? 'HIDDEN GEM' : place.category.toUpperCase()}</Text>
                     </View>
                   </View>
                 </View>
@@ -568,7 +606,7 @@ export default function MapScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{i18n.t('ui_filter_by_type')}</Text>
 
-            {['All', 'cultural', 'nature', 'restaurant', 'gem'].map(type => (
+            {Object.keys(TYPE_LABELS).map(type => (
               <TouchableOpacity
                 key={type}
                 style={[styles.modalOption, typeFilter === type && styles.modalOptionActive]}
@@ -578,7 +616,7 @@ export default function MapScreen({ navigation }) {
                 }}
               >
                 <Text style={[styles.modalOptionText, typeFilter === type && styles.modalOptionTextActive]}>
-                  {type === 'All' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
+                  {TYPE_LABELS[type]}
                 </Text>
                 {typeFilter === type && <MaterialCommunityIcons name="check" size={20} color="#00695C" />}
               </TouchableOpacity>
@@ -663,7 +701,9 @@ const styles = StyleSheet.create({
   map: { ...StyleSheet.absoluteFillObject },
 
   // Header
-  header: { position: 'absolute', width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, zIndex: 10 },
+  header: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 6, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.96)', elevation: 4, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, zIndex: 10 },
+  searchOpen: { alignSelf: 'flex-start', backgroundColor: '#00695C', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14, marginTop: 10 },
+  searchOpenText: { color: '#FFF', fontFamily: 'Outfit-SemiBold', fontSize: 13 },
   menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   searchBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: '#00695C' },
