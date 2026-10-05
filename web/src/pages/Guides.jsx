@@ -81,15 +81,16 @@ export default function Guides() {
                 return {
                     id: doc.id,
                     name: data.name || 'Guide Partner',
-                    guideLicense: data.guideLicense || 'SLTDA/G/TEMP',
+                    guideLicense: data.guideLicense || 'Not provided',
                     languages: languagesParsed,
-                    specializations: data.specializations || 'Eco-Tour',
+                    specializations: data.specializations || 'Not specified',
                     status: mappedStatus,
-                    ecoScore: Math.round(data.ecoScore || 70),
-                    region: data.region || 'Central Province',
+                    ecoScore: Math.round(data.ecoScore || 0),
+                    region: data.region || data.serviceAreas || 'Not set',
                     email: data.email || '',
                     phone: data.phone || '',
-                    experience: parseInt(data.experience || 3)
+                    experience: parseInt(data.experience || 0),
+                    documents: data.documents || {},
                 };
             });
 
@@ -548,6 +549,21 @@ export default function Guides() {
                                         </Typography>
                                         {selectedGuide.status === 'Verified' && <CheckCircleOutlineIcon color="success" sx={{ fontSize: 16 }} />}
                                     </Box>
+                                </Box>
+
+                                {/* Documents uploaded during onboarding */}
+                                <Box>
+                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                        DOCUMENTS
+                                    </Typography>
+                                    <Stack direction="row" spacing={1}>
+                                        {selectedGuide.documents?.sltdaUrl
+                                            ? <Button size="small" variant="outlined" href={selectedGuide.documents.sltdaUrl} target="_blank" rel="noreferrer">SLTDA licence</Button>
+                                            : <Chip size="small" label="No licence uploaded" />}
+                                        {selectedGuide.documents?.nicUrl
+                                            ? <Button size="small" variant="outlined" href={selectedGuide.documents.nicUrl} target="_blank" rel="noreferrer">NIC</Button>
+                                            : <Chip size="small" label="No NIC uploaded" />}
+                                    </Stack>
                                 </Box>
 
                                 {/* Contact detail */}

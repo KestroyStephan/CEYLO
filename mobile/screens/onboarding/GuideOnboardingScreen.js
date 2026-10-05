@@ -3,7 +3,8 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextIn
 import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebaseConfig';
+import { db, auth, storage } from '../../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -33,6 +34,8 @@ export default function GuideOnboardingScreen({ navigation }) {
   const [customLanguage, setCustomLanguage] = useState('');
   const [sltdaUploaded, setSltdaUploaded] = useState(false);
   const [nicUploaded, setNicUploaded] = useState(false);
+  const [docUrls, setDocUrls] = useState({});
+  const [uploadingDoc, setUploadingDoc] = useState(null);
   const [showLangInput, setShowLangInput] = useState(false);
 
   const toggleLanguage = (lang) => {
@@ -55,16 +58,26 @@ export default function GuideOnboardingScreen({ navigation }) {
     setShowLangInput(false);
   };
 
+  // Uploads the chosen licence / NIC to Firebase Storage so staff can verify it in the admin portal
   const pickDocument = async (type) => {
+    if (!auth.currentUser) return;
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'] });
-      if (!result.canceled) {
-        if (type === 'sltda') setSltdaUploaded(true);
-        else setNicUploaded(true);
-      }
-    } catch (e) {
-      if (type === 'sltda') setSltdaUploaded(true); // Mock for demo
+      const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
+      if (result.canceled || !result.assets?.length) return;
+      const asset = result.assets[0];
+      setUploadingDoc(type);
+      const ext = (asset.name?.split('.').pop() || (asset.mimeType?.includes('pdf') ? 'pdf' : 'jpg')).toLowerCase();
+      const blob = await (await fetch(asset.uri)).blob();
+      const fileRef = ref(storage, `guide_documents/${auth.currentUser.uid}/${type}_${Date.now()}.${ext}`);
+      await uploadBytes(fileRef, blob, { contentType: asset.mimeType || undefined });
+      const url = await getDownloadURL(fileRef);
+      setDocUrls(prev => ({ ...prev, [type]: url }));
+      if (type === 'sltda') setSltdaUploaded(true);
       else setNicUploaded(true);
+    } catch (e) {
+      Alert.alert('Upload failed', `The document was not uploaded: ${e.message}`);
+    } finally {
+      setUploadingDoc(null);
     }
   };
 
@@ -100,11 +113,12 @@ export default function GuideOnboardingScreen({ navigation }) {
         languages: selectedLanguages.join(', '),
         specializations: selectedExpertise.join(', '),
         serviceAreas: serviceAreas || 'Islandwide',
-        packageCost: packageCost || '50',
+        packageCost: packageCost || null,
         role: 'guide_pending',
         onboardingCompleted: true,
         submittedAt: new Date().toISOString(),
         documentsSubmitted: { sltda: sltdaUploaded, nic: nicUploaded },
+        documents: { sltdaUrl: docUrls.sltda || null, nicUrl: docUrls.nic || null },
       });
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -274,7 +288,7 @@ export default function GuideOnboardingScreen({ navigation }) {
                     <Text style={styles.uploadedTagText}>Uploaded</Text>
                   </View>
                 ) : (
-                  <Text style={styles.uploadCTA}>Upload</Text>
+                  <Text style={styles.uploadCTA}>{uploadingDoc === 'sltda' ? 'Uploading…' : 'Upload'}</Text>
                 )}
               </TouchableOpacity>
 
@@ -295,7 +309,7 @@ export default function GuideOnboardingScreen({ navigation }) {
                     <Text style={styles.uploadedTagText}>Uploaded</Text>
                   </View>
                 ) : (
-                  <Text style={styles.uploadCTA}>Upload</Text>
+                  <Text style={styles.uploadCTA}>{uploadingDoc === 'nic' ? 'Uploading…' : 'Upload'}</Text>
                 )}
               </TouchableOpacity>
             </View>

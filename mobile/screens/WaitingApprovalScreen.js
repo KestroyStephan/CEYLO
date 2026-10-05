@@ -36,8 +36,8 @@ export default function WaitingApprovalScreen({ route, navigation }) {
     return () => unsub();
   }, [bookingId]);
 
+  // No payment gateway: the traveller confirms here and pays the guide directly on the day
   const handlePayNow = async () => {
-    // Mock Payment
     try {
       await updateDoc(doc(db, 'bookings', bookingId), { status: 'confirmed' });
       notifyBooking(bookingId);
@@ -125,11 +125,11 @@ export default function WaitingApprovalScreen({ route, navigation }) {
             <MaterialCommunityIcons name="check-decagram" size={60} color="#006A3B" style={styles.icon} />
             <Text style={styles.title}>Request Approved!</Text>
             <Text style={styles.subtitle}>
-              {guideName} is available and has accepted your request. You can now securely complete the payment to confirm the booking.
+              {guideName} is available and has accepted your request. Confirm the booking{booking?.totalAmount ? ` and pay $${Number(booking.totalAmount).toFixed(2)} to your guide on the day` : ' and agree the price with your guide in chat'}.
             </Text>
             <TouchableOpacity style={styles.primaryBtn} onPress={handlePayNow}>
-              <Text style={styles.primaryBtnText}>Pay Securely</Text>
-              <MaterialCommunityIcons name="lock-outline" size={18} color="#FFF" />
+              <Text style={styles.primaryBtnText}>Confirm Booking</Text>
+              <MaterialCommunityIcons name="check-circle-outline" size={18} color="#FFF" />
             </TouchableOpacity>
             
             <TouchableOpacity 

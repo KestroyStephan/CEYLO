@@ -50,7 +50,7 @@ export default function GuideDiscoverScreen({ navigation }) {
         fetchedEvents = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       }
 
-      // Always load AI mock events as a base to ensure suggestions are populated
+      // Festivals from the CEYLO events dataset, dated to the 15th of their usual month, fill in when Firestore has few events
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth();
@@ -75,7 +75,7 @@ export default function GuideDiscoverScreen({ navigation }) {
           const eventDateObj = new Date(eventYear, eventMonth, 15);
 
           return {
-              id: e.event_id || `mock-${idx}`,
+              id: e.event_id || `dataset-${idx}`,
               title: e.name,
               location: e.location,
               category: e.category,
