@@ -186,7 +186,10 @@ the TFLite file and tests.
 
 - [ ] Push and merge to `main`; confirm Render (https://ceylo.onrender.com/api/health shows 5 models) and Vercel redeploy
 - [ ] `firebase deploy --only firestore` (rules for `recommendation_records`, `usage_events`, `feedback`, `sus_responses`)
-- [ ] Optional SMS: on Render set `NOTIFY_LK_USER_ID`, `NOTIFY_LK_API_KEY`, `NOTIFY_LK_SENDER_ID`, `SOS_DESK_NUMBER`
+- [ ] SOS SMS (free, textbee.dev): install the textbee app on a spare Android phone with a SIM, register it,
+  create an API key, then on Render set `TEXTBEE_API_KEY` and `SOS_DESK_NUMBER` (e.g. `+9477xxxxxxx`).
+  Free plan: 50 SMS a day, 300 a month; the SMS costs whatever that SIM's plan charges.
+  (Notify.lk still works instead: `SMS_PROVIDER=notifylk` plus `NOTIFY_LK_USER_ID`, `NOTIFY_LK_API_KEY`, `NOTIFY_LK_SENDER_ID`.)
 - [ ] Booking push needs FCM credentials in EAS; test one booking between two phones
 - [ ] Ask 3–5 people to use the app and fill **Profile → Research survey**, so the SUS row has real data
 - [ ] Install the latest app on the phone and run the demo script once end to end

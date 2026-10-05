@@ -7,6 +7,7 @@ const { insightsFor } = require('./ai/insights');
 const { forecastDemand, demandHistory, predictEcoScore, ecoFeatures, metrics, classifyIntent } = require('./ai/models');
 const { destinations, resolvePlace } = require('./ai/places');
 const { getWeather } = require('./ai/weather');
+const { sendSms, isConfigured: smsConfigured } = require('./sms');
 
 const app = express();
 app.use(cors());
@@ -276,9 +277,9 @@ app.post('/api/notify-booking', requireAuth, async (req, res) => {
 });
 
 // SOS by SMS (FR-041). When a traveller raises an SOS online, the emergency desk also gets
-// an SMS through the Notify.lk gateway. Configure NOTIFY_LK_USER_ID, NOTIFY_LK_API_KEY,
-// NOTIFY_LK_SENDER_ID and SOS_DESK_NUMBER on the server; without them the endpoint reports
-// that SMS is not configured and the app keeps its pre-filled SMS fallback.
+// an SMS through the configured gateway (see sms.js: textbee for free development use, or
+// Notify.lk). Without one the endpoint reports that SMS is not configured and the app keeps
+// its pre-filled SMS fallback.
 function sosSmsText(alert, alertId) {
     const lat = alert.location?.latitude, lon = alert.location?.longitude;
     const where = lat != null ? `https://maps.google.com/?q=${Number(lat).toFixed(5)},${Number(lon).toFixed(5)}` : 'location not shared';
@@ -296,12 +297,12 @@ async function patchSosLog(alertId, fields, idToken) {
 app.post('/api/sos-sms', requireAuth, async (req, res) => {
     const alertId = String(req.body?.alertId || '');
     if (!/^[A-Za-z0-9_-]{1,64}$/.test(alertId)) return res.status(400).json({ error: 'alertId is required' });
-    const { NOTIFY_LK_USER_ID, NOTIFY_LK_API_KEY, NOTIFY_LK_SENDER_ID, SOS_DESK_NUMBER } = process.env;
+    const { SOS_DESK_NUMBER } = process.env;
     try {
         const alert = await readDoc(`sos_alerts/${alertId}`, req.idToken);
         if (!alert) return res.status(404).json({ error: 'Alert not found' });
         if (alert.userId !== req.uid) return res.status(403).json({ error: 'Only the traveller who raised the alert can send it' });
-        if (!NOTIFY_LK_USER_ID || !NOTIFY_LK_API_KEY || !SOS_DESK_NUMBER) {
+        if (!smsConfigured()) {
             await patchSosLog(alertId, { smsStatus: 'not_configured', smsAt: new Date().toISOString() }, req.idToken);
             return res.status(503).json({ sent: false, error: 'SMS gateway not configured' });
         }
@@ -311,15 +312,12 @@ app.post('/api/sos-sms', requireAuth, async (req, res) => {
         const loc = raw.fields?.location?.mapValue?.fields;
         const location = loc ? { latitude: loc.latitude?.doubleValue, longitude: loc.longitude?.doubleValue } : null;
         const text = sosSmsText({ ...alert, location }, alertId);
-        const qs = new URLSearchParams({
-            user_id: NOTIFY_LK_USER_ID, api_key: NOTIFY_LK_API_KEY, sender_id: NOTIFY_LK_SENDER_ID || 'NotifyDEMO',
-            to: SOS_DESK_NUMBER.replace(/^\+/, ''), message: text,
-        });
-        const r = await fetch(`https://app.notify.lk/api/v1/send?${qs}`);
-        const data = await r.json().catch(() => ({}));
-        const ok = r.ok && data.status === 'success';
-        await patchSosLog(alertId, { smsStatus: ok ? 'sent' : 'failed', smsAt: new Date().toISOString(), smsTo: SOS_DESK_NUMBER }, req.idToken);
-        res.status(ok ? 200 : 502).json({ sent: ok });
+        const result = await sendSms(SOS_DESK_NUMBER, text);
+        await patchSosLog(alertId, {
+            smsStatus: result.ok ? 'sent' : 'failed', smsAt: new Date().toISOString(),
+            smsTo: SOS_DESK_NUMBER, smsProvider: result.provider || '', smsDetail: String(result.detail || '').slice(0, 200),
+        }, req.idToken);
+        res.status(result.ok ? 200 : 502).json({ sent: result.ok, provider: result.provider });
     } catch (e) {
         res.status(502).json({ sent: false, error: 'SMS failed: ' + e.message });
     }
