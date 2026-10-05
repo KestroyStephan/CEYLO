@@ -1,7 +1,10 @@
 /**
  * Weather from Open-Meteo (free, no API key), cached for 30 minutes per ~10 km grid cell.
  * Used to down-rank outdoor destinations when rain is forecast and for the weather chips in the app.
+ * Open-Meteo limits requests per IP, and cloud hosts share IPs, so MET Norway's free
+ * Locationforecast API (no key, needs a User-Agent) is used when Open-Meteo refuses.
  */
+const USER_AGENT = 'CEYLO/1.0 (https://github.com/KestroyStephan/CEYLO)';
 const CACHE_MS = 30 * 60 * 1000;
 const cache = new Map();
 
@@ -61,9 +64,15 @@ async function getWeather(lat, lon, { timeoutMs = 4000 } = {}) {
         '&daily=weather_code,precipitation_probability_max,temperature_2m_max,temperature_2m_min' +
         '&timezone=Asia%2FColombo&forecast_days=7';
     try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const value = parse(await res.json());
+        let value;
+        try {
+            const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(timeoutMs) });
+            if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
+            value = { ...parse(await res.json()), source: 'open-meteo' };
+        } catch (first) {
+            console.warn('Open-Meteo unavailable, trying MET Norway:', first.message);
+            value = await fetchMet(lat, lon, timeoutMs);
+        }
         cache.set(key, { at: Date.now(), value });
         return { ...value, cached: false };
     } catch (e) {
@@ -80,4 +89,70 @@ function rainyShare(weather, days) {
     return span.filter(d => d.rainy).length / span.length;
 }
 
-module.exports = { getWeather, rainyShare, describe, isRainy, parse, _cache: cache };
+// MET Norway symbol codes -> WMO weather codes, so both sources share describe() and isRainy()
+function metCode(symbol = '') {
+    const s = symbol.replace(/_(day|night|polartwilight)$/, '');
+    if (s.includes('thunder')) return 95;
+    if (s.includes('snow')) return 71;
+    if (s.includes('sleet')) return 67;
+    if (s.includes('showers')) return 80;
+    if (s === 'lightrain') return 61;
+    if (s === 'rain') return 63;
+    if (s === 'heavyrain') return 65;
+    if (s === 'fog') return 45;
+    if (s === 'cloudy') return 3;
+    if (s === 'partlycloudy') return 2;
+    if (s === 'fair') return 1;
+    return 0;
+}
+
+/** Converts a MET Norway compact forecast to the same shape as parse(). */
+function parseMet(data) {
+    const series = data?.properties?.timeseries || [];
+    if (!series.length) throw new Error('empty MET forecast');
+    const now = series[0].data;
+    const nowCode = metCode(now.next_1_hours?.summary?.symbol_code || now.next_6_hours?.summary?.symbol_code);
+    // Group the hourly / 6-hourly steps into Sri Lanka calendar days (UTC+5:30)
+    const days = new Map();
+    for (const step of series) {
+        const local = new Date(Date.parse(step.time) + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+        const t = step.data.instant.details.air_temperature;
+        const next = step.data.next_6_hours || step.data.next_1_hours;
+        const day = days.get(local) || { temps: [], rain: 0, codes: [] };
+        day.temps.push(t);
+        if (next) {
+            day.rain = Math.max(day.rain, next.details?.precipitation_amount ?? 0);
+            day.codes.push(metCode(next.summary?.symbol_code));
+        }
+        days.set(local, day);
+    }
+    const daily = [...days.entries()].slice(0, 7).map(([date, d]) => {
+        const code = d.codes.length ? Math.max(...d.codes) : 0;
+        // MET's compact forecast has no rain probability; estimate it from the expected amount
+        const rainProbability = Math.min(100, Math.round(d.rain * 40));
+        return {
+            date, code, ...describe(code),
+            maxC: Math.max(...d.temps), minC: Math.min(...d.temps),
+            rainProbability, rainy: isRainy(code, rainProbability),
+        };
+    });
+    return {
+        current: {
+            temperatureC: now.instant.details.air_temperature,
+            precipitationMm: now.next_1_hours?.details?.precipitation_amount ?? null,
+            windKmh: Math.round((now.instant.details.wind_speed || 0) * 3.6 * 10) / 10,
+            code: nowCode, ...describe(nowCode), rainy: isRainy(nowCode, 0),
+        },
+        daily,
+        source: 'met.no',
+    };
+}
+
+async function fetchMet(lat, lon, timeoutMs) {
+    const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`;
+    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok) throw new Error(`MET HTTP ${res.status}`);
+    return parseMet(await res.json());
+}
+
+module.exports = { getWeather, rainyShare, describe, isRainy, parse, parseMet, metCode, _cache: cache };
