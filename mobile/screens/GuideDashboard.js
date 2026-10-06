@@ -98,7 +98,7 @@ export default function GuideDashboard({ navigation }) {
       id: b.id,
       type: (b.guideSpecialization || b.tourType || 'GUIDED TOUR').toUpperCase(),
       title: b.tourTitle || `Journey with ${b.touristName || 'Explorer'}`,
-      time: b.selectedDate || b.tourDate || b.createdAt?.toDate?.()?.toLocaleDateString() || 'Upcoming',
+      time: b.selectedDate || b.tourDate || b.createdAt?.toDate?.()?.toLocaleDateString('en-GB') || 'Upcoming',
       persons: b.explorers || b.groupSize || b.persons || 1,
       bookingId: b.id?.slice(-4),
       imageUrl: b.touristPhoto || b.imageUrl || null,
