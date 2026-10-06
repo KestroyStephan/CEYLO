@@ -118,7 +118,7 @@ export default function OfflineMapSettings({ navigation }) {
           {(item.size / 1024 / 1024).toFixed(1)} MB • {item.tileCount} tiles
         </Text>
         <Text style={styles.regionMeta}>
-          Downloaded {new Date(item.downloadedAt).toLocaleDateString()}
+          Downloaded {new Date(item.downloadedAt).toLocaleDateString('en-GB')}
         </Text>
       </View>
       <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteBtn}>
