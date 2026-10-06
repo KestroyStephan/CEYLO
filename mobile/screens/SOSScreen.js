@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { db, auth, storage } from '../firebaseConfig';
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
 import { logEvent } from '../services/Analytics';
 import { sendSosSms } from '../services/aiClient';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -175,6 +175,25 @@ export default function SOSScreen({ navigation }) {
       setAiLoading(false);
     }
   };
+
+  // An alert stays open until the traveller or the desk resolves it, so reopening this screen
+  // (or restarting the app) brings it back instead of showing a fresh SOS button
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    getDocs(query(collection(db, 'sos_alerts'), where('userId', '==', uid)))
+      .then(snap => {
+        const open = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(a => a.status && a.status !== 'resolved')
+          .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))[0];
+        if (open) {
+          setActive(true);
+          setActiveDocId(open.id);
+        }
+      })
+      .catch(e => console.log('Could not check for an open SOS:', e.message));
+  }, []);
 
   // Walkie-Talkie & Admin Camera Request Listener
   useEffect(() => {
@@ -348,14 +367,15 @@ export default function SOSScreen({ navigation }) {
     }
     const netState = await NetInfo.fetch();
     setIsOffline(!netState.isConnected);
+    setMediaType('picture');
     setShowCamera(true);
   };
 
   const handleCapture = async () => {
     if (!cameraRef.current) return;
     try {
-      if (isOffline) {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
+      if (isOffline || mediaType === 'picture') {
+        const photo = await cameraRef.current.takePictureAsync({ quality: 0.6 });
         setCapturedUri(photo.uri);
         setMediaType('picture');
       } else {
@@ -390,7 +410,7 @@ export default function SOSScreen({ navigation }) {
       const res = await fetch(capturedUri);
       const blob = await res.blob();
       const ext = mediaType === 'video' ? 'mp4' : 'jpg';
-      const r = ref(storage, `sos_alerts/${activeDocId}_evidence.${ext}`);
+      const r = ref(storage, `sos_alerts/${activeDocId}_evidence_${Date.now()}.${ext}`);
 
       const evidenceUrl = await new Promise((resolve, reject) => {
         const task = uploadBytesResumable(r, blob);
@@ -402,11 +422,16 @@ export default function SOSScreen({ navigation }) {
       });
 
       const alertRef = doc(db, "sos_alerts", activeDocId);
-      await updateDoc(alertRef, { evidenceUrl, mediaType });
+      await updateDoc(alertRef, {
+        evidenceUrl,
+        mediaType,
+        ...(mediaType === 'picture' ? { photoUrl: evidenceUrl } : {}),
+        evidence: arrayUnion({ url: evidenceUrl, type: mediaType, at: new Date().toISOString() }),
+      });
 
       setShowCamera(false);
       setCapturedUri(null);
-      Alert.alert("Evidence Attached", "Photo has been sent to authorities.");
+      Alert.alert("Evidence Attached", `Your ${mediaType === 'video' ? 'video' : 'photo'} has been sent to the emergency desk.`);
     } catch (e) {
       Alert.alert("Upload Failed", e.message);
     } finally {
@@ -603,7 +628,7 @@ export default function SOSScreen({ navigation }) {
               )}
               <View style={styles.previewOverlay}>
                 <View style={styles.previewHeader}>
-                  <Text style={styles.previewTitle}>{i18n.t('ui_emergency_photo')}</Text>
+                  <Text style={styles.previewTitle}>{mediaType === 'video' ? 'Emergency video' : i18n.t('ui_emergency_photo')}</Text>
                 </View>
                 <View style={styles.previewFooter}>
                   {uploading ? (
@@ -628,15 +653,25 @@ export default function SOSScreen({ navigation }) {
             </View>
           ) : (
             <View style={{ flex: 1 }}>
-              <CameraView style={{ flex: 1 }} ref={cameraRef} facing="back" mode={isOffline ? "picture" : "video"} />
+              <CameraView style={{ flex: 1 }} ref={cameraRef} facing="back" mode={isOffline || mediaType === 'picture' ? 'picture' : 'video'} />
               <View style={styles.cameraOverlay}>
                 <View style={styles.cameraHeader}>
                   <TouchableOpacity style={styles.closeBtn} onPress={() => setShowCamera(false)}>
                     <Ionicons name="close" size={24} color="#FFF" />
                   </TouchableOpacity>
-                  <Text style={styles.cameraTitle}>{isOffline ? 'Capture Photo (Offline)' : 'Record Video Evidence'}</Text>
+                  <Text style={styles.cameraTitle}>{isOffline ? 'Photo evidence (offline)' : mediaType === 'video' ? (isRecordingVideo ? 'Recording… tap to stop' : 'Video evidence (15 s)') : 'Photo evidence'}</Text>
                   <View style={{ width: 40 }} />
                 </View>
+                {!isOffline && !isRecordingVideo && (
+                  <View style={styles.modeSwitch}>
+                    {['picture', 'video'].map(m => (
+                      <TouchableOpacity key={m} style={[styles.modeBtn, mediaType === m && styles.modeBtnActive]} onPress={() => setMediaType(m)}>
+                        <Ionicons name={m === 'picture' ? 'camera' : 'videocam'} size={16} color={mediaType === m ? '#D32F2F' : '#FFF'} />
+                        <Text style={[styles.modeText, mediaType === m && { color: '#D32F2F' }]}>{m === 'picture' ? 'Photo' : 'Video'}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
                 <View style={styles.cameraFooter}>
                   <TouchableOpacity style={styles.captureBtn} onPress={handleCapture}>
                     <View style={[styles.captureOuter, isRecordingVideo && { borderColor: '#D32F2F' }]}>
@@ -686,6 +721,10 @@ const styles = StyleSheet.create({
   cameraTitle: {fontSize:18,fontFamily:'Outfit-Bold',color:'#FFF'},
   cameraFooter:{alignItems:'center',paddingBottom:56,backgroundColor:'rgba(0,0,0,0.45)',paddingTop:24},
   captureBtn:  {padding:4},
+  modeSwitch:  {position:'absolute',top:130,alignSelf:'center',flexDirection:'row',backgroundColor:'rgba(0,0,0,0.5)',borderRadius:22,padding:4},
+  modeBtn:     {flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:16,paddingVertical:8,borderRadius:18},
+  modeBtnActive:{backgroundColor:'#FFF'},
+  modeText:    {color:'#FFF',fontFamily:'Outfit-Bold',fontSize:14},
   captureOuter:{width:76,height:76,borderRadius:38,borderWidth:3,borderColor:'#FFF',alignItems:'center',justifyContent:'center'},
   captureInner:{width:60,height:60,borderRadius:30,backgroundColor:'#D32F2F'},
   previewOverlay:{position:'absolute',top:0,left:0,right:0,bottom:0,justifyContent:'space-between'},

@@ -214,7 +214,7 @@ function SOSMonitor() {
             `Raised: ${selectedAlert.timestamp?.toDate ? selectedAlert.timestamp.toDate().toLocaleString() : 'unknown'}`,
             lat != null ? `Location: ${lat}, ${lon} - https://www.google.com/maps/search/?api=1&query=${lat},${lon}` : `Location: ${selectedAlert.locationName || 'not shared'}`,
             selectedAlert.message ? `Message: ${selectedAlert.message}` : null,
-            selectedAlert.photoUrl ? `Photo: ${selectedAlert.photoUrl}` : null,
+            (selectedAlert.evidenceUrl || selectedAlert.photoUrl) ? `${selectedAlert.mediaType === 'video' ? 'Video' : 'Photo'}: ${selectedAlert.evidenceUrl || selectedAlert.photoUrl}` : null,
             `Status: ${STATUS_LABEL[selectedAlert.status] || selectedAlert.status}${selectedAlert.dispatchTeam ? `, ${selectedAlert.dispatchTeam} dispatched` : ''}`,
         ].filter(Boolean).join('\n');
         try {
@@ -474,13 +474,22 @@ function SOSMonitor() {
                                     }}>
                                         <Box sx={{ width: 8, height: 8, bgcolor: '#f44336', borderRadius: '50%', mr: 1, animation: 'pulse 1.2s infinite' }} />
                                         <Typography variant="caption" color="#FFF" fontWeight={800}>
-                                            {selectedAlert.photoUrl ? 'PHOTO FROM TRAVELLER' : 'NO PHOTO SENT'}
+                                            {(selectedAlert.evidenceUrl || selectedAlert.photoUrl)
+                                                ? (selectedAlert.mediaType === 'video' ? 'VIDEO FROM TRAVELLER' : 'PHOTO FROM TRAVELLER')
+                                                : 'NO EVIDENCE SENT YET'}
                                         </Typography>
                                     </Box>
 
-                                    {selectedAlert.photoUrl ? (
+                                    {selectedAlert.mediaType === 'video' && selectedAlert.evidenceUrl ? (
+                                        <video
+                                            src={selectedAlert.evidenceUrl}
+                                            controls
+                                            playsInline
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', background: '#000' }}
+                                        />
+                                    ) : (selectedAlert.evidenceUrl || selectedAlert.photoUrl) ? (
                                         <img
-                                            src={selectedAlert.photoUrl}
+                                            src={selectedAlert.evidenceUrl || selectedAlert.photoUrl}
                                             alt="Photo sent with the SOS"
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
