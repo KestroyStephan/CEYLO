@@ -138,7 +138,7 @@ function Bookings() {
         if (!date) return 'Not Scheduled';
         try {
             const d = date.toDate ? date.toDate() : new Date(date);
-            return isNaN(d) ? 'Pending Schedule' : d.toLocaleDateString();
+            return isNaN(d) ? 'Pending Schedule' : d.toLocaleDateString('en-GB');
         } catch (e) {
             return 'Pending Schedule';
         }
@@ -373,7 +373,7 @@ function Bookings() {
                             <Stack spacing={2} sx={{ mb: 4 }}>
                                 <Box><Typography variant="caption" color="text.secondary" display="block">Provider</Typography><Typography variant="body2" fontWeight={500}>{selectedBooking.vendorName || 'Direct Booking'}</Typography></Box>
                                 <Box><Typography variant="caption" color="text.secondary" display="block">Service / Item</Typography><Typography variant="body2" fontWeight={500}>{selectedBooking.service || selectedBooking.serviceName}</Typography></Box>
-                                <Box><Typography variant="caption" color="text.secondary" display="block">Date</Typography><Typography variant="body2" fontWeight={500}>{selectedBooking.date?.toDate ? selectedBooking.date.toDate().toLocaleDateString() : new Date(selectedBooking.date).toLocaleDateString()}</Typography></Box>
+                                <Box><Typography variant="caption" color="text.secondary" display="block">Date</Typography><Typography variant="body2" fontWeight={500}>{selectedBooking.date?.toDate ? selectedBooking.date.toDate().toLocaleDateString('en-GB') : new Date(selectedBooking.date).toLocaleDateString('en-GB')}</Typography></Box>
                             </Stack>
 
                             <Typography variant="subtitle2" color="#64748B" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Financials</Typography>
