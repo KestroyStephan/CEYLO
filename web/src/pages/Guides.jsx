@@ -202,7 +202,7 @@ export default function Guides() {
             
             doc.setFontSize(10);
             doc.setTextColor(100);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 30);
             
             const tableColumn = ["License", "Name", "Specialization", "Region", "Eco-Score", "Status"];
             const tableRows = [];
