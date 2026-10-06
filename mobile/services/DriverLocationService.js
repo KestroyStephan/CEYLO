@@ -45,12 +45,18 @@ export function stopLocationTracking() {
 // While a driver is online their approximate position (about 100 m, rounded for privacy) is kept
 // on drivers/{uid}.location so riders see nearby cars and only nearby drivers get requests.
 let availabilitySubscription = null;
+let availabilityHeartbeat = null;
+// Position updates only arrive after the driver moves, so a parked driver re-sends the last
+// position on this interval to stay inside the rider app's freshness window (LOCATION_FRESH_MS)
+const HEARTBEAT_MS = 60 * 1000;
 
 export async function startAvailability(driverId, onPosition) {
   stopAvailability();
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') return false;
+  let lastCoords = null;
   const publish = async (coords) => {
+    lastCoords = coords;
     onPosition && onPosition({ latitude: coords.latitude, longitude: coords.longitude });
     try {
       await updateDoc(doc(db, 'drivers', driverId), {
@@ -74,10 +80,17 @@ export async function startAvailability(driverId, onPosition) {
     { accuracy: Location.Accuracy.Balanced, timeInterval: 30000, distanceInterval: 100 },
     (loc) => publish(loc.coords),
   );
+  availabilityHeartbeat = setInterval(() => {
+    if (lastCoords) publish(lastCoords);
+  }, HEARTBEAT_MS);
   return true;
 }
 
 export function stopAvailability() {
+  if (availabilityHeartbeat) {
+    clearInterval(availabilityHeartbeat);
+    availabilityHeartbeat = null;
+  }
   if (availabilitySubscription) {
     availabilitySubscription.remove();
     availabilitySubscription = null;

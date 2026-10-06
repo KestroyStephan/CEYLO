@@ -1,9 +1,9 @@
 
 import { initializeApp } from "firebase/app";
-import { getAuth, initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { getAuth, initializeAuth, getReactNativePersistence, connectAuthEmulator } from "firebase/auth";
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Replace these values with your actual Firebase configuration
@@ -32,3 +32,11 @@ export { auth };
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Local testing: start Metro with EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=localhost to use the Firebase
+// emulators (sign-in on 9099, Firestore on 8085) with dummy accounts instead of the live project.
+const emulatorHost = process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST;
+if (emulatorHost) {
+    connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+    connectFirestoreEmulator(db, emulatorHost, 8085);
+}

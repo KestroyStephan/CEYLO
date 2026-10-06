@@ -165,6 +165,29 @@ export default function TransportScreen({ route, navigation }) {
     }
   }, [bookingStep]);
 
+  // Resume an unfinished ride when the screen opens (app restarted or navigated away mid-ride)
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid || passedDestination) return;
+    getDocs(query(collection(db, 'bookings'), where('userId', '==', uid)))
+      .then(snap => {
+        const open = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(b => b.vehicleType && ['pending', 'Confirmed', 'Arrived', 'InProgress'].includes(b.status))
+          .filter(b => Date.now() - (b.createdAt?.toMillis ? b.createdAt.toMillis() : Date.parse(b.createdAt) || 0) < 6 * 60 * 60 * 1000)
+          .sort((a, b) => String(b.createdAt?.seconds ?? b.createdAt).localeCompare(String(a.createdAt?.seconds ?? a.createdAt)))[0];
+        if (!open) return;
+        if (open.pickupCoords) setPickupCoords(open.pickupCoords);
+        if (open.dropoffCoords) setDropoffCoords(open.dropoffCoords);
+        setPickupAddress(open.pickup || '');
+        setDropAddress(open.dropoff || '');
+        setSelectedVehicle(open.vehicleType);
+        setBookingStep(open.status === 'pending' ? 'searching' : 'driverAssigned');
+        setActiveBookingId(open.id);
+      })
+      .catch(e => console.log('Could not check for an open ride:', e.message));
+  }, []);
+
   // Real-time listener on active booking
   useEffect(() => {
     if (!activeBookingId) return;
@@ -176,7 +199,7 @@ export default function TransportScreen({ route, navigation }) {
         const data = snap.data();
         setActiveBooking({ id: snap.id, ...data });
 
-        if (data.status === 'Confirmed' && data.driverId) {
+        if (['Confirmed', 'Arrived', 'InProgress'].includes(data.status) && data.driverId) {
           clearTimeout(demoDriverTimer.current);
           clearTimeout(expiryTimer.current);
           setBookingStep('driverAssigned');
@@ -929,8 +952,8 @@ export default function TransportScreen({ route, navigation }) {
                     {assignedDriver?.name || 'Your Driver'}
                   </Text>
                   <Text style={styles.driverVehicle}>
-                    {assignedDriver?.vehicleType} • {assignedDriver?.licensePlate}
-                    {driverRating ? `  •  ★ ${driverRating.avg.toFixed(1)} (${driverRating.n})` : '  •  New driver'}
+                    {[assignedDriver?.vehicleType, assignedDriver?.licensePlate,
+                      driverRating ? `★ ${driverRating.avg.toFixed(1)} (${driverRating.n})` : 'New driver'].filter(Boolean).join('  •  ')}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -949,21 +972,22 @@ export default function TransportScreen({ route, navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.rideSos} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
-              <Ionicons name="warning" size={16} color="#FFF" />
-              <Text style={styles.rideSosText}>SOS</Text>
-            </TouchableOpacity>
-
-            {/* Cancel button — with half-way restriction */}
-            {canTouristCancel && (
-              <TouchableOpacity
-                style={styles.cancelRideButton}
-                onPress={handleTouristCancel}
-              >
-                <Ionicons name="close-circle-outline" size={18} color="#BA1A1A" />
-                <Text style={styles.cancelRideText}>{i18n.t('ui_cancel_ride')}</Text>
+            {/* SOS and, until the halfway point, cancel side by side */}
+            <View style={styles.rideActions}>
+              <TouchableOpacity style={styles.rideSos} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
+                <Ionicons name="warning" size={16} color="#FFF" />
+                <Text style={styles.rideSosText}>SOS</Text>
               </TouchableOpacity>
-            )}
+              {canTouristCancel && (
+                <TouchableOpacity
+                  style={styles.cancelRideButton}
+                  onPress={handleTouristCancel}
+                >
+                  <Ionicons name="close-circle-outline" size={18} color="#BA1A1A" />
+                  <Text style={styles.cancelRideText}>{i18n.t('ui_cancel_ride')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             {!canTouristCancel && activeBooking?.status === 'InProgress' && (
               <View style={styles.cannotCancelBanner}>
@@ -1013,7 +1037,8 @@ export default function TransportScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   nearbyCar: { backgroundColor: '#1B2B28', borderRadius: 12, padding: 5, borderWidth: 2, borderColor: '#FFF' },
   vEta: { fontSize: 11, color: '#3F4941', marginTop: 2, fontFamily: 'Outfit-Medium' },
-  rideSos: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: '#C62828', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, marginTop: 10 },
+  rideActions: { flexDirection: 'row', alignItems: 'stretch', gap: 10, marginHorizontal: 16, marginTop: 12, marginBottom: 16 },
+  rideSos: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#C62828', borderRadius: 14, paddingHorizontal: 18 },
   rideSosText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 },
   rateCard: { backgroundColor: '#FFF', borderRadius: 18, padding: 16, marginTop: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E0F2F1' },
   rateTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#1B2B28' },
@@ -1145,7 +1170,7 @@ const styles = StyleSheet.create({
   driverAvatarLetter: { fontSize: 18, fontWeight: '700', color: '#006A3B' },
   driverInfo: { flex: 1 },
   driverName: { fontSize: 16, fontWeight: '700', color: '#181D19' },
-  driverVehicle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  driverVehicle: { fontSize: 13, color: '#6B7280', marginTop: 2, fontFamily: 'Outfit-Regular' },
   callDriverButton: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(0,106,59,0.1)',
@@ -1156,8 +1181,8 @@ const styles = StyleSheet.create({
   fareAmount: { fontSize: 20, fontWeight: '800', color: '#006A3B' },
   cancelRideButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginHorizontal: 16, paddingVertical: 12, borderRadius: 14,
-    borderWidth: 1.5, borderColor: '#BA1A1A', marginBottom: 16,
+    gap: 6, flex: 1, paddingVertical: 12, borderRadius: 14,
+    borderWidth: 1.5, borderColor: '#BA1A1A',
   },
   cancelRideText: { color: '#BA1A1A', fontWeight: '600', fontSize: 14 },
   cannotCancelBanner: {
