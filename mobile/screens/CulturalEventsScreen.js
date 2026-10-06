@@ -19,7 +19,7 @@ const formatDate = (dateString, formatType) => {
     if (formatType === 'EEE') return d.toLocaleString('en-US', { weekday: 'short' });
     if (formatType === 'MMMM yyyy') return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-    return d.toLocaleDateString();
+    return d.toLocaleDateString('en-GB');
 };
 
 const { width } = Dimensions.get('window');
