@@ -7,6 +7,7 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../components/Map';
 import { Text, Surface, Button, Avatar, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import PayButton from '../components/PayButton';
 import * as Location from 'expo-location';
 import { doc, addDoc, collection, onSnapshot, getDoc, serverTimestamp, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
@@ -53,6 +54,7 @@ export default function TransportScreen({ route, navigation }) {
   const [ratingFor, setRatingFor] = useState(null);     // completed booking waiting for a rating
   const [myRating, setMyRating] = useState(0);
   const [driverRating, setDriverRating] = useState(null);
+  const [ratedRide, setRatedRide] = useState(null);     // live copy of the completed ride, for its payment status
   const expiryTimer = useRef(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -164,6 +166,14 @@ export default function TransportScreen({ route, navigation }) {
       pulseAnim.setValue(1);
     }
   }, [bookingStep]);
+
+  useEffect(() => {
+    if (!ratingFor?.id) {
+      setRatedRide(null);
+      return undefined;
+    }
+    return onSnapshot(doc(db, 'bookings', ratingFor.id), (snap) => setRatedRide(snap.exists() ? { id: snap.id, ...snap.data() } : null), () => {});
+  }, [ratingFor?.id]);
 
   // Resume an unfinished ride when the screen opens (app restarted or navigated away mid-ride)
   useEffect(() => {
@@ -1002,6 +1012,10 @@ export default function TransportScreen({ route, navigation }) {
         {ratingFor && (
           <View style={styles.rateCard}>
             <Text style={styles.rateTitle}>Trip complete · LKR {Number(ratingFor.fare || 0).toLocaleString()}</Text>
+            <View style={{ alignSelf: 'stretch', marginTop: 10, marginBottom: 6 }}>
+              <PayButton kind="ride" id={ratingFor.id} record={ratedRide} amountLabel={`LKR ${Number(ratingFor.fare || 0).toLocaleString()}`}
+                cashHint="Or pay your driver in cash." />
+            </View>
             <Text style={styles.rateSub}>How was your driver?</Text>
             <View style={styles.rateStars}>
               {[1, 2, 3, 4, 5].map(n => (

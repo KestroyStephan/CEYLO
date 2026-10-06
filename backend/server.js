@@ -9,6 +9,7 @@ const { destinations, resolvePlace } = require('./ai/places');
 const { getWeather } = require('./ai/weather');
 const { sendSms, isConfigured: smsConfigured } = require('./sms');
 const phoneAuth = require('./phoneAuth');
+const payments = require('./payments');
 
 const app = express();
 // Render (and most hosts) sit behind one proxy hop; without this every user shares the proxy's IP
@@ -20,11 +21,14 @@ app.use(express.json({ limit: '200kb' }));
 // Firebase Web API key is public by design; it is only used to validate ID tokens.
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyACNB5L3HjIjZIwuYA4T-f6cUFt-G4NOk8';
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'ceylo-app';
+// Local drills: FIRESTORE_EMULATOR_HOST / FIREBASE_AUTH_EMULATOR_HOST point the REST calls at the emulators
+const FIRESTORE_BASE = process.env.FIRESTORE_EMULATOR_HOST ? `http://${process.env.FIRESTORE_EMULATOR_HOST}` : 'https://firestore.googleapis.com';
+const IDENTITY_BASE = process.env.FIREBASE_AUTH_EMULATOR_HOST ? `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com` : 'https://identitytoolkit.googleapis.com';
 const STAFF_ROLES = ['admin', 'super_admin', 'manager', 'support', 'content_manager'];
 
 // Verifies a Firebase ID token by asking the Identity Toolkit who it belongs to.
 async function verifyIdToken(idToken) {
-    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+    const res = await fetch(`${IDENTITY_BASE}/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
@@ -52,7 +56,7 @@ async function requireAuth(req, res, next) {
 // Reads the caller's role through the Firestore REST API with their own token,
 // so the server needs no service account.
 async function getUserRole(uid, idToken) {
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}`;
+    const url = `${FIRESTORE_BASE}/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
     if (!res.ok) return null;
     const data = await res.json();
@@ -79,7 +83,7 @@ app.use('/api/', apiLimiter);
 // destinations is publicly readable, so the public Web API key is enough.
 async function refreshBlockedDestinations() {
     try {
-        const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery?key=${FIREBASE_API_KEY}`;
+        const url = `${FIRESTORE_BASE}/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery?key=${FIREBASE_API_KEY}`;
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -244,7 +248,7 @@ function fromFirestore(v) {
 }
 
 async function readDoc(path, idToken) {
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`;
+    const url = `${FIRESTORE_BASE}/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
     if (!res.ok) return null;
     const data = await res.json();
@@ -253,7 +257,7 @@ async function readDoc(path, idToken) {
 
 // Online drivers of one vehicle type (drivers are readable by any signed-in user)
 async function onlineDrivers(vehicleType, idToken) {
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const url = `${FIRESTORE_BASE}/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery`;
     const body = { structuredQuery: {
         from: [{ collectionId: 'drivers' }],
         where: { compositeFilter: { op: 'AND', filters: [
@@ -349,7 +353,7 @@ function sosSmsText(alert, alertId) {
 
 async function patchSosLog(alertId, fields, idToken) {
     const mask = Object.keys(fields).map(k => `updateMask.fieldPaths=${k}`).join('&');
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/sos_alerts/${alertId}?${mask}`;
+    const url = `${FIRESTORE_BASE}/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/sos_alerts/${alertId}?${mask}`;
     const body = { fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { stringValue: String(v) }])) };
     await fetch(url, { method: 'PATCH', headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         .catch(() => {});
@@ -368,7 +372,7 @@ app.post('/api/sos-sms', requireAuth, async (req, res) => {
             return res.status(503).json({ sent: false, error: 'SMS gateway not configured' });
         }
         // readDoc flattens maps, so fetch the location separately when present
-        const raw = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/sos_alerts/${alertId}`,
+        const raw = await fetch(`${FIRESTORE_BASE}/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/sos_alerts/${alertId}`,
             { headers: { Authorization: `Bearer ${req.idToken}` } }).then(r => r.json());
         const loc = raw.fields?.location?.mapValue?.fields;
         const location = loc ? { latitude: loc.latitude?.doubleValue, longitude: loc.longitude?.doubleValue } : null;
@@ -402,6 +406,107 @@ app.post('/api/auth/phone/verify', otpLimiter, async (req, res) => {
     } catch (e) {
         console.warn('Phone verification failed:', e.message);
         res.status(502).json({ error: 'Could not finish phone sign-in' });
+    }
+});
+
+// ---------------------------------------------------------------------------------------------
+// Payments (PayHere). See payments.js for the flow.
+let adminDb = null;
+function firestoreAdmin(env = process.env) {
+    if (adminDb) return adminDb;
+    const { getApps, initializeApp, cert } = require('firebase-admin/app');
+    const { getFirestore } = require('firebase-admin/firestore');
+    let app = getApps()[0];
+    if (!app && env.FIRESTORE_EMULATOR_HOST) {
+        app = initializeApp({ projectId: FIREBASE_PROJECT_ID });
+    } else if (!app && env.FIREBASE_SERVICE_ACCOUNT) {
+        const raw = env.FIREBASE_SERVICE_ACCOUNT;
+        const json = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+        app = initializeApp({ credential: cert(JSON.parse(json)) });
+    }
+    if (!app) return null;
+    adminDb = getFirestore(app);
+    return adminDb;
+}
+
+// Name and email from the (already verified) ID token, to prefill the PayHere form
+function tokenClaims(idToken) {
+    try {
+        return JSON.parse(Buffer.from(String(idToken).split('.')[1], 'base64url').toString('utf8'));
+    } catch {
+        return {};
+    }
+}
+
+app.get('/api/pay/available', (req, res) => res.json({
+    available: payments.isConfigured() && Boolean(firestoreAdmin()),
+    sandbox: payments.config().sandbox,
+}));
+
+app.post('/api/pay/start', requireAuth, async (req, res) => {
+    const kind = String(req.body?.kind || '');
+    const id = String(req.body?.id || '');
+    if (!['ride', 'guide', 'order'].includes(kind) || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
+        return res.status(400).json({ error: 'kind and id are required' });
+    }
+    if (!payments.isConfigured() || !firestoreAdmin()) return res.status(503).json({ error: 'Online payments are not set up' });
+    try {
+        const record = await readDoc(`${payments.collectionFor(kind)}/${id}`, req.idToken);
+        const due = payments.payableFor(kind, record, req.uid);
+        if (due.error) return res.status(due.status).json({ error: due.error });
+        const claims = tokenClaims(req.idToken);
+        const ticket = payments.signTicket({
+            kind, id, uid: req.uid, amount: due.amount, currency: due.currency, item: due.item,
+            name: claims.name || record.userName || record.customerName || record.touristName, email: claims.email, phone: claims.phone_number,
+        });
+        const base = payments.config().baseUrl || `${req.protocol}://${req.get('host')}`;
+        res.json({ url: `${base}/pay/checkout?t=${encodeURIComponent(ticket)}`, amount: due.amount, currency: due.currency });
+    } catch (e) {
+        res.status(502).json({ error: 'Could not start the payment' });
+    }
+});
+
+app.get('/pay/checkout', (req, res) => {
+    const ticket = payments.readTicket(req.query.t);
+    if (!ticket) return res.status(400).type('html').send(payments.resultPage(false));
+    const env = payments.config().baseUrl ? process.env : { ...process.env, PUBLIC_BASE_URL: `${req.protocol}://${req.get('host')}` };
+    res.type('html').send(payments.checkoutPage(ticket, env));
+});
+app.get('/pay/return', (req, res) => res.type('html').send(payments.resultPage(true)));
+app.get('/pay/cancel', (req, res) => res.type('html').send(payments.resultPage(false)));
+
+// Server-to-server notification from PayHere: the only thing that marks a payment as paid
+app.post('/api/pay/notify', express.urlencoded({ extended: false }), async (req, res) => {
+    const body = req.body || {};
+    if (!payments.verifyNotify(body)) return res.status(400).send('bad signature');
+    const [kind, ...rest] = String(body.order_id || '').split('_');
+    const id = rest.join('_');
+    const db = firestoreAdmin();
+    if (!db || !['ride', 'guide', 'order'].includes(kind) || !id) return res.status(400).send('unknown order');
+    const paid = String(body.status_code) === '2';
+    try {
+        const ref = db.collection(payments.collectionFor(kind)).doc(id);
+        await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists || snap.get('paymentStatus') === 'paid') return;
+            tx.update(ref, paid ? {
+                paymentStatus: 'paid',
+                paidAmount: Number(body.payhere_amount),
+                paidCurrency: body.payhere_currency,
+                paymentId: String(body.payment_id || ''),
+                paymentMethod: String(body.method || 'card'),
+                paidAt: new Date().toISOString(),
+            } : { paymentStatus: String(body.status_code) === '0' ? 'pending' : 'failed' });
+        });
+        await db.collection('payments').doc(String(body.payment_id || `${kind}_${id}_${Date.now()}`)).set({
+            kind, recordId: id, statusCode: Number(body.status_code), amount: Number(body.payhere_amount),
+            currency: body.payhere_currency, method: body.method || null, cardNo: body.card_no || null,
+            gateway: 'payhere', sandbox: payments.config().sandbox, at: new Date().toISOString(),
+        });
+        res.send('ok');
+    } catch (e) {
+        console.error('Payment notify failed:', e.message);
+        res.status(500).send('error');
     }
 });
 

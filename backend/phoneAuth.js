@@ -26,9 +26,11 @@ function firebaseAuth(env = process.env) {
     const raw = env.FIREBASE_SERVICE_ACCOUNT;
     if (!raw) return null;
     const json = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-    const admin = require('firebase-admin');
-    const app = admin.apps.length ? admin.app() : admin.initializeApp({ credential: admin.credential.cert(JSON.parse(json)) });
-    adminAuth = app.auth();
+    // firebase-admin v14 is modular: no admin.apps / admin.credential / app.auth()
+    const { getApps, initializeApp, cert } = require('firebase-admin/app');
+    const { getAuth } = require('firebase-admin/auth');
+    const app = getApps()[0] || initializeApp({ credential: cert(JSON.parse(json)) });
+    adminAuth = getAuth(app);
     return adminAuth;
 }
 

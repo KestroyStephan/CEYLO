@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import ProgressiveImage from '../components/ProgressiveImage';
+import PayButton from '../components/PayButton';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 
 const ACCENT = '#00695C';
@@ -76,8 +77,14 @@ export default function MyOrdersScreen({ navigation, route }) {
 
         {item.status === 'rejected' && item.rejectionReason ? <Text style={styles.reason}>Reason: {item.rejectionReason}</Text> : null}
         {item.pickupLocation && ['accepted', 'preparing', 'ready'].includes(item.status) ? (
-          <Text style={styles.pickup}>Collect at {item.pickupLocation} and pay the vendor there.</Text>
+          <Text style={styles.pickup}>Collect at {item.pickupLocation}{item.paymentStatus === 'paid' ? '.' : ' and pay there, or pay online below.'}</Text>
         ) : null}
+        {(['accepted', 'preparing', 'ready'].includes(item.status) || item.paymentStatus === 'paid') && (
+          <View style={{ marginTop: 12 }}>
+            <PayButton kind="order" id={item.id} record={item} amountLabel={`LKR ${(item.totalPrice || 0).toLocaleString()}`}
+              cashHint="Or pay the vendor in cash when you collect." />
+          </View>
+        )}
         {item.status === 'pending' && (
           <TouchableOpacity onPress={() => cancel(item)} style={styles.cancel}>
             <Text style={styles.cancelText}>Cancel order</Text>

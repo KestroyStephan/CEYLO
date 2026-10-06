@@ -14,6 +14,12 @@ service cloud.firestore {
         : null;
     }
     // Admin-portal staff (see STAFF_ROLES in web/src/App.jsx)
+    // Payment fields are written only by the server after PayHere confirms a payment
+    function paymentUntouched() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['paymentStatus', 'paidAmount', 'paidCurrency', 'paymentId', 'paymentMethod', 'paidAt']);
+    }
+
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'admin@ceylo.com' ||
@@ -103,13 +109,14 @@ service cloud.firestore {
       function isOpenRide(data) {
         return data.status == 'pending' && ('vehicleType' in data) && data.get('driverId', null) == null;
       }
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid
+        && !('paymentStatus' in request.resource.data);
       allow read:   if isSignedIn() && (
         isParticipant(resource.data) ||
         isAdmin() ||
         (isDriver() && isOpenRide(resource.data))
       );
-      allow update: if isSignedIn() && (
+      allow update: if isSignedIn() && (isAdmin() || paymentUntouched()) && (
         isParticipant(resource.data) ||
         isAdmin() ||
         // a driver may claim an open ride for themselves (never a guide booking)
@@ -189,14 +196,15 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow create: if isSignedIn() && request.resource.data.touristId == request.auth.uid
         && request.resource.data.status == 'pending'
-        && request.resource.data.vendorId != request.auth.uid;
+        && request.resource.data.vendorId != request.auth.uid
+        && !('paymentStatus' in request.resource.data);
       allow read:   if isSignedIn() && (
         request.auth.uid == resource.data.vendorId ||
         request.auth.uid == resource.data.touristId ||
         isAdmin()
       );
       // The vendor moves the order along; the traveller may only cancel it while it is pending
-      allow update: if isSignedIn() && (
+      allow update: if isSignedIn() && (isAdmin() || paymentUntouched()) && (
         request.auth.uid == resource.data.vendorId ||
         isAdmin() ||
         (request.auth.uid == resource.data.touristId && resource.data.status == 'pending' &&

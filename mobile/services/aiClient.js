@@ -4,6 +4,7 @@
  * classifier, recommender, eco scorer). No external AI service or API key is involved.
  */
 import { auth } from '../firebaseConfig';
+import { Linking } from 'react-native';
 import { API_BASE_URL } from '../config';
 
 async function authHeaders() {
@@ -156,5 +157,24 @@ export async function getWeather({ lat, lon, place }) {
   } catch (e) {
     if (lat == null || lon == null) throw e;
     return weatherFromPhone(lat, lon);
+  }
+}
+
+/**
+ * Starts a PayHere payment for one of the traveller's own records and opens the checkout page.
+ * kind: 'ride' | 'guide' | 'order'. The record turns paid only when PayHere confirms it to the
+ * server, so screens should watch the record's paymentStatus rather than trust this call.
+ */
+export async function payOnline(kind, id) {
+  const { url } = await postJSON('/api/pay/start', { kind, id }, 30000);
+  await Linking.openURL(url);
+}
+
+export async function onlinePaymentsAvailable() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/pay/available`);
+    return Boolean((await res.json()).available);
+  } catch {
+    return false;
   }
 }

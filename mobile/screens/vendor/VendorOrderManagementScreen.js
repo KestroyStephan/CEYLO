@@ -121,6 +121,9 @@ export default function VendorOrderManagementScreen({ route, navigation }) {
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalAmount}>LKR {(order.totalPrice||0).toLocaleString()}</Text>
           </View>
+          <Text style={{marginTop:8,fontWeight:'700',color:order.paymentStatus==='paid'?'#1B5E20':'#B26A00'}}>
+            {order.paymentStatus==='paid' ? 'Paid online through PayHere — do not collect cash' : 'Not paid yet — collect cash at pickup'}
+          </Text>
         </View>
 
         {order.notes&&(

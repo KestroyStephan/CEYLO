@@ -318,7 +318,10 @@ function Bookings() {
                                     <TableCell><Typography variant="body2" color="text.secondary">{row.service || row.serviceName}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate(row.date)}</Typography></TableCell>
                                     <TableCell align="right"><Typography variant="body2" fontWeight={600} color="#0F172A">{formatBookingAmount(row)}</Typography></TableCell>
-                                    <TableCell>{getStatusChip(row.status)}</TableCell>
+                                    <TableCell>
+                                        {getStatusChip(row.status)}
+                                        {row.paymentStatus === 'paid' && <Chip label="Paid online" size="small" sx={{ ml: 0.5, bgcolor: '#DBEAFE', color: '#1D4ED8', fontWeight: 600 }} />}
+                                    </TableCell>
                                     <TableCell align="right">
                                         <IconButton size="small" onClick={(e) => handleMenuClick(e, row)}><MoreVertIcon fontSize="small" /></IconButton>
                                     </TableCell>

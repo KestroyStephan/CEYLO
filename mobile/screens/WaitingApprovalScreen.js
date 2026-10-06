@@ -5,6 +5,7 @@ import { Text, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import PayButton from '../components/PayButton';
 import { db } from '../firebaseConfig';
 import { notifyBooking } from '../services/aiClient';
 
@@ -126,8 +127,14 @@ export default function WaitingApprovalScreen({ route, navigation }) {
             <MaterialCommunityIcons name="check-decagram" size={60} color="#006A3B" style={styles.icon} />
             <Text style={styles.title}>{i18n.t('ui_request_approved')}</Text>
             <Text style={styles.subtitle}>
-              {guideName} is available and has accepted your request. Confirm the booking{booking?.totalAmount ? ` and pay $${Number(booking.totalAmount).toFixed(2)} to your guide on the day` : ' and agree the price with your guide in chat'}.
+              {guideName} is available and has accepted your request. Confirm the booking{booking?.totalAmount ? `, then pay US$ ${Number(booking.totalAmount).toFixed(2)} online now or to your guide on the day` : ' and agree the price with your guide in chat'}.
             </Text>
+            {booking?.totalAmount ? (
+              <View style={{ alignSelf: 'stretch', marginBottom: 14 }}>
+                <PayButton kind="guide" id={bookingId} record={booking} amountLabel={`US$ ${Number(booking.totalAmount).toFixed(2)}`}
+                  cashHint="Or pay your guide in cash on the day." />
+              </View>
+            ) : null}
             <TouchableOpacity style={styles.primaryBtn} onPress={handlePayNow}>
               <Text style={styles.primaryBtnText}>{i18n.t('ui_confirm_booking')}</Text>
               <MaterialCommunityIcons name="check-circle-outline" size={18} color="#FFF" />

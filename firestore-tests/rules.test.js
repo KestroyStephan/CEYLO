@@ -339,3 +339,20 @@ describe('marketplace orders', () => {
     await assertFails(getDoc(doc(as('t2'), 'orders', 'o2')));
   });
 });
+
+describe('payments', () => {
+  test('nobody but the server can mark a ride, tour or order paid', async () => {
+    await seed({
+      'bookings/r1': { userId: 't1', driverId: 'd1', status: 'Completed', vehicleType: 'Tuk', price: 690 },
+      'orders/o1': { vendorId: 'v1', touristId: 't1', status: 'accepted', totalPrice: 500 },
+      'users/d1': { role: 'driver_active' },
+    });
+    await assertFails(updateDoc(doc(as('t1'), 'bookings', 'r1'), { paymentStatus: 'paid' }));
+    await assertFails(updateDoc(doc(as('d1'), 'bookings', 'r1'), { paymentStatus: 'paid' }));
+    await assertFails(updateDoc(doc(as('v1'), 'orders', 'o1'), { paymentStatus: 'paid', paidAmount: 500 }));
+    await assertFails(setDoc(doc(as('t1'), 'bookings', 'r2'), { userId: 't1', status: 'pending', vehicleType: 'Tuk', paymentStatus: 'paid' }));
+    // ordinary updates still work
+    await assertSucceeds(updateDoc(doc(as('t1'), 'bookings', 'r1'), { riderRating: 5 }));
+    await assertSucceeds(updateDoc(doc(as('v1'), 'orders', 'o1'), { status: 'preparing' }));
+  });
+});
