@@ -107,7 +107,7 @@ export default function Vendors() {
             
             doc.setFontSize(10);
             doc.setTextColor(100);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 30);
             
             const tableColumn = ["Business", "Category", "Email", "Location", "Status"];
             const tableRows = [];
@@ -316,7 +316,7 @@ export default function Vendors() {
                             <Box sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #E2E8F0', bgcolor: '#F8F9FA', display: 'flex', alignItems: 'center', gap: 2 }}>
                                 {getStatusChip(selectedVendor.verificationStatus || selectedVendor.status)}
                                 <Typography variant="caption" color="text.secondary">
-                                    Submitted: {selectedVendor.createdAt?.toDate ? selectedVendor.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                                    Submitted: {selectedVendor.createdAt?.toDate ? selectedVendor.createdAt.toDate().toLocaleDateString('en-GB') : 'N/A'}
                                 </Typography>
                             </Box>
 
