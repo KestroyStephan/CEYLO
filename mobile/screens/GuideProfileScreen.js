@@ -49,12 +49,17 @@ export default function GuideProfileScreen({ route, navigation }) {
         } else {
           setPendingBooking(null);
         }
+      }, (err) => {
+        console.warn('GuideProfileScreen booking listener error:', err?.message || err);
+        setPendingBooking(null);
       });
       
       // Listen for reviews
       const reviewQ = query(collection(db, 'reviews'), where('guideId', '==', guide.id));
       const unsubReviews = onSnapshot(reviewQ, (snap) => {
         setReviews(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (err) => {
+        console.warn('GuideProfileScreen reviews listener error:', err?.message || err);
       });
 
       return () => { unsub(); unsubReviews(); };

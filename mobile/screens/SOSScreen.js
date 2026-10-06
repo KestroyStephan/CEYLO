@@ -277,6 +277,8 @@ export default function SOSScreen({ navigation, route }) {
           lastCameraRequestRef.current = data.liveViewRequestedAt;
           if ((data.liveViewUntil || 0) > Date.now() && data.liveViewStatus === 'requested') startLiveConsent();
         }
+      }, (err) => {
+        console.warn('SOSScreen alert listener error:', err?.message || err);
       });
     }
     return () => unsub();

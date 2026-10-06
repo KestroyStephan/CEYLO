@@ -62,7 +62,7 @@ export default function DriverDashboard({ navigation }) {
       if (snap.exists()) {
         setDriverName(snap.data().name || 'Driver');
       }
-    });
+    }, (err) => console.warn('Driver user listener error:', err?.message || err));
 
     // This month's completed rides: earnings, trips and the share in low-emission vehicles
     const monthStart = new Date();
@@ -96,7 +96,7 @@ export default function DriverDashboard({ navigation }) {
         setDriverData(snap.data());
         setIsOnline(snap.data().isOnline || false);
       }
-    });
+    }, (err) => console.warn('Driver profile listener error:', err?.message || err));
     return () => unsubDriver();
   }, []);
 

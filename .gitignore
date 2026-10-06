@@ -49,3 +49,4 @@ __pycache__/
 *.so
 ai_datasets/*.csv
 AI-Powered Guide for Sustainable Eco and Cultural Tourism - Chapters 1-4.docx
+.continue/config.json

@@ -34,6 +34,9 @@ export default function WaitingApprovalScreen({ route, navigation }) {
         setBooking(snap.data());
       }
       setLoading(false);
+    }, (err) => {
+      console.warn('WaitingApprovalScreen booking listener error:', err?.message || err);
+      setLoading(false);
     });
     return () => unsub();
   }, [bookingId]);

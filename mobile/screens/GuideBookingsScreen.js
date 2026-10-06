@@ -32,6 +32,9 @@ export default function GuideBookingsScreen({ route, navigation }) {
       const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setBookings(all);
       setLoading(false);
+    }, (err) => {
+      console.warn('GuideBookingsScreen bookings listener error:', err?.message || err);
+      setLoading(false);
     });
 
     return () => unsub();

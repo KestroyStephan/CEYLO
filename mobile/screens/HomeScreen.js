@@ -85,6 +85,9 @@ export default function HomeScreen({ navigation }) {
         }
         console.log("HomeScreen activeChats loaded:", uniqueChats.map(c => `${c.touristId}_${c.guideId}`));
         setActiveChats(uniqueChats);
+      }, (err) => {
+        console.warn("HomeScreen activeChats listener error:", err?.message || err);
+        setActiveChats([]);
       });
       return () => unsub();
     }

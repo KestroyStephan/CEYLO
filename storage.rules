@@ -8,11 +8,13 @@ service firebase.storage {
     function signedIn() { return request.auth != null; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
     function role() {
-      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '');
+      return firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        ? firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '')
+        : '';
     }
     function isAdmin() {
       return signedIn() && (
-        request.auth.token.email == 'admin@ceylo.com' ||
+        ('email' in request.auth.token && request.auth.token.email == 'admin@ceylo.com') ||
         role() in ['admin', 'super_admin', 'manager', 'support', 'finance',
                    'vendor_manager', 'guide_manager', 'content_manager']
       );

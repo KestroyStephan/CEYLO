@@ -303,6 +303,9 @@ export default function TransportScreen({ route, navigation }) {
           setMyRating(0);
           logEvent('ride_completed', { bookingId: snap.id, vehicleType: data.vehicleType });
         }
+      },
+      (err) => {
+        console.warn('TransportScreen active booking listener error:', err?.message || err);
       }
     );
     return () => unsubscribe();
@@ -565,6 +568,7 @@ export default function TransportScreen({ route, navigation }) {
       // The selectedVehicle key ('Tuk' | 'Bike' | 'Car' | 'Van') matches the driver collection filters
       const bookingRef = await addDoc(collection(db, 'bookings'), {
         userId: auth.currentUser.uid,
+        touristId: auth.currentUser.uid,
         userName: userDoc.data()?.name || auth.currentUser.displayName || 'Tourist',
         userPhone: userPhone, // needed for driver to call customer
         driverId: null,

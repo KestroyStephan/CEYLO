@@ -52,6 +52,9 @@ export default function GuidesListScreen({ navigation }) {
         } else {
           setPendingBooking(null);
         }
+      }, (err) => {
+        console.warn('GuidesListScreen booking listener error:', err?.message || err);
+        setPendingBooking(null);
       });
       return () => unsub();
     }

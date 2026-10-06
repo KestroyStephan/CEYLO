@@ -36,6 +36,8 @@ export default function ProfileScreen({ navigation }) {
             if (docSnap.exists()) {
                 setUserData(docSnap.data());
             }
+        }, (err) => {
+            console.warn('ProfileScreen user doc listener error:', err?.message || err);
         });
 
         const fetchAggregations = async () => {

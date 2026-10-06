@@ -34,6 +34,9 @@ export default function MessageScreen({ route, navigation }) {
       }));
       setMessages(msgs);
       setLoading(false);
+    }, (err) => {
+      console.warn('MessageScreen messages listener error:', err?.message || err);
+      setLoading(false);
     });
 
     return () => unsub();
