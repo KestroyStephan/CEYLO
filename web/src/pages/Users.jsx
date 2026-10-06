@@ -122,7 +122,7 @@ export default function Users() {
             
             doc.setFontSize(10);
             doc.setTextColor(100);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 30);
             
             const tableColumn = ["Name", "Email", "Role", "Status", "Eco Score"];
             const tableRows = [];
@@ -297,7 +297,7 @@ export default function Users() {
                                                     {u.ecoScore}/100
                                                 </Typography>
                                             </TableCell>
-                                            <TableCell><Typography variant="body2" color="text.secondary" fontWeight={500}>{u.createdAt.toLocaleDateString()}</Typography></TableCell>
+                                            <TableCell><Typography variant="body2" color="text.secondary" fontWeight={500}>{u.createdAt.toLocaleDateString('en-GB')}</Typography></TableCell>
                                             <TableCell>{getStatusChip(u)}</TableCell>
                                             <TableCell align="right">
                                                 <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleMenuClick(e, u); }}>
@@ -340,7 +340,7 @@ export default function Users() {
                         <Box sx={{ p: 3, flexGrow: 1 }}>
                             <Box sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #E2E8F0', bgcolor: '#F8F9FA', display: 'flex', alignItems: 'center', gap: 2 }}>
                                 {getStatusChip(selectedUser)}
-                                <Typography variant="caption" color="text.secondary">Joined {selectedUser.createdAt.toLocaleDateString()}</Typography>
+                                <Typography variant="caption" color="text.secondary">Joined {selectedUser.createdAt.toLocaleDateString('en-GB')}</Typography>
                             </Box>
                             <Typography variant="subtitle2" color="#64748B" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>User Details</Typography>
                             <Stack spacing={2}>
