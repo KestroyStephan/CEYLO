@@ -111,7 +111,7 @@ export default function GuideAvailabilityScreen({ navigation }) {
             ) : (
               unavailableDates.map((d, index) => (
                 <View key={index} style={styles.dateRow}>
-                  <Text style={styles.dateText}>{new Date(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                  <Text style={styles.dateText}>{new Date(d).toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                   <TouchableOpacity onPress={() => removeDate(d)}>
                     <MaterialCommunityIcons name="close-circle" size={20} color="#D32F2F" />
                   </TouchableOpacity>
