@@ -20,6 +20,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import MapIcon from '@mui/icons-material/Map';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import { useNavigate } from 'react-router-dom';
 import KPICard from '../components/KPICard';
 import { bookingStage, bookingAmount } from '../utils/bookings';
@@ -29,6 +30,7 @@ export default function Dashboard() {
     const [revenueToday, setRevenueToday] = useState(0);
     const [activeSosCount, setActiveSosCount] = useState(0);
     const [pendingVendors, setPendingVendors] = useState([]);
+    const [pendingDrivers, setPendingDrivers] = useState([]);
     const [liveActivities, setLiveActivities] = useState([]);
     
     // Filter States
@@ -48,6 +50,12 @@ export default function Dashboard() {
             const vendors = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setPendingVendors(vendors);
         }, () => setPendingVendors([]));
+
+        const driverQuery = query(collection(db, "drivers"), where("status", "==", "pending_verification"));
+        const unsubDrivers = onSnapshot(driverQuery, (snap) => {
+            const drivers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setPendingDrivers(drivers);
+        }, () => setPendingDrivers([]));
 
         const fetchActivities = async () => {
             try {
@@ -91,8 +99,33 @@ export default function Dashboard() {
         fetchStats();
         fetchActivities();
 
-        return () => { unsubSos(); unsubVendors(); };
+        return () => { unsubSos(); unsubVendors(); unsubDrivers(); };
     }, []);
+
+    const operationalQueue = [
+        ...pendingDrivers.map(d => ({
+            id: d.id,
+            title: d.name || 'Unknown Driver',
+            subtitle: `${d.phone ? d.phone + ' • ' : ''}${d.vehicleType || 'Vehicle'}${d.licensePlate ? ' (' + d.licensePlate + ')' : ''}`,
+            type: 'driver',
+            typeLabel: 'Driver Approval',
+            typeBg: '#EFF6FF',
+            typeColor: '#1D4ED8',
+            submitted: d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Recent',
+            route: '/drivers'
+        })),
+        ...pendingVendors.map(vendor => ({
+            id: vendor.id,
+            title: vendor.businessName || 'Unknown Vendor',
+            subtitle: vendor.email || '',
+            type: 'vendor',
+            typeLabel: 'Vendor Approval',
+            typeBg: '#FEF3C7',
+            typeColor: '#D97706',
+            submitted: vendor.createdAt?.toDate ? vendor.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Recent',
+            route: '/vendors'
+        }))
+    ];
 
     return (
         <Box>
@@ -179,21 +212,28 @@ export default function Dashboard() {
             </Box>
 
             {/* High-value KPI Blocks */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid container spacing={2.5} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard title="Active Travelers" value={activeUsersCount.toLocaleString()} icon={<PeopleIcon fontSize="small" />} />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard title="Platform Revenue" value={`LKR ${revenueToday.toLocaleString()}`} icon={<CurrencyLkrIcon fontSize="small" />} />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+                    <KPICard 
+                        title="Pending Drivers" value={pendingDrivers.length} 
+                        icon={<DirectionsCarIcon fontSize="small" />} iconBgColor="#EFF6FF" iconColor="#1D4ED8" 
+                        onClick={() => navigate('/drivers')}
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard 
                         title="Pending Vendors" value={pendingVendors.length} 
                         icon={<StoreIcon fontSize="small" />} iconBgColor="#FEF3C7" iconColor="#D97706" 
                         onClick={() => navigate('/vendors')}
                     />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard 
                         title="Open SOS Cases" value={activeSosCount} 
                         icon={<WarningIcon fontSize="small" />} iconBgColor="#FEE2E2" iconColor="#DC2626" 
@@ -203,63 +243,81 @@ export default function Dashboard() {
             </Grid>
 
             <Grid container spacing={4}>
-                {/* Left Column: Needs Attention & Analytics */}
-                <Grid size={{ xs: 12, md: 8 }}>
-                    
-                    {/* SECTION 2: Needs Attention (Operational Queue) */}
-                    <Paper sx={{ mb: 4, overflow: 'hidden' }}>
-                        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EBEFE8', bgcolor: '#F4F7F6' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <ErrorOutlineIcon sx={{ color: '#F57C00' }} />
-                                <Typography variant="h6" color="#181D19">Needs Attention</Typography>
-                            </Box>
-                            <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/vendors')} sx={{ color: '#006A3B' }}>
-                                View Queue
-                            </Button>
-                        </Box>
-                        
-                        <TableContainer>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Priority Item</TableCell>
-                                        <TableCell>Type</TableCell>
-                                        <TableCell>Submitted</TableCell>
-                                        <TableCell align="right">Action</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {pendingVendors.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#5C6E64' }}>
-                                                Queue is clear. Excellent work.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        pendingVendors.slice(0, 5).map(vendor => (
-                                            <TableRow key={vendor.id} hover>
-                                                <TableCell>
-                                                    <Typography variant="body2" fontWeight={700} color="#181D19">
-                                                        {vendor.businessName || 'Unknown Vendor'}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {vendor.email}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell><Chip label="Vendor Approval" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 700 }} /></TableCell>
-                                                <TableCell sx={{ color: '#5C6E64' }}>Recent</TableCell>
-                                                <TableCell align="right">
-                                                    <Button size="small" variant="outlined" sx={{ borderColor: '#EBEFE8', color: '#006A3B', minWidth: 60 }}>
-                                                        Review
-                                                    </Button>
-                                                </TableCell>
+                        {/* Left Column: Needs Attention & Analytics */}
+                        <Grid size={{ xs: 12, md: 8 }}>
+                            
+                            {/* SECTION 2: Needs Attention (Operational Queue) */}
+                            <Paper sx={{ mb: 4, overflow: 'hidden' }}>
+                                <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EBEFE8', bgcolor: '#F4F7F6' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                        <ErrorOutlineIcon sx={{ color: '#F57C00' }} />
+                                        <Typography variant="h6" color="#181D19">
+                                            Needs Attention {operationalQueue.length > 0 ? `(${operationalQueue.length})` : ''}
+                                        </Typography>
+                                    </Box>
+                                    <Button 
+                                        size="small" 
+                                        endIcon={<ArrowForwardIcon />} 
+                                        onClick={() => navigate(pendingDrivers.length > 0 ? '/drivers' : '/vendors')} 
+                                        sx={{ color: '#006A3B' }}
+                                    >
+                                        View Queue
+                                    </Button>
+                                </Box>
+                                
+                                <TableContainer>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Priority Item</TableCell>
+                                                <TableCell>Type</TableCell>
+                                                <TableCell>Submitted</TableCell>
+                                                <TableCell align="right">Action</TableCell>
                                             </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Paper>
+                                        </TableHead>
+                                        <TableBody>
+                                            {operationalQueue.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#5C6E64' }}>
+                                                        Queue is clear. Excellent work.
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                operationalQueue.slice(0, 6).map(item => (
+                                                    <TableRow key={item.id} hover>
+                                                        <TableCell>
+                                                            <Typography variant="body2" fontWeight={700} color="#181D19">
+                                                                {item.title}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {item.subtitle}
+                                                            </Typography>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip 
+                                                                label={item.typeLabel} 
+                                                                size="small" 
+                                                                sx={{ bgcolor: item.typeBg, color: item.typeColor, fontWeight: 700 }} 
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell sx={{ color: '#5C6E64' }}>{item.submitted}</TableCell>
+                                                        <TableCell align="right">
+                                                            <Button 
+                                                                size="small" 
+                                                                variant="outlined" 
+                                                                onClick={() => navigate(item.route)}
+                                                                sx={{ borderColor: '#EBEFE8', color: '#006A3B', minWidth: 60 }}
+                                                            >
+                                                                Review
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </Paper>
 
                     {/* Quick Analytics / Map Stub */}
                     <Paper sx={{ p: 3 }}>

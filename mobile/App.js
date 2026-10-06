@@ -136,6 +136,7 @@ export default function App() {
 
     const checkSession = async (currentUser) => {
       if (currentUser) {
+        setLoading(true);
         try {
           const lastLoginDate = await AsyncStorage.getItem('lastLoginDate');
           if (lastLoginDate) {
@@ -148,11 +149,19 @@ export default function App() {
               await AsyncStorage.removeItem('lastLoginDate');
               setUser(null);
               setUserRole(null);
+              setUserData(null);
               setLoading(false);
               return;
             }
           } else {
             await AsyncStorage.setItem('lastLoginDate', new Date().toISOString());
+          }
+
+          if (currentUser.isAnonymous) {
+            setUserRole('tourist');
+            setUser(currentUser);
+            setLoading(false);
+            return;
           }
 
           // Real-time listener for user role updates
@@ -166,34 +175,39 @@ export default function App() {
               }
               setUserRole(data.role || 'tourist');
               setUserData(data);
+              setUser(currentUser);
+              setLoading(false);
             } else {
               const createdMs = Date.parse(currentUser.metadata?.creationTime || '') || 0;
-              if (!currentUser.isAnonymous && Date.now() - createdMs < 20000) {
-                // Registration is still writing the profile with the chosen role; the next snapshot has it
+              if (Date.now() - createdMs < 20000) {
+                // Registration is still writing the profile with the chosen role; wait for the next snapshot
                 return;
               }
               setUserRole('tourist');
+              setUser(currentUser);
+              setLoading(false);
             }
-            setLoading(false);
           }, (error) => {
             console.log('User document listener error:', error.message);
             setUserRole('tourist');
+            setUser(currentUser);
             setLoading(false);
           });
 
         } catch (error) {
           console.log('Session check error:', error.message);
           setUserRole('tourist');
+          setUser(currentUser);
           setLoading(false);
         }
       } else {
         // The 7-day window starts at each sign-in, so forget the previous session's date
         await AsyncStorage.removeItem('lastLoginDate');
+        setUser(null);
         setUserRole(null);
         setUserData(null);
         setLoading(false);
       }
-      setUser(currentUser);
     };
 
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
@@ -219,9 +233,9 @@ export default function App() {
     }
   }, [user]);
 
-  if (loading || (!fontsLoaded && !fontError)) {
+  if (loading || (!fontsLoaded && !fontError) || (user && !userRole && !user.isAnonymous)) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F6FBF5' }}>
         <ActivityIndicator size="large" color="#00695c" />
       </View>
     );

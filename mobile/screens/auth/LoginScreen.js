@@ -250,7 +250,7 @@ export default function LoginScreen({ navigation }) {
           {/* ── Create Account ── */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>{i18n.t('ui_new_to_ceylo')}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <TouchableOpacity onPress={() => navigation.navigate('RolePicker')}>
               <Text style={styles.footerLink}>{i18n.t('ui_create_account')}</Text>
             </TouchableOpacity>
           </View>

@@ -148,21 +148,6 @@ export default function RegisterScreen({ navigation, route }) {
           </View>
 
           <View style={styles.formCard}>
-            <Text style={styles.fieldLabel}>I want to join as</Text>
-            <View style={styles.roleGrid}>
-              {ROLES.map(r => {
-                const on = role === r.key;
-                return (
-                  <TouchableOpacity key={r.key} onPress={() => setRole(r.key)} activeOpacity={0.85}
-                    style={[styles.roleCard, on && styles.roleCardActive]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
-                    <MaterialCommunityIcons name={r.icon} size={22} color={on ? '#006A3B' : '#8A9E8A'} />
-                    <Text style={[styles.roleLabel, on && styles.roleLabelActive]}>{r.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <Text style={styles.roleHint}>{ROLES.find(r => r.key === role)?.hint}</Text>
-
             {/* Full Name */}
             <Text style={styles.fieldLabel}>{i18n.t('ui_full_name')}</Text>
             {renderField("name", "Arjuna Perera", name, setName)}
