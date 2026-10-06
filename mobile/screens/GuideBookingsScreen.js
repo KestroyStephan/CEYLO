@@ -58,7 +58,7 @@ export default function GuideBookingsScreen({ route, navigation }) {
           <Text style={styles.title}>{item.tourTitle || `Tour with ${item.touristName}`}</Text>
           <View style={styles.metaRow}>
             <MaterialCommunityIcons name="calendar-clock" size={14} color="#8A9E8A" />
-            <Text style={styles.metaText}>{item.selectedDate || item.tourDate || item.createdAt?.toDate?.()?.toLocaleDateString() || 'Upcoming'}</Text>
+            <Text style={styles.metaText}>{item.selectedDate || item.tourDate || item.createdAt?.toDate?.()?.toLocaleDateString('en-GB') || 'Upcoming'}</Text>
           </View>
           <View style={styles.metaRow}>
             <MaterialCommunityIcons name="account-group" size={14} color="#8A9E8A" />
