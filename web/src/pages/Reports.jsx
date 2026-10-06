@@ -54,7 +54,7 @@ export default function Reports() {
                         id: doc.id,
                         name: d.name || d.partnerName || 'Partner',
                         role: d.role || d.type || 'Vendor',
-                        period: d.period || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()),
+                        period: d.period || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')),
                         gross, fees, net: gross - fees,
                         status: d.status || 'Pending'
                     };
@@ -69,7 +69,7 @@ export default function Reports() {
     const handleExportPDF = () => {
         const doc = new jsPDF();
         doc.text('CEYLO PLATFORM FINANCIAL STATEMENT', 14, 15);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 23);
+        doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, 14, 23);
         doc.text(`Total Gross Revenue: LKR ${revenue.toFixed(2)}`, 14, 31);
         doc.text(`Platform Fees Collected (15%): LKR ${(revenue * 0.15).toFixed(2)}`, 14, 39);
 
