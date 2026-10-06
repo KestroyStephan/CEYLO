@@ -225,7 +225,7 @@ export default function VendorRevenueScreen() {
                 ))}
               </View>
               {r.comment&&<Text style={styles.reviewText}>{r.comment}</Text>}
-              <Text style={styles.reviewDate}>{r.createdAt?.toDate?.()?.toLocaleDateString()}</Text>
+              <Text style={styles.reviewDate}>{r.createdAt?.toDate?.()?.toLocaleDateString('en-GB')}</Text>
             </View>
           ))}
         </View>
