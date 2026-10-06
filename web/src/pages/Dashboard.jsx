@@ -22,6 +22,7 @@ import MapIcon from '@mui/icons-material/Map';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import { useNavigate } from 'react-router-dom';
 import KPICard from '../components/KPICard';
+import { bookingStage, bookingAmount } from '../utils/bookings';
 
 export default function Dashboard() {
     const [activeUsersCount, setActiveUsersCount] = useState(0);
@@ -78,9 +79,11 @@ export default function Dashboard() {
                 const snapUsers = await getDocs(collection(db, "users"));
                 setActiveUsersCount(snapUsers.size);
                 
-                const qBookings = query(collection(db, "bookings"), where("status", "==", "confirmed"));
-                const snapBookings = await getDocs(qBookings);
-                const total = snapBookings.docs.reduce((sum, doc) => sum + (parseFloat(doc.data().price) || 0), 0);
+                // Rupee revenue from confirmed and completed rides and orders, whatever case the app wrote
+                const snapBookings = await getDocs(collection(db, "bookings"));
+                const total = snapBookings.docs.map(d => d.data())
+                    .filter(b => b.type !== 'guide' && ['confirmed', 'completed'].includes(bookingStage(b.status)))
+                    .reduce((sum, b) => sum + bookingAmount(b), 0);
                 setRevenueToday(total);
             } catch (err) {}
         };

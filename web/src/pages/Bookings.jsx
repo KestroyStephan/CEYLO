@@ -19,6 +19,9 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import FilterListIcon from '@mui/icons-material/FilterList';
 
+import { bookingStage, bookingAmount, formatBookingAmount } from '../utils/bookings';
+
+
 function Bookings() {
     const [rows, setRows] = useState([]);
     const [filteredRows, setFilteredRows] = useState([]);
@@ -44,7 +47,7 @@ function Bookings() {
 
     useEffect(() => {
         let result = rows;
-        if (tab !== 'all') result = result.filter(r => (r.status || 'pending') === tab);
+        if (tab !== 'all') result = result.filter(r => bookingStage(r.status) === tab || (tab === 'confirmed' && bookingStage(r.status) === 'completed'));
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter(r => 
@@ -87,13 +90,17 @@ function Bookings() {
     };
 
     const getStatusChip = (status) => {
-        const s = (status || 'pending').toLowerCase();
+        const s = bookingStage(status);
+        if (s === 'completed') return <Chip label="Completed" size="small" sx={{ bgcolor: '#DBEAFE', color: '#1D4ED8', fontWeight: 600 }} />;
         if (s === 'confirmed') return <Chip label="Confirmed" size="small" sx={{ bgcolor: '#D1FAE5', color: '#059669', fontWeight: 600 }} />;
         if (s === 'cancelled') return <Chip label="Cancelled" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 600 }} />;
         return <Chip label="Pending" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 600 }} />;
     };
 
-    const totalRevenue = rows.filter(r => r.status === 'confirmed').reduce((sum, r) => sum + (parseFloat(r.price) || parseFloat(r.cost) || 0), 0);
+    // Rupee revenue from confirmed and completed rides and orders (guide tours are priced in US$)
+    const totalRevenue = rows
+        .filter(r => r.type !== 'guide' && ['confirmed', 'completed'].includes(bookingStage(r.status)))
+        .reduce((sum, r) => sum + bookingAmount(r), 0);
 
     const handleExportData = () => {
         if (filteredRows.length === 0) {
@@ -109,7 +116,7 @@ function Bookings() {
             const provider = (row.vendorName || 'Direct').replace(/,/g, '');
             const service = (row.service || row.serviceName || 'Unknown').replace(/,/g, '');
             const date = formatDate(row.date);
-            const amount = row.price || row.cost || 0;
+            const amount = formatBookingAmount(row);
             const status = (row.status || 'pending').toUpperCase();
             
             csvContent += `"${id}","${tourist}","${provider}","${service}","${date}","${amount}","${status}"\n`;
@@ -221,8 +228,8 @@ function Bookings() {
             {/* KPI Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Total Bookings" value={rows.length.toLocaleString()} icon={<BookOnlineIcon fontSize="small"/>} /></Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Pending Review" value={rows.filter(r => (r.status || 'pending') === 'pending').length} icon={<PendingActionsIcon fontSize="small"/>} iconBgColor="#FEF3C7" iconColor="#D97706" /></Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Confirmed" value={rows.filter(r => r.status === 'confirmed').length} icon={<CheckCircleOutlineIcon fontSize="small"/>} iconBgColor="#D1FAE5" iconColor="#059669" /></Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Pending Review" value={rows.filter(r => bookingStage(r.status) === 'pending').length} icon={<PendingActionsIcon fontSize="small"/>} iconBgColor="#FEF3C7" iconColor="#D97706" /></Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Confirmed" value={rows.filter(r => ['confirmed', 'completed'].includes(bookingStage(r.status))).length} icon={<CheckCircleOutlineIcon fontSize="small"/>} iconBgColor="#D1FAE5" iconColor="#059669" /></Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}><KPICard title="Revenue (LKR)" value={`Rs. ${totalRevenue.toLocaleString()}`} icon={<ShowChartIcon fontSize="small"/>} iconBgColor="#DBEAFE" iconColor="#2563EB" /></Grid>
             </Grid>
 
@@ -310,7 +317,7 @@ function Bookings() {
                                     <TableCell><Typography variant="body2" color="text.secondary" fontWeight={600}>{row.vendorName || 'Direct'}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary">{row.service || row.serviceName}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate(row.date)}</Typography></TableCell>
-                                    <TableCell align="right"><Typography variant="body2" fontWeight={600} color="#0F172A">LKR {(row.price || row.cost || 0).toLocaleString()}</Typography></TableCell>
+                                    <TableCell align="right"><Typography variant="body2" fontWeight={600} color="#0F172A">{formatBookingAmount(row)}</Typography></TableCell>
                                     <TableCell>{getStatusChip(row.status)}</TableCell>
                                     <TableCell align="right">
                                         <IconButton size="small" onClick={(e) => handleMenuClick(e, row)}><MoreVertIcon fontSize="small" /></IconButton>
@@ -326,8 +333,8 @@ function Bookings() {
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { minWidth: 140, borderRadius: 2, border: '1px solid #E2E8F0' } }}>
                 <MenuItem onClick={() => openDrawer(menuBooking)} sx={{ fontSize: '0.8125rem' }}>View Details</MenuItem>
                 <Divider sx={{ my: 0.5 }} />
-                {(menuBooking?.status || 'pending') !== 'confirmed' && <MenuItem onClick={() => handleUpdateStatus(menuBooking.id, 'confirmed')} sx={{ fontSize: '0.8125rem', color: 'success.main' }}>Confirm Booking</MenuItem>}
-                {(menuBooking?.status || 'pending') !== 'cancelled' && <MenuItem onClick={() => handleUpdateStatus(menuBooking.id, 'cancelled')} sx={{ fontSize: '0.8125rem', color: 'error.main' }}>Cancel Booking</MenuItem>}
+                {bookingStage(menuBooking?.status) === 'pending' && <MenuItem onClick={() => handleUpdateStatus(menuBooking.id, 'confirmed')} sx={{ fontSize: '0.8125rem', color: 'success.main' }}>Confirm Booking</MenuItem>}
+                {!['cancelled', 'completed'].includes(bookingStage(menuBooking?.status)) && <MenuItem onClick={() => handleUpdateStatus(menuBooking.id, 'cancelled')} sx={{ fontSize: '0.8125rem', color: 'error.main' }}>Cancel Booking</MenuItem>}
             </Menu>
 
             {/* Side Drawer */}
@@ -346,7 +353,7 @@ function Bookings() {
                             <Box sx={{ p: 2, mb: 4, borderRadius: 2, border: '1px solid #E2E8F0', bgcolor: '#F8F9FA', display: 'flex', alignItems: 'center', gap: 2 }}>
                                 {getStatusChip(selectedBooking.status)}
                                 <Typography variant="caption" color="text.secondary">
-                                    Total: LKR {(selectedBooking.price || selectedBooking.cost || 0).toLocaleString()}
+                                    Total: {formatBookingAmount(selectedBooking)}
                                 </Typography>
                             </Box>
 
@@ -370,19 +377,19 @@ function Bookings() {
                             <Box sx={{ p: 2, border: '1px solid #E2E8F0', borderRadius: 2 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                     <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                                    <Typography variant="body2" fontWeight={500}>LKR {(selectedBooking.price || selectedBooking.cost || 0).toLocaleString()}</Typography>
+                                    <Typography variant="body2" fontWeight={500}>{formatBookingAmount(selectedBooking)}</Typography>
                                 </Box>
                                 <Divider sx={{ my: 1 }} />
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Typography variant="body2" fontWeight={700} color="#0F172A">Total Paid</Typography>
-                                    <Typography variant="body2" fontWeight={700} color="#0F172A">LKR {(selectedBooking.price || selectedBooking.cost || 0).toLocaleString()}</Typography>
+                                    <Typography variant="body2" fontWeight={700} color="#0F172A">{formatBookingAmount(selectedBooking)}</Typography>
                                 </Box>
                             </Box>
                         </Box>
 
                         <Box sx={{ p: 3, borderTop: '1px solid #E2E8F0', bgcolor: '#F8F9FA', display: 'flex', gap: 2 }}>
-                            {(selectedBooking.status || 'pending') !== 'confirmed' && <Button variant="contained" sx={{ bgcolor: '#10B981', '&:hover': { bgcolor: '#059669' } }} fullWidth onClick={() => handleUpdateStatus(selectedBooking.id, 'confirmed')}>Confirm</Button>}
-                            {(selectedBooking.status || 'pending') !== 'cancelled' && <Button variant="outlined" color="error" fullWidth onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}>Cancel</Button>}
+                            {bookingStage(selectedBooking.status) === 'pending' && <Button variant="contained" sx={{ bgcolor: '#10B981', '&:hover': { bgcolor: '#059669' } }} fullWidth onClick={() => handleUpdateStatus(selectedBooking.id, 'confirmed')}>Confirm</Button>}
+                            {!['cancelled', 'completed'].includes(bookingStage(selectedBooking.status)) && <Button variant="outlined" color="error" fullWidth onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}>Cancel</Button>}
                         </Box>
                     </Box>
                 )}

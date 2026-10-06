@@ -48,10 +48,11 @@ const defaultDestinations = destinationsData.map((d, index) => {
         province: d.province.replace(" Province", ""),
         category: cat,
         ecoScore: Math.round(d.eco_score || 0),
-        description: `${d.name} is a renowned ${cat.toLowerCase()} destination located in the ${d.province}.`,
+        description: d.description || `${d.name} is a ${cat.toLowerCase()} destination in the ${d.province}.`,
         latitude: parseFloat(d.lat || 6.9271),
         longitude: parseFloat(d.lon || 79.8612),
         imageUrl: d.image || "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a",
+        hasPhoto: Boolean(d.image),
         isHiddenGem: d.hidden_gem === true || d.hidden_gem === "true" || d.hidden_gem === "True"
     };
 });
@@ -164,6 +165,7 @@ export default function Destinations() {
     const displayedDestinations = filteredDestinations.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     const gemCount = destinations.filter(d => d.isHiddenGem).length;
+    const photoCount = destinations.filter(d => d.hasPhoto ?? Boolean(d.image || d.imageUrl || (d.images && d.images.length))).length;
     const avgScore = destinations.length > 0 ? Math.round(destinations.reduce((acc, curr) => acc + (curr.ecoScore || 0), 0) / destinations.length) : 82;
 
     return (
@@ -195,21 +197,21 @@ export default function Destinations() {
                     <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                         <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL DESTINATIONS</Typography>
                         <Typography variant="h4" fontWeight={950} color="#006A3B">{destinations.length}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>+4 this week</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>{destinations.filter(d => d.latitude || d.lat).length} on the map</Typography>
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">ECO-SCORE MASTERY</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#735C00">A+</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Avg {avgScore}%</Typography>
+                        <Typography variant="caption" fontWeight={900} color="text.secondary">ECO SCORE</Typography>
+                        <Typography variant="h4" fontWeight={950} color="#735C00">{avgScore}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Average eco score (out of 100)</Typography>
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">MEDIA GALLERY</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#1976D2">92%</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>1,402 assets</Typography>
+                        <Typography variant="caption" fontWeight={900} color="text.secondary">PHOTOS</Typography>
+                        <Typography variant="h4" fontWeight={950} color="#1976D2">{destinations.length ? Math.round(100 * photoCount / destinations.length) : 0}%</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={750}>{photoCount} places have a photo</Typography>
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
