@@ -88,6 +88,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Driver approval gate
 import DriverPendingScreen from './screens/driver/DriverPendingScreen';
+import NearbyPlacesScreen from './screens/NearbyPlacesScreen';
 
 const Stack = createNativeStackNavigator();
 const navigationRef = React.createRef();
@@ -322,6 +323,7 @@ export default function App() {
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
                 )}
                 <Stack.Screen name="OfflineMapSettings" component={OfflineMapSettings} />
+                <Stack.Screen name="NearbyPlaces" component={NearbyPlacesScreen} />
                 <Stack.Screen name="EventDetail" component={EventDetailScreen} />
                 <Stack.Screen name="SustainableRoutesList" component={SustainableRoutesListScreen} />
               </Stack.Group>

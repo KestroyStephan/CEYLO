@@ -307,6 +307,24 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.dayHeader}>{i18n.t('ui_no_stops_in_this_itinerary_yet')}</Text>}
+        ListHeaderComponent={data?.tripEvents?.length ? (
+          <View style={styles.tripEvents}>
+            <Text style={styles.tripEventsTitle}>Happening during your trip</Text>
+            {data.tripEvents.map(ev => (
+              <TouchableOpacity key={ev.id} style={styles.tripEventRow} onPress={() => navigation.navigate('EventDetail', { event: ev })}>
+                <MaterialCommunityIcons name={ev.publicHoliday ? 'calendar-star' : 'party-popper'} size={18} color="#00695C" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tripEventName}>{ev.title}</Text>
+                  <Text style={styles.tripEventMeta}>
+                    {ev.months ? 'Season' : new Date(ev.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {ev.location ? ` · ${ev.location}` : ''}
+                    {(ev.tags || []).includes('poya') ? ' · alcohol and meat sales closed' : ''}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
         ListFooterComponent={<ItineraryFeedback itinerary={data} />}
       />
 
@@ -333,6 +351,11 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 40, paddingHorizontal: 10 },
   title: { fontSize: 18, fontFamily: 'Outfit-Bold', color: '#004D40', flex: 1, textAlign: 'center' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20, paddingHorizontal: 20 },
+  tripEvents: { backgroundColor: '#F1F8F6', borderRadius: 14, padding: 14, marginBottom: 12 },
+  tripEventsTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#004D40', marginBottom: 8 },
+  tripEventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  tripEventName: { fontSize: 14, fontFamily: 'Outfit-Medium', color: '#1A2E1A' },
+  tripEventMeta: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#5C6E64' },
   summaryItem: { alignItems: 'center' },
   summaryVal: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#333' },
   summaryLab: { fontSize: 10, fontFamily: 'Outfit-Regular', color: '#666' },

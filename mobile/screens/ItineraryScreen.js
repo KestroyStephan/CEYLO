@@ -7,6 +7,7 @@ import { generateItinerary } from '../services/ItineraryService';
 import { loadPreferences, moodFromPreferences } from '../services/PreferencesService';
 import { toast } from '../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const FOCUS_TO_MOOD = { 'Nature/Eco': 'Eco Explorer', 'Balanced': 'Family Trip', 'Culture/History': 'Culture Seeker' };
 const MAX_DAYS = 14;
@@ -19,6 +20,11 @@ export default function ItineraryScreen({ navigation, route }) {
     const [budget, setBudget] = useState('$$ Standard');
     const [avoidCrowds, setAvoidCrowds] = useState(false);
     const [loading, setLoading] = useState(false);
+    // Trip start: recommendations and the events shown depend on when the traveller is in Sri Lanka
+    const [startDate, setStartDate] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
+    const [showPicker, setShowPicker] = useState(false);
+    const endDate = new Date(startDate.getTime() + (days - 1) * 86400000);
+    const fmt = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
     // Start from the traveller's saved preferences
     useEffect(() => {
@@ -41,7 +47,7 @@ export default function ItineraryScreen({ navigation, route }) {
         try {
             // Saved preferences (Profile > Travel Preferences) fill in eco interest, mobility and crowds
             const itinerary = await generateItinerary({
-                mood: FOCUS_TO_MOOD[focus], days, budget, avoidCrowds, destination,
+                mood: FOCUS_TO_MOOD[focus], days, budget, avoidCrowds, destination, startDate,
                 ecoInterest: focus === 'Nature/Eco' ? 80 : 50,
             });
             navigation.navigate('ItineraryDetail', { routeData: itinerary });
@@ -85,6 +91,22 @@ export default function ItineraryScreen({ navigation, route }) {
                             Culture/History
                         </Button>
                     </View>
+
+                    <View style={styles.spacer} />
+
+                    <Text variant="titleMedium" style={styles.label}>Travel dates</Text>
+                    <Button mode="outlined" icon="calendar" onPress={() => setShowPicker(true)} style={{ alignSelf: 'flex-start' }}>
+                        {fmt(startDate)} – {fmt(endDate)}
+                    </Button>
+                    {showPicker && (
+                        <DateTimePicker
+                            value={startDate}
+                            mode="date"
+                            minimumDate={new Date()}
+                            maximumDate={new Date(Date.now() + 2 * 365 * 86400000)}
+                            onChange={(event, d) => { setShowPicker(false); if (event.type === 'set' && d) { d.setHours(0, 0, 0, 0); setStartDate(d); } }}
+                        />
+                    )}
 
                     <View style={styles.spacer} />
 

@@ -40,11 +40,15 @@ export default function EventDetailScreen({ route, navigation }) {
   }
 
   const eventDate = displayEvent.date ? new Date(displayEvent.date) : null;
-  const dateLabel = eventDate
-    ? (displayEvent.dateApprox
-        ? eventDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-        : eventDate.toDateString())
-    : 'Date TBC';
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmtDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const dateLabel = displayEvent.months?.length
+    ? `Usually ${displayEvent.months.map(m => MONTH_NAMES[m - 1]).join(', ')} · exact dates not yet announced`
+    : eventDate
+      ? (displayEvent.endDate && displayEvent.endDate !== displayEvent.date
+          ? `${fmtDay(eventDate)} – ${fmtDay(new Date(displayEvent.endDate))}`
+          : fmtDay(eventDate))
+      : 'Date TBC';
   const isNearby = distance != null && distance <= (displayEvent.radiusKm || 25);
 
   const remindMe = async () => {

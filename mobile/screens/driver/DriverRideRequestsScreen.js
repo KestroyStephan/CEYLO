@@ -15,6 +15,7 @@ import { auth, db } from '../../firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { stopLocationTracking } from '../../services/DriverLocationService';
 import { notifyBooking } from '../../services/aiClient';
+import { nearbyOfType, openDirections, fmtKm } from '../../services/places';
 
 export default function DriverRideRequestsScreen({ navigation }) {
   const { t } = useTranslation();
@@ -23,6 +24,19 @@ export default function DriverRideRequestsScreen({ navigation }) {
   const [driverLocation, setDriverLocation] = useState(null);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  // Fuel stations around the driver (Google Places), and the live route's distance and ETA
+  const [showFuel, setShowFuel] = useState(false);
+  const [fuel, setFuel] = useState([]);
+  const [fuelState, setFuelState] = useState('idle'); // idle | loading | ready | error
+  const [routeInfo, setRouteInfo] = useState(null);
+
+  useEffect(() => {
+    if (!showFuel || !driverLocation || fuelState === 'loading' || fuelState === 'ready') return;
+    setFuelState('loading');
+    nearbyOfType(driverLocation, 'gas_station', 5000)
+      .then(list => { setFuel(list); setFuelState('ready'); })
+      .catch(e => { console.log('Fuel stations unavailable:', e.message); setFuelState('error'); });
+  }, [showFuel, driverLocation]);
 
   const CANCEL_REASONS = [
     'Customer not at pickup',
@@ -216,22 +230,17 @@ export default function DriverRideRequestsScreen({ navigation }) {
             showsUserLocation={true}
             showsMyLocationButton={true}
           >
-            <Marker
-              coordinate={{
-                latitude: activeRide?.pickupCoords?.latitude || 6.9271,
-                longitude: activeRide?.pickupCoords?.longitude || 79.8612,
-              }}
-              title="Pickup"
-              pinColor="#006A3B"
-            />
-            <Marker
-              coordinate={{
-                latitude: activeRide?.dropoffCoords?.latitude || 6.9271,
-                longitude: activeRide?.dropoffCoords?.longitude || 79.8612,
-              }}
-              title="Dropoff"
-              pinColor="#BA1A1A"
-            />
+            {activeRide?.pickupCoords && (
+              <Marker coordinate={activeRide.pickupCoords} title="Pickup" description={activeRide.pickup} pinColor="#006A3B" />
+            )}
+            {activeRide?.dropoffCoords && (
+              <Marker coordinate={activeRide.dropoffCoords} title="Drop-off" description={activeRide.dropoff} pinColor="#BA1A1A" />
+            )}
+            {showFuel && fuel.map(f => (
+              <Marker key={f.id} coordinate={{ latitude: f.latitude, longitude: f.longitude }} title={f.name}
+                description={`Fuel · ${fmtKm(f.distanceKm)}${f.openNow === false ? ' · closed now' : ''}`} pinColor="#F57C00"
+                onCalloutPress={() => openDirections(f)} />
+            ))}
             {activeRide?.status === 'InProgress' && (
               <MapViewDirections
                 origin={activeRide.pickupCoords}
@@ -239,6 +248,7 @@ export default function DriverRideRequestsScreen({ navigation }) {
                 apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
                 strokeWidth={4}
                 strokeColor="#006A3B"
+                onReady={r => setRouteInfo({ km: r.distance, min: r.duration, leg: 'drop-off' })}
               />
             )}
             {activeRide?.status === 'Confirmed' && driverLocation && (
@@ -248,10 +258,31 @@ export default function DriverRideRequestsScreen({ navigation }) {
                 apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
                 strokeWidth={4}
                 strokeColor="#006A6A"
+                onReady={r => setRouteInfo({ km: r.distance, min: r.duration, leg: 'pickup' })}
               />
             )}
           </MapView>
+          <View style={styles.mapBar}>
+            {routeInfo && (
+              <View style={styles.mapPill}>
+                <Ionicons name="navigate" size={14} color="#006A3B" />
+                <Text style={styles.mapPillText}>{routeInfo.km.toFixed(1)} km · {Math.max(1, Math.round(routeInfo.min))} min to {routeInfo.leg}</Text>
+              </View>
+            )}
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity style={[styles.mapPill, showFuel && { backgroundColor: '#FFF3E0' }]} onPress={() => setShowFuel(v => !v)} accessibilityLabel="Show fuel stations">
+              <Ionicons name="flame-outline" size={14} color="#F57C00" />
+              <Text style={styles.mapPillText}>{fuelState === 'loading' ? 'Fuel…' : showFuel && fuelState === 'ready' ? `Fuel ${fuel.length}` : fuelState === 'error' ? 'Fuel unavailable' : 'Fuel'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        {(activeRide?.status === 'InProgress' ? activeRide?.dropoffCoords : activeRide?.pickupCoords) && (
+          <TouchableOpacity style={styles.navigateBtn}
+            onPress={() => openDirections(activeRide.status === 'InProgress' ? activeRide.dropoffCoords : activeRide.pickupCoords)}>
+            <Ionicons name="navigate-circle-outline" size={20} color="#FFF" />
+            <Text style={styles.navigateText}>Navigate to {activeRide.status === 'InProgress' ? 'drop-off' : 'pickup'}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Customer Details Card */}
         <View style={styles.detailsCard}>
@@ -365,6 +396,11 @@ export default function DriverRideRequestsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  mapBar: { position: 'absolute', left: 10, right: 10, top: 10, flexDirection: 'row', alignItems: 'center' },
+  mapPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6, elevation: 3 },
+  mapPillText: { fontSize: 12, fontWeight: '600', color: '#1A2E1A' },
+  navigateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#006A3B', borderRadius: 12, paddingVertical: 12, marginHorizontal: 16, marginTop: 10 },
+  navigateText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
   container: { flex: 1, backgroundColor: '#F6FBF3' },
   centerLoading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F6FBF3' },
   header: { 

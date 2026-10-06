@@ -412,6 +412,14 @@ export default function DestinationDetailScreen({ route, navigation }) {
             </View>
           )}
 
+          {/* Temples, kovils, churches and mosques around this destination (live from Google Places) */}
+          {place.lat != null && place.lon != null && (
+            <Button mode="outlined" icon="map-marker-radius-outline" textColor="#00695C" style={{ marginTop: 16, borderColor: '#B2DFDB' }}
+              onPress={() => navigation.navigate('NearbyPlaces', { around: { latitude: parseFloat(place.lat), longitude: parseFloat(place.lon), name: place.name } })}>
+              Places of worship nearby
+            </Button>
+          )}
+
         </View>
       </ScrollView>
 

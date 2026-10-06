@@ -13,7 +13,8 @@ const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 
 export default function HiddenGemsListScreen({ navigation, route }) {
-  const filterType = route.params?.filterType || 'hidden';
+  const searchText = String(route.params?.query || '').trim().toLowerCase();
+  const filterType = searchText ? 'all' : (route.params?.filterType || 'hidden');
   const insets = useSafeAreaInsets();
   const [gems, setGems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +68,10 @@ export default function HiddenGemsListScreen({ navigation, route }) {
       let filteredData = destinationsData;
       if (filterType === 'hidden') {
         filteredData = destinationsData.filter(d => d.hidden_gem === true || d.hidden_gem === "True" || d.hidden_gem === "true");
+      }
+      // Search from the Home screen: name, province or category
+      if (searchText) {
+        filteredData = filteredData.filter(d => [d.name, d.province, d.category].some(v => String(v || '').toLowerCase().includes(searchText)));
       }
 
       // Calculate distance

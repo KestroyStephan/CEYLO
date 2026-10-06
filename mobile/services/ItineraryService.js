@@ -13,6 +13,7 @@ import { recommendDestinations } from './aiClient';
 import { loadPreferences } from './PreferencesService';
 import { cacheItinerary } from './ItineraryCache';
 import { logEvent } from './Analytics';
+import { loadEvents, eventsDuring } from '../utils/events';
 import localDestinations from '../assets/data/ai_destinations.json';
 import contentModel from '../assets/data/content_recommender.json';
 import crowdForecast from '../assets/data/crowd_forecast.json';
@@ -40,7 +41,7 @@ async function loadTflite() {
 }
 
 /** Model scores for each candidate, plus which engine produced them. */
-async function modelScores(profile, candidates, month) {
+export async function modelScores(profile, candidates, month) {
   const tfl = await loadTflite();
   if (tfl) {
     try {
@@ -57,7 +58,7 @@ async function modelScores(profile, candidates, month) {
 const DAILY_COST_LKR = { budget: 6000, standard: 15000, luxury: 40000 };
 
 // Local dataset categories that suit each mood
-const MOOD_CATEGORIES = {
+export const MOOD_CATEGORIES = {
   eco: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
   adventurer: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
   culture: ['Heritage & Culture'],
@@ -249,7 +250,7 @@ export function summarizePlan(plan, budget) {
  * Generate, save and return an itinerary.
  * @returns {Promise<{id: string, offline: boolean, ...itinerary}>}
  */
-export async function generateItinerary({ mood, days, budget, destination, ecoInterest, avoidCrowds, mobility }) {
+export async function generateItinerary({ mood, days, budget, destination, ecoInterest, avoidCrowds, mobility, startDate }) {
   const started = Date.now();
   // Saved preferences (FR-010) fill in anything this request does not say
   const prefs = await loadPreferences();
@@ -260,8 +261,11 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
   const dayCount = Math.min(14, Math.max(1, parseInt(days, 10) || 5));
   // FR-011: 5-10 recommended locations per itinerary
   const stopCount = Math.min(10, Math.max(5, dayCount));
-  const month = new Date().getMonth() + 1;
-  const year = new Date().getFullYear();
+  // The model and the events use the travel month, not today's
+  const start = startDate ? new Date(startDate) : new Date();
+  const startIso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+  const month = start.getMonth() + 1;
+  const year = start.getFullYear();
   const uid = auth.currentUser?.uid;
   const [strategy, position] = await Promise.all([getStrategy(uid), knownPosition()]);
 
@@ -289,11 +293,24 @@ export async function generateItinerary({ mood, days, budget, destination, ecoIn
   }
 
   const plan = buildPlan(stops, budget, dayCount);
+  // Holidays and festivals that fall inside the trip (Poya days close alcohol and meat sales)
+  const tripEnd = new Date(start.getTime() + (dayCount - 1) * 86400000);
+  let tripEvents = [];
+  try {
+    tripEvents = eventsDuring(await loadEvents(), start, tripEnd).slice(0, 12).map(e => ({
+      id: e.id, title: e.title, date: e.date, endDate: e.endDate, months: e.months, location: e.location,
+      category: e.category, imageUrl: e.imageUrl, publicHoliday: e.publicHoliday, tags: e.tags,
+    }));
+  } catch (e) {
+    console.log('Could not match events to the trip:', e.message);
+  }
   const itinerary = {
     title: `Your ${moodLabel(mood)} trip to ${destination || 'Sri Lanka'}`,
     userId: uid,
     createdAt: new Date().toISOString(),
-    startDate: new Date().toISOString().slice(0, 10),
+    startDate: startIso,
+    days: dayCount,
+    tripEvents,
     mood: mood || null,
     budget: budget || 'Standard',
     destination: destination || null,

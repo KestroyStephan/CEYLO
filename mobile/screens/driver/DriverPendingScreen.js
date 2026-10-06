@@ -150,6 +150,22 @@ export default function DriverPendingScreen() {
     return <View style={[styles.container, { justifyContent: 'center' }]}><ActivityIndicator color="#006A3B" /></View>;
   }
 
+  if (status === 'suspended') {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', padding: 24 }]}>
+        <View style={styles.headerRow}>
+          <Ionicons name="ban-outline" size={30} color="#BA1A1A" />
+          <Text style={styles.title}>Account suspended</Text>
+        </View>
+        <Text style={styles.subtitle}>Reason: {driver?.rejectionReason || 'Not specified'}</Text>
+        <Text style={styles.subtitle}>Contact CEYLO support to have your account reviewed. You cannot receive rides while suspended.</Text>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>{t('sign_out')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const header = status === 'approved'
     ? { icon: 'checkmark-circle', color: '#006A3B', title: t('welcome_ceylo'), body: 'Your account is approved. Opening the driver dashboard…' }
     : status === 'rejected'

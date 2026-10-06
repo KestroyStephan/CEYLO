@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import eventsData from '../assets/data/ai_events.json';
+import { loadEvents } from '../utils/events';
 
 export default function GuideDiscoverScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -35,65 +35,8 @@ export default function GuideDiscoverScreen({ navigation }) {
 
       setAnnouncements(validAnnouncements);
 
-      // Fetch cultural events (Upcoming only, up to 100)
-      const today = new Date().toISOString().split('T')[0];
-      const eventsQuery = query(
-        collection(db, 'cultural_events'), 
-        where('date', '>=', today), 
-        orderBy('date', 'asc'), 
-        limit(100)
-      );
-      const eventsSnap = await getDocs(eventsQuery);
-      
-      let fetchedEvents = [];
-      if (!eventsSnap.empty) {
-        fetchedEvents = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
-
-      // Festivals from the CEYLO events dataset, dated to the 15th of their usual month, fill in when Firestore has few events
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth();
-
-      const fallbackEvents = eventsData.map((e, idx) => {
-          const months = {
-              "January": 0, "February": 1, "March": 2, "April": 3,
-              "May": 4, "June": 5, "July": 6, "August": 7,
-              "September": 8, "October": 9, "November": 10, "December": 11
-          };
-          
-          let eventMonth = months[e.occurrence_month];
-          if (eventMonth === undefined) eventMonth = 7; // Default August
-
-          // If the month has already passed this year, it will be next year
-          let eventYear = currentYear;
-          if (eventMonth < currentMonth) {
-              eventYear = currentYear + 1;
-          }
-
-          // Create a date object for the 15th of that month
-          const eventDateObj = new Date(eventYear, eventMonth, 15);
-
-          return {
-              id: e.event_id || `dataset-${idx}`,
-              title: e.name,
-              location: e.location,
-              category: e.category,
-              date: eventDateObj.toISOString(),
-              image: e.image
-          };
-      });
-
-      // Merge fetched events with fallback events, avoiding duplicates by title
-      const allEvents = [...fetchedEvents];
-      fallbackEvents.forEach(fb => {
-          if (!allEvents.find(ev => ev.title === fb.title)) {
-              allEvents.push(fb);
-          }
-      });
-
-      // Sort by upcoming closest date first
-      allEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+      // Published events and holidays (the same source as the tourist app), with image field for this screen
+      const allEvents = (await loadEvents()).map(e => ({ ...e, image: e.imageUrl }));
 
       // Show up to 100
       setEvents(allEvents.slice(0, 100));

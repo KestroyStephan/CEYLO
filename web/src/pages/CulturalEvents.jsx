@@ -1,376 +1,303 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-    Box, Typography, Button, Paper,
-    TextField, Chip, IconButton, Avatar,
+    Box, Typography, Button, Paper, TextField, IconButton, Avatar, Link,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
-    Dialog, DialogTitle, DialogContent, DialogActions,
-    Grid, Stack, Slider, MenuItem, Snackbar, Alert, InputAdornment
+    Dialog, DialogTitle, DialogContent, DialogActions, Grid, Stack, MenuItem, Snackbar, Alert,
+    InputAdornment, Tabs, Tab, FormControlLabel, Switch, Tooltip,
 } from '@mui/material';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import PageHeader from '../components/PageHeader';
+import StatusChip from '../components/StatusChip';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SearchIcon from '@mui/icons-material/Search';
+import EventIcon from '@mui/icons-material/Event';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
-import eventsData from '../../../mobile/assets/data/ai_events.json';
+// Maintained Sri Lankan calendar (gazetted holidays, Poya days, announced festivals, recurring seasons)
+import calendar from '../../../mobile/assets/data/sri_lanka_calendar.json';
 
-const CATEGORIES = ['Religious', 'Arts', 'Cultural', 'Festival', 'Heritage', 'Seasonal', 'Adventure', 'Wildlife', 'Nightlife', 'Leisure', 'Food', 'Family', 'Solo'];
+const CATEGORIES = ['Religious', 'Cultural', 'Festival', 'Arts', 'Seasonal', 'Heritage', 'Adventure', 'Wildlife', 'Eco', 'Sports', 'Food', 'Community'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const STATUS = {
+    published: { label: 'Published', tone: 'success' },
+    draft: { label: 'Draft', tone: 'neutral' },
+    hidden: { label: 'Hidden', tone: 'warning' },
+    unpublished: { label: 'Not published', tone: 'info' },
+};
+const EMPTY = {
+    title: '', category: 'Festival', date: '', endDate: '', dateConfirmed: true, months: null, location: '', lat: '', lng: '',
+    description: '', imageUrl: '', imageCredit: '', source: '', sourceUrl: '', status: 'draft', tags: [],
+};
 
-// Massive dataset to simulate AI agent scanning all Sri Lankan events
-const aiPickedActivities = [
-    ...eventsData,
-    { name: 'Sigiriya Rock Climbing', category: 'Heritage', occurrence_month: 'January', location: 'Sigiriya, Central Province', image: 'https://images.unsplash.com/photo-1588665391512-42171505a76e' },
-    { name: 'Mirissa Whale Watching', category: 'Wildlife', occurrence_month: 'February', location: 'Mirissa, Southern Province', image: 'https://images.unsplash.com/photo-1549429188-f29e1eb16dfa' },
-    { name: 'Arugam Bay Surfing Season', category: 'Adventure', occurrence_month: 'July', location: 'Arugam Bay, Eastern Province', image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f' },
-    { name: 'Nallur Kandaswamy Festival', category: 'Religious', occurrence_month: 'August', location: 'Jaffna, Northern Province', image: 'https://images.unsplash.com/photo-1589139599557-4b68ef5c1926' },
-    { name: 'Yala Leopard Safari', category: 'Wildlife', occurrence_month: 'September', location: 'Yala, Uva Province', image: 'https://images.unsplash.com/photo-1555571120-7f28bc1748cd' },
-    { name: 'Ella Scenic Train Journey', category: 'Adventure', occurrence_month: 'December', location: 'Ella, Uva Province', image: 'https://images.unsplash.com/photo-1559828551-24b52e008d5b' },
-    { name: 'Galle Fort Heritage Walk', category: 'Cultural', occurrence_month: 'March', location: 'Galle, Southern Province', image: 'https://images.unsplash.com/photo-1585257904090-f2038e1a1795' },
-    { name: 'Adam\'s Peak Pilgrimage', category: 'Religious', occurrence_month: 'April', location: 'Hatton, Central Province', image: 'https://images.unsplash.com/photo-1577967965452-9443b7fc1f2d' },
+// Older records used approvalStatus; read both
+const statusOf = (e) => e.status || (e.approvalStatus === 'approved' ? 'published' : e.approvalStatus === 'declined' ? 'hidden' : e.approvalStatus ? 'draft' : 'published');
+const fmtDate = (e) => {
+    if (!e.date && e.months?.length) return `Every ${e.months.map(m => MONTHS[m - 1]).join(', ')}`;
+    if (!e.date) return '—';
+    const f = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return e.endDate && e.endDate !== e.date ? `${f(e.date)} – ${f(e.endDate)}` : f(e.date);
+};
+const today = () => new Date().toISOString().slice(0, 10);
+const isPast = (e) => Boolean(e.date) && (e.endDate || e.date) < today();
 
-    // New Highly Diverse Events added based on AI tracking
-    { name: 'Unawatuna Beach Full Moon Party', category: 'Nightlife', occurrence_month: 'January', location: 'Unawatuna, Southern Province', image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7' },
-    { name: 'Hikkaduwa DJ Fest 2026', category: 'Nightlife', occurrence_month: 'December', location: 'Hikkaduwa, Southern Province', image: 'https://images.unsplash.com/photo-1470229722913-7c092bba1d19' },
-    { name: 'Colombo Street Food Festival', category: 'Food', occurrence_month: 'May', location: 'Colombo, Western Province', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1' },
-    { name: 'St. Anne\'s Church Feast', category: 'Religious', occurrence_month: 'August', location: 'Talawila, North Western Province', image: 'https://images.unsplash.com/photo-1548625361-ec853c84d728' },
-    { name: 'Kataragama Esala Festival (Thiruvila)', category: 'Religious', occurrence_month: 'July', location: 'Kataragama, Uva Province', image: 'https://images.unsplash.com/photo-1604085572504-a392ddf0d86a' },
-    { name: 'Colombo Holi Colour Festival', category: 'Festival', occurrence_month: 'March', location: 'Colombo, Western Province', image: 'https://images.unsplash.com/photo-1517457210348-703079e57d4b' },
-    { name: 'Trincomalee Deep Sea Diving', category: 'Adventure', occurrence_month: 'April', location: 'Trincomalee, Eastern Province', image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5' },
-    { name: 'Nuwara Eliya Tea Plucking Experience', category: 'Leisure', occurrence_month: 'February', location: 'Nuwara Eliya, Central Province', image: 'https://images.unsplash.com/photo-1596767516765-b38460699bc4' },
-    { name: 'Solo Backpackers Jungle Hike', category: 'Solo', occurrence_month: 'June', location: 'Sinharaja, Sabaragamuwa Province', image: 'https://images.unsplash.com/photo-1551632811-561732d1e306' },
-    { name: 'Family Turtle Hatchery Visit', category: 'Family', occurrence_month: 'October', location: 'Kosgoda, Southern Province', image: 'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f' },
-    { name: 'Navam Maha Perahera', category: 'Cultural', occurrence_month: 'February', location: 'Colombo, Western Province', image: 'https://images.unsplash.com/photo-1583262791845-a7b2933bebd9' },
-    { name: 'Jaffna Mango Festival', category: 'Food', occurrence_month: 'June', location: 'Jaffna, Northern Province', image: 'https://images.unsplash.com/photo-1528825871115-3581a5387919' },
-    { name: 'Kite Surfing Championship', category: 'Adventure', occurrence_month: 'July', location: 'Kalpitiya, North Western Province', image: 'https://images.unsplash.com/photo-1513628741349-f79435b6abf8' },
-    { name: 'Hot Air Ballooning (Rare Event)', category: 'Adventure', occurrence_month: 'November', location: 'Dambulla, Central Province', image: 'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee' },
-    { name: 'Pinnawala Elephant Bathing (Family)', category: 'Family', occurrence_month: 'All Year', location: 'Pinnawala, Sabaragamuwa Province', image: 'https://images.unsplash.com/photo-1582274474773-f9f36f6d0f50' },
-    { name: 'Madhu Church Feast', category: 'Religious', occurrence_month: 'August', location: 'Mannar, Northern Province', image: 'https://images.unsplash.com/photo-1544427920-c49ccf7a0774' },
-    { name: 'Rhythm of the Beach (EDM Party)', category: 'Nightlife', occurrence_month: 'August', location: 'Negombo, Western Province', image: 'https://images.unsplash.com/photo-1533174000273-7d5a045952c1' },
-    { name: 'Sri Lankan Ayurveda Retreat', category: 'Leisure', occurrence_month: 'September', location: 'Bentota, Southern Province', image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef' },
-];
-
-const defaultEvents = aiPickedActivities.map((e, index) => {
-    const months = { "January": "01", "February": "02", "March": "03", "April": "04", "May": "05", "June": "06", "July": "07", "August": "08", "September": "09", "October": "10", "November": "11", "December": "12" };
-    const mm = months[e.occurrence_month];
-    const now = new Date();
-    // Next time this yearly event happens; "All Year" events show from the current month
-    const monthIdx = mm ? parseInt(mm, 10) - 1 : now.getMonth();
-    const year = monthIdx < now.getMonth() ? now.getFullYear() + 1 : now.getFullYear();
-    const dateStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}-15`;
-
-    let cat = "Festival";
-    if (e.category.includes("Religious")) cat = "Religious";
-    else if (e.category.includes("Arts") || e.category.includes("Literature")) cat = "Arts";
-    else if (e.category.includes("Cultural")) cat = "Cultural";
-    else if (e.category.includes("Seasonal")) cat = "Seasonal";
-
-    return {
-        id: `mock-${index}`,
-        title: e.name,
-        titleLocal: '',
-        description: `${e.name} is a popular ${e.category.toLowerCase()} event taking place annually in ${e.location}.`,
-        date: dateStr,
-        endDate: dateStr,
-        location: e.location,
-        category: cat,
-        geofenceRadius: 3.5,
-        imageUrl: e.image || "",
-        aiSuggested: true,
-        approvalStatus: 'waiting', // waiting, approved, declined
-        rating: null,
-        isRare: e.name.includes('Rare')
-    };
-});
+// Firestore rejects undefined; store a clean record
+const toRecord = (e) => {
+    const r = {};
+    Object.keys(EMPTY).forEach(k => { r[k] = e[k] === undefined ? EMPTY[k] : e[k]; });
+    r.lat = r.lat === '' || r.lat == null ? null : Number(r.lat);
+    r.lng = r.lng === '' || r.lng == null ? null : Number(r.lng);
+    r.approvalStatus = r.status === 'published' ? 'approved' : r.status === 'hidden' ? 'declined' : 'waiting';
+    if (e.publicHoliday != null) r.publicHoliday = Boolean(e.publicHoliday);
+    if (e.imagePage) r.imagePage = e.imagePage;
+    if (e.calendarId) r.calendarId = e.calendarId;
+    return r;
+};
 
 export default function CulturalEvents() {
-    const [events, setEvents] = useState([]);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10); // Changed default to 10 rows
+    const [stored, setStored] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [tab, setTab] = useState('upcoming');
     const [searchQuery, setSearchQuery] = useState('');
-    const [timeFilter, setTimeFilter] = useState('all');
-
-    // Editor State
-    const [openDialog, setOpenDialog] = useState(false);
-    const [isCreating, setIsCreating] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState(null);
-    const [formData, setFormData] = useState({});
-
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [editing, setEditing] = useState(null); // { id|null, form }
+    const [busy, setBusy] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
-    useEffect(() => {
-        const q = query(collection(db, "cultural_events"), orderBy("date", "asc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const firebaseEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    useEffect(() => onSnapshot(collection(db, 'cultural_events'),
+        (snap) => { setStored(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); },
+        (err) => { setLoadError(err.message); setLoading(false); }), []);
 
-            let merged = [...firebaseEvents];
-            defaultEvents.forEach(mock => {
-                if (!merged.some(e => e.id === mock.id || e.title === mock.title)) {
-                    merged.push(mock);
-                }
-            });
+    // Calendar entries not in the database yet are listed so they can be published in one click
+    const rows = useMemo(() => {
+        const ids = new Set(stored.map(e => e.calendarId || e.id));
+        const pending = calendar.events.filter(c => !ids.has(c.id)).map(c => ({ ...c, calendarId: c.id, unpublished: true }));
+        return [...stored, ...pending].map(e => ({ ...e, statusKey: e.unpublished ? 'unpublished' : statusOf(e) }));
+    }, [stored]);
 
-            setEvents(merged);
-        }, (err) => {
-            console.error(err);
-            setEvents([...defaultEvents]);
-        });
-        return () => unsubscribe();
-    }, []);
+    const filtered = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return rows
+            .filter(e => tab === 'all'
+                || (tab === 'upcoming' && !isPast(e))
+                || (tab === 'past' && isPast(e))
+                || (tab === 'unpublished' && e.statusKey === 'unpublished'))
+            .filter(e => !q || [e.title, e.category, e.location, ...(e.tags || [])].some(v => String(v || '').toLowerCase().includes(q)))
+            .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999')));
+    }, [rows, tab, searchQuery]);
+    const shown = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const unpublishedUpcoming = rows.filter(e => e.statusKey === 'unpublished' && !isPast(e));
 
-    const handleOpenEditor = (event = null) => {
-        if (event) {
-            setIsCreating(false);
-            setSelectedEvent(event);
-            setFormData(event);
-        } else {
-            setIsCreating(true);
-            setSelectedEvent(null);
-            setFormData({
-                title: '', titleLocal: '', date: new Date().toISOString().split('T')[0], endDate: '',
-                location: 'Colombo', description: '', category: 'Religious', geofenceRadius: 3.5,
-                imageUrl: '', aiSuggested: false, approvalStatus: 'approved'
-            });
-        }
-        setOpenDialog(true);
-    };
-
-    const handleSave = async () => {
+    const publish = async (e) => {
         try {
-            if (isCreating) {
-                await addDoc(collection(db, "cultural_events"), formData);
-                setSnackbar({ open: true, message: 'Event created!', severity: 'success' });
-            } else {
-                if (!selectedEvent.id.startsWith('mock-')) {
-                    await updateDoc(doc(db, "cultural_events", selectedEvent.id), formData);
-                }
-                setSnackbar({ open: true, message: 'Event updated!', severity: 'success' });
-            }
-            setOpenDialog(false);
-        } catch (error) {
-            setSnackbar({ open: true, message: 'Error: ' + error.message, severity: 'error' });
-        }
+            await setDoc(doc(db, 'cultural_events', e.calendarId), { ...toRecord({ ...e, status: 'published' }), createdAt: serverTimestamp() });
+            notify(`${e.title} published.`);
+        } catch (err) { notify('Could not publish: ' + err.message, 'error'); }
     };
 
-    const handleApproval = async (event, status) => {
+    const publishAll = async () => {
+        setBusy(true);
         try {
-            if (event.id.startsWith('mock-')) {
-                // If it's a mock AI event, we save it to DB upon approval
-                const newEvent = { ...event, approvalStatus: status, id: undefined };
-                await addDoc(collection(db, "cultural_events"), newEvent);
-            } else {
-                await updateDoc(doc(db, "cultural_events", event.id), { approvalStatus: status });
-            }
-            setSnackbar({ open: true, message: `Event ${status} successfully!`, severity: 'success' });
-        } catch (error) {
-            setSnackbar({ open: true, message: 'Approval error: ' + error.message, severity: 'error' });
-        }
+            const batch = writeBatch(db);
+            unpublishedUpcoming.forEach(e => batch.set(doc(db, 'cultural_events', e.calendarId), { ...toRecord({ ...e, status: 'published' }), createdAt: serverTimestamp() }));
+            await batch.commit();
+            notify(`${unpublishedUpcoming.length} calendar events published.`);
+        } catch (err) { notify('Could not publish: ' + err.message, 'error'); }
+        setBusy(false);
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Delete this event?")) return;
-        if (!id.startsWith('mock-')) {
-            await deleteDoc(doc(db, "cultural_events", id));
-        }
-        setSnackbar({ open: true, message: 'Event deleted.', severity: 'info' });
+    const setStatus = async (e, status) => {
+        try {
+            await updateDoc(doc(db, 'cultural_events', e.id), { status, approvalStatus: status === 'published' ? 'approved' : status === 'hidden' ? 'declined' : 'waiting' });
+            notify(`${e.title}: ${STATUS[status].label.toLowerCase()}.`);
+        } catch (err) { notify('Could not update: ' + err.message, 'error'); }
     };
 
-    // Filter and Pagination
-    const filteredEvents = events.filter(e => {
-        const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || e.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const openEditor = (e) => setEditing(e
+        ? { id: e.unpublished ? null : e.id, calendarId: e.calendarId || null, form: { ...EMPTY, ...e, lat: e.lat ?? '', lng: e.lng ?? '', status: e.unpublished ? 'published' : statusOf(e) } }
+        : { id: null, calendarId: null, form: { ...EMPTY } });
 
-        let matchesTime = true;
-        if (timeFilter !== 'all') {
-            const eventDate = new Date(e.date).getTime();
-            const today = new Date().getTime();
-            const twoWeeks = 14 * 24 * 60 * 60 * 1000;
+    const save = async () => {
+        const f = editing.form;
+        if (!f.title.trim()) return notify('Enter a title.', 'warning');
+        if (f.dateConfirmed && !f.date) return notify('Enter a date, or turn off "Exact date known" for a recurring season.', 'warning');
+        if (f.endDate && f.date && f.endDate < f.date) return notify('The end date is before the start date.', 'warning');
+        if (f.imageUrl && !/^https:\/\//.test(f.imageUrl)) return notify('The image must be an https:// link.', 'warning');
+        setBusy(true);
+        try {
+            const record = toRecord({ ...f, calendarId: editing.calendarId });
+            if (editing.id) await updateDoc(doc(db, 'cultural_events', editing.id), { ...record, updatedAt: serverTimestamp() });
+            else if (editing.calendarId) await setDoc(doc(db, 'cultural_events', editing.calendarId), { ...record, createdAt: serverTimestamp() });
+            else await addDoc(collection(db, 'cultural_events'), { ...record, createdAt: serverTimestamp() });
+            notify('Event saved.');
+            setEditing(null);
+        } catch (err) { notify('Could not save: ' + err.message, 'error'); }
+        setBusy(false);
+    };
 
-            if (timeFilter === 'finished') {
-                matchesTime = eventDate < today - twoWeeks;
-            } else if (timeFilter === 'happening_now') {
-                matchesTime = eventDate >= today - twoWeeks && eventDate <= today + twoWeeks;
-            } else if (timeFilter === 'upcoming') {
-                matchesTime = eventDate > today + twoWeeks;
-            }
-        }
+    const remove = async () => {
+        if (!editing.id || !window.confirm('Delete this event from the app?')) return;
+        try {
+            await deleteDoc(doc(db, 'cultural_events', editing.id));
+            notify('Event deleted.', 'info');
+            setEditing(null);
+        } catch (err) { notify('Could not delete: ' + err.message, 'error'); }
+    };
 
-        return matchesSearch && matchesTime;
-    });
-    const displayedEvents = filteredEvents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const f = editing?.form;
+    const setF = (patch) => setEditing(ed => ({ ...ed, form: { ...ed.form, ...patch } }));
 
     return (
-        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
-                <Box>
-                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Cultural events</Typography>
+        <Box>
+            <PageHeader title="Cultural events">
+                {unpublishedUpcoming.length > 0 && (
+                    <Button variant="outlined" disabled={busy} onClick={publishAll}>Publish {unpublishedUpcoming.length} calendar events</Button>
+                )}
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openEditor(null)}>New event</Button>
+            </PageHeader>
+
+            {loadError && <Alert severity="error" sx={{ mb: 2 }}>Could not load events: {loadError}</Alert>}
+
+            <Paper>
+                <Box sx={{ px: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: 1, borderColor: 'divider', flexWrap: 'wrap', gap: 1 }}>
+                    <Tabs value={tab} onChange={(_, v) => { setTab(v); setPage(0); }}>
+                        <Tab value="upcoming" label="Upcoming" />
+                        <Tab value="unpublished" label={`Not published ${rows.filter(e => e.statusKey === 'unpublished').length}`} />
+                        <Tab value="past" label="Past" />
+                        <Tab value="all" label="All" />
+                    </Tabs>
+                    <TextField size="small" placeholder="Search title, category, place" value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }} sx={{ width: 280, my: 1 }}
+                        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
                 </Box>
-                <Button
-                    variant="contained"
-                    onClick={() => handleOpenEditor()}
-                    startIcon={<AddIcon />}
-                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2, px: 3 }}
-                >
-                    Create Manual Event
-                </Button>
-            </Box>
-
-            {/* Controls */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <TextField
-                    placeholder="Search events or categories..."
-                    size="small"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
-                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action"/></InputAdornment> }}
-                />
-                <TextField
-                    select
-                    size="small"
-                    value={timeFilter}
-                    onChange={(e) => { setTimeFilter(e.target.value); setPage(0); }}
-                    sx={{ width: 200, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
-                >
-                    <MenuItem value="all" sx={{ fontWeight: 600 }}>All Timeline</MenuItem>
-                    <MenuItem value="happening_now" sx={{ fontWeight: 600, color: '#006A3B' }}>Happening Now</MenuItem>
-                    <MenuItem value="upcoming" sx={{ fontWeight: 600, color: '#1976D2' }}>Upcoming Events</MenuItem>
-                    <MenuItem value="finished" sx={{ fontWeight: 600, color: '#777' }}>Finished</MenuItem>
-                </TextField>
-            </Box>
-
-            {/* Table */}
-            <Paper sx={{ borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
-                        <TableHead sx={{ bgcolor: '#F4F7F6' }}>
+                        <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Event Details</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Category</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Date & Location</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>AI Status</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Approval / Actions</TableCell>
+                                <TableCell>Event</TableCell>
+                                <TableCell>Category</TableCell>
+                                <TableCell>Date</TableCell>
+                                <TableCell>Location</TableCell>
+                                <TableCell>Source</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right" />
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {displayedEvents.map((row) => (
+                            {loading && <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary' }}>Loading events…</TableCell></TableRow>}
+                            {!loading && shown.length === 0 && <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary', py: 4, textAlign: 'center' }}>No events in this view.</TableCell></TableRow>}
+                            {shown.map((row) => (
                                 <TableRow key={row.id} hover>
                                     <TableCell>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar variant="rounded" src={row.imageUrl} sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#EBEFE8' }} />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Avatar variant="rounded" src={row.imageUrl || undefined} sx={{ width: 44, height: 44, bgcolor: '#EEF1EF', color: '#7A8580' }}><EventIcon /></Avatar>
                                             <Box>
-                                                <Typography variant="subtitle2" fontWeight={600} color="#181D19">{row.title}</Typography>
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                                                    {row.aiSuggested && (
-                                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#E3F2FD', color: '#1976D2', px: 1, py: 0.2, borderRadius: 1 }}>
-                                                            <AutoAwesomeIcon sx={{ fontSize: 12 }} />
-                                                            <Typography variant="caption" fontWeight={600}>AI Picked</Typography>
-                                                        </Box>
-                                                    )}
-                                                    {row.isRare && (
-                                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#FCE4EC', color: '#C2185B', px: 1, py: 0.2, borderRadius: 1 }}>
-                                                            <Typography variant="caption" fontWeight={600}>✨ Rare Event</Typography>
-                                                        </Box>
-                                                    )}
-                                                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#FFF8E1', color: '#F57F17', px: 1, py: 0.2, borderRadius: 1, border: '1px solid #FFECB3' }}>
-                                                        <Typography variant="caption" fontWeight={600}>{row.rating ? `★ ${row.rating}` : 'Rare'}</Typography>
-                                                    </Box>
-                                                </Box>
+                                                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{row.title}</Typography>
+                                                {row.publicHoliday && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Public holiday</Typography>}
                                             </Box>
                                         </Box>
                                     </TableCell>
-                                    <TableCell>
-                                        <Chip label={row.category} size="small" sx={{ fontWeight: 600, bgcolor: '#E8F5E9', color: '#006A3B' }} />
+                                    <TableCell>{row.category}</TableCell>
+                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                        {fmtDate(row)}
+                                        {row.dateConfirmed === false && <Typography sx={{ fontSize: 12, color: 'warning.main' }}>Dates not confirmed</Typography>}
                                     </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2" fontWeight={600} color="#181D19">{row.date}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{row.location}</Typography>
+                                    <TableCell>{row.location || '—'}</TableCell>
+                                    <TableCell sx={{ maxWidth: 220 }}>
+                                        {row.sourceUrl
+                                            ? <Link href={row.sourceUrl} target="_blank" rel="noreferrer" underline="hover" sx={{ fontSize: 13 }}>{row.source || 'Source'}</Link>
+                                            : <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{row.source || 'Added by admin'}</Typography>}
                                     </TableCell>
-                                    <TableCell>
-                                        {row.approvalStatus === 'approved' && <Chip label="Approved" size="small" color="success" sx={{ fontWeight: 600 }} />}
-                                        {row.approvalStatus === 'declined' && <Chip label="Declined" size="small" color="error" sx={{ fontWeight: 600 }} />}
-                                        {row.approvalStatus === 'waiting' && <Chip label="Awaiting Approval" size="small" color="warning" sx={{ fontWeight: 600 }} />}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Stack direction="row" spacing={1}>
-                                            {row.approvalStatus === 'waiting' && (
-                                                <>
-                                                    <IconButton size="small" color="success" onClick={() => handleApproval(row, 'approved')}><CheckCircleIcon /></IconButton>
-                                                    <IconButton size="small" color="error" onClick={() => handleApproval(row, 'declined')}><CancelIcon /></IconButton>
-                                                </>
-                                            )}
-                                            <Button variant="outlined" size="small" sx={{ borderRadius: 1, fontWeight: 600, textTransform: 'none' }} onClick={() => handleOpenEditor(row)}>
-                                                Review / Edit
-                                            </Button>
-                                        </Stack>
+                                    <TableCell><StatusChip {...STATUS[row.statusKey]} /></TableCell>
+                                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                                        {row.statusKey === 'unpublished' && <Button size="small" variant="contained" onClick={() => publish(row)} sx={{ mr: 1 }}>Publish</Button>}
+                                        {row.statusKey === 'published' && <Button size="small" onClick={() => setStatus(row, 'hidden')} sx={{ mr: 1 }}>Hide</Button>}
+                                        {(row.statusKey === 'hidden' || row.statusKey === 'draft') && <Button size="small" onClick={() => setStatus(row, 'published')} sx={{ mr: 1 }}>Publish</Button>}
+                                        <Button size="small" variant="outlined" onClick={() => openEditor(row)}>Edit</Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                <TablePagination
-                    component="div"
-                    count={filteredEvents.length}
-                    page={page}
-                    onPageChange={(e, newPage) => setPage(newPage)}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-                    rowsPerPageOptions={[5, 10, 25]}
-                />
+                <TablePagination component="div" count={filtered.length} page={page} onPageChange={(_, p) => setPage(p)}
+                    rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }} rowsPerPageOptions={[10, 25, 50]} />
             </Paper>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1.5 }}>
+                Calendar data updated {calendar.updated}. Dated holidays come from the gazetted 2026 and 2027 holiday lists; entries marked "Dates not confirmed" are recurring seasons shown by month.
+            </Typography>
 
-            {/* Dialog Editor */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 1.25, p: 2 } }}>
-                <DialogTitle>
-                    <Typography variant="h5" fontWeight={600} color="#006A3B">
-                        {isCreating ? 'Create Manual Event' : 'Review Event Configuration'}
-                    </Typography>
-                </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={3} sx={{ mt: 1 }}>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>EVENT NAME</Typography>
-                            <TextField fullWidth value={formData.title || ''} onChange={(e) => setFormData({ ...formData, title: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }} />
+            <Dialog open={Boolean(editing)} onClose={() => setEditing(null)} maxWidth="md" fullWidth>
+                <DialogTitle>{editing?.id ? 'Edit event' : editing?.calendarId ? 'Publish calendar event' : 'New event'}</DialogTitle>
+                {f && (
+                    <DialogContent>
+                        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                            <Grid size={{ xs: 12, md: 8 }}><TextField label="Title" fullWidth value={f.title} onChange={(e) => setF({ title: e.target.value })} /></Grid>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <TextField select label="Category" fullWidth value={f.category} onChange={(e) => setF({ category: e.target.value })}>
+                                    {[...new Set([...CATEGORIES, f.category])].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                                </TextField>
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <FormControlLabel control={<Switch checked={f.dateConfirmed !== false} onChange={(e) => setF({ dateConfirmed: e.target.checked })} />} label="Exact date known" />
+                            </Grid>
+                            {f.dateConfirmed !== false ? (
+                                <>
+                                    <Grid size={{ xs: 12, md: 6 }}><TextField type="date" label="Start date" fullWidth value={f.date || ''} onChange={(e) => setF({ date: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} /></Grid>
+                                    <Grid size={{ xs: 12, md: 6 }}><TextField type="date" label="End date (optional)" fullWidth value={f.endDate || ''} onChange={(e) => setF({ endDate: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} /></Grid>
+                                </>
+                            ) : (
+                                <Grid size={{ xs: 12 }}>
+                                    <TextField select label="Usual months" fullWidth value={f.months || []} onChange={(e) => setF({ months: e.target.value, date: '' })}
+                                        slotProps={{ select: { multiple: true, renderValue: (v) => v.map(m => MONTHS[m - 1]).join(', ') } }}>
+                                        {MONTHS.map((m, i) => <MenuItem key={m} value={i + 1}>{m}</MenuItem>)}
+                                    </TextField>
+                                </Grid>
+                            )}
+                            <Grid size={{ xs: 12, md: 6 }}><TextField label="Location" fullWidth value={f.location} onChange={(e) => setF({ location: e.target.value })} placeholder="All island" /></Grid>
+                            <Grid size={{ xs: 6, md: 3 }}><TextField label="Latitude" fullWidth value={f.lat} onChange={(e) => setF({ lat: e.target.value })} /></Grid>
+                            <Grid size={{ xs: 6, md: 3 }}><TextField label="Longitude" fullWidth value={f.lng} onChange={(e) => setF({ lng: e.target.value })} /></Grid>
+                            <Grid size={{ xs: 12 }}><TextField label="Description" fullWidth multiline rows={3} value={f.description} onChange={(e) => setF({ description: e.target.value })} /></Grid>
+                            <Grid size={{ xs: 12, md: 9 }}>
+                                <TextField label="Image URL (https)" fullWidth value={f.imageUrl} onChange={(e) => setF({ imageUrl: e.target.value })}
+                                    helperText={f.imageCredit ? `Credit: ${f.imageCredit}` : 'Use a photo of this event; credit the source below.'} />
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 3 }}>
+                                <Avatar variant="rounded" src={f.imageUrl || undefined} sx={{ width: '100%', height: 96, bgcolor: '#EEF1EF', color: '#7A8580' }}><EventIcon /></Avatar>
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 6 }}><TextField label="Image credit" fullWidth value={f.imageCredit || ''} onChange={(e) => setF({ imageCredit: e.target.value })} /></Grid>
+                            <Grid size={{ xs: 12, md: 6 }}><TextField label="Source" fullWidth value={f.source} onChange={(e) => setF({ source: e.target.value })} placeholder="Who announced the date" /></Grid>
+                            <Grid size={{ xs: 12, md: 8 }}>
+                                <TextField label="Source link" fullWidth value={f.sourceUrl} onChange={(e) => setF({ sourceUrl: e.target.value })}
+                                    slotProps={{ input: { endAdornment: f.sourceUrl ? <InputAdornment position="end"><Tooltip title="Open"><IconButton size="small" href={f.sourceUrl} target="_blank"><OpenInNewIcon fontSize="small" /></IconButton></Tooltip></InputAdornment> : null } }} />
+                            </Grid>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                <TextField select label="Status" fullWidth value={f.status} onChange={(e) => setF({ status: e.target.value })}>
+                                    <MenuItem value="published">Published (shown in the app)</MenuItem>
+                                    <MenuItem value="draft">Draft</MenuItem>
+                                    <MenuItem value="hidden">Hidden</MenuItem>
+                                </TextField>
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <TextField label="Tags (comma separated, used by recommendations)" fullWidth value={(f.tags || []).join(', ')}
+                                    onChange={(e) => setF({ tags: e.target.value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) })}
+                                    placeholder="e.g. poya, buddhist, perahera, eco, wildlife" />
+                            </Grid>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>CATEGORY</Typography>
-                            <TextField select fullWidth value={formData.category || 'Festival'} onChange={(e) => setFormData({ ...formData, category: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}>
-                                {CATEGORIES.map(cat => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>DESCRIPTION</Typography>
-                            <TextField fullWidth multiline rows={3} value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }} />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>START DATE</Typography>
-                            <TextField type="date" fullWidth value={formData.date || ''} onChange={(e) => setFormData({ ...formData, date: e.target.value })} InputLabelProps={{ shrink: true }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }} />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>GEOFENCE RADIUS (km)</Typography>
-                            <Slider value={formData.geofenceRadius || 3.5} min={0.5} max={10.0} step={0.5} onChange={(e, val) => setFormData({ ...formData, geofenceRadius: val })} sx={{ color: '#006A3B', mt: 2 }} />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ p: 3, pt: 0 }}>
-                    {!isCreating && (
-                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => { handleDelete(selectedEvent.id); setOpenDialog(false); }} sx={{ mr: 'auto', fontWeight: 600 }}>
-                            Delete Event
-                        </Button>
-                    )}
-                    <Button onClick={() => setOpenDialog(false)} sx={{ color: '#5C6E64', fontWeight: 600 }}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSave} sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2 }}>
-                        Save Configuration
-                    </Button>
+                    </DialogContent>
+                )}
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    {editing?.id && <Button color="error" onClick={remove} sx={{ mr: 'auto' }}>Delete</Button>}
+                    <Button onClick={() => setEditing(null)}>Cancel</Button>
+                    <Button variant="contained" disabled={busy} onClick={save}>Save</Button>
                 </DialogActions>
             </Dialog>
 
-            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-                <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+            <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar(s => ({ ...s, open: false }))} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+                <Alert severity={snackbar.severity} variant="filled" onClose={() => setSnackbar(s => ({ ...s, open: false }))}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
     );

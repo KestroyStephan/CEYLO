@@ -5,7 +5,7 @@ import {
   Drawer, IconButton, Divider, Link,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../context/AuthContext';
 import { notifyUser } from '../utils/notifyUser';
@@ -21,6 +21,7 @@ const STATUS = {
   pending_verification: { label: 'Pending', tone: 'warning' },
   approved: { label: 'Approved', tone: 'success' },
   rejected: { label: 'Rejected', tone: 'error' },
+  suspended: { label: 'Suspended', tone: 'error' },
 };
 const DOC_TONE = { missing: ['Not uploaded', 'neutral'], pending: ['Needs review', 'warning'], approved: ['Approved', 'success'], rejected: ['Rejected', 'error'] };
 const fmtDate = (ms) => (ms ? new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
@@ -59,6 +60,7 @@ export default function Drivers() {
     pending: drivers.filter(d => d.status === 'pending_verification').length,
     approved: drivers.filter(d => d.status === 'approved').length,
     rejected: drivers.filter(d => d.status === 'rejected').length,
+    suspended: drivers.filter(d => d.status === 'suspended').length,
   }), [drivers]);
 
   const rows = useMemo(() => {
@@ -74,6 +76,23 @@ export default function Drivers() {
   const reviewingDriver = reviewId ? drivers.find(d => d.id === reviewId) : null;
   const reviewing = reviewingDriver ? { ...reviewingDriver, docs: docSummary(documents[reviewId]) } : null;
   const reviewRecord = reviewId ? documents[reviewId] || {} : {};
+
+  // Trips assigned to the driver being reviewed (most recent first)
+  const [trips, setTrips] = useState({ id: null, list: [], error: '' });
+  useEffect(() => {
+    if (!reviewId) return;
+    let cancelled = false;
+    getDocs(query(collection(db, 'bookings'), where('driverId', '==', reviewId), limit(50)))
+      .then(snap => {
+        if (cancelled) return;
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (toMs(b.createdAt) || 0) - (toMs(a.createdAt) || 0)).slice(0, 10);
+        setTrips({ id: reviewId, list, error: '' });
+      })
+      .catch(e => !cancelled && setTrips({ id: reviewId, list: [], error: e.message }));
+    return () => { cancelled = true; };
+  }, [reviewId]);
+  const reviewTrips = trips.id === reviewId ? trips : { list: [], error: '', loading: true };
 
   const reviewDocument = async (key, status, reason = '') => {
     setSaving(true);
@@ -107,11 +126,38 @@ export default function Drivers() {
     }
   };
 
+  const reactivate = async (driver) => {
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'drivers', driver.id), { status: 'approved', rejectionReason: '', suspendedAt: null });
+      await updateDoc(doc(db, 'users', driver.id), { role: 'driver_active', status: 'approved' });
+      notifyUser(driver.id, 'Your CEYLO driver account is active again', 'Open CEYLO and switch online to receive ride requests.', { type: 'account_approved' });
+      notify(`${driver.name || 'Driver'} reactivated.`);
+    } catch (e) {
+      notify('Could not reactivate: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const confirmReject = async () => {
     const reason = rejectionReason.trim();
     if (!reason || !rejectTarget) return;
     if (rejectTarget.type === 'doc') {
       await reviewDocument(rejectTarget.key, 'rejected', reason);
+    } else if (rejectTarget.type === 'suspend') {
+      setSaving(true);
+      try {
+        // Offline at once; the app moves a suspended driver to the review screen with the reason
+        await updateDoc(doc(db, 'drivers', rejectTarget.id), { status: 'suspended', rejectionReason: reason, suspendedAt: serverTimestamp(), isOnline: false });
+        await updateDoc(doc(db, 'users', rejectTarget.id), { role: 'driver_rejected', status: 'suspended' });
+        notifyUser(rejectTarget.id, 'Your CEYLO driver account is suspended', `Reason: ${reason}`, { type: 'account_rejected' });
+        notify('Driver suspended.', 'info');
+      } catch (e) {
+        notify('Could not suspend: ' + e.message, 'error');
+      } finally {
+        setSaving(false);
+      }
     } else {
       setSaving(true);
       try {
@@ -197,6 +243,7 @@ export default function Drivers() {
           <Tab value="pending" label={`Pending ${counts.pending}`} />
           <Tab value="approved" label={`Approved ${counts.approved}`} />
           <Tab value="rejected" label={`Rejected ${counts.rejected}`} />
+          <Tab value="suspended" label={`Suspended ${counts.suspended}`} />
         </Tabs>
         <Box sx={{ height: 600 }}>
           <DataGrid
@@ -243,6 +290,43 @@ export default function Drivers() {
               {reviewing.status === 'rejected' && reviewing.rejectionReason && (
                 <Alert severity="error" sx={{ mb: 2 }}>Rejected: {reviewing.rejectionReason}</Alert>
               )}
+
+              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2, mb: 3 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>Activity</Typography>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 1.5 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Availability</Typography>
+                    <StatusChip label={reviewing.isOnline ? 'Online' : 'Offline'} tone={reviewing.isOnline ? 'success' : 'neutral'} />
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Last location</Typography>
+                    {reviewing.location?.latitude != null ? (
+                      <Link href={`https://www.google.com/maps/search/?api=1&query=${reviewing.location.latitude},${reviewing.location.longitude}`} target="_blank" rel="noreferrer" underline="hover" sx={{ fontSize: 13 }}>
+                        {reviewing.location.latitude.toFixed(3)}, {reviewing.location.longitude.toFixed(3)}
+                        {reviewing.location.updatedAt ? ` · ${new Date(reviewing.location.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}
+                      </Link>
+                    ) : <Typography sx={{ fontSize: 13 }}>Not shared yet</Typography>}
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Trips</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                      {reviewTrips.loading ? '…' : `${reviewTrips.list.filter(t => t.status === 'Completed').length} completed · ${reviewTrips.list.length} recent`}
+                    </Typography>
+                  </Box>
+                </Box>
+                {reviewTrips.error && <Typography sx={{ fontSize: 12, color: 'error.main' }}>Could not load trips: {reviewTrips.error}</Typography>}
+                {!reviewTrips.loading && reviewTrips.list.length === 0 && !reviewTrips.error && (
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No trips assigned yet.</Typography>
+                )}
+                {reviewTrips.list.map(t => (
+                  <Box key={t.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', py: 0.75, borderTop: 1, borderColor: 'divider' }}>
+                    <Typography sx={{ fontSize: 12.5, color: 'text.secondary', width: 90, flexShrink: 0 }}>{fmtDate(toMs(t.createdAt))}</Typography>
+                    <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }} noWrap>{t.pickup || '—'} → {t.dropoff || '—'}</Typography>
+                    {t.fare != null && <Typography sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>LKR {Number(t.fare).toLocaleString()}</Typography>}
+                    <StatusChip label={t.status || '—'} tone={t.status === 'Completed' ? 'success' : t.status === 'Cancelled' ? 'neutral' : 'info'} />
+                  </Box>
+                ))}
+              </Box>
 
               <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>
                 Verification documents · {reviewing.docs.uploaded}/{reviewing.docs.total} uploaded
@@ -307,13 +391,20 @@ export default function Drivers() {
             <Box sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Typography sx={{ flex: 1, fontSize: 13, color: 'text.secondary' }}>
                 {reviewing.status === 'approved' ? 'This driver is active.'
+                  : reviewing.status === 'suspended' ? `Suspended: ${reviewing.rejectionReason || 'no reason given'}`
                   : reviewing.docs.readyToApprove ? 'All required documents are approved.'
                   : 'Approve every required document (none expired) to activate the driver.'}
               </Typography>
-              {reviewing.status !== 'rejected' && (
+              {reviewing.status === 'pending_verification' && (
                 <Button color="error" variant="outlined" disabled={saving} onClick={() => setRejectTarget({ type: 'driver', id: reviewing.id })}>Reject application</Button>
               )}
-              {reviewing.status !== 'approved' && (
+              {reviewing.status === 'approved' && (
+                <Button color="error" variant="outlined" disabled={saving} onClick={() => setRejectTarget({ type: 'suspend', id: reviewing.id })}>Suspend driver</Button>
+              )}
+              {reviewing.status === 'suspended' && (
+                <Button variant="contained" disabled={saving} onClick={() => reactivate(reviewing)}>Reactivate driver</Button>
+              )}
+              {(reviewing.status === 'pending_verification' || reviewing.status === 'rejected') && (
                 <Button variant="contained" disabled={saving || !reviewing.docs.readyToApprove} onClick={() => approveDriver(reviewing)}>Approve driver</Button>
               )}
             </Box>
@@ -322,7 +413,7 @@ export default function Drivers() {
       </Drawer>
 
       <Dialog open={Boolean(rejectTarget)} onClose={() => { setRejectTarget(null); setRejectionReason(''); }} maxWidth="sm" fullWidth>
-        <DialogTitle>{rejectTarget?.type === 'doc' ? `Reject ${rejectTarget.label}` : 'Reject application'}</DialogTitle>
+        <DialogTitle>{rejectTarget?.type === 'doc' ? `Reject ${rejectTarget.label}` : rejectTarget?.type === 'suspend' ? 'Suspend driver' : 'Reject application'}</DialogTitle>
         <DialogContent>
           <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 2 }}>The driver sees this reason in the app.</Typography>
           <TextField
@@ -335,7 +426,7 @@ export default function Drivers() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => { setRejectTarget(null); setRejectionReason(''); }}>Cancel</Button>
-          <Button onClick={confirmReject} variant="contained" color="error" disabled={!rejectionReason.trim() || saving}>Reject</Button>
+          <Button onClick={confirmReject} variant="contained" color="error" disabled={!rejectionReason.trim() || saving}>{rejectTarget?.type === 'suspend' ? 'Suspend' : 'Reject'}</Button>
         </DialogActions>
       </Dialog>
 
