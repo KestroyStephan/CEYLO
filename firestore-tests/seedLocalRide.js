@@ -1,6 +1,6 @@
 /**
  * Seeds a dummy rider and a dummy driver into the LOCAL Firebase emulators for an end-to-end
- * ride test. It refuses to run against anything but localhost.
+ * ride or SOS drill, plus a desk (admin) account for the web portal. It only talks to localhost.
  *
  *   firebase emulators:start --only auth,firestore --project ceylo-app
  *   node seedLocalRide.js
@@ -16,6 +16,7 @@ const PASSWORD = 'ceylo-test-123';
 const ACCOUNTS = {
   rider: { email: 'rider@ceylo.test', name: 'Test Rider' },
   driver: { email: 'driver@ceylo.test', name: 'Test Driver' },
+  admin: { email: 'desk@ceylo.test', name: 'Test Desk' },
 };
 
 // Firestore REST value encoding
@@ -58,6 +59,7 @@ async function put(path, data) {
 (async () => {
   const riderId = await signUp(ACCOUNTS.rider);
   const driverId = await signUp(ACCOUNTS.driver);
+  const adminId = await signUp(ACCOUNTS.admin);
   const now = new Date();
 
   await put(`users/${riderId}`, {
@@ -71,5 +73,9 @@ async function put(path, data) {
     name: ACCOUNTS.driver.name, vehicleType: 'Tuk', licensePlate: 'WP ABC-1234', status: 'approved',
     isOnline: false, isBusy: false, rating: 4.8, createdAt: now,
   });
+  await put(`users/${adminId}`, {
+    name: ACCOUNTS.admin.name, email: ACCOUNTS.admin.email, role: 'admin', createdAt: now,
+  });
+  console.log(`Seeded admin ${adminId} (${ACCOUNTS.admin.email}).`);
   console.log(`Seeded rider ${riderId} (${ACCOUNTS.rider.email}) and driver ${driverId} (${ACCOUNTS.driver.email}).`);
 })().catch((e) => { console.error(e.message); process.exit(1); });

@@ -32,6 +32,13 @@ import { storage } from '../firebaseConfig';
 // 'investigating' is the older name for dispatched and is still read.
 const OPEN_STATUSES = ['active', 'acknowledged', 'dispatched', 'investigating'];
 const STATUS_LABEL = { active: 'NEW', acknowledged: 'ACKNOWLEDGED', dispatched: 'DISPATCHED', investigating: 'DISPATCHED', resolved: 'RESOLVED', closed: 'CLOSED' };
+const toMillis = (t) => (t?.toMillis ? t.toMillis() : t ? Date.parse(t) || null : null);
+const ago = (t) => {
+    const ms = toMillis(t);
+    if (!ms) return null;
+    const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+};
 const fmtTime = (t) => (t?.toDate ? t.toDate().toLocaleTimeString() : typeof t === 'string' ? new Date(t).toLocaleTimeString() : null);
 
 function SOSMonitor() {
@@ -47,6 +54,12 @@ function SOSMonitor() {
     const audioChunksRef = useRef([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const audioRef = useRef(null);
+    const [, setClock] = useState(0);
+    // Re-render every second so waiting times and location ages stay current
+    useEffect(() => {
+        const t = setInterval(() => setClock(n => n + 1), 1000);
+        return () => clearInterval(t);
+    }, []);
 
     useEffect(() => {
         // Initialize emergency alert sound
@@ -415,8 +428,9 @@ function SOSMonitor() {
                                                     bgcolor: isCritical ? '#BA1A1A' : '#735C00' 
                                                 }} 
                                             />
-                                            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                                                {timeStr}
+                                            <Typography variant="caption" fontWeight={800}
+                                                color={alert.status === 'active' && Date.now() - (toMillis(alert.timestamp) || Date.now()) > 120000 ? '#BA1A1A' : 'text.secondary'}>
+                                                {alert.status === 'active' ? `Waiting ${ago(alert.timestamp) || '0s'}` : timeStr}
                                             </Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -430,6 +444,11 @@ function SOSMonitor() {
                                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                                                     {alert.locationName || (alert.location ? `${alert.location.latitude.toFixed(4)}, ${alert.location.longitude.toFixed(4)}` : 'Unknown Location')}
                                                 </Typography>
+                                                {alert.location && (
+                                                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: Date.now() - (toMillis(alert.lastLocationAt || alert.timestamp) || 0) > 60000 ? '#B26A00' : '#2E7D32' }}>
+                                                        Location {ago(alert.lastLocationAt || alert.timestamp) || 'just now'} old{alert.location.accuracy ? ` · ±${alert.location.accuracy} m` : ''}
+                                                    </Typography>
+                                                )}
                                             </Box>
                                         </Box>
                                     </Paper>
@@ -528,7 +547,7 @@ function SOSMonitor() {
                                             </Typography>
                                             <Typography variant="caption" color="#444" fontWeight={800}>
                                                 {[
-                                                    fmtTime(selectedAlert.timestamp) && `Raised ${fmtTime(selectedAlert.timestamp)}`,
+                                                    fmtTime(selectedAlert.timestamp) && `Raised ${fmtTime(selectedAlert.timestamp)} (${ago(selectedAlert.timestamp)} ago)`,
                                                     fmtTime(selectedAlert.acknowledgedAt) && `acknowledged ${fmtTime(selectedAlert.acknowledgedAt)}`,
                                                     fmtTime(selectedAlert.dispatchedAt) && `${selectedAlert.dispatchTeam || 'team'} dispatched ${fmtTime(selectedAlert.dispatchedAt)}`,
                                                 ].filter(Boolean).join(' • ') || 'Waiting for the desk'}
@@ -848,7 +867,7 @@ function SOSMonitor() {
                                     <TableRow key={row.id} hover sx={{ cursor: 'pointer' }} onClick={() => handleSelectAlert(row)}>
                                         <TableCell sx={{ fontWeight: 600, color: '#555' }}>{timeStr}</TableCell>
                                         <TableCell sx={{ fontWeight: 800 }}>{row.userName}</TableCell>
-                                        <TableCell>{row.locationName || 'N/A'}</TableCell>
+                                        <TableCell>{row.locationName || (row.location?.latitude != null ? `${Number(row.location.latitude).toFixed(4)}, ${Number(row.location.longitude).toFixed(4)}` : 'Not shared')}</TableCell>
                                         <TableCell>
                                             <Chip 
                                                 label={row.category || 'Emergency'} 
@@ -860,7 +879,7 @@ function SOSMonitor() {
                                                 }} 
                                             />
                                         </TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>{row.responseTeam || 'Rangers / Local Support'}</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>{row.dispatchTeam || row.responseTeam || (row.resolvedBy === 'traveller' ? 'Closed by traveller' : 'Closed by desk')}</TableCell>
                                         <TableCell>
                                             <Chip 
                                                 label={row.status?.toUpperCase() || 'RESOLVED'} 

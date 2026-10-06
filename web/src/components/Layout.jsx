@@ -32,6 +32,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import SosAlarm from './SosAlarm';
 
 const drawerWidth = 260;
 
@@ -234,6 +235,7 @@ function Layout() {
 
             {/* REMOVED maxWidth: 1600 and mx: 'auto' to ensure the content stretches fully, fixing the left/right whitespace issue */}
             <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3, md: 4 }, width: { sm: `calc(100% - ${drawerWidth}px)` }, pt: '96px !important' }}>
+                <SosAlarm />
                 <Outlet />
             </Box>
         </Box>

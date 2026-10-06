@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import i18n from '../i18n';
-import { View, StyleSheet, TouchableOpacity, Animated, Linking, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Linking, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Alert, Share } from 'react-native';
 import { Text, Surface, Button, IconButton, List, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -56,6 +56,12 @@ async function findNearest(type, coords) {
 }
 
 const { width } = Dimensions.get('window');
+
+function elapsed(since) {
+  if (!since) return '';
+  const sec = Math.max(0, Math.round((Date.now() - since) / 1000));
+  return sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}m ${String(sec % 60).padStart(2, '0')}s`;
+}
 
 const EMBASSIES = [
   { country: 'United Kingdom', phone: '+94 11 5390639', address: 'Bauddhaloka Mawatha, Colombo 07' },
@@ -139,14 +145,16 @@ export default function SOSScreen({ navigation }) {
       fetchAISuggestions(loc.coords);
 
       locSub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, timeInterval: 30000, distanceInterval: 50 },
+        { accuracy: Location.Accuracy.High, timeInterval: 10000, distanceInterval: 10 },
         (loc) => {
           const crumb = { lat: loc.coords.latitude, lon: loc.coords.longitude };
-          setBreadcrumbs(prev => [...prev.slice(-5), crumb]);
+          setUserLoc(loc.coords);
+          setBreadcrumbs(prev => [...prev.slice(-19), crumb]);
           if (activeDocIdRef.current) {
             updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), {
-              location: { latitude: crumb.lat, longitude: crumb.lon },
+              location: { latitude: crumb.lat, longitude: crumb.lon, accuracy: Math.round(loc.coords.accuracy || 0) || null },
               lastLocationAt: serverTimestamp(),
+              breadcrumbs: arrayUnion({ lat: crumb.lat, lon: crumb.lon, at: new Date().toISOString() }),
             }).catch(() => {});
           }
         }
@@ -195,6 +203,20 @@ export default function SOSScreen({ navigation }) {
       .catch(e => console.log('Could not check for an open SOS:', e.message));
   }, []);
 
+  // A phone lying still sends no position updates, so re-send the last one while an alert is open
+  // and the desk can see the location is current
+  useEffect(() => {
+    if (!activeDocId) return undefined;
+    const t = setInterval(() => {
+      if (!userLoc) return;
+      updateDoc(doc(db, 'sos_alerts', activeDocId), {
+        location: { latitude: userLoc.latitude, longitude: userLoc.longitude, accuracy: Math.round(userLoc.accuracy || 0) || null },
+        lastLocationAt: serverTimestamp(),
+      }).catch(() => {});
+    }, 15000);
+    return () => clearInterval(t);
+  }, [activeDocId, userLoc]);
+
   // Walkie-Talkie & Admin Camera Request Listener
   useEffect(() => {
     activeDocIdRef.current = activeDocId;
@@ -203,7 +225,19 @@ export default function SOSScreen({ navigation }) {
       unsub = onSnapshot(doc(db, "sos_alerts", activeDocId), async (snap) => {
         const data = snap.data();
         if (!data) return;
-        setDeskStatus({ status: data.status, team: data.dispatchTeam || null });
+        setDeskStatus({
+          status: data.status,
+          team: data.dispatchTeam || null,
+          sentAt: data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.parse(data.clientCreatedAt) || Date.now(),
+          acknowledgedAt: data.acknowledgedAt?.toMillis ? data.acknowledgedAt.toMillis() : null,
+          dispatchedAt: data.dispatchedAt?.toMillis ? data.dispatchedAt.toMillis() : null,
+        });
+        if (data.status === 'resolved' && data.resolvedBy !== 'traveller') {
+          setActive(false);
+          setActiveDocId(null);
+          Alert.alert('Alert closed', 'The CEYLO emergency desk has closed this alert. If you still need help, raise a new SOS or call 119.');
+          return;
+        }
 
         // Walkie-Talkie Logic
         if (data.adminAudioUrl && data.adminAudioTimestamp) {
@@ -232,6 +266,40 @@ export default function SOSScreen({ navigation }) {
     return () => unsub();
   }, [activeDocId]);
 
+  // Nobody at the desk has answered for two minutes: offer the police line instead of waiting
+  const escalatedRef = useRef(false);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      escalatedRef.current = false;
+      return undefined;
+    }
+    const t = setInterval(() => {
+      setTick(n => n + 1);
+      if (!escalatedRef.current && deskStatus?.status === 'active' && deskStatus.sentAt && Date.now() - deskStatus.sentAt > 120000) {
+        escalatedRef.current = true;
+        Alert.alert('No reply from the desk yet', 'Your alert is still open, but nobody has picked it up for 2 minutes. Call the police now?', [
+          { text: 'Keep waiting', style: 'cancel' },
+          { text: 'Call 119', onPress: () => Linking.openURL('tel:119') },
+        ]);
+      }
+    }, 5000);
+    return () => clearInterval(t);
+  }, [active, deskStatus]);
+
+  const shareWithContact = async () => {
+    const pos = userLoc || (await getPositionFast())?.coords;
+    const link = pos ? `https://maps.google.com/?q=${pos.latitude},${pos.longitude}` : 'location unavailable';
+    const text = `I need help. I raised an emergency alert in the CEYLO app. My location: ${link}`;
+    try {
+      if (await SMS.isAvailableAsync()) {
+        await SMS.sendSMSAsync([], text);
+        return;
+      }
+    } catch (e) { /* fall through to the share sheet */ }
+    Share.share({ message: text }).catch(() => {});
+  };
+
   const cancelSOS = () => {
     if (countdownRef.current) {
       clearInterval(countdownRef.current);
@@ -242,18 +310,25 @@ export default function SOSScreen({ navigation }) {
 
   const handleSOSPress = async () => {
     if (active && activeDocId) {
-      // Resolve existing alert
-      setLoading(true);
-      try {
-        const alertRef = doc(db, "sos_alerts", activeDocId);
-        await updateDoc(alertRef, { status: 'resolved', resolvedAt: serverTimestamp() });
-        setActive(false);
-        setActiveDocId(null);
-      } catch (error) {
-        console.error("Error resolving SOS:", error);
-      } finally {
-        setLoading(false);
-      }
+      Alert.alert('Are you safe now?', 'Ending the alert tells the emergency desk you no longer need help.', [
+        { text: 'Keep the alert open', style: 'cancel' },
+        {
+          text: "Yes, I'm safe",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await updateDoc(doc(db, 'sos_alerts', activeDocId), { status: 'resolved', resolvedAt: serverTimestamp(), resolvedBy: 'traveller' });
+              setActive(false);
+              setActiveDocId(null);
+              setDeskStatus(null);
+            } catch (error) {
+              Alert.alert('Could not end the alert', 'Check your connection and try again, or call the desk.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]);
     } else {
       if (countdown !== null) {
         // Tap again to cancel during countdown
@@ -326,6 +401,7 @@ export default function SOSScreen({ navigation }) {
         location: location ? {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
+          accuracy: Math.round(location.coords.accuracy || 0) || null,
         } : null
       };
 
@@ -474,29 +550,56 @@ export default function SOSScreen({ navigation }) {
               </>
             ) : (
               <>
-                <Text style={styles.sosText}>{active ? 'RESOLVE' : 'SOS'}</Text>
-                <Text style={styles.tapText}>{active ? 'Tap to end alert' : 'Tap for Help'}</Text>
+                <Text style={[styles.sosText, active && { fontSize: 26 }]}>{active ? "I'M SAFE" : 'SOS'}</Text>
+                <Text style={styles.tapText}>{active ? 'Tap to end the alert' : 'Tap for Help'}</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
-        {active && deskStatus && deskStatus.status !== 'active' && (
-          <View style={styles.deskStatus} accessibilityLiveRegion="polite">
-            <MaterialCommunityIcons name={deskStatus.status === 'resolved' ? 'check-circle' : 'shield-check'} size={22} color="#1B5E20" />
-            <Text style={styles.deskStatusText}>
-              {deskStatus.status === 'acknowledged' ? 'The CEYLO emergency desk has seen your alert and is arranging help.'
-                : (deskStatus.status === 'dispatched' || deskStatus.status === 'investigating') ? `${deskStatus.team || 'Help'} has been dispatched to your location.`
-                : deskStatus.status === 'resolved' ? 'The emergency desk marked this alert as resolved.'
-                : 'Your alert is being handled.'}
-            </Text>
+        {active && deskStatus && (
+          <View style={styles.tracker} accessibilityLiveRegion="polite">
+            <View style={styles.trackerHead}>
+              <Text style={styles.trackerTitle}>Alert status</Text>
+              <Text style={styles.trackerElapsed}>Open {elapsed(deskStatus.sentAt)}</Text>
+            </View>
+            {[
+              { key: 'sent', label: 'Alert sent with your live location', at: deskStatus.sentAt, done: true },
+              { key: 'seen', label: 'Seen by the CEYLO emergency desk', at: deskStatus.acknowledgedAt, done: ['acknowledged', 'dispatched', 'investigating'].includes(deskStatus.status) },
+              { key: 'help', label: deskStatus.team ? `${deskStatus.team} on the way` : 'Help dispatched to you', at: deskStatus.dispatchedAt, done: ['dispatched', 'investigating'].includes(deskStatus.status) },
+            ].map((step, i, all) => {
+              const current = step.done && !(all[i + 1] && all[i + 1].done);
+              return (
+                <View key={step.key} style={styles.step}>
+                  <View style={[styles.stepDot, step.done && styles.stepDotDone, current && styles.stepDotCurrent]}>
+                    {step.done ? <MaterialCommunityIcons name="check" size={14} color="#FFF" /> : null}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.stepLabel, !step.done && { color: '#9AA3A0' }]}>{step.label}</Text>
+                    {step.done && step.at ? <Text style={styles.stepTime}>{new Date(step.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text> : null}
+                    {!step.done && i === all.findIndex(x => !x.done) ? <Text style={styles.stepTime}>Waiting…</Text> : null}
+                  </View>
+                </View>
+              );
+            })}
+            <Text style={styles.trackerNote}>Keep this screen open. Your location is shared every 10 seconds{userLoc?.accuracy ? ` (accurate to about ${Math.round(userLoc.accuracy)} m)` : ''}.</Text>
           </View>
         )}
         {active && (
-          <TouchableOpacity style={styles.addPhotoBtn} onPress={handleOptionalPhoto}>
-            <MaterialCommunityIcons name="camera-plus" size={20} color="#D32F2F" />
-            <Text style={styles.addPhotoText}>{i18n.t('ui_attach_evidence_video_photo')}</Text>
-          </TouchableOpacity>
+          <View style={styles.activeActions}>
+            <TouchableOpacity style={styles.addPhotoBtn} onPress={handleOptionalPhoto}>
+              <MaterialCommunityIcons name="camera-plus" size={20} color="#D32F2F" />
+              <Text style={styles.addPhotoText}>{i18n.t('ui_attach_evidence_video_photo')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addPhotoBtn} onPress={shareWithContact}>
+              <MaterialCommunityIcons name="account-heart" size={20} color="#D32F2F" />
+              <Text style={styles.addPhotoText}>Send my location to someone I trust</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.addPhotoBtn, { backgroundColor: '#D32F2F', borderColor: '#D32F2F' }]} onPress={() => Linking.openURL('tel:119')}>
+              <MaterialCommunityIcons name="phone" size={20} color="#FFF" />
+              <Text style={[styles.addPhotoText, { color: '#FFF' }]}>Call Police 119</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <View style={styles.actionGrid}>
@@ -692,8 +795,18 @@ export default function SOSScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  deskStatus: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5E9', borderRadius: 14, padding: 14, marginHorizontal: 20, marginBottom: 12 },
-  deskStatusText: { flex: 1, color: '#1B5E20', fontSize: 14, fontWeight: '600' },
+  tracker: { backgroundColor: '#FFF', borderRadius: 18, padding: 16, marginHorizontal: 20, marginBottom: 14, borderWidth: 1, borderColor: '#F3D4D4' },
+  trackerHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  trackerTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#1B1B1B' },
+  trackerElapsed: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#C62828' },
+  step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 12 },
+  stepDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#D5DBD9', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  stepDotDone: { backgroundColor: '#2E7D32', borderColor: '#2E7D32' },
+  stepDotCurrent: { backgroundColor: '#C62828', borderColor: '#C62828' },
+  stepLabel: { fontSize: 14, fontFamily: 'Outfit-SemiBold', color: '#1B1B1B' },
+  stepTime: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 1 },
+  trackerNote: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', lineHeight: 17 },
+  activeActions: { gap: 10, marginBottom: 18 },
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   backButton: { marginBottom: 10, width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
   header: { padding: 40, paddingTop: 50, paddingBottom: 50, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
@@ -737,7 +850,7 @@ const styles = StyleSheet.create({
   retakeBtnText:{color:'#FFF',fontFamily:'Outfit-Bold',fontSize:15},
   submitBtn:   {flexDirection:'row',alignItems:'center',gap:8,backgroundColor:'#D32F2F',borderRadius:14,paddingVertical:14,paddingHorizontal:24,alignSelf:'stretch',justifyContent:'center'},
   submitBtnText:{color:'#FFF',fontFamily:'Outfit-Bold',fontSize:16},
-  addPhotoBtn: {flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,backgroundColor:'#FFEBEE',marginHorizontal:40,paddingVertical:12,borderRadius:14,borderWidth:1,borderColor:'#FFCDD2'},
+  addPhotoBtn: {flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,backgroundColor:'#FFEBEE',marginHorizontal:20,paddingVertical:13,borderRadius:14,borderWidth:1,borderColor:'#FFCDD2'},
   addPhotoText: {color:'#D32F2F',fontFamily:'Outfit-Bold',fontSize:14},
   // AI Section Styles
   aiSection: { padding: 24, marginTop: 10 },
