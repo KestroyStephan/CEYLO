@@ -1,0 +1,75 @@
+rules_version = '2';
+
+// CEYLO Firebase Storage rules. Deploy with: firebase deploy --only storage
+// Paths mirror what the apps upload (see the ref(storage, ...) calls in mobile/ and web/).
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function role() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '');
+    }
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.email == 'admin@ceylo.com' ||
+        role() in ['admin', 'super_admin', 'manager', 'support', 'finance',
+                   'vendor_manager', 'guide_manager', 'content_manager']
+      );
+    }
+    function underMB(mb) { return request.resource.size < mb * 1024 * 1024; }
+
+    // Profile photos: anyone can see them, only the owner (file named after their uid) can change them
+    match /profile_photos/{file} {
+      allow read: if true;
+      allow write: if signedIn() && file.matches(request.auth.uid + '\\..*') && (request.resource == null || underMB(5));
+    }
+
+    // Guide licence and ID documents: private to the guide and the admin team
+    match /guide_documents/{uid}/{file} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid) && (request.resource == null || underMB(10));
+    }
+
+    // Vendor product photos are public; NIC and business documents are private
+    match /vendors/{uid}/products/{rest=**} {
+      allow read: if true;
+      allow write: if isOwner(uid) && (request.resource == null || underMB(8));
+    }
+    match /vendors/{uid}/{file} {
+      allow read: if isOwner(uid) || isAdmin() || file.matches('svc_.*');
+      allow write: if isOwner(uid) && (request.resource == null || underMB(10));
+    }
+
+    // Guide/vendor service photos
+    match /services/{uid}/{file} {
+      allow read: if true;
+      allow write: if isOwner(uid) && (request.resource == null || underMB(8));
+    }
+
+    // Proof of handover for a marketplace order: the order's vendor uploads, both parties can see it
+    match /orders/{orderId}/{file} {
+      allow read: if signedIn() && (
+        firestore.get(/databases/(default)/documents/orders/$(orderId)).data.vendorId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/orders/$(orderId)).data.touristId == request.auth.uid ||
+        isAdmin());
+      allow write: if signedIn() && underMB(10) &&
+        firestore.get(/databases/(default)/documents/orders/$(orderId)).data.vendorId == request.auth.uid;
+    }
+
+    // SOS evidence, live-view frames and desk voice notes: files are named <alertId>_...
+    // The traveller who raised the alert and the emergency desk can write and read them.
+    match /sos_alerts/{file} {
+      function alertOwner() {
+        return firestore.get(/databases/(default)/documents/sos_alerts/$(file.split('_')[0])).data.userId == request.auth.uid;
+      }
+      allow read: if signedIn() && (alertOwner() || isAdmin());
+      allow write: if signedIn() && underMB(25) && (alertOwner() || isAdmin());
+    }
+
+    // Everything else is closed
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

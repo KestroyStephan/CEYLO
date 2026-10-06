@@ -2,7 +2,7 @@
   "name": "ceylo-firestore-rules-tests",
   "private": true,
   "scripts": {
-    "test": "firebase emulators:exec --only firestore --project demo-ceylo \"node node_modules/jest/bin/jest.js --runInBand\"",
+    "test": "firebase emulators:exec --only firestore,storage --project demo-ceylo \"node node_modules/jest/bin/jest.js --runInBand\"",
     "test:only": "jest --runInBand"
   },
   "devDependencies": {

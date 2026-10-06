@@ -71,7 +71,7 @@ const EMBASSIES = [
 ];
 
 const INCIDENT_TYPES = ['Medical', 'Accident', 'Threat or crime', 'Vehicle breakdown', 'Lost', 'Other'];
-const LIVE_FRAME_MS = 2500;
+const LIVE_FRAME_MS = 1000; // minimum gap between live-view frames
 
 export default function SOSScreen({ navigation, route }) {
   // Drivers open this screen from an active ride; their alerts carry the ride
@@ -110,7 +110,6 @@ export default function SOSScreen({ navigation, route }) {
   const liveRef = useRef({ until: 0 });
   const liveCamRef = useRef(null);
   const liveReadyRef = useRef(false);
-  const liveBusyRef = useRef(false);
   const [livePictureSize, setLivePictureSize] = useState(undefined);
   const consentTimerRef = useRef(null);
 
@@ -360,16 +359,23 @@ export default function SOSScreen({ navigation, route }) {
     setLiveStatus(status);
   };
 
-  // While sharing: a fresh frame every few seconds until the desk's time window runs out
+  // While sharing: frames go back to back (about one a second on a normal connection; a slow
+  // link simply sends fewer) until the desk's time window runs out
   useEffect(() => {
     if (!liveSharing) return undefined;
-    const t = setInterval(async () => {
+    let cancelled = false;
+    let timer = null;
+    const next = (wait) => { if (!cancelled) timer = setTimeout(sendFrame, wait); };
+    const sendFrame = async () => {
       if (Date.now() > liveRef.current.until) {
         stopLive('ended');
         return;
       }
-      if (liveBusyRef.current || !liveReadyRef.current || !liveCamRef.current || !activeDocIdRef.current) return;
-      liveBusyRef.current = true;
+      if (!liveReadyRef.current || !liveCamRef.current || !activeDocIdRef.current) {
+        next(300);
+        return;
+      }
+      const started = Date.now();
       try {
         const shot = await liveCamRef.current.takePictureAsync({ quality: 0.3, skipProcessing: true, shutterSound: false });
         const blob = await (await fetch(shot.uri)).blob();
@@ -379,11 +385,14 @@ export default function SOSScreen({ navigation, route }) {
         await updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), { liveFrameUrl: url, liveFrameAt: serverTimestamp() });
       } catch (e) {
         console.log('Live frame failed:', e.message);
-      } finally {
-        liveBusyRef.current = false;
       }
-    }, LIVE_FRAME_MS);
-    return () => clearInterval(t);
+      next(Math.max(0, LIVE_FRAME_MS - (Date.now() - started)));
+    };
+    next(0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [liveSharing]);
 
   useEffect(() => () => clearInterval(consentTimerRef.current), []);
