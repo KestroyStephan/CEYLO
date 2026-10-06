@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
+import { toast } from '../../components/Toast';
 
 const LANGUAGE_OPTIONS = ['English', 'Sinhala', 'Tamil', 'German', 'French', 'Japanese', 'Mandarin', 'Korean'];
 const EXPERTISE_OPTIONS = [
@@ -75,7 +76,7 @@ export default function GuideOnboardingScreen({ navigation }) {
       if (type === 'sltda') setSltdaUploaded(true);
       else setNicUploaded(true);
     } catch (e) {
-      Alert.alert('Upload failed', `The document was not uploaded: ${e.message}`);
+      toast.error('Upload failed', `The document was not uploaded: ${e.message}`);
     } finally {
       setUploadingDoc(null);
     }
@@ -84,11 +85,11 @@ export default function GuideOnboardingScreen({ navigation }) {
   const handleContinue = () => {
     if (step === 0) {
       if (!fullName.trim() || !licenseNo.trim()) {
-        Alert.alert('Missing Fields', 'Please fill in Full Name and License Number.');
+        toast.warning('Missing Fields', 'Please fill in Full Name and License Number.');
         return;
       }
       if (selectedLanguages.length === 0) {
-        Alert.alert('Missing Fields', 'Please select at least one language.');
+        toast.warning('Missing Fields', 'Please select at least one language.');
         return;
       }
       setStep(1);
@@ -101,7 +102,7 @@ export default function GuideOnboardingScreen({ navigation }) {
   const submitApplication = async () => {
     if (!auth.currentUser) return;
     if (selectedExpertise.length === 0) {
-      Alert.alert('Select Expertise', 'Please select at least one area of expertise.');
+      toast.info('Select Expertise', 'Please select at least one area of expertise.');
       return;
     }
 

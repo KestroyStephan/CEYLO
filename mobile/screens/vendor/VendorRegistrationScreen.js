@@ -15,6 +15,7 @@ import { auth, db, storage } from '../../firebaseConfig';
 import { signOut } from 'firebase/auth';
 import { doc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { toast } from '../../components/Toast';
 
 const { width } = Dimensions.get('window');
 const PRIMARY   = '#006A3B';
@@ -95,7 +96,7 @@ export default function VendorRegistrationScreen({ navigation }) {
     setGpsLoading(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permission needed','Location access required'); return; }
+      if (status !== 'granted') { toast.warning('Permission needed', 'Location access required'); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const geo = await Location.reverseGeocodeAsync({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
       if (geo?.length > 0) {
@@ -115,7 +116,7 @@ export default function VendorRegistrationScreen({ navigation }) {
 
   const uploadAllDocs = async () => {
     if (!nicFront || !nicBack || !bizCert) {
-      Alert.alert('Required', 'Please upload NIC Front, Back, and Business Certificate.');
+      toast.warning('Required', 'Please upload NIC Front, Back, and Business Certificate.');
       return;
     }
     setUploading(true);
@@ -140,7 +141,7 @@ export default function VendorRegistrationScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!svcName.trim() || !svcPrice.trim()) {
-      Alert.alert('Required', 'Service name and price are required.'); return;
+      toast.warning('Required', 'Service name and price are required.'); return;
     }
     setLoading(true);
     try {

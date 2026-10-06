@@ -12,6 +12,7 @@ import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 import { distanceKm } from '../services/ItineraryService';
 import { db, auth } from '../firebaseConfig';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -40,11 +41,11 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
   const submitReview = async () => {
     if (!auth.currentUser) {
-      Alert.alert('Sign in required', 'Please sign in to write a review.');
+      toast.warning('Sign in required', 'Please sign in to write a review.');
       return;
     }
     if (myRating < 1) {
-      Alert.alert('Rating needed', 'Tap the stars to rate this place.');
+      toast.info('Rating needed', 'Tap the stars to rate this place.');
       return;
     }
     setPosting(true);
@@ -120,7 +121,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
 
   const toggleSaved = async () => {
     const uid = auth.currentUser?.uid;
-    if (!uid) return Alert.alert('Sign in required', 'Please sign in to save places.');
+    if (!uid) return toast.warning('Sign in required', 'Please sign in to save places.');
     try {
       if (savedId) {
         await deleteDoc(doc(db, 'saved_places', savedId));
@@ -149,12 +150,12 @@ export default function DestinationDetailScreen({ route, navigation }) {
   const metresAway = hasCoords && userLoc ? Math.round(kmBetween(userLoc.latitude, userLoc.longitude, placeLat, placeLon) * 1000) : null;
   const checkIn = async () => {
     const uid = auth.currentUser?.uid;
-    if (!uid) return Alert.alert('Sign in required', 'Please sign in to check in.');
+    if (!uid) return toast.warning('Sign in required', 'Please sign in to check in.');
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const metres = kmBetween(loc.coords.latitude, loc.coords.longitude, placeLat, placeLon) * 1000;
       if (metres > CHECK_IN_METRES) {
-        Alert.alert('Not there yet', `You are ${(metres / 1000).toFixed(1)} km away. Check-in opens within ${CHECK_IN_METRES} m of ${place.name}.`);
+        toast.info('Not there yet', `You are ${(metres / 1000).toFixed(1)} km away. Check-in opens within ${CHECK_IN_METRES} m of ${place.name}.`);
         return;
       }
       await addDoc(collection(db, 'visited_places'), {
@@ -164,7 +165,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
       });
       setCheckedIn(true);
       logEvent('place_checked_in', { name: place.name, hiddenGem: String(place.hidden_gem).toLowerCase() === 'true' });
-      Alert.alert('Checked in', `${place.name} is now stamped in your Eco Passport. How was it? Leave a review below.`);
+      toast.success('Checked in', `${place.name} is now stamped in your Eco Passport. How was it? Leave a review below.`);
       setActiveTab('Reviews');
     } catch (e) {
       Alert.alert('Could not check in', e.message);

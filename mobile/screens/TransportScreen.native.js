@@ -15,6 +15,7 @@ import { calculateDistance, estimateFare, estimateAllFares } from '../utils/fare
 import { nearbyDrivers, REQUEST_TTL_MS, MATCH_RADIUS_KM } from '../utils/rideDispatch';
 import { notifyBooking } from '../services/aiClient';
 import { logEvent } from '../services/Analytics';
+import { toast } from '../components/Toast';
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -235,7 +236,7 @@ export default function TransportScreen({ route, navigation }) {
           setBookingStep('vehicleSelect');
           setActiveBookingId(null);
           setActiveBooking(null);
-          Alert.alert('No driver yet', 'No nearby driver accepted in time. Try again, or choose another vehicle type.');
+          toast.info('No driver yet', 'No nearby driver accepted in time. Try again, or choose another vehicle type.');
           return;
         }
 
@@ -245,7 +246,7 @@ export default function TransportScreen({ route, navigation }) {
           setActiveBookingId(null);
           setActiveBooking(null);
           setAssignedDriver(null);
-          Alert.alert('Ride Cancelled', 'Your ride has been cancelled.');
+          toast.info('Ride Cancelled', 'Your ride has been cancelled.');
         }
 
         if (data.status === 'Completed') {
@@ -316,7 +317,7 @@ export default function TransportScreen({ route, navigation }) {
         calculateFares(coords, dropoffCoords);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to retrieve current location.');
+      toast.error('Error', 'Failed to retrieve current location.');
     }
   };
 
@@ -382,7 +383,7 @@ export default function TransportScreen({ route, navigation }) {
       }
     } catch (e) {
       console.error('Place details fetch error:', e);
-      Alert.alert('Error', 'Failed to retrieve location details');
+      toast.error('Error', 'Failed to retrieve location details');
     }
   };
 
@@ -461,7 +462,7 @@ export default function TransportScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('Place details error:', error);
-      Alert.alert('Error', 'Could not load location details.');
+      toast.error('Error', 'Could not load location details.');
     }
   };
 
@@ -509,7 +510,7 @@ export default function TransportScreen({ route, navigation }) {
 
   const handleBookRide = async () => {
     if (!pickupCoords || !dropoffCoords) {
-      Alert.alert('Choose a destination', 'Set where you are going first.');
+      toast.info('Choose a destination', 'Set where you are going first.');
       return;
     }
     try {
@@ -684,7 +685,7 @@ export default function TransportScreen({ route, navigation }) {
           destLng = data.results[0].geometry.location.lng;
           setDropoffCoords({ latitude: destLat, longitude: destLng });
         } else {
-          Alert.alert('Error', 'Could not find destination. Please try another address.');
+          toast.error('Error', 'Could not find destination. Please try another address.');
           return;
         }
       }
@@ -705,7 +706,7 @@ export default function TransportScreen({ route, navigation }) {
       setBookingStep('vehicleSelect');
     } catch (error) {
       console.error('Find Ride Error:', error);
-      Alert.alert('Error', 'Could not plan this ride. Check the destination and your connection.');
+      toast.error('Error', 'Could not plan this ride. Check the destination and your connection.');
     }
   };
 

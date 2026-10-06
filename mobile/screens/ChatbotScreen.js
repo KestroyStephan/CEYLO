@@ -17,6 +17,7 @@ import { generateItinerary as buildItinerary, moodKey } from '../services/Itiner
 import { loadPreferences } from '../services/PreferencesService';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
+import { toast } from '../components/Toast';
 
 // Mood keys from onboarding and labels from the concierge, shown with the translated label
 const MOOD_CHIP = {
@@ -99,7 +100,7 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
                   style={styles.recBtn}
                   onPress={() => {
                     onSetDestination(rec.name);
-                    Alert.alert("Destination Set", `${rec.name} added to your travel goals!`);
+                    toast.info("Destination Set", `${rec.name} added to your travel goals!`);
                   }}
                 >
                   <Text style={styles.recBtnText}>{i18next.t('add_to_route')}</Text>

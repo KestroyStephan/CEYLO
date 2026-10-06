@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { phoneSignInAvailable } from '../../services/aiClient';
+import { toast } from '../../components/Toast';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,17 +43,19 @@ export default function LoginScreen({ navigation }) {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim()) { Alert.alert('Email Required', 'Please enter your email address.'); return; }
-    if (!password) { Alert.alert('Password Required', 'Please enter your password.'); return; }
+    if (!email.trim()) { toast.warning('Email Required', 'Please enter your email address.'); return; }
+    if (!password) { toast.warning('Password Required', 'Please enter your password.'); return; }
 
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (error) {
-      let message = 'Invalid email or password. Please try again.';
+      let message = 'The email or password is not correct. Please try again.';
       if (error.code === 'auth/invalid-email') message = 'The email address is not valid.';
-      else if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Please try again later.';
-      Alert.alert('Login Failed', message);
+      else if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Please wait a few minutes and try again.';
+      else if (error.code === 'auth/network-request-failed') message = 'No internet connection. Check your connection and try again.';
+      else if (error.code === 'auth/user-disabled') message = 'This account has been disabled. Contact support@ceylo.lk.';
+      toast.error('Login failed', message);
     } finally {
       setLoading(false);
     }
@@ -64,7 +67,7 @@ export default function LoginScreen({ navigation }) {
     try {
       google = require('@react-native-google-signin/google-signin');
     } catch (e) {
-      Alert.alert('Google Sign-In', 'Google sign-in needs the installed CEYLO app (it is not available in Expo Go).');
+      toast.error('Google Sign-In', 'Google sign-in needs the installed CEYLO app (it is not available in Expo Go).');
       return;
     }
     const { GoogleSignin, isSuccessResponse, statusCodes } = google;
@@ -90,9 +93,15 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED || error.code === statusCodes.IN_PROGRESS) return;
       console.log('Google sign-in error:', error.code, error.message);
-      Alert.alert('Google Sign-In Failed', error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
+      // DEVELOPER_ERROR (10): this build's SHA-1 is not registered for the Android app in Firebase
+      const developerError = String(error.code) === '10' || /DEVELOPER_ERROR/i.test(String(error.message));
+      toast.error('Google sign-in failed', error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
         ? 'Google Play Services is not available on this device.'
-        : 'Could not sign in with Google. Please try again or use email.');
+        : developerError
+          ? 'This app version is not registered with Google yet. Please sign in with email for now.'
+          : error.code === 'auth/account-exists-with-different-credential'
+            ? 'This email already has a CEYLO password. Sign in with email and password instead.'
+            : 'Could not sign in with Google. Please try again or use email.');
     } finally {
       setLoading(false);
     }
@@ -100,12 +109,12 @@ export default function LoginScreen({ navigation }) {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Reset Password', 'Please enter your email address first, then tap Forgot Password again.');
+      toast.info('Reset Password', 'Please enter your email address first, then tap Forgot Password again.');
       return;
     }
     try {
       await sendPasswordResetEmail(auth, email.trim());
-      Alert.alert('Email Sent', 'A password reset link has been sent to your email.');
+      toast.success('Email Sent', 'A password reset link has been sent to your email.');
     } catch (error) {
       Alert.alert('Error', error.message);
     }

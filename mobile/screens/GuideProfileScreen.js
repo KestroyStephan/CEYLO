@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '../firebaseConfig';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -89,7 +90,7 @@ export default function GuideProfileScreen({ route, navigation }) {
       setNewReviewText('');
       setNewReviewRating(5);
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit feedback');
+      toast.error('Error', 'Failed to submit feedback');
     } finally {
       setSubmittingReview(false);
     }

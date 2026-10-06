@@ -9,6 +9,7 @@ import { auth, db } from '../../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { toast } from '../../components/Toast';
 
 const ROLES = [
   { key: 'tourist', icon: 'map-marker-outline', label: 'Tourist' },
@@ -33,13 +34,13 @@ export default function RegisterScreen({ navigation, route }) {
   const isActive = (field) => focusedField === field;
 
   const handleRegister = async () => {
-    if (!name.trim()) { Alert.alert('Name Required', 'Please enter your full name.'); return; }
-    if (!email.trim()) { Alert.alert('Email Required', 'Please enter your email address.'); return; }
-    if (!/^\S+@\S+\.\S+$/.test(email)) { Alert.alert('Invalid Email', 'Please enter a valid email address.'); return; }
-    if (!phone.trim()) { Alert.alert('Phone Required', 'Please enter your phone number.'); return; }
-    if (password.length < 6) { Alert.alert('Weak Password', 'Password must be at least 6 characters.'); return; }
+    if (!name.trim()) { toast.warning('Name Required', 'Please enter your full name.'); return; }
+    if (!email.trim()) { toast.warning('Email Required', 'Please enter your email address.'); return; }
+    if (!/^\S+@\S+\.\S+$/.test(email)) { toast.warning('Invalid Email', 'Please enter a valid email address.'); return; }
+    if (!phone.trim()) { toast.warning('Phone Required', 'Please enter your phone number.'); return; }
+    if (password.length < 6) { toast.warning('Weak Password', 'Password must be at least 6 characters.'); return; }
     if (role === 'driver' && (!vehicleType.trim() || !licensePlate.trim())) {
-      Alert.alert('Driver Info', 'Please fill in vehicle type and license plate.');
+      toast.info('Driver Info', 'Please fill in vehicle type and license plate.');
       return;
     }
 

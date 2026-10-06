@@ -8,6 +8,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { auth } from '../firebaseConfig';
 import { loadEcoStats } from '../utils/ecoStats';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -50,7 +51,7 @@ export default function EcoPassportScreen({ navigation }) {
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri);
     } catch (e) {
-      Alert.alert('Error', 'Could not create the certificate.');
+      toast.error('Error', 'Could not create the certificate.');
     }
   };
 

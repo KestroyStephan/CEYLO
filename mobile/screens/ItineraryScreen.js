@@ -5,6 +5,7 @@ import { Text, Button, Card, IconButton, ActivityIndicator, Switch } from 'react
 import { auth } from '../firebaseConfig';
 import { generateItinerary } from '../services/ItineraryService';
 import { loadPreferences, moodFromPreferences } from '../services/PreferencesService';
+import { toast } from '../components/Toast';
 
 const FOCUS_TO_MOOD = { 'Nature/Eco': 'Eco Explorer', 'Balanced': 'Family Trip', 'Culture/History': 'Culture Seeker' };
 const MAX_DAYS = 14;
@@ -30,7 +31,7 @@ export default function ItineraryScreen({ navigation, route }) {
 
     const handleGenerate = async () => {
         if (!auth.currentUser) {
-            Alert.alert("Error", "Please login to generate an itinerary.");
+            toast.error("Error", "Please login to generate an itinerary.");
             return;
         }
 
@@ -44,7 +45,7 @@ export default function ItineraryScreen({ navigation, route }) {
             navigation.navigate('ItineraryDetail', { routeData: itinerary });
         } catch (error) {
             console.error("Error generating itinerary:", error);
-            Alert.alert("Error", "Cannot generate itinerary. Try again.");
+            toast.error("Error", "Cannot generate itinerary. Try again.");
         } finally {
             setLoading(false);
         }

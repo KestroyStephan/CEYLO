@@ -11,6 +11,7 @@ import { cacheRoute, getCachedRoute, routeBounds, compass } from '../services/Ro
 import { loadRegions, getRegionTilePathTemplate, downloadCorridor } from '../utils/offlineMapUtils';
 import { logEvent } from '../services/Analytics';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
+import { toast } from '../components/Toast';
 
 const ACCENT = '#00695C';
 const ARRIVE_M = 60;      // within this distance a stop counts as reached
@@ -86,7 +87,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Location needed', 'Allow location access to follow the route.');
+        toast.info('Location needed', 'Allow location access to follow the route.');
         return;
       }
       sub = await Location.watchPositionAsync(
@@ -113,7 +114,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
         setStopIndex(i => i + 1);
         setStepIndex(0);
       } else {
-        Alert.alert('Trip complete', `You have reached ${nextStop.name}, the last stop. Check in there to stamp your Eco Passport.`);
+        toast.success('Trip complete', `You have reached ${nextStop.name}, the last stop. Check in there to stamp your Eco Passport.`);
         setStopIndex(stops.length);
       }
     }
@@ -144,7 +145,7 @@ export default function RouteGuideScreen({ route: navRoute, navigation }) {
     try {
       await downloadCorridor(`Route: ${title || 'itinerary'}`, route.line, routeBounds(route), (d, total) => setDownloading(Math.round((100 * d) / total)), { itineraryId });
       setRegions(await loadRegions());
-      Alert.alert('Map saved', 'The map along this route is on your phone and will show without signal.');
+      toast.success('Map saved', 'The map along this route is on your phone and will show without signal.');
     } catch (e) {
       Alert.alert('Map not saved', e.message);
     } finally {

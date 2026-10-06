@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { toast } from '../../components/Toast';
 
 const PRIMARY   = '#006A3B';
 const TERTIARY  = '#735C00';
@@ -64,7 +65,7 @@ export default function VendorServiceListingScreen() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.price.trim()) {
-      Alert.alert('Required', 'Service name and price are required.'); return;
+      toast.warning('Required', 'Service name and price are required.'); return;
     }
     setSaving(true);
     try {

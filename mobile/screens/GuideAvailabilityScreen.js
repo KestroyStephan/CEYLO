@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { db, auth } from '../firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { toast } from '../components/Toast';
 
 export default function GuideAvailabilityScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -43,7 +44,7 @@ export default function GuideAvailabilityScreen({ navigation }) {
       if (!unavailableDates.includes(dateStr)) {
         setUnavailableDates([...unavailableDates, dateStr].sort());
       } else {
-        Alert.alert('Already added', 'This date is already marked as unavailable.');
+        toast.info('Already added', 'This date is already marked as unavailable.');
       }
     }
   };

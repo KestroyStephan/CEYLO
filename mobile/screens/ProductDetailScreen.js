@@ -7,6 +7,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import ProgressiveImage from '../components/ProgressiveImage';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
+import { toast } from '../components/Toast';
 
 const ACCENT = '#00695C';
 const { width } = Dimensions.get('window');
@@ -38,7 +39,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const placeOrder = async () => {
     const user = auth.currentUser;
     if (!user) {
-      Alert.alert('Sign in required', 'Please sign in to place an order.');
+      toast.warning('Sign in required', 'Please sign in to place an order.');
       return;
     }
     setPlacing(true);

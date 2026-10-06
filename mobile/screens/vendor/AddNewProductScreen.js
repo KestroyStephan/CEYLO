@@ -15,6 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { auth, db, storage } from '../../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { toast } from '../../components/Toast';
 
 const { width } = Dimensions.get('window');
 const PRIMARY   = '#006A3B';
@@ -67,7 +68,7 @@ export default function AddNewProductScreen({ navigation }) {
   const uid = auth.currentUser?.uid;
 
   const pickImage = async () => {
-    if (images.length >= 5) { Alert.alert('Limit reached', 'You can add up to 5 images.'); return; }
+    if (images.length >= 5) { toast.warning('Limit reached', 'You can add up to 5 images.'); return; }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return;
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: true, aspect: [4,3] });
@@ -102,7 +103,7 @@ export default function AddNewProductScreen({ navigation }) {
   const step1Valid = nameEn.trim() && category && price.trim() && parseFloat(price) > 0;
 
   const handleSubmit = async () => {
-    if (!step1Valid) { Alert.alert('Required', 'Product name, category and a price above zero are required.'); return; }
+    if (!step1Valid) { toast.warning('Required', 'Product name, category and a price above zero are required.'); return; }
     if (availFrom && availUntil && availUntil < availFrom) { Alert.alert('Check the dates', '"Available until" must be after "Available from".'); return; }
     setUploading(true);
     try {

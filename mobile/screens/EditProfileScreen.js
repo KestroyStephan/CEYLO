@@ -11,6 +11,7 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { toast } from '../components/Toast';
 
 const COLORS = {
   primary: '#00695C',
@@ -102,7 +103,7 @@ export default function EditProfileScreen({ navigation }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please allow access to your photos to change your profile picture.');
+      toast.warning('Permission Required', 'Please allow access to your photos to change your profile picture.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -141,7 +142,7 @@ export default function EditProfileScreen({ navigation }) {
 
   const handleSave = async () => {
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Your name cannot be empty.');
+      toast.error('Error', 'Your name cannot be empty.');
       return;
     }
     setSaving(true);

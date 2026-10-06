@@ -9,6 +9,7 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { distanceKm } from '../services/ItineraryService';
 import { logEvent } from '../services/Analytics';
+import { toast } from '../components/Toast';
 
 export default function EventDetailScreen({ route, navigation }) {
   // If navigated from push notification or map, it passes 'event' param
@@ -48,12 +49,12 @@ export default function EventDetailScreen({ route, navigation }) {
 
   const remindMe = async () => {
     if (!eventDate) {
-      Alert.alert('No date yet', 'This event does not have a confirmed date.');
+      toast.info('No date yet', 'This event does not have a confirmed date.');
       return;
     }
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Notifications Off', 'Allow notifications to get event reminders.');
+      toast.info('Notifications Off', 'Allow notifications to get event reminders.');
       return;
     }
     // Remind at 9 AM the day before (or the first of the month for approximate dates)
@@ -61,7 +62,7 @@ export default function EventDetailScreen({ route, navigation }) {
       ? new Date(eventDate.getFullYear(), eventDate.getMonth(), 1, 9)
       : new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate() - 1, 9);
     if (remindAt.getTime() <= Date.now()) {
-      Alert.alert('Happening Soon', `${displayEvent.title} is coming up very soon!`);
+      toast.warning('Happening Soon', `${displayEvent.title} is coming up very soon!`);
       return;
     }
     await Notifications.scheduleNotificationAsync({

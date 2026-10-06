@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { toast } from '../components/Toast';
 
 export default function GuideServicesScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -57,7 +58,7 @@ export default function GuideServicesScreen({ navigation }) {
 
   const handleSave = async () => {
     if (!name.trim() || !price.trim() || !description.trim()) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      toast.error('Error', 'Please fill in all fields.');
       return;
     }
 

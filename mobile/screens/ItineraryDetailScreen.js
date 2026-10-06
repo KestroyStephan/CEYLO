@@ -16,6 +16,7 @@ import ItineraryFeedback from '../components/ItineraryFeedback';
 import { cacheRoute } from '../services/RouteCache';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -137,7 +138,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
       .sort((a, b) => b.d.eco_score - a.d.eco_score);
 
     if (alternatives.length === 0) {
-      Alert.alert("Ceylo Smart Recommendation", "This stop already has the best eco score in the area.");
+      toast.info("Ceylo Smart Recommendation", "This stop already has the best eco score in the area.");
       return;
     }
     const { d: gem, km } = alternatives[0];

@@ -7,6 +7,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebaseConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { toast } from '../../components/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -38,7 +39,7 @@ export default function MoodSelectScreen({ navigation }) {
       // App.js listens to the profile document and swaps this screen for the main app
     } catch (error) {
       console.error(error);
-      Alert.alert('Could not save', 'Please check your connection and try again.');
+      toast.error('Could not save', 'Please check your connection and try again.');
     } finally {
       setLoading(false);
     }

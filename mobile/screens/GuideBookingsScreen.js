@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { notifyBooking } from '../services/aiClient';
+import { toast } from '../components/Toast';
 
 const TYPE_COLORS = {
   'HERITAGE TOUR': '#6A1B9A',
@@ -91,7 +92,7 @@ export default function GuideBookingsScreen({ route, navigation }) {
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to update booking status.');
+      toast.error('Error', 'Failed to update booking status.');
     }
   };
 

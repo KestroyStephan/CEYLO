@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { startLocationTracking, startAvailability, stopAvailability } from '../services/DriverLocationService';
 import { requestsForDriver, acceptRide, RideTakenError, MATCH_RADIUS_KM } from '../utils/rideDispatch';
 import { notifyBooking } from '../services/aiClient';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -133,7 +134,7 @@ export default function DriverDashboard({ navigation }) {
       });
     } catch (error) {
       setIsOnline(!value); // revert on failure
-      Alert.alert('Error', 'Failed to update status');
+      toast.error('Error', 'Failed to update status');
     }
   };
 

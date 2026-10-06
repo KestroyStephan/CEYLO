@@ -9,6 +9,7 @@ import { calculateDistance } from '../../utils/fareCalculator';
 import { startLocationTracking, stopLocationTracking } from '../../services/DriverLocationService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { notifyBooking } from '../../services/aiClient';
+import { toast } from '../../components/Toast';
 
 const { width } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -22,7 +23,7 @@ export default function ActiveRideScreen({ route, navigation }) {
 
   useEffect(() => {
     if (!bookingId) {
-      Alert.alert('Error', 'No Booking ID provided');
+      toast.error('Error', 'No Booking ID provided');
       navigation.goBack();
       return;
     }

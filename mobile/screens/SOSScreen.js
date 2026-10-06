@@ -17,6 +17,7 @@ import { Audio } from 'expo-av';
 import { onSnapshot } from 'firebase/firestore';
 import { OfflineQueue } from '../services/OfflineQueue';
 import { SOS_SMS_NUMBER } from '../config';
+import { toast } from '../components/Toast';
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const GPS_TIMEOUT_MS = 5000;
@@ -253,7 +254,7 @@ export default function SOSScreen({ navigation, route }) {
         if (data.status === 'resolved' && data.resolvedBy !== 'traveller') {
           setActive(false);
           setActiveDocId(null);
-          Alert.alert('Alert closed', 'The CEYLO emergency desk has closed this alert. If you still need help, raise a new SOS or call 119.');
+          toast.info('Alert closed', 'The CEYLO emergency desk has closed this alert. If you still need help, raise a new SOS or call 119.');
           return;
         }
 
@@ -424,7 +425,7 @@ export default function SOSScreen({ navigation, route }) {
               setActiveDocId(null);
               setDeskStatus(null);
             } catch (error) {
-              Alert.alert('Could not end the alert', 'Check your connection and try again, or call the desk.');
+              toast.error('Could not end the alert', 'Check your connection and try again, or call the desk.');
             } finally {
               setLoading(false);
             }
@@ -472,9 +473,9 @@ export default function SOSScreen({ navigation, route }) {
       `CEYLO SOS: ${alertData.userName} needs help. Location: ${locStr}`
     );
     if (result === 'cancelled') {
-      Alert.alert("SMS Not Sent", "The emergency SMS was cancelled. Your alert will be sent automatically when you are back online.");
+      toast.warning("SMS Not Sent", "The emergency SMS was cancelled. Your alert will be sent automatically when you are back online.");
     } else {
-      Alert.alert("Offline SOS Sent", "No internet detected. An emergency SMS with your location was sent, and the alert will sync when you reconnect.");
+      toast.warning("Offline SOS Sent", "No internet detected. An emergency SMS with your location was sent, and the alert will sync when you reconnect.");
     }
   };
 
@@ -488,7 +489,7 @@ export default function SOSScreen({ navigation, route }) {
       if (locStatus === 'granted') {
         location = await getPositionFast();
       } else {
-        Alert.alert("Location access required", "Your alert will be sent without your location.");
+        toast.warning("Location access required", "Your alert will be sent without your location.");
       }
 
       alertData = {
@@ -526,13 +527,13 @@ export default function SOSScreen({ navigation, route }) {
       if (!permission?.granted) requestPermission().catch(() => {});
       logEvent('sos_used', { alertId: docRef.id, online: true });
       sendSosSms(docRef.id);
-      Alert.alert("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
+      toast.success("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
     } catch (error) {
       console.error("Error sending SOS:", error);
       if (alertData) {
         await sendSmsFallback(location, alertData).catch(() => {});
       } else {
-        Alert.alert("Failed", "Failed to send alert. Please call emergency services directly.");
+        toast.error("Failed", "Failed to send alert. Please call emergency services directly.");
       }
     } finally {
       setLoading(false);
@@ -543,7 +544,7 @@ export default function SOSScreen({ navigation, route }) {
     if (!permission?.granted) {
       const perm = await requestPermission();
       if (!perm.granted) {
-        Alert.alert("Permission Required", "Camera access is needed.");
+        toast.warning("Permission Required", "Camera access is needed.");
         return;
       }
     }
@@ -568,7 +569,7 @@ export default function SOSScreen({ navigation, route }) {
           if (!micPermission?.granted) {
             const mic = await requestMicPermission();
             if (!mic.granted) {
-              Alert.alert("Microphone Required", "Allow microphone access to record video evidence.");
+              toast.warning("Microphone Required", "Allow microphone access to record video evidence.");
               return;
             }
           }

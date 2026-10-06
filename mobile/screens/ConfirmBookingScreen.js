@@ -12,6 +12,7 @@ import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -126,7 +127,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
 
   const handleConfirm = async () => {
     if (!auth.currentUser) {
-      Alert.alert('Sign In Required', 'Please sign in to complete your booking.');
+      toast.warning('Sign In Required', 'Please sign in to complete your booking.');
       return;
     }
     if (!pickupLabel) {

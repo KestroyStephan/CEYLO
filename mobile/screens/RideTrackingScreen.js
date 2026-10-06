@@ -5,6 +5,7 @@ import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../componen
 import { doc, onSnapshot, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { toast } from '../components/Toast';
 
 const { width } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -20,7 +21,7 @@ export default function RideTrackingScreen({ route, navigation }) {
 
   useEffect(() => {
     if (!bookingId) {
-      Alert.alert('Error', 'No Booking ID provided');
+      toast.error('Error', 'No Booking ID provided');
       navigation.goBack();
       return;
     }
@@ -88,7 +89,7 @@ export default function RideTrackingScreen({ route, navigation }) {
     if (phone) {
       Linking.openURL(`tel:${phone}`);
     } else {
-      Alert.alert('Error', 'Driver phone number is not available');
+      toast.error('Error', 'Driver phone number is not available');
     }
   };
 
@@ -103,7 +104,7 @@ export default function RideTrackingScreen({ route, navigation }) {
         type: 'driver_review',
       });
       setRated(true);
-      Alert.alert('Success', 'Thank you for your rating!');
+      toast.success('Success', 'Thank you for your rating!');
     } catch (error) {
       console.error('Rating submission error:', error);
     }
