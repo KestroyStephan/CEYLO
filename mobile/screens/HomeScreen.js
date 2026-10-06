@@ -135,6 +135,11 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  // Coming back from Plan Trip (or anywhere else): rebuild so new trip dates are used
+  const positionRef = React.useRef(null);
+  positionRef.current = position;
+  useEffect(() => navigation.addListener('focus', () => loadDiscover(positionRef.current)), [navigation]);
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     loadDiscover(position).finally(() => setRefreshing(false));
