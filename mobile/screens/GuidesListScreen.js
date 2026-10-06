@@ -248,7 +248,7 @@ export default function GuidesListScreen({ navigation }) {
         <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
           <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#006A3B" />
           <Text style={styles.datePickerText}>
-            Showing available guides for: {selectedDate.toLocaleDateString()}
+            Showing available guides for: {selectedDate.toLocaleDateString('en-GB')}
           </Text>
           <MaterialCommunityIcons name="chevron-down" size={20} color="#006A3B" />
         </TouchableOpacity>
