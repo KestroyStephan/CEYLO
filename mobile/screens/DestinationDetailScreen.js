@@ -161,7 +161,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
       await addDoc(collection(db, 'visited_places'), {
         userId: uid, name: place.name, category: place.category || null,
         lat: placeLat, lon: placeLon, accuracyM: Math.round(loc.coords.accuracy || 0),
-        visitedAt: serverTimestamp(), date: new Date().toLocaleDateString(),
+        visitedAt: serverTimestamp(), date: new Date().toLocaleDateString('en-GB'),
       });
       setCheckedIn(true);
       logEvent('place_checked_in', { name: place.name, hiddenGem: String(place.hidden_gem).toLowerCase() === 'true' });
