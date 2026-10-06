@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import i18n from '../i18n';
-import { View, StyleSheet, TouchableOpacity, Animated, Linking, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Alert, Share } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Linking, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Alert, Share, Vibration } from 'react-native';
 import { Text, Surface, Button, IconButton, List, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -111,6 +111,7 @@ export default function SOSScreen({ navigation, route }) {
   const liveCamRef = useRef(null);
   const liveReadyRef = useRef(false);
   const liveBusyRef = useRef(false);
+  const [livePictureSize, setLivePictureSize] = useState(undefined);
   const consentTimerRef = useRef(null);
 
   // AI Assistant States
@@ -215,6 +216,7 @@ export default function SOSScreen({ navigation, route }) {
         if (open) {
           setActive(true);
           setActiveDocId(open.id);
+          if (!permission?.granted) requestPermission().catch(() => {});
         }
       })
       .catch(e => console.log('Could not check for an open SOS:', e.message));
@@ -290,12 +292,10 @@ export default function SOSScreen({ navigation, route }) {
     }
     const t = setInterval(() => {
       setTick(n => n + 1);
+      // First time the wait passes two minutes, buzz so the traveller looks at the screen
       if (!escalatedRef.current && deskStatus?.status === 'active' && deskStatus.sentAt && Date.now() - deskStatus.sentAt > 120000) {
         escalatedRef.current = true;
-        Alert.alert('No reply from the desk yet', 'Your alert is still open, but nobody has picked it up for 2 minutes. Call the police now?', [
-          { text: 'Keep waiting', style: 'cancel' },
-          { text: 'Call 119', onPress: () => Linking.openURL('tel:119') },
-        ]);
+        Vibration.vibrate([0, 400, 200, 400]);
       }
     }, 5000);
     return () => clearInterval(t);
@@ -513,6 +513,8 @@ export default function SOSScreen({ navigation, route }) {
       ]);
       setActive(true);
       setActiveDocId(docRef.id);
+      // Ask for the camera now, so a live-view request from the desk does not stop at a permission prompt
+      if (!permission?.granted) requestPermission().catch(() => {});
       logEvent('sos_used', { alertId: docRef.id, online: true });
       sendSosSms(docRef.id);
       Alert.alert("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
@@ -677,6 +679,16 @@ export default function SOSScreen({ navigation, route }) {
                 </View>
               );
             })}
+            {deskStatus.status === 'active' && deskStatus.sentAt && Date.now() - deskStatus.sentAt > 120000 && (
+              <View style={styles.noReply}>
+                <Text style={styles.noReplyTitle}>No reply from the desk yet</Text>
+                <Text style={styles.noReplyBody}>Your alert is still open, but nobody has picked it up for {elapsed(deskStatus.sentAt)}. If you are in danger, call the police now.</Text>
+                <TouchableOpacity style={styles.noReplyBtn} onPress={() => Linking.openURL('tel:119')}>
+                  <MaterialCommunityIcons name="phone" size={18} color="#FFF" />
+                  <Text style={styles.noReplyBtnText}>Call 119</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <Text style={styles.trackerNote}>Keep this screen open. Your location is shared every 10 seconds{userLoc?.accuracy ? ` (accurate to about ${Math.round(userLoc.accuracy)} m)` : ''}.</Text>
           </View>
         )}
@@ -840,7 +852,17 @@ export default function SOSScreen({ navigation, route }) {
                 style={{ flex: 1 }}
                 facing={liveFacing}
                 animateShutter={false}
-                onCameraReady={() => { liveReadyRef.current = true; }}
+                pictureSize={livePictureSize}
+                onCameraReady={async () => {
+                  // Full-resolution frames are close to 1 MB; about 1 megapixel is plenty to judge a scene
+                  try {
+                    const sizes = await liveCamRef.current?.getAvailablePictureSizesAsync();
+                    const px = (s) => s.split('x').reduce((a, b) => a * Number(b), 1);
+                    const pick = (sizes || []).filter(s => /^\d+x\d+$/.test(s)).sort((a, b) => px(a) - px(b)).find(s => px(s) >= 640 * 480);
+                    if (pick && pick !== livePictureSize) setLivePictureSize(pick);
+                  } catch (e) { /* keep the default size */ }
+                  liveReadyRef.current = true;
+                }}
               />
               <View style={styles.liveTop}>
                 <View style={styles.liveDot} />
@@ -963,6 +985,11 @@ const styles = StyleSheet.create({
   stepTime: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 1 },
   trackerNote: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', lineHeight: 17 },
   activeActions: { gap: 10, marginBottom: 18 },
+  noReply: { backgroundColor: '#FFEBEE', borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#EF9A9A' },
+  noReplyTitle: { fontSize: 14, fontFamily: 'Outfit-Bold', color: '#B71C1C' },
+  noReplyBody: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#5D1A1A', marginTop: 2, lineHeight: 18 },
+  noReplyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#C62828', borderRadius: 10, paddingVertical: 9, marginTop: 8 },
+  noReplyBtnText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 14 },
   incidentBox: { marginHorizontal: 20, marginBottom: 14 },
   incidentTitle: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#3F3F3F', marginBottom: 8 },
   incidentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

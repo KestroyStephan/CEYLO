@@ -78,8 +78,16 @@ class OfflineQueueService {
           await this._execute(item);
           console.log(`[OfflineQueue] Flushed: ${item.type} ${item.id}`);
         } catch (e) {
-          console.error(`[OfflineQueue] Flush failed for ${item.id}:`, e.message);
-          remaining.push(item);
+          // Writes the rules reject (e.g. queued under another account) or that are a day old will
+          // never be useful, so they are dropped instead of retried on every launch
+          const ageMs = Date.now() - Date.parse(item.enqueuedAt || 0);
+          const attempts = (item.attempts || 0) + 1;
+          if (e.code === 'permission-denied' || ageMs > 24 * 60 * 60 * 1000 || attempts >= 10) {
+            console.warn(`[OfflineQueue] Dropped ${item.type} ${item.id}: ${e.message}`);
+          } else {
+            console.warn(`[OfflineQueue] Will retry ${item.type} ${item.id}: ${e.message}`);
+            remaining.push({ ...item, attempts });
+          }
         }
       }
       await this._save(remaining);

@@ -323,6 +323,8 @@ function SOSMonitor() {
                 liveViewUntil: Date.now() + LIVE_VIEW_MS,
                 liveViewFacing: facing,
                 liveViewStatus: 'requested',
+                // Asking to see the scene means the desk has picked the alert up
+                ...(selectedAlert.status === 'active' ? { status: 'acknowledged', acknowledgedAt: serverTimestamp(), handledBy: handler() } : {}),
             });
             setSnackbar({ open: true, message: 'Live view requested. The traveller sees a notice and it starts in 5 seconds unless they decline.', severity: 'success' });
         } catch (e) {
@@ -938,7 +940,7 @@ function SOSMonitor() {
                                         <TableCell>{row.locationName || (row.location?.latitude != null ? `${Number(row.location.latitude).toFixed(4)}, ${Number(row.location.longitude).toFixed(4)}` : 'Not shared')}</TableCell>
                                         <TableCell>
                                             <Chip 
-                                                label={row.category || 'Emergency'} 
+                                                label={row.incidentType || row.category || 'Not reported'} 
                                                 size="small" 
                                                 sx={{ 
                                                     fontWeight: 700, 
