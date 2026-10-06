@@ -153,7 +153,7 @@ export default function Research() {
         return {
             byStrategy, typeCounts,
             participants: participants.size,
-            since: firstSeen ? firstSeen.toLocaleDateString() : null,
+            since: firstSeen ? firstSeen.toLocaleDateString('en-GB') : null,
             itineraries: records.length,
             latencyMean: mean(latencies), under3s: pct(under3s, latencies.length),
             recHidden: pct(recStops.filter(x => x.hiddenGem).length, recStops.length),
