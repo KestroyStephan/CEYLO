@@ -63,7 +63,7 @@ function SOSAlerts() {
                     badgeContent={params.value === 'active' ? '!' : null}
                     sx={{ '& .MuiBadge-badge': { right: -15, top: 10 } }}
                 >
-                    <Box sx={{ color: params.value === 'active' ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
+                    <Box sx={{ color: params.value === 'active' ? 'error.main' : 'success.main', fontWeight: 600 }}>
                         {params.value ? params.value.toUpperCase() : 'UNKNOWN'}
                     </Box>
                 </Badge>
@@ -106,7 +106,7 @@ function SOSAlerts() {
 
     return (
         <Box sx={{ height: 600, width: '100%' }}>
-            <Typography variant="h4" gutterBottom component="div" sx={{ mb: 2, fontWeight: 'bold', color: '#d32f2f' }}>
+            <Typography variant="h4" gutterBottom component="div" sx={{ mb: 2, fontWeight: 600, color: '#d32f2f' }}>
                 SOS Alerts Monitoring
             </Typography>
             <DataGrid

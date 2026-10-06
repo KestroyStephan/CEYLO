@@ -174,18 +174,13 @@ export default function Destinations() {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        CMS: Destinations
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Manage the island's locations, curate hidden gems, and track eco-scores.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Destinations</Typography>
                 </Box>
                 <Button
                     variant="contained"
                     onClick={() => handleOpenEditor()}
                     startIcon={<AddIcon />}
-                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, px: 3, textTransform: 'none' }}
+                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2, px: 3, textTransform: 'none' }}
                 >
                     Create Destination
                 </Button>
@@ -194,41 +189,41 @@ export default function Destinations() {
             {/* Statistics Banner */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL DESTINATIONS</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#006A3B">{destinations.length}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>{destinations.filter(d => d.latitude || d.lat).length} on the map</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">TOTAL DESTINATIONS</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#006A3B">{destinations.length}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>{destinations.filter(d => d.latitude || d.lat).length} on the map</Typography>
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">ECO SCORE</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#735C00">{avgScore}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Average eco score (out of 100)</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">ECO SCORE</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#735C00">{avgScore}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Average eco score (out of 100)</Typography>
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">PHOTOS</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#1976D2">{destinations.length ? Math.round(100 * photoCount / destinations.length) : 0}%</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>{photoCount} places have a photo</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">PHOTOS</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#1976D2">{destinations.length ? Math.round(100 * photoCount / destinations.length) : 0}%</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>{photoCount} places have a photo</Typography>
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', bgcolor: '#FFF8E1' }}>
-                        <Typography variant="caption" fontWeight={900} color="#F57F17">HIDDEN GEMS</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#F57F17">{gemCount}</Typography>
-                        <Typography variant="caption" color="#F57F17" fontWeight={750}>Rare Finds</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none', bgcolor: '#FFF8E1' }}>
+                        <Typography variant="caption" fontWeight={600} color="#F57F17">HIDDEN GEMS</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#F57F17">{gemCount}</Typography>
+                        <Typography variant="caption" color="#F57F17" fontWeight={600}>Rare Finds</Typography>
                     </Paper>
                 </Grid>
             </Grid>
 
             {/* Premium Controls Toolbar */}
-            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
                         <FilterListIcon sx={{ color: '#006A3B' }} />
-                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                        <Typography variant="body2" fontWeight={600} color="#006A3B">FILTERS</Typography>
                     </Box>
                     <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
                     <TextField
@@ -236,20 +231,20 @@ export default function Destinations() {
                         size="small"
                         value={filterProvince}
                         onChange={(e) => setFilterProvince(e.target.value)}
-                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                         InputProps={{ startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment> }}
                     >
-                        {PROVINCES.map(prov => <MenuItem key={prov} value={prov} sx={{ fontWeight: 700 }}>{prov}</MenuItem>)}
+                        {PROVINCES.map(prov => <MenuItem key={prov} value={prov} sx={{ fontWeight: 600 }}>{prov}</MenuItem>)}
                     </TextField>
                     <TextField
                         select
                         size="small"
                         value={filterCategory}
                         onChange={(e) => setFilterCategory(e.target.value)}
-                        sx={{ width: 240, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 240, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     >
                         {ALL_CATEGORIES.map(cat => (
-                            <MenuItem key={cat} value={cat} sx={{ fontWeight: 700, color: cat === 'Hidden Gems' ? '#F57F17' : 'inherit' }}>
+                            <MenuItem key={cat} value={cat} sx={{ fontWeight: 600, color: cat === 'Hidden Gems' ? '#F57F17' : 'inherit' }}>
                                 {cat === 'Hidden Gems' ? '✨ Hidden Gems' : cat}
                             </MenuItem>
                         ))}
@@ -260,22 +255,22 @@ export default function Destinations() {
                     size="small"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
             </Paper>
 
             {/* Data Table */}
-            <Paper sx={{ borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+            <Paper sx={{ borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead sx={{ bgcolor: '#F4F7F6' }}>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 900, color: '#3F4941', py: 2 }}>Destination Name</TableCell>
-                                <TableCell sx={{ fontWeight: 900, color: '#3F4941', py: 2 }}>Province & Map</TableCell>
-                                <TableCell sx={{ fontWeight: 900, color: '#3F4941', py: 2 }}>Category</TableCell>
-                                <TableCell sx={{ fontWeight: 900, color: '#3F4941', py: 2 }}>Eco-Score</TableCell>
-                                <TableCell sx={{ fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941', py: 2 }}>Destination Name</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941', py: 2 }}>Province & Map</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941', py: 2 }}>Category</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941', py: 2 }}>Eco-Score</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941', py: 2 }} align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -287,34 +282,34 @@ export default function Destinations() {
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                             <Avatar variant="rounded" src={row.imageUrl} sx={{ width: 56, height: 56, borderRadius: 2 }} />
                                             <Box>
-                                                <Typography variant="subtitle2" fontWeight={800} color="#181D19">{row.name}</Typography>
+                                                <Typography variant="subtitle2" fontWeight={600} color="#181D19">{row.name}</Typography>
                                                 {row.isHiddenGem && (
                                                     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                                                         <DiamondIcon sx={{ fontSize: 14, color: '#F57F17' }} />
-                                                        <Typography variant="caption" fontWeight={800} color="#F57F17">Hidden Gem</Typography>
+                                                        <Typography variant="caption" fontWeight={600} color="#F57F17">Hidden Gem</Typography>
                                                     </Box>
                                                 )}
                                             </Box>
                                         </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="body2" fontWeight={700} color="#3F4941">{row.province}</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#3F4941">{row.province}</Typography>
                                         <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                             <LocationOnIcon sx={{ fontSize: 12 }} /> {row.latitude}, {row.longitude}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip label={row.category} size="small" sx={{ bgcolor: '#E8F5E9', color: '#006A3B', fontWeight: 700 }} />
+                                        <Chip label={row.category} size="small" sx={{ bgcolor: '#E8F5E9', color: '#006A3B', fontWeight: 600 }} />
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <Box sx={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid', borderColor: row.ecoScore >= 80 ? '#006A3B' : '#F57F17', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <Typography variant="caption" fontWeight={900}>{row.ecoScore}</Typography>
+                                                <Typography variant="caption" fontWeight={600}>{row.ecoScore}</Typography>
                                             </Box>
                                         </Box>
                                     </TableCell>
                                     <TableCell align="right">
-                                        <Button variant="outlined" size="small" sx={{ borderRadius: 8, fontWeight: 700, textTransform: 'none' }} onClick={() => handleOpenEditor(row)}>
+                                        <Button variant="outlined" size="small" sx={{ borderRadius: 1, fontWeight: 600, textTransform: 'none' }} onClick={() => handleOpenEditor(row)}>
                                             Review / Edit
                                         </Button>
                                     </TableCell>
@@ -335,16 +330,16 @@ export default function Destinations() {
             </Paper>
 
             {/* Editor Dialog */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 2 } }}>
+            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 1.25, p: 2 } }}>
                 <DialogTitle>
-                    <Typography variant="h5" fontWeight={900} color="#006A3B">
+                    <Typography variant="h5" fontWeight={600} color="#006A3B">
                         {isCreating ? 'Create Destination' : 'Edit Destination'}
                     </Typography>
                 </DialogTitle>
                 <DialogContent dividers sx={{ bgcolor: '#FAFCFA' }}>
                     <Grid container spacing={3} sx={{ mt: 0 }}>
                         <Grid size={{ xs: 12 }}>
-                            <Typography variant="subtitle2" fontWeight={800} color="#006A3B" sx={{ mb: 2 }}>NAMING & LOCALIZATION</Typography>
+                            <Typography variant="subtitle2" fontWeight={600} color="#006A3B" sx={{ mb: 2 }}>NAMING & LOCALIZATION</Typography>
                             <TextField fullWidth label="English Name" variant="outlined" value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} sx={{ mb: 2, bgcolor: '#FFF' }} />
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                                 <TextField fullWidth label="Sinhala Name (සිංහල)" variant="outlined" value={formData.nameSinhala || ''} onChange={(e) => setFormData({ ...formData, nameSinhala: e.target.value })} sx={{ bgcolor: '#FFF' }} />
@@ -357,21 +352,21 @@ export default function Destinations() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>CATEGORY & CLASSIFICATION</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>CATEGORY & CLASSIFICATION</Typography>
                             <TextField select fullWidth value={formData.category || 'Heritage'} onChange={(e) => setFormData({ ...formData, category: e.target.value })} sx={{ bgcolor: '#FFF', mb: 2 }}>
                                 {ALL_CATEGORIES.filter(c => c !== 'All Categories' && c !== 'Hidden Gems').map(cat => (
                                     <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                                 ))}
                             </TextField>
 
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>PROVINCE</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>PROVINCE</Typography>
                             <TextField select fullWidth value={formData.province || 'Central'} onChange={(e) => setFormData({ ...formData, province: e.target.value })} sx={{ bgcolor: '#FFF', mb: 2 }}>
                                 {PROVINCES.filter(p => p !== 'All Provinces').map(prov => (
                                     <MenuItem key={prov} value={prov}>{prov}</MenuItem>
                                 ))}
                             </TextField>
 
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>MARK AS HIDDEN GEM (RARE FIND)?</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>MARK AS HIDDEN GEM (RARE FIND)?</Typography>
                             <TextField select fullWidth value={formData.isHiddenGem ? 'Yes' : 'No'} onChange={(e) => setFormData({ ...formData, isHiddenGem: e.target.value === 'Yes' })} sx={{ bgcolor: '#FFF' }}>
                                 <MenuItem value="Yes">Yes, flag as Rare/Hidden</MenuItem>
                                 <MenuItem value="No">No, standard destination</MenuItem>
@@ -379,7 +374,7 @@ export default function Destinations() {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>ECO-SCORE TRACKING</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>ECO-SCORE TRACKING</Typography>
                             <Box sx={{ px: 2, pb: 2 }}>
                                 <Slider
                                     value={formData.ecoScore || 85}
@@ -394,25 +389,25 @@ export default function Destinations() {
                                 </Box>
                             </Box>
 
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>MAP COORDINATES (GPS)</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>MAP COORDINATES (GPS)</Typography>
                             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
                                 <TextField fullWidth label="Latitude" type="number" variant="outlined" size="small" value={formData.latitude || ''} onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })} sx={{ bgcolor: '#FFF' }} />
                                 <TextField fullWidth label="Longitude" type="number" variant="outlined" size="small" value={formData.longitude || ''} onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })} sx={{ bgcolor: '#FFF' }} />
                             </Stack>
 
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>DESCRIPTION SUMMARY</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>DESCRIPTION SUMMARY</Typography>
                             <TextField fullWidth multiline rows={3} variant="outlined" value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} sx={{ bgcolor: '#FFF' }} />
                         </Grid>
 
                         <Grid size={{ xs: 12 }}>
                             <Divider sx={{ my: 1 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="subtitle2" fontWeight={800} color="#006A3B">PHOTO ASSETS & MEDIA</Typography>
+                                <Typography variant="subtitle2" fontWeight={600} color="#006A3B">PHOTO ASSETS & MEDIA</Typography>
                                 <Typography variant="caption" color="text.secondary">Optimal ratio 16:9</Typography>
                             </Box>
                             <Paper sx={{ p: 4, borderRadius: 2, border: '2px dashed #BECABE', bgcolor: '#FFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', '&:hover': { borderColor: '#006A3B' } }}>
                                 <PhotoCameraIcon sx={{ fontSize: 40, color: '#94A3B8', mb: 1 }} />
-                                <Typography variant="body2" fontWeight={800} color="#3F4941">Upload Promotional Imagery</Typography>
+                                <Typography variant="body2" fontWeight={600} color="#3F4941">Upload Promotional Imagery</Typography>
                                 <Typography variant="caption" color="text.secondary">Drag & drop files or click to browse</Typography>
                             </Paper>
                         </Grid>
@@ -421,19 +416,19 @@ export default function Destinations() {
                 </DialogContent>
                 <DialogActions sx={{ p: 3, pt: 0 }}>
                     {!isCreating && (
-                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => handleDelete(selectedDest?.id)} sx={{ mr: 'auto', fontWeight: 800 }}>
+                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => handleDelete(selectedDest?.id)} sx={{ mr: 'auto', fontWeight: 600 }}>
                             Delete
                         </Button>
                     )}
-                    <Button onClick={() => setOpenDialog(false)} sx={{ color: '#5C6E64', fontWeight: 800 }}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSave} sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2 }}>
+                    <Button onClick={() => setOpenDialog(false)} sx={{ color: '#5C6E64', fontWeight: 600 }}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSave} sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2 }}>
                         Save Destination
                     </Button>
                 </DialogActions>
             </Dialog>
 
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-                <Alert severity={snackbar.severity} sx={{ fontWeight: 700 }}>{snackbar.message}</Alert>
+                <Alert severity={snackbar.severity} sx={{ fontWeight: 600 }}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
     );

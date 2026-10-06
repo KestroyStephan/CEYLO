@@ -58,14 +58,14 @@ export default function Login() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #004d40 0%, #00695c 100%)',
+                bgcolor: '#004d40',
             }}
         >
             <Container maxWidth="xs">
-                <Card sx={{ borderRadius: 3, boxShadow: 6, p: 2 }}>
+                <Card sx={{ borderRadius: 1.25, boxShadow: 6, p: 2 }}>
                     <CardContent>
                         <Box textAlign="center" mb={3}>
-                            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#00695c' }}>
+                            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: '#00695c' }}>
                                 CEYLO Portal
                             </Typography>
                             <Typography variant="body2" color="textSecondary">
@@ -108,7 +108,7 @@ export default function Login() {
                                     bgcolor: '#00695c',
                                     '&:hover': { bgcolor: '#004d40' },
                                     py: 1.5,
-                                    fontWeight: 'bold'
+                                    fontWeight: 600
                                 }}
                             >
                                 Log In
@@ -119,7 +119,7 @@ export default function Login() {
                                 variant="text"
                                 size="small"
                                 onClick={() => navigate('/register-provider')}
-                                sx={{ color: '#00695c', mt: 1, fontWeight: 'bold' }}
+                                sx={{ color: '#00695c', mt: 1, fontWeight: 600 }}
                             >
                                 Register as Partner
                             </Button>

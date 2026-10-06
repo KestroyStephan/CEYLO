@@ -72,12 +72,12 @@ export default function SosAlarm() {
     return (
         <Box role="alert" sx={{
             position: 'sticky', top: 0, zIndex: 1300, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
-            px: 2.5, py: 1.5, mb: 2, borderRadius: 3, color: '#FFF',
+            px: 2.5, py: 1.5, mb: 2, borderRadius: 1.25, color: '#FFF',
             bgcolor: wait > 120000 ? '#7F0000' : '#C62828', boxShadow: '0 8px 24px rgba(198,40,40,0.35)',
         }}>
             <WarningIcon />
             <Box sx={{ flex: 1, minWidth: 200 }}>
-                <Typography fontWeight={900}>
+                <Typography fontWeight={600}>
                     {unanswered.length === 1 ? 'SOS: a traveller needs help' : `${unanswered.length} SOS alerts waiting`}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -85,7 +85,7 @@ export default function SosAlarm() {
                 </Typography>
             </Box>
             <Button variant="contained" onClick={() => navigate('/sos')}
-                sx={{ bgcolor: '#FFF !important', color: '#C62828 !important', backgroundImage: 'none !important', fontWeight: 900, boxShadow: 'none', '&:hover': { bgcolor: '#FFEBEE !important' } }}>
+                sx={{ bgcolor: '#FFF !important', color: '#C62828 !important', backgroundImage: 'none !important', fontWeight: 600, boxShadow: 'none', '&:hover': { bgcolor: '#FFEBEE !important' } }}>
                 Open SOS monitor
             </Button>
         </Box>

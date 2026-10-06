@@ -149,8 +149,7 @@ function Bookings() {
             {/* Header */}
             <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { md: 'flex-end' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={800} color="#006A3B">Bookings Center</Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>Manage and review all platform reservations</Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Bookings</Typography>
                 </Box>
                 
                 {/* Filter Controls */}
@@ -164,7 +163,7 @@ function Bookings() {
                             bgcolor: '#FFF', 
                             minWidth: 160, 
                             '& .MuiOutlinedInput-root': { 
-                                borderRadius: 8, 
+                                borderRadius: 1, 
                                 '& fieldset': { borderColor: '#EBEFE8' },
                                 '&:hover fieldset': { borderColor: '#006A3B' }
                             } 
@@ -182,7 +181,7 @@ function Bookings() {
                             borderColor: '#EBEFE8', 
                             color: '#181D19', 
                             bgcolor: '#FFF',
-                            borderRadius: 8,
+                            borderRadius: 1,
                             px: 2,
                             fontWeight: 600,
                             '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6' }
@@ -195,7 +194,7 @@ function Bookings() {
                         open={Boolean(filterAnchor)}
                         onClose={() => setFilterAnchor(null)}
                         PaperProps={{
-                            sx: { mt: 1, borderRadius: 3, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #EBEFE8' }
+                            sx: { mt: 1, borderRadius: 1.25, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #EBEFE8' }
                         }}
                     >
                         <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>Service Type: Safari</Typography></MenuItem>
@@ -213,11 +212,11 @@ function Bookings() {
                         sx={{ 
                             bgcolor: '#006A3B', 
                             color: '#FFF',
-                            borderRadius: 8,
+                            borderRadius: 1,
                             px: 2,
                             fontWeight: 600,
                             boxShadow: 'none',
-                            '&:hover': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.2)' }
+                            '&:hover': { boxShadow: 'none' }
                         }}
                     >
                         Export Data
@@ -248,7 +247,7 @@ function Bookings() {
                                 minHeight: 36,
                                 py: 0.5, px: 3,
                                 textTransform: 'none',
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 color: '#5C6E64',
                                 borderRadius: 2,
                                 transition: 'all 0.2s ease',
@@ -257,7 +256,7 @@ function Bookings() {
                             '& .Mui-selected': {
                                 color: '#006A3B !important',
                                 bgcolor: '#FFFFFF',
-                                boxShadow: '0 2px 8px rgba(0, 106, 59, 0.08)'
+                                boxShadow: 'none'
                             }
                         }}
                     >
@@ -281,8 +280,8 @@ function Bookings() {
                             borderRadius: 2.5,
                             transition: 'all 0.3s',
                             boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                            '&:hover': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.05)' },
-                            '&.Mui-focused': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.1)' }
+                            '&:hover': { boxShadow: 'none' },
+                            '&.Mui-focused': { boxShadow: 'none' }
                         }
                     }} 
                     InputProps={{ 
@@ -312,8 +311,8 @@ function Bookings() {
                                 <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4, color: '#64748B' }}>No bookings found.</TableCell></TableRow>
                             ) : filteredRows.map((row) => (
                                 <TableRow key={row.id} hover onClick={() => openDrawer(row)} sx={{ cursor: 'pointer' }}>
-                                    <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#5C6E64', fontWeight: 700 }}>{row.id.substring(0,8).toUpperCase()}</Typography></TableCell>
-                                    <TableCell><Typography variant="body2" fontWeight={800} color="#181D19">{row.userName || 'Guest'}</Typography></TableCell>
+                                    <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#5C6E64', fontWeight: 600 }}>{row.id.substring(0,8).toUpperCase()}</Typography></TableCell>
+                                    <TableCell><Typography variant="body2" fontWeight={600} color="#181D19">{row.userName || 'Guest'}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary" fontWeight={600}>{row.vendorName || 'Direct'}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary">{row.service || row.serviceName}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" color="text.secondary">{formatDate(row.date)}</Typography></TableCell>
@@ -346,7 +345,7 @@ function Bookings() {
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                         <Box sx={{ p: 3, borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box>
-                                <Typography variant="h6" fontWeight={700} color="#0F172A">Booking Details</Typography>
+                                <Typography variant="h6" fontWeight={600} color="#0F172A">Booking Details</Typography>
                                 <Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#64748B' }}>ID: {selectedBooking.id}</Typography>
                             </Box>
                             <IconButton onClick={() => setDrawerOpen(false)} size="small"><CloseIcon /></IconButton>
@@ -384,8 +383,8 @@ function Bookings() {
                                 </Box>
                                 <Divider sx={{ my: 1 }} />
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <Typography variant="body2" fontWeight={700} color="#0F172A">Total Paid</Typography>
-                                    <Typography variant="body2" fontWeight={700} color="#0F172A">{formatBookingAmount(selectedBooking)}</Typography>
+                                    <Typography variant="body2" fontWeight={600} color="#0F172A">Total Paid</Typography>
+                                    <Typography variant="body2" fontWeight={600} color="#0F172A">{formatBookingAmount(selectedBooking)}</Typography>
                                 </Box>
                             </Box>
                         </Box>

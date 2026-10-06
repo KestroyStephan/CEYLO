@@ -69,6 +69,20 @@ service firebase.storage {
       allow write: if signedIn() && underMB(25) && (alertOwner() || isAdmin());
     }
 
+    // SOS evidence and live-view frames from the traveller's phone, stored under their own uid.
+    // The owner check needs no database lookup, so uploads work even when Storage has not been
+    // granted access to Firestore. The desk opens them through the download links on the alert.
+    match /sos_media/{uid}/{file} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid) && (request.resource == null || underMB(25));
+    }
+
+    // Driver verification documents: private to the driver and the admin team
+    match /driver_documents/{uid}/{file} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid) && (request.resource == null || underMB(10));
+    }
+
     // Everything else is closed
     match /{path=**} {
       allow read, write: if false;

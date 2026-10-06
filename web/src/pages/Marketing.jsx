@@ -100,19 +100,14 @@ export default function Marketing() {
     return (
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
             <Box sx={{ mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
-                <Typography variant="h4" fontWeight={900} color="#006A3B" sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CampaignIcon sx={{ mr: 1, fontSize: 32 }} /> Marketing & SEO Hub
-                </Typography>
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                    Boost platform visibility with SEO injection and engage users via email campaigns.
-                </Typography>
+                <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Marketing</Typography>
             </Box>
 
             <Grid container spacing={3}>
                 {/* SEO Injection Panel */}
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 4, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="h6" fontWeight={800} sx={{ mb: 3, display: 'flex', alignItems: 'center', color: '#181D19' }}>
+                    <Paper sx={{ p: 4, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 3, display: 'flex', alignItems: 'center', color: '#181D19' }}>
                             <ManageSearchIcon sx={{ mr: 1, color: '#ef6c00' }} /> Content SEO Injection
                         </Typography>
 
@@ -168,7 +163,7 @@ export default function Marketing() {
                                 variant="contained"
                                 onClick={handleSeoUpdate}
                                 disabled={seoLoading || !selectedTarget}
-                                sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, py: 1.5, borderRadius: 2 }}
+                                sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, py: 1.5, borderRadius: 2 }}
                             >
                                 {seoLoading ? 'Injecting...' : 'Inject SEO Data'}
                             </Button>
@@ -178,8 +173,8 @@ export default function Marketing() {
 
                 {/* Email Campaign UI */}
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 4, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="h6" fontWeight={800} sx={{ mb: 3, display: 'flex', alignItems: 'center', color: '#181D19' }}>
+                    <Paper sx={{ p: 4, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 3, display: 'flex', alignItems: 'center', color: '#181D19' }}>
                             <EmailIcon sx={{ mr: 1, color: '#0288d1' }} /> Email Marketing Campaign
                         </Typography>
 
@@ -215,7 +210,7 @@ export default function Marketing() {
                                 variant="contained"
                                 onClick={handleSendEmail}
                                 disabled={emailLoading}
-                                sx={{ bgcolor: '#1565c0', '&:hover': { bgcolor: '#0d47a1' }, fontWeight: 800, py: 1.5, borderRadius: 2 }}
+                                sx={{ bgcolor: '#1565c0', '&:hover': { bgcolor: '#0d47a1' }, fontWeight: 600, py: 1.5, borderRadius: 2 }}
                             >
                                 {emailLoading ? 'Sending...' : 'Send Campaign Blast'}
                             </Button>

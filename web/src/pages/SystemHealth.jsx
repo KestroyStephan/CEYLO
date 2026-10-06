@@ -16,19 +16,19 @@ import { db } from '../firebaseConfig';
 import { BACKEND_URL } from '../config';
 
 const HealthMetric = ({ label, value, status, icon, progressVal }) => (
-    <Paper sx={{ p: 3, borderRadius: 4, height: '100%' }}>
+    <Paper sx={{ p: 3, borderRadius: 1.25, height: '100%' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <Box sx={{ p: 1, borderRadius: 2, bgcolor: '#f0f4f8', color: '#00695c', mr: 2 }}>
                 {icon}
             </Box>
-            <Typography variant="body2" fontWeight={700} color="text.secondary">{label}</Typography>
+            <Typography variant="body2" fontWeight={600} color="text.secondary">{label}</Typography>
         </Box>
-        <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>{value}</Typography>
+        <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>{value}</Typography>
         <Chip
             label={status.toUpperCase()}
             size="small"
             color={status === 'operational' ? 'success' : 'warning'}
-            sx={{ fontWeight: 700, fontSize: '0.6rem' }}
+            sx={{ fontWeight: 600, fontSize: '0.6rem' }}
         />
         <Box sx={{ mt: 2 }}>
             <LinearProgress
@@ -142,12 +142,7 @@ function SystemHealth() {
     return (
         <Box>
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" fontWeight={900} color="#37474f">
-                    Platform System Health
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Monitor global service status, API latencies, and backend infrastructure performance.
-                </Typography>
+                <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>System health</Typography>
             </Box>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -191,9 +186,9 @@ function SystemHealth() {
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                    <Paper sx={{ borderRadius: 1.25, overflow: 'hidden' }}>
                         <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee' }}>
-                            <Typography variant="subtitle1" fontWeight={800}>Microservices Status</Typography>
+                            <Typography variant="subtitle1" fontWeight={600}>Microservices Status</Typography>
                         </Box>
                         <List sx={{ p: 0 }}>
                             {services.map((service, idx) => {
@@ -212,7 +207,7 @@ function SystemHealth() {
                                             size="small"
                                             color={isOperational ? 'success' : 'warning'}
                                             variant="outlined"
-                                            sx={{ fontWeight: 800 }}
+                                            sx={{ fontWeight: 600 }}
                                         />
                                     </ListItem>
                                 );
@@ -221,8 +216,8 @@ function SystemHealth() {
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, lg: 4 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, bgcolor: '#00695c', color: '#fff', height: '100%' }}>
-                        <Typography variant="h6" fontWeight={800} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, bgcolor: '#00695c', color: '#fff', height: '100%' }}>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                             <SecurityIcon sx={{ mr: 1 }} /> Security Hardening
                         </Typography>
                         <Stack spacing={2}>
@@ -234,7 +229,7 @@ function SystemHealth() {
                             ].map(([label, value]) => (
                                 <Box key={label}>
                                     <Typography variant="caption" sx={{ opacity: 0.8 }}>{label}</Typography>
-                                    <Typography variant="body1" fontWeight={700}>{value}</Typography>
+                                    <Typography variant="body1" fontWeight={600}>{value}</Typography>
                                 </Box>
                             ))}
                         </Stack>
@@ -243,10 +238,10 @@ function SystemHealth() {
             </Grid>
 
             {/* Trained models served by the backend */}
-            <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+            <Paper sx={{ borderRadius: 1.25, overflow: 'hidden' }}>
                 <Box sx={{ px: 3, py: 2, bgcolor: '#f8fbfc', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
                     <PsychologyIcon sx={{ color: '#00695c' }} />
-                    <Typography variant="subtitle1" fontWeight={800}>Trained AI Models</Typography>
+                    <Typography variant="subtitle1" fontWeight={600}>Trained AI Models</Typography>
                 </Box>
                 {!models ? (
                     <Typography variant="body2" color="text.secondary" sx={{ p: 3 }}>Model metrics unavailable: the backend could not be reached.</Typography>
@@ -255,21 +250,21 @@ function SystemHealth() {
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 800 }}>Model</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }}>Evaluation</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }}>Trained</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }} align="right">Avg latency</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Model</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Evaluation</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Trained</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }} align="right">Avg latency</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {Object.entries(models.models).map(([key, m]) => (
                                     <TableRow key={key}>
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <Typography variant="body2" fontWeight={700}>{m.name}</Typography>
+                                            <Typography variant="body2" fontWeight={600}>{m.name}</Typography>
                                             <Typography variant="caption" color="text.secondary">{m.algorithm}</Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant="body2" fontWeight={700}>
+                                            <Typography variant="body2" fontWeight={600}>
                                                 {m.accuracy != null && `Accuracy ${(m.accuracy * 100).toFixed(1)}%`}
                                                 {m.r2 != null && `R² ${m.r2} · MAE ${m.mae}`}
                                                 {m.mape != null && `MAPE ${m.mape}% · MAE ${m.mae}`}
@@ -278,7 +273,7 @@ function SystemHealth() {
                                             <Typography variant="caption" color="text.secondary">{m.metric}</Typography>
                                         </TableCell>
                                         <TableCell>{m.trained}</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 800 }}>
+                                        <TableCell align="right" sx={{ fontWeight: 600 }}>
                                             {models.latency?.[key] ? `${models.latency[key].avgMs} ms` : '—'}
                                         </TableCell>
                                     </TableRow>

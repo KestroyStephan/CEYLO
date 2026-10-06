@@ -77,18 +77,13 @@ function Analytics() {
     return (
         <Box>
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" fontWeight={900} color="#37474f">
-                    Advanced Platform Analytics
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    In-depth analysis of tourist behavior, eco-adoption rates, and vendor performance metrics.
-                </Typography>
+                <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Analytics</Typography>
             </Box>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4 }}>
-                        <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Weekly Tourist Flow</Typography>
+                    <Paper sx={{ p: 3, borderRadius: 1.25 }}>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 3 }}>Weekly Tourist Flow</Typography>
                         <Box sx={{ height: 350 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={flowData}>
@@ -107,10 +102,10 @@ function Analytics() {
                 <Grid size={{ xs: 12, lg: 4 }}>
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12 }}>
-                            <Card sx={{ borderRadius: 4, bgcolor: '#e0f2f1' }}>
+                            <Card sx={{ borderRadius: 1.25, bgcolor: '#e0f2f1' }}>
                                 <CardContent>
-                                    <Typography variant="subtitle2" fontWeight={800} color="#00695c">ECO ADOPTION RATE</Typography>
-                                    <Typography variant="h3" fontWeight={900} sx={{ my: 1 }}>{ecoRate}%</Typography>
+                                    <Typography variant="subtitle2" fontWeight={600} color="#00695c">ECO ADOPTION RATE</Typography>
+                                    <Typography variant="h3" fontWeight={600} sx={{ my: 1 }}>{ecoRate}%</Typography>
                                     <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center' }}>
                                         <TrendingUpIcon fontSize="inherit" sx={{ mr: 0.5 }} /> Average eco score across travellers
                                     </Typography>
@@ -118,8 +113,8 @@ function Analytics() {
                             </Card>
                         </Grid>
                         <Grid item xs={12}>
-                            <Paper sx={{ p: 3, borderRadius: 4, height: '100%' }}>
-                                <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Category Revenue</Typography>
+                            <Paper sx={{ p: 3, borderRadius: 1.25, height: '100%' }}>
+                                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Category Revenue</Typography>
                                 <Box sx={{ height: 180 }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>

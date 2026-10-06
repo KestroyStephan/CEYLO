@@ -106,9 +106,9 @@ export default function Reports() {
 
     const getStatusChip = (status) => {
         const s = (status || 'pending').toLowerCase();
-        if (s.includes('clear') || s.includes('paid')) return <Chip label="Cleared" size="small" sx={{ bgcolor: '#E8F5E9', color: '#006A3B', fontWeight: 800 }} />;
-        if (s.includes('process')) return <Chip label="Processing" size="small" sx={{ bgcolor: '#E3F2FD', color: '#1976D2', fontWeight: 800 }} />;
-        return <Chip label="Pending Approval" size="small" sx={{ bgcolor: '#FFF8E1', color: '#F57F17', fontWeight: 800, border: '1px solid #FFECB3' }} />;
+        if (s.includes('clear') || s.includes('paid')) return <Chip label="Cleared" size="small" sx={{ bgcolor: '#E8F5E9', color: '#006A3B', fontWeight: 600 }} />;
+        if (s.includes('process')) return <Chip label="Processing" size="small" sx={{ bgcolor: '#E3F2FD', color: '#1976D2', fontWeight: 600 }} />;
+        return <Chip label="Pending Approval" size="small" sx={{ bgcolor: '#FFF8E1', color: '#F57F17', fontWeight: 600, border: '1px solid #FFECB3' }} />;
     };
 
     return (
@@ -116,18 +116,13 @@ export default function Reports() {
             {/* Header */}
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Financial Reports
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Enterprise ledger, automated platform fees, and partner disbursement controls.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Financial reports</Typography>
                 </Box>
                 <Button
                     variant="contained"
                     onClick={handleExportPDF}
                     startIcon={<FileDownloadIcon />}
-                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 4, py: 1.2, textTransform: 'none' }}
+                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 1, px: 4, py: 1.2, textTransform: 'none' }}
                 >
                     Export Statement
                 </Button>
@@ -136,35 +131,35 @@ export default function Reports() {
             {/* Metrics */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar sx={{ width: 56, height: 56, bgcolor: '#F6FBF3', color: '#006A3B', border: '1px solid #EBEFE8' }}>
                             <LocalAtmIcon />
                         </Avatar>
                         <Box>
-                            <Typography variant="caption" fontWeight={800} color="text.secondary">GROSS VOLUME (LKR)</Typography>
-                            <Typography variant="h5" fontWeight={900} color="#181D19">{revenue.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
+                            <Typography variant="caption" fontWeight={600} color="text.secondary">GROSS VOLUME (LKR)</Typography>
+                            <Typography variant="h5" fontWeight={600} color="#181D19">{revenue.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
                         </Box>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar sx={{ width: 56, height: 56, bgcolor: '#E8F5E9', color: '#006A3B' }}>
                             <AccountBalanceWalletIcon />
                         </Avatar>
                         <Box>
-                            <Typography variant="caption" fontWeight={800} color="text.secondary">PLATFORM FEES YIELD (15%)</Typography>
-                            <Typography variant="h5" fontWeight={900} color="#006A3B">+{platformFee.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
+                            <Typography variant="caption" fontWeight={600} color="text.secondary">PLATFORM FEES YIELD (15%)</Typography>
+                            <Typography variant="h5" fontWeight={600} color="#006A3B">+{platformFee.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
                         </Box>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar sx={{ width: 56, height: 56, bgcolor: '#E3F2FD', color: '#1976D2' }}>
                             <AssessmentIcon />
                         </Avatar>
                         <Box>
-                            <Typography variant="caption" fontWeight={800} color="text.secondary">TOTAL TRANSACTIONS</Typography>
-                            <Typography variant="h5" fontWeight={900} color="#181D19">{bookingsCount.toLocaleString()}</Typography>
+                            <Typography variant="caption" fontWeight={600} color="text.secondary">TOTAL TRANSACTIONS</Typography>
+                            <Typography variant="h5" fontWeight={600} color="#181D19">{bookingsCount.toLocaleString()}</Typography>
                         </Box>
                     </Paper>
                 </Grid>
@@ -180,7 +175,7 @@ export default function Reports() {
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
                                 sx={{
-                                    borderRadius: '50px', px: 3, py: 0.8, textTransform: 'none', fontWeight: 800,
+                                    borderRadius: '50px', px: 3, py: 0.8, textTransform: 'none', fontWeight: 600,
                                     bgcolor: statusFilter === status ? '#FFF' : 'transparent',
                                     color: statusFilter === status ? '#006A3B' : '#5C6E64',
                                     boxShadow: statusFilter === status ? '0 2px 8px rgba(0,106,59,0.1)' : 'none',
@@ -192,7 +187,7 @@ export default function Reports() {
                         ))}
                     </Box>
 
-                    <Button variant="outlined" startIcon={<FilterListIcon />} sx={{ color: '#3F4941', borderColor: '#BECABE', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}>
+                    <Button variant="outlined" startIcon={<FilterListIcon />} sx={{ color: '#3F4941', borderColor: '#BECABE', fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}>
                         More Filters
                     </Button>
                 </Box>
@@ -202,24 +197,24 @@ export default function Reports() {
                     size="small"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 8 } }}
+                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
             </Box>
 
             {/* Data Table */}
-            <Paper sx={{ borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+            <Paper sx={{ borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                 <TableContainer sx={{ maxHeight: 600 }}>
                     <Table size="small" stickyHeader>
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Partner / Entity</TableCell>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Entity Type</TableCell>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Period</TableCell>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Gross (LKR)</TableCell>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Platform Fee (15%)</TableCell>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }} align="right">Net Payout</TableCell>
-                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 900, color: '#3F4941', py: 2 }}>Payout Status</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }}>Partner / Entity</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }}>Entity Type</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }}>Period</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }} align="right">Gross (LKR)</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }} align="right">Platform Fee (15%)</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }} align="right">Net Payout</TableCell>
+                                <TableCell sx={{ bgcolor: '#F4F7F6', fontWeight: 600, color: '#3F4941', py: 2 }}>Payout Status</TableCell>
                                 <TableCell sx={{ bgcolor: '#F4F7F6', py: 2 }} align="right"></TableCell>
                             </TableRow>
                         </TableHead>
@@ -230,21 +225,21 @@ export default function Reports() {
                                 <TableRow key={row.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                     <TableCell sx={{ py: 2 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ width: 36, height: 36, bgcolor: '#EBEFE8', color: '#006A3B', fontSize: '1rem', fontWeight: 900 }}>
+                                            <Avatar sx={{ width: 36, height: 36, bgcolor: '#EBEFE8', color: '#006A3B', fontSize: '1rem', fontWeight: 600 }}>
                                                 {row.name.substring(0, 2).toUpperCase()}
                                             </Avatar>
-                                            <Typography variant="body2" fontWeight={800} color="#181D19">{row.name}</Typography>
+                                            <Typography variant="body2" fontWeight={600} color="#181D19">{row.name}</Typography>
                                         </Box>
                                     </TableCell>
                                     <TableCell><Typography variant="body2" fontWeight={600} color="#5C6E64">{row.role}</Typography></TableCell>
                                     <TableCell><Typography variant="body2" fontWeight={600} color="#5C6E64">{row.period}</Typography></TableCell>
-                                    <TableCell align="right"><Typography variant="body2" fontWeight={700} color="#5C6E64">{row.gross.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography></TableCell>
+                                    <TableCell align="right"><Typography variant="body2" fontWeight={600} color="#5C6E64">{row.gross.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography></TableCell>
                                     <TableCell align="right">
                                         <Box sx={{ display: 'inline-flex', bgcolor: 'rgba(220, 38, 38, 0.08)', px: 1, py: 0.2, borderRadius: 1 }}>
-                                            <Typography variant="caption" fontWeight={800} color="#DC2626">-{row.fees.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
+                                            <Typography variant="caption" fontWeight={600} color="#DC2626">-{row.fees.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography>
                                         </Box>
                                     </TableCell>
-                                    <TableCell align="right"><Typography variant="body2" fontWeight={900} color="#181D19">{row.net.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography></TableCell>
+                                    <TableCell align="right"><Typography variant="body2" fontWeight={600} color="#181D19">{row.net.toLocaleString(undefined, {minimumFractionDigits:2})}</Typography></TableCell>
                                     <TableCell>{getStatusChip(row.status)}</TableCell>
                                     <TableCell align="right">
                                         <IconButton size="small" onClick={(e) => handleMenuOpen(e, row.id)}><MoreVertIcon /></IconButton>
@@ -260,14 +255,14 @@ export default function Reports() {
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={() => setAnchorEl(null)}
-                PaperProps={{ sx: { minWidth: 180, borderRadius: 3, border: '1px solid #EBEFE8', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' } }}
+                PaperProps={{ sx: { minWidth: 180, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' } }}
             >
                 <MenuItem onClick={() => setAnchorEl(null)} sx={{ fontSize: '0.875rem', fontWeight: 600, py: 1.5 }}>View Invoice Document</MenuItem>
-                <MenuItem onClick={handleApprovePayout} sx={{ fontSize: '0.875rem', fontWeight: 800, color: '#006A3B', py: 1.5 }}>Approve Payout Transfer</MenuItem>
+                <MenuItem onClick={handleApprovePayout} sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#006A3B', py: 1.5 }}>Approve Payout Transfer</MenuItem>
             </Menu>
 
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-                <Alert severity={snackbar.severity} sx={{ fontWeight: 700, borderRadius: 2 }}>{snackbar.message}</Alert>
+                <Alert severity={snackbar.severity} sx={{ fontWeight: 600, borderRadius: 2 }}>{snackbar.message}</Alert>
             </Snackbar>
         </Box>
     );

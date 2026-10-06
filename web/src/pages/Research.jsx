@@ -58,10 +58,10 @@ function download(name, rows) {
 
 function Stat({ label, value, sub, tone = '#00695c' }) {
     return (
-        <Card sx={{ borderRadius: 4, height: '100%' }}>
+        <Card sx={{ borderRadius: 1.25, height: '100%' }}>
             <CardContent>
-                <Typography variant="subtitle2" fontWeight={800} color={tone} sx={{ letterSpacing: '0.04em' }}>{label}</Typography>
-                <Typography variant="h4" fontWeight={900} sx={{ my: 0.5 }}>{value}</Typography>
+                <Typography variant="subtitle2" fontWeight={600} color={tone} sx={{ letterSpacing: '0.04em' }}>{label}</Typography>
+                <Typography variant="h4" fontWeight={600} sx={{ my: 0.5 }}>{value}</Typography>
                 {sub && <Typography variant="caption" color="text.secondary">{sub}</Typography>}
             </CardContent>
         </Card>
@@ -177,10 +177,8 @@ export default function Research() {
         <Box>
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2} sx={{ mb: 4 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#37474f">Research Dashboard</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Live evaluation data from consenting travellers{m?.since ? `, collected since ${m.since}` : ''}. No names or contact details are stored with it.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Research</Typography>
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>Consenting travellers only{m?.since ? ` · since ${m.since}` : ''} · no names or contact details stored</Typography>
                 </Box>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     <Button startIcon={<RefreshIcon />} onClick={load} disabled={loading}>Refresh</Button>
@@ -203,8 +201,8 @@ export default function Research() {
                         <Grid size={{ xs: 12, sm: 6, lg: 3 }}><Stat label="UNDER 3 S (NFR-001)" value={m.under3s} sub={`mean ${fmt(m.latencyMean / 1000, 2)} s per itinerary`} tone="#1565c0" /></Grid>
                     </Grid>
 
-                    <Paper sx={{ p: 3, borderRadius: 4, mb: 4 }}>
-                        <Typography variant="h6" fontWeight={700}>Recommendation strategies (RQ3)</Typography>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, mb: 4 }}>
+                        <Typography variant="h6" fontWeight={600}>Recommendation strategies (RQ3)</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                             Each traveller is assigned one strategy. Open rate: share of generated itineraries opened again. Conversion: share of travellers in the group who made a booking.
                         </Typography>
@@ -213,7 +211,7 @@ export default function Research() {
                                 <TableHead>
                                     <TableRow>
                                         {['Strategy', 'Travellers', 'Itineraries', 'Open rate', 'Edited', 'Booking conversion', 'Rating /5', 'Relevance /3', 'Hidden-gem stops', 'Avg eco score'].map(h => (
-                                            <TableCell key={h} sx={{ fontWeight: 800 }}>{h}</TableCell>
+                                            <TableCell key={h} sx={{ fontWeight: 600 }}>{h}</TableCell>
                                         ))}
                                     </TableRow>
                                 </TableHead>
@@ -242,8 +240,8 @@ export default function Research() {
 
                     <Grid container spacing={3} sx={{ mb: 4 }}>
                         <Grid size={{ xs: 12, lg: 6 }}>
-                            <Paper sx={{ p: 3, borderRadius: 4, height: '100%' }}>
-                                <Typography variant="h6" fontWeight={700}>Hidden gems and local impact (RQ5, Obj. 6)</Typography>
+                            <Paper sx={{ p: 3, borderRadius: 1.25, height: '100%' }}>
+                                <Typography variant="h6" fontWeight={600}>Hidden gems and local impact (RQ5, Obj. 6)</Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Share of each action that went to lesser-known places rather than famous ones.</Typography>
                                 <Table size="small">
                                     <TableBody>
@@ -259,8 +257,8 @@ export default function Research() {
                             </Paper>
                         </Grid>
                         <Grid size={{ xs: 12, lg: 6 }}>
-                            <Paper sx={{ p: 3, borderRadius: 4, height: '100%' }}>
-                                <Typography variant="h6" fontWeight={700}>Survey answers (RQ1, RQ2, Obj. 5)</Typography>
+                            <Paper sx={{ p: 3, borderRadius: 1.25, height: '100%' }}>
+                                <Typography variant="h6" fontWeight={600}>Survey answers (RQ1, RQ2, Obj. 5)</Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Mean agreement, 1 = strongly disagree, 5 = strongly agree.</Typography>
                                 <Table size="small">
                                     <TableBody>
@@ -276,8 +274,8 @@ export default function Research() {
                         </Grid>
                     </Grid>
 
-                    <Paper sx={{ p: 3, borderRadius: 4 }}>
-                        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Usage events by type</Typography>
+                    <Paper sx={{ p: 3, borderRadius: 1.25 }}>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Usage events by type</Typography>
                         {m.typeCounts.length === 0 ? (
                             <Typography variant="body2" color="text.secondary">No usage events yet. They appear once travellers who agreed to share data use the app.</Typography>
                         ) : (

@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { db, auth, storage } from '../firebaseConfig';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, setDoc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
 import { logEvent } from '../services/Analytics';
 import { sendSosSms } from '../services/aiClient';
 import { ref, uploadBytesResumable, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -73,6 +73,7 @@ const EMBASSIES = [
 
 const INCIDENT_TYPES = ['Medical', 'Accident', 'Threat or crime', 'Vehicle breakdown', 'Lost', 'Other'];
 const LIVE_FRAME_MS = 1000; // minimum gap between live-view frames
+const LIVE_SNAPSHOT_MS = 2500; // gap between low-bandwidth snapshots when uploads fail
 
 export default function SOSScreen({ navigation, route }) {
   // Drivers open this screen from an active ride; their alerts carry the ride
@@ -109,6 +110,7 @@ export default function SOSScreen({ navigation, route }) {
   const [liveFacing, setLiveFacing] = useState('back');
   const [incidentType, setIncidentType] = useState(null);
   const liveRef = useRef({ until: 0 });
+  const liveStartRef = useRef(0);
   const liveCamRef = useRef(null);
   const liveReadyRef = useRef(false);
   const [livePictureSize, setLivePictureSize] = useState(undefined);
@@ -269,14 +271,19 @@ export default function SOSScreen({ navigation, route }) {
           }
         }
 
-        // Live view requested by the desk (only while the request is still current)
-        liveRef.current = { until: data.liveViewUntil || 0 };
-        setLiveFacing(data.liveViewFacing === 'front' ? 'front' : 'back');
-        if (data.incidentType) setIncidentType(data.incidentType);
+        // Live view requested by the desk (only while the request is still current).
+        // The desk's clock and the phone's clock can differ, so the window is measured on this
+        // phone: from when the request arrived, for as long as the desk asked (extensions included).
+        const span = (data.liveViewUntil || 0) - (data.liveViewRequestedAt || 0);
         if (data.liveViewRequestedAt && lastCameraRequestRef.current !== data.liveViewRequestedAt) {
           lastCameraRequestRef.current = data.liveViewRequestedAt;
-          if ((data.liveViewUntil || 0) > Date.now() && data.liveViewStatus === 'requested') startLiveConsent();
+          liveStartRef.current = Date.now();
+          const fresh = Math.abs(Date.now() - data.liveViewRequestedAt) < span + 120000;
+          if (span > 0 && fresh && data.liveViewStatus === 'requested') startLiveConsent();
         }
+        liveRef.current = { until: span > 0 ? liveStartRef.current + span : 0 };
+        setLiveFacing(data.liveViewFacing === 'front' ? 'front' : 'back');
+        if (data.incidentType) setIncidentType(data.incidentType);
       }, (err) => {
         console.warn('SOSScreen alert listener error:', err?.message || err);
       });
@@ -363,33 +370,63 @@ export default function SOSScreen({ navigation, route }) {
   };
 
   // While sharing: frames go back to back (about one a second on a normal connection; a slow
-  // link simply sends fewer) until the desk's time window runs out
+  // link simply sends fewer) until the desk's time window runs out.
+  // Frames normally go through Storage. If an upload fails (weak signal, upload blocked), the
+  // phone switches to low-bandwidth snapshots written straight to the database, so the desk
+  // still sees the scene. Every frame is also the "latest snapshot" the desk keeps after the
+  // live view ends.
   useEffect(() => {
     if (!liveSharing) return undefined;
     let cancelled = false;
     let timer = null;
+    let inline = false;
     const next = (wait) => { if (!cancelled) timer = setTimeout(sendFrame, wait); };
     const sendFrame = async () => {
       if (Date.now() > liveRef.current.until) {
         stopLive('ended');
         return;
       }
-      if (!liveReadyRef.current || !liveCamRef.current || !activeDocIdRef.current) {
+      const alertId = activeDocIdRef.current;
+      const uid = auth.currentUser?.uid;
+      if (!liveReadyRef.current || !liveCamRef.current || !alertId || !uid) {
         next(300);
         return;
       }
       const started = Date.now();
+      let shot = null;
       try {
-        const shot = await liveCamRef.current.takePictureAsync({ quality: 0.3, skipProcessing: true, shutterSound: false });
-        const blob = await (await fetch(shot.uri)).blob();
-        const r = ref(storage, `sos_alerts/${activeDocIdRef.current}_live.jpg`);
-        await uploadBytes(r, blob, { contentType: 'image/jpeg' });
-        const url = await getDownloadURL(r);
-        await updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), { liveFrameUrl: url, liveFrameAt: serverTimestamp() });
+        shot = await liveCamRef.current.takePictureAsync({ quality: inline ? 0.15 : 0.3, base64: inline, skipProcessing: true, shutterSound: false });
       } catch (e) {
-        console.log('Live frame failed:', e.message);
+        updateDoc(doc(db, 'sos_alerts', alertId), { liveError: 'camera', liveErrorAt: serverTimestamp() }).catch(() => {});
+        next(1500);
+        return;
       }
-      next(Math.max(0, LIVE_FRAME_MS - (Date.now() - started)));
+      if (!inline) {
+        try {
+          const blob = await (await fetch(shot.uri)).blob();
+          const r = ref(storage, `sos_media/${uid}/${alertId}_live.jpg`);
+          await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+          const url = await getDownloadURL(r);
+          await updateDoc(doc(db, 'sos_alerts', alertId), { liveFrameUrl: url, liveFrameAt: serverTimestamp(), liveTransport: 'stream', liveError: null });
+        } catch (e) {
+          console.log('Live frame upload failed, switching to snapshots:', e.message);
+          inline = true;
+          updateDoc(doc(db, 'sos_alerts', alertId), { liveTransport: 'snapshot', liveError: 'upload', liveErrorAt: serverTimestamp() }).catch(() => {});
+          next(0);
+          return;
+        }
+      } else {
+        try {
+          // A JPEG this small is well under the database's 1 MB document limit
+          if (shot.base64 && shot.base64.length < 800000) {
+            await setDoc(doc(db, 'sos_alerts', alertId, 'live', 'frame'), { data: `data:image/jpeg;base64,${shot.base64}`, at: serverTimestamp() });
+            await updateDoc(doc(db, 'sos_alerts', alertId), { liveFrameAt: serverTimestamp(), liveTransport: 'snapshot' });
+          }
+        } catch (e) {
+          console.log('Snapshot failed:', e.message);
+        }
+      }
+      next(Math.max(0, (inline ? LIVE_SNAPSHOT_MS : LIVE_FRAME_MS) - (Date.now() - started)));
     };
     next(0);
     return () => {
@@ -497,6 +534,7 @@ export default function SOSScreen({ navigation, route }) {
       alertData = {
         userId: user?.uid || 'anonymous',
         userName: user?.displayName || 'Tourist',
+        userEmail: user?.email || null,
         phone: user?.phoneNumber || 'N/A',
         status: 'active',
         channel: 'online',
@@ -595,7 +633,7 @@ export default function SOSScreen({ navigation, route }) {
       const res = await fetch(capturedUri);
       const blob = await res.blob();
       const ext = mediaType === 'video' ? 'mp4' : 'jpg';
-      const r = ref(storage, `sos_alerts/${activeDocId}_evidence_${Date.now()}.${ext}`);
+      const r = ref(storage, `sos_media/${auth.currentUser?.uid}/${activeDocId}_evidence_${Date.now()}.${ext}`);
 
       const evidenceUrl = await new Promise((resolve, reject) => {
         const task = uploadBytesResumable(r, blob);

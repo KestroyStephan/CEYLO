@@ -40,7 +40,7 @@ export default function KPICard({
             </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <Typography variant="h5" fontWeight={700} color={cardBgColor !== '#FFFFFF' ? iconColor : '#0F172A'}>
+                <Typography variant="h5" fontWeight={600} color={cardBgColor !== '#FFFFFF' ? iconColor : '#0F172A'}>
                     {value}
                 </Typography>
                 {trend && (

@@ -188,8 +188,21 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isOwner(driverId) &&
         request.resource.data.get('status', 'pending_verification') == 'pending_verification';
-      // drivers manage their own availability and location, but not their approval status
-      allow update: if isAdmin() || (isOwner(driverId) && !changedKeys().hasAny(['status', 'rejectionReason']));
+      // drivers manage their own availability and location, but not their approval status;
+      // the only status change they make is sending a rejected application back for review
+      allow update: if isAdmin() || (isOwner(driverId) && !changedKeys().hasAny(['rejectionReason']) && (
+        !changedKeys().hasAny(['status']) ||
+        (resource.data.status == 'rejected' && request.resource.data.status == 'pending_verification')
+      ));
+      allow delete: if isAdmin();
+    }
+
+    // Driver verification documents (file links and the desk's per-document review). Kept apart
+    // from drivers/{id}, which every signed-in user can read. The driver uploads; only staff review.
+    match /driver_documents/{driverId} {
+      allow read: if isOwner(driverId) || isAdmin();
+      allow create: if isOwner(driverId) && !('review' in request.resource.data);
+      allow update: if isAdmin() || (isOwner(driverId) && !changedKeys().hasAny(['review']));
       allow delete: if isAdmin();
     }
 
@@ -238,6 +251,15 @@ service cloud.firestore {
         isAdmin() || hasRole('guide') || isDriver()
       );
       allow update: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+
+      // Low-bandwidth live-view snapshots: only the traveller and the desk, never drivers or guides
+      match /live/{frameId} {
+        function alertOwner() {
+          return get(/databases/$(database)/documents/sos_alerts/$(alertId)).data.userId == request.auth.uid;
+        }
+        allow read:  if isSignedIn() && (alertOwner() || isAdmin());
+        allow write: if isSignedIn() && alertOwner();
+      }
     }
 
     // Destinations & Events (public read, admin write)

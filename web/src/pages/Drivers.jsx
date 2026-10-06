@@ -1,630 +1,346 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
-  Typography,
-  Chip,
-  Button,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  TextField,
-  Snackbar,
-  Stack,
-  Paper,
-  Grid,
-  InputAdornment,
-  Tabs,
-  Tab,
-  Avatar,
-  Tooltip,
+  Box, Typography, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, Snackbar, Stack, Paper, InputAdornment, Tabs, Tab, Avatar, Tooltip,
+  Drawer, IconButton, Divider, Link,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  doc,
-  updateDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { useAuth } from '../context/AuthContext';
 import { notifyUser } from '../utils/notifyUser';
+import { DRIVER_DOCS, docState, docSummary, isExpired, toMs } from '../utils/driverDocs';
+import PageHeader from '../components/PageHeader';
+import StatusChip from '../components/StatusChip';
 import SearchIcon from '@mui/icons-material/Search';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+
+const STATUS = {
+  pending_verification: { label: 'Pending', tone: 'warning' },
+  approved: { label: 'Approved', tone: 'success' },
+  rejected: { label: 'Rejected', tone: 'error' },
+};
+const DOC_TONE = { missing: ['Not uploaded', 'neutral'], pending: ['Needs review', 'warning'], approved: ['Approved', 'success'], rejected: ['Rejected', 'error'] };
+const fmtDate = (ms) => (ms ? new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const fmtSize = (b) => (!b ? null : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 export default function Drivers() {
+  const { currentUser } = useAuth();
   const [drivers, setDrivers] = useState([]);
+  const [documents, setDocuments] = useState({});
   const [loading, setLoading] = useState(true);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [selectedDriverId, setSelectedDriverId] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const [statusTab, setStatusTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [reviewId, setReviewId] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null); // { type: 'driver' } or { type: 'doc', key }
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
-  // Real-time listener on drivers collection
   useEffect(() => {
-    const q = query(
-      collection(db, 'drivers'),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
+    const unsubDrivers = onSnapshot(query(collection(db, 'drivers'), orderBy('createdAt', 'desc')),
       (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAtDisplay: doc.data().createdAt?.toDate
-            ? doc.data().createdAt.toDate().toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })
-            : 'N/A',
-        }));
-        setDrivers(data);
+        setDrivers(snapshot.docs.map(d => ({ id: d.id, ...d.data(), createdMs: toMs(d.data().createdAt) })));
         setLoading(false);
       },
-      (error) => {
-        console.error('Drivers fetch error:', error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
+      (error) => { setLoadError(error.message); setLoading(false); });
+    const unsubDocs = onSnapshot(collection(db, 'driver_documents'),
+      (snapshot) => setDocuments(Object.fromEntries(snapshot.docs.map(d => [d.id, d.data()]))),
+      () => {});
+    return () => { unsubDrivers(); unsubDocs(); };
   }, []);
 
-  const pendingCount = drivers.filter(
-    (d) => d.status === 'pending_verification'
-  ).length;
-  const approvedCount = drivers.filter((d) => d.status === 'approved').length;
-  const rejectedCount = drivers.filter((d) => d.status === 'rejected').length;
+  const counts = useMemo(() => ({
+    all: drivers.length,
+    pending: drivers.filter(d => d.status === 'pending_verification').length,
+    approved: drivers.filter(d => d.status === 'approved').length,
+    rejected: drivers.filter(d => d.status === 'rejected').length,
+  }), [drivers]);
 
-  // Filter and search logic
-  const filteredDrivers = useMemo(() => {
-    return drivers.filter((d) => {
-      // Tab filter
-      if (statusTab === 'pending' && d.status !== 'pending_verification') return false;
-      if (statusTab === 'approved' && d.status !== 'approved') return false;
-      if (statusTab === 'rejected' && d.status !== 'rejected') return false;
+  const rows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return drivers
+      .filter(d => statusTab === 'all'
+        || (statusTab === 'pending' && d.status === 'pending_verification')
+        || d.status === statusTab)
+      .filter(d => !q || [d.name, d.email, d.phone, d.licensePlate, d.licenseNumber].some(v => (v || '').toLowerCase().includes(q)))
+      .map(d => ({ ...d, docs: docSummary(documents[d.id]) }));
+  }, [drivers, documents, statusTab, searchQuery]);
 
-      // Text search
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      const name = (d.name || '').toLowerCase();
-      const email = (d.email || '').toLowerCase();
-      const phone = (d.phone || '').toLowerCase();
-      const plate = (d.licensePlate || '').toLowerCase();
-      const lic = (d.licenseNumber || '').toLowerCase();
-      return name.includes(q) || email.includes(q) || phone.includes(q) || plate.includes(q) || lic.includes(q);
-    });
-  }, [drivers, statusTab, searchQuery]);
+  const reviewingDriver = reviewId ? drivers.find(d => d.id === reviewId) : null;
+  const reviewing = reviewingDriver ? { ...reviewingDriver, docs: docSummary(documents[reviewId]) } : null;
+  const reviewRecord = reviewId ? documents[reviewId] || {} : {};
 
-  // Approve driver
-  const handleApprove = async (driverId) => {
+  const reviewDocument = async (key, status, reason = '') => {
+    setSaving(true);
     try {
-      await updateDoc(doc(db, 'drivers', driverId), {
-        status: 'approved',
-        approvedAt: serverTimestamp(),
-        rejectionReason: '',
-      });
-
-      await updateDoc(doc(db, 'users', driverId), {
-        role: 'driver_active',
-        status: 'approved',
-      });
-      notifyUser(driverId, 'You are approved to drive with CEYLO', 'Open CEYLO and switch online to start receiving ride requests.', { type: 'account_approved' });
-
-      setSnackbar({
-        open: true,
-        message: 'Driver approved! They can now access the driver portal.',
-        severity: 'success',
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Error approving driver: ' + error.message,
-        severity: 'error',
-      });
+      await setDoc(doc(db, 'driver_documents', reviewId), {
+        review: { [key]: { status, reason, at: Date.now(), by: currentUser?.email || currentUser?.uid || 'admin' } },
+      }, { merge: true });
+      notify(status === 'approved' ? 'Document approved.' : 'Document rejected.', status === 'approved' ? 'success' : 'info');
+    } catch (e) {
+      notify('Could not save the review: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Reject driver
-  const handleReject = async () => {
-    if (!rejectionReason.trim()) return;
+  const approveDriver = async (driver) => {
+    if (!driver.docs.readyToApprove) {
+      notify('Approve every required document first.', 'warning');
+      return;
+    }
+    setSaving(true);
     try {
-      await updateDoc(doc(db, 'drivers', selectedDriverId), {
-        status: 'rejected',
-        rejectionReason: rejectionReason,
-        rejectedAt: serverTimestamp(),
-      });
-
-      await updateDoc(doc(db, 'users', selectedDriverId), {
-        role: 'driver_rejected',
-        status: 'rejected',
-      });
-      notifyUser(selectedDriverId, 'Driver application needs changes', `Reason: ${rejectionReason}. Open CEYLO to update your details.`, { type: 'account_rejected' });
-
-      setSnackbar({
-        open: true,
-        message: 'Driver application rejected.',
-        severity: 'info',
-      });
-      setRejectDialogOpen(false);
-      setRejectionReason('');
-      setSelectedDriverId(null);
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Error rejecting driver: ' + error.message,
-        severity: 'error',
-      });
+      await updateDoc(doc(db, 'drivers', driver.id), { status: 'approved', approvedAt: serverTimestamp(), rejectionReason: '' });
+      await updateDoc(doc(db, 'users', driver.id), { role: 'driver_active', status: 'approved' });
+      notifyUser(driver.id, 'You are approved to drive with CEYLO', 'Open CEYLO and switch online to start receiving ride requests.', { type: 'account_approved' });
+      notify(`${driver.name || 'Driver'} approved.`);
+    } catch (e) {
+      notify('Could not approve: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // DataGrid columns
+  const confirmReject = async () => {
+    const reason = rejectionReason.trim();
+    if (!reason || !rejectTarget) return;
+    if (rejectTarget.type === 'doc') {
+      await reviewDocument(rejectTarget.key, 'rejected', reason);
+    } else {
+      setSaving(true);
+      try {
+        await updateDoc(doc(db, 'drivers', rejectTarget.id), { status: 'rejected', rejectionReason: reason, rejectedAt: serverTimestamp() });
+        await updateDoc(doc(db, 'users', rejectTarget.id), { role: 'driver_rejected', status: 'rejected' });
+        notifyUser(rejectTarget.id, 'Driver application needs changes', `Reason: ${reason}. Open CEYLO to update your documents.`, { type: 'account_rejected' });
+        notify('Application rejected. The driver can fix it and send it again.', 'info');
+      } catch (e) {
+        notify('Could not reject: ' + e.message, 'error');
+      } finally {
+        setSaving(false);
+      }
+    }
+    setRejectTarget(null);
+    setRejectionReason('');
+  };
+
   const columns = [
     {
-      field: 'name',
-      headerName: 'Driver Name',
-      minWidth: 170,
-      flex: 1.1,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
-          <Avatar sx={{ width: 34, height: 34, bgcolor: '#E8F5E9', color: '#006A3B', fontSize: 14, fontWeight: 700 }}>
-            {(params.row.name || 'D').charAt(0).toUpperCase()}
+      field: 'name', headerName: 'Driver', minWidth: 200, flex: 1.2,
+      renderCell: ({ row }) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: '#EEF2EF', color: '#2F3A35', fontSize: 13, fontWeight: 600 }}>
+            {(row.name || 'D').charAt(0).toUpperCase()}
           </Avatar>
-          <Box>
-            <Typography variant="body2" fontWeight={700} color="#181D19">
-              {params.row.name || 'N/A'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {params.row.phone || 'No phone'}
-            </Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }} noWrap>{row.name || '—'}</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }} noWrap>{row.email || row.phone || '—'}</Typography>
           </Box>
         </Box>
       ),
     },
+    { field: 'vehicleType', headerName: 'Vehicle', width: 100 },
     {
-      field: 'email',
-      headerName: 'Email Address',
-      minWidth: 170,
-      flex: 1.2,
-      renderCell: (params) => (
-        <Typography variant="body2" color="text.secondary">
-          {params.value || '—'}
-        </Typography>
-      ),
+      field: 'licensePlate', headerName: 'Plate', width: 130,
+      renderCell: ({ value }) => <Typography sx={{ fontSize: 13, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{value || '—'}</Typography>,
     },
     {
-      field: 'vehicleType',
-      headerName: 'Vehicle Type',
-      width: 120,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => (
-        <Chip
-          label={params.value || 'N/A'}
-          size="small"
-          variant="outlined"
-          sx={{ fontWeight: 600, borderColor: '#C8D6C9', color: '#2E4832' }}
-        />
-      ),
-    },
-    {
-      field: 'licensePlate',
-      headerName: 'License Plate',
-      width: 135,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => (
-        <Typography
-          variant="body2"
-          sx={{
-            fontFamily: 'monospace',
-            fontWeight: 700,
-            backgroundColor: '#F1F5F2',
-            color: '#1C3122',
-            px: 1.2,
-            py: 0.4,
-            borderRadius: 1.5,
-            border: '1px solid #E0E8E1',
-            letterSpacing: '0.04em',
-            fontSize: '0.8rem',
-          }}
-        >
-          {params.value || '—'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'licenseNumber',
-      headerName: 'License No.',
-      width: 125,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => (
-        <Typography variant="body2" color={params.value ? 'text.primary' : 'text.disabled'}>
-          {params.value || '—'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 125,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => {
-        const statusConfig = {
-          pending_verification: {
-            label: 'Pending',
-            color: 'warning',
-            bgcolor: '#FFF7ED',
-            textColor: '#C2410C',
-          },
-          approved: {
-            label: 'Approved',
-            color: 'success',
-            bgcolor: '#ECFDF5',
-            textColor: '#047857',
-          },
-          rejected: {
-            label: 'Rejected',
-            color: 'error',
-            bgcolor: '#FEF2F2',
-            textColor: '#B91C1C',
-          },
-        };
-        const config = statusConfig[params.value] || {
-          label: params.value || 'Unknown',
-          bgcolor: '#F3F4F6',
-          textColor: '#4B5563',
-        };
-        return (
-          <Chip
-            label={config.label}
-            size="small"
-            sx={{
-              bgcolor: config.bgcolor,
-              color: config.textColor,
-              fontWeight: 700,
-              fontSize: '0.75rem',
-            }}
-          />
-        );
+      field: 'docs', headerName: 'Documents', width: 170, sortable: false,
+      renderCell: ({ row }) => {
+        const s = row.docs;
+        const tone = s.rejected ? 'error' : s.readyToApprove ? 'success' : s.uploaded ? 'warning' : 'neutral';
+        return <StatusChip tone={tone} label={s.uploaded ? `${s.approved}/${s.total} approved${s.rejected ? ` · ${s.rejected} rejected` : ''}` : 'None uploaded'} />;
       },
     },
     {
-      field: 'createdAtDisplay',
-      headerName: 'Applied On',
-      width: 120,
-      align: 'center',
-      headerAlign: 'center',
+      field: 'status', headerName: 'Status', width: 120,
+      renderCell: ({ value, row }) => (
+        <Tooltip title={value === 'rejected' ? row.rejectionReason || '' : ''}>
+          <span><StatusChip {...(STATUS[value] || { label: value || 'Unknown', tone: 'neutral' })} /></span>
+        </Tooltip>
+      ),
     },
+    { field: 'createdMs', headerName: 'Applied', width: 120, valueFormatter: (v) => fmtDate(v) },
     {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 190,
-      minWidth: 180,
-      sortable: false,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => (
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-          {params.row.status === 'pending_verification' ? (
-            <>
-              <Button
-                size="small"
-                variant="contained"
-                onClick={() => handleApprove(params.row.id)}
-                sx={{
-                  bgcolor: '#006A3B',
-                  color: '#FFF',
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  px: 1.5,
-                  minWidth: 70,
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: '#004D2B' },
-                }}
-              >
-                Approve
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                  setSelectedDriverId(params.row.id);
-                  setRejectDialogOpen(true);
-                }}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  px: 1.2,
-                  minWidth: 65,
-                }}
-              >
-                Reject
-              </Button>
-            </>
-          ) : params.row.status === 'approved' ? (
-            <Chip
-              label="Verified"
-              size="small"
-              icon={<CheckCircleOutlineIcon style={{ fontSize: 16, color: '#047857' }} />}
-              sx={{ bgcolor: '#ECFDF5', color: '#047857', fontWeight: 700 }}
-            />
-          ) : params.row.status === 'rejected' ? (
-            <Tooltip title={params.row.rejectionReason || 'Application rejected'}>
-              <Chip
-                label="Rejected"
-                size="small"
-                icon={<HighlightOffIcon style={{ fontSize: 16, color: '#B91C1C' }} />}
-                sx={{ bgcolor: '#FEF2F2', color: '#B91C1C', fontWeight: 700 }}
-              />
-            </Tooltip>
-          ) : null}
-        </Stack>
+      field: 'actions', headerName: '', width: 110, sortable: false, align: 'right',
+      renderCell: ({ row }) => (
+        <Button size="small" variant={row.status === 'pending_verification' ? 'contained' : 'outlined'} onClick={() => setReviewId(row.id)}>
+          {row.status === 'pending_verification' ? 'Review' : 'View'}
+        </Button>
       ),
     },
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={800} color="#006A3B" gutterBottom>
-          Driver Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-          Review vehicle licenses, verify profiles, and manage driver fleet authorizations
-        </Typography>
-      </Box>
-
-      {/* KPI Cards */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#EFF6FF', color: '#1D4ED8', width: 44, height: 44 }}>
-              <DirectionsCarIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>TOTAL FLEET</Typography>
-              <Typography variant="h5" fontWeight={800} color="#181D19">{drivers.length}</Typography>
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, border: pendingCount > 0 ? '1px solid #FED7AA' : '1px solid #EBEFE8', bgcolor: pendingCount > 0 ? '#FFFBEB' : '#FFF', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#FEF3C7', color: '#D97706', width: 44, height: 44 }}>
-              <PendingActionsIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="caption" color={pendingCount > 0 ? '#B45309' : 'text.secondary'} fontWeight={700}>PENDING APPROVAL</Typography>
-              <Typography variant="h5" fontWeight={800} color={pendingCount > 0 ? '#B45309' : '#181D19'}>{pendingCount}</Typography>
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#ECFDF5', color: '#047857', width: 44, height: 44 }}>
-              <CheckCircleOutlineIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>APPROVED DRIVERS</Typography>
-              <Typography variant="h5" fontWeight={800} color="#047857">{approvedCount}</Typography>
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#FEF2F2', color: '#DC2626', width: 44, height: 44 }}>
-              <HighlightOffIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>REJECTED</Typography>
-              <Typography variant="h5" fontWeight={800} color="#DC2626">{rejectedCount}</Typography>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Filter and Search Bar */}
-      <Paper sx={{ p: 1.5, mb: 2.5, borderRadius: 3, border: '1px solid #EBEFE8', display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 2 }}>
-        <Tabs
-          value={statusTab}
-          onChange={(_, val) => setStatusTab(val)}
-          sx={{
-            minHeight: 40,
-            '& .MuiTab-root': {
-              minHeight: 40,
-              py: 0.5,
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              textTransform: 'none',
-              borderRadius: 2,
-              mr: 1,
-            },
-            '& .Mui-selected': {
-              color: '#006A3B !important',
-            },
-            '& .MuiTabs-indicator': {
-              backgroundColor: '#006A3B',
-              height: 3,
-              borderRadius: 1.5,
-            },
-          }}
-        >
-          <Tab value="all" label={`All (${drivers.length})`} />
-          <Tab value="pending" label={`Pending (${pendingCount})`} sx={pendingCount > 0 ? { color: '#D97706 !important', fontWeight: 800 } : {}} />
-          <Tab value="approved" label={`Approved (${approvedCount})`} />
-          <Tab value="rejected" label={`Rejected (${rejectedCount})`} />
-        </Tabs>
-
+    <Box>
+      <PageHeader title="Drivers">
         <TextField
           size="small"
-          placeholder="Search name, phone, plate..."
+          placeholder="Search name, plate, licence"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{
-            minWidth: { xs: '100%', sm: 280 },
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2.5,
-              bgcolor: '#FBFDFB',
-              fontSize: '0.875rem',
-              '& fieldset': { borderColor: '#EBEFE8' },
-              '&:hover fieldset': { borderColor: '#006A3B' },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#8A9E8A', fontSize: 20 }} />
-              </InputAdornment>
-            ),
-          }}
+          sx={{ width: 280 }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
         />
-      </Paper>
+      </PageHeader>
 
-      {/* Main Table Card */}
-      <Paper
-        sx={{
-          width: '100%',
-          bgcolor: 'background.paper',
-          borderRadius: 3,
-          border: '1px solid #EBEFE8',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-        }}
-      >
-        <Box sx={{ width: '100%', height: 580 }}>
+      {loadError && <Alert severity="error" sx={{ mb: 2 }}>Could not load drivers: {loadError}</Alert>}
+
+      <Paper>
+        <Tabs value={statusTab} onChange={(_, v) => setStatusTab(v)} sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Tab value="all" label={`All ${counts.all}`} />
+          <Tab value="pending" label={`Pending ${counts.pending}`} />
+          <Tab value="approved" label={`Approved ${counts.approved}`} />
+          <Tab value="rejected" label={`Rejected ${counts.rejected}`} />
+        </Tabs>
+        <Box sx={{ height: 600 }}>
           <DataGrid
-            rows={filteredDrivers}
+            rows={rows}
             columns={columns}
             loading={loading}
             pageSizeOptions={[10, 25, 50]}
-            initialState={{
-              pagination: {
-                paginationModel: { pageSize: 10 },
-              },
-              sorting: {
-                sortModel: [{ field: 'createdAtDisplay', sort: 'desc' }],
-              },
-            }}
+            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
             disableRowSelectionOnClick
-            getRowHeight={() => 'auto'}
-            sx={{
-              border: 'none',
-              '& .MuiDataGrid-columnHeaders': {
-                bgcolor: '#F8FAF8',
-                borderBottom: '1px solid #EBEFE8',
-                color: '#3F4941',
-                fontWeight: 800,
-                fontSize: '0.8125rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-              },
-              '& .MuiDataGrid-cell': {
-                py: 1.2,
-                display: 'flex',
-                alignItems: 'center',
-                borderColor: '#F0F4F1',
-              },
-              '& .MuiDataGrid-row:hover': {
-                bgcolor: '#F6FBF7',
-              },
-            }}
+            onRowDoubleClick={({ row }) => setReviewId(row.id)}
+            localeText={{ noRowsLabel: statusTab === 'pending' ? 'No applications waiting for review' : 'No drivers found' }}
+            sx={{ border: 'none' }}
           />
         </Box>
       </Paper>
 
-      {/* Reject reason dialog */}
-      <Dialog
-        open={rejectDialogOpen}
-        onClose={() => {
-          setRejectDialogOpen(false);
-          setRejectionReason('');
-          setSelectedDriverId(null);
-        }}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, color: '#BA1A1A' }}>
-          Reject Driver Application
-        </DialogTitle>
+      {/* Review panel: driver details and each verification document */}
+      <Drawer anchor="right" open={Boolean(reviewing)} onClose={() => setReviewId(null)} sx={{ zIndex: (t) => t.zIndex.appBar + 2 }} PaperProps={{ sx: { width: { xs: '100%', md: 720 }, borderRadius: 0 } }}>
+        {reviewing && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 2, borderBottom: 1, borderColor: 'divider' }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: 18, fontWeight: 600 }} noWrap>{reviewing.name || 'Driver'}</Typography>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary' }} noWrap>{[reviewing.email, reviewing.phone].filter(Boolean).join(' · ')}</Typography>
+              </Box>
+              <StatusChip {...(STATUS[reviewing.status] || { label: reviewing.status, tone: 'neutral' })} />
+              <IconButton onClick={() => setReviewId(null)} aria-label="Close"><CloseIcon /></IconButton>
+            </Box>
+
+            <Box sx={{ flex: 1, overflowY: 'auto', px: 3, py: 2.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
+                {[
+                  ['Vehicle', reviewing.vehicleType],
+                  ['Plate', reviewing.licensePlate],
+                  ['Licence no.', reviewing.licenseNumber],
+                  ['Applied', fmtDate(reviewing.createdMs)],
+                ].map(([k, v]) => (
+                  <Box key={k}>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{k}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{v || '—'}</Typography>
+                  </Box>
+                ))}
+              </Box>
+              {reviewing.status === 'rejected' && reviewing.rejectionReason && (
+                <Alert severity="error" sx={{ mb: 2 }}>Rejected: {reviewing.rejectionReason}</Alert>
+              )}
+
+              <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>
+                Verification documents · {reviewing.docs.uploaded}/{reviewing.docs.total} uploaded
+              </Typography>
+              {reviewing.docs.uploaded === 0 && (
+                <Alert severity="info" sx={{ mb: 2 }}>The driver has not uploaded any documents yet. They upload them in the CEYLO app after registering.</Alert>
+              )}
+
+              <Stack divider={<Divider />} sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+                {DRIVER_DOCS.map(item => {
+                  const file = reviewRecord.files?.[item.key];
+                  const review = reviewRecord.review?.[item.key];
+                  const state = docState(file, review);
+                  const [stateLabel, tone] = DOC_TONE[state];
+                  const pdf = file && (file.contentType === 'application/pdf' || /\.pdf$/i.test(file.name || ''));
+                  const expired = isExpired(file);
+                  return (
+                    <Box key={item.key} sx={{ p: 2, display: 'flex', gap: 2 }}>
+                      <Box component={file ? 'a' : 'div'} href={file?.url} target="_blank" rel="noreferrer"
+                        sx={{ width: 120, height: 84, flexShrink: 0, borderRadius: 1.5, bgcolor: '#F4F6F5', border: 1, borderColor: 'divider', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
+                        {file && !pdf
+                          ? <img src={file.url} alt={item.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <Stack alignItems="center" spacing={0.5}><DescriptionOutlinedIcon /><Typography sx={{ fontSize: 11 }}>{file ? 'PDF' : 'Missing'}</Typography></Stack>}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{item.label}</Typography>
+                          {!item.required && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>optional</Typography>}
+                          <StatusChip label={stateLabel} tone={tone} />
+                          {expired && <StatusChip label={`Expired ${file.expiry}`} tone="error" />}
+                        </Box>
+                        {file ? (
+                          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>
+                            {[file.name, fmtSize(file.size), `uploaded ${fmtDate(toMs(file.uploadedAt))}`, file.expiry && !expired ? `expires ${file.expiry}` : null].filter(Boolean).join(' · ')}
+                          </Typography>
+                        ) : (
+                          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Not uploaded</Typography>
+                        )}
+                        {state === 'rejected' && review?.reason && (
+                          <Typography sx={{ fontSize: 12.5, color: 'error.main', mt: 0.5 }}>Reason: {review.reason}</Typography>
+                        )}
+                        {review && state !== 'pending' && (
+                          <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>Reviewed by {review.by} on {fmtDate(review.at)}</Typography>
+                        )}
+                        {file && (
+                          <Stack direction="row" spacing={1} sx={{ mt: 1.25 }} alignItems="center">
+                            <Button size="small" variant="contained" disabled={saving || state === 'approved'} onClick={() => reviewDocument(item.key, 'approved')}>Approve</Button>
+                            <Button size="small" variant="outlined" color="error" disabled={saving || state === 'rejected'} onClick={() => setRejectTarget({ type: 'doc', key: item.key, label: item.label })}>Reject</Button>
+                            <Link href={file.url} target="_blank" rel="noreferrer" underline="hover" sx={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
+                              Open <OpenInNewIcon sx={{ fontSize: 14 }} />
+                            </Link>
+                            <Link href={file.url} download={file.name} target="_blank" rel="noreferrer" underline="hover" sx={{ fontSize: 13 }}>Download</Link>
+                          </Stack>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Box>
+
+            <Box sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography sx={{ flex: 1, fontSize: 13, color: 'text.secondary' }}>
+                {reviewing.status === 'approved' ? 'This driver is active.'
+                  : reviewing.docs.readyToApprove ? 'All required documents are approved.'
+                  : 'Approve every required document (none expired) to activate the driver.'}
+              </Typography>
+              {reviewing.status !== 'rejected' && (
+                <Button color="error" variant="outlined" disabled={saving} onClick={() => setRejectTarget({ type: 'driver', id: reviewing.id })}>Reject application</Button>
+              )}
+              {reviewing.status !== 'approved' && (
+                <Button variant="contained" disabled={saving || !reviewing.docs.readyToApprove} onClick={() => approveDriver(reviewing)}>Approve driver</Button>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Drawer>
+
+      <Dialog open={Boolean(rejectTarget)} onClose={() => { setRejectTarget(null); setRejectionReason(''); }} maxWidth="sm" fullWidth>
+        <DialogTitle>{rejectTarget?.type === 'doc' ? `Reject ${rejectTarget.label}` : 'Reject application'}</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
-            Please specify why this application cannot be accepted at this time. The driver will see this feedback in the CEYLO mobile app so they can rectify their details.
-          </DialogContentText>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 2 }}>The driver sees this reason in the app.</Typography>
           <TextField
-            autoFocus
-            margin="dense"
-            label="Rejection Reason"
-            fullWidth
-            multiline
-            rows={3}
-            variant="outlined"
+            autoFocus fullWidth multiline rows={3}
+            label="Reason"
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="e.g. Invalid vehicle registration document, expired driving licence, or incorrect number plate."
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              },
-            }}
+            placeholder={rejectTarget?.type === 'doc' ? 'e.g. Photo is blurred, the licence number cannot be read' : 'e.g. Insurance certificate has expired'}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => {
-              setRejectDialogOpen(false);
-              setRejectionReason('');
-              setSelectedDriverId(null);
-            }}
-            sx={{ color: 'text.secondary', fontWeight: 700 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleReject}
-            variant="contained"
-            color="error"
-            disabled={!rejectionReason.trim()}
-            sx={{ fontWeight: 700, borderRadius: 2 }}
-          >
-            Confirm Rejection
-          </Button>
+          <Button onClick={() => { setRejectTarget(null); setRejectionReason(''); }}>Cancel</Button>
+          <Button onClick={confirmReject} variant="contained" color="error" disabled={!rejectionReason.trim() || saving}>Reject</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Notifications Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}
-        >
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar(s => ({ ...s, open: false }))} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert onClose={() => setSnackbar(s => ({ ...s, open: false }))} severity={snackbar.severity} variant="filled" sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

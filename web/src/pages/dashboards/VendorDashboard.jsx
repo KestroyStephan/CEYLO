@@ -98,7 +98,7 @@ export default function VendorDashboard() {
                     Your vendor application is pending verification.
                 </Alert>
             )}
-            <Typography variant="h4" gutterBottom sx={{ color: '#00695c', fontWeight: 'bold' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: '#00695c', fontWeight: 600 }}>
                 Vendor Storefront
             </Typography>
 

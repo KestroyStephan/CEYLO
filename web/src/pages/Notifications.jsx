@@ -95,18 +95,13 @@ function Notifications() {
     return (
         <Box>
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" fontWeight={900} color="#37474f">
-                    Push Notification Broadcaster
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Send real-time alerts, eco-tips, and event reminders to CEYLO mobile app users.
-                </Typography>
+                <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Notifications</Typography>
             </Box>
 
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 7 }}>
-                    <Paper sx={{ p: 4, borderRadius: 4 }}>
-                        <Typography variant="h6" fontWeight={700} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                    <Paper sx={{ p: 4, borderRadius: 1.25 }}>
+                        <Typography variant="h6" fontWeight={600} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
                             <NotificationsActiveIcon sx={{ mr: 1, color: '#00695c' }} /> New Broadcast Message
                         </Typography>
 
@@ -161,7 +156,7 @@ function Notifications() {
                                 startIcon={<SendIcon />}
                                 disabled={!title.trim() || !message.trim() || sending}
                                 onClick={handleBroadcast}
-                                sx={{ borderRadius: 3, py: 1.5, fontWeight: 700, bgcolor: '#00695c' }}
+                                sx={{ borderRadius: 1.25, py: 1.5, fontWeight: 600, bgcolor: '#00695c' }}
                             >
                                 {sending ? 'Broadcasting...' : 'Send Broadcast Now'}
                             </Button>
@@ -170,15 +165,15 @@ function Notifications() {
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 5 }}>
-                    <Card sx={{ borderRadius: 4, bgcolor: '#f8fbfc', border: '1px solid #e0e0e0', mb: 3 }}>
+                    <Card sx={{ borderRadius: 1.25, bgcolor: '#f8fbfc', border: '1px solid #e0e0e0', mb: 3 }}>
                         <CardContent>
-                            <Typography variant="subtitle2" fontWeight={800} color="#546e7a" sx={{ mb: 2 }}>MOBILE PREVIEW</Typography>
-                            <Paper sx={{ p: 2, borderRadius: 3, boxShadow: '0px 4px 20px rgba(0,0,0,0.1)' }}>
+                            <Typography variant="subtitle2" fontWeight={600} color="#546e7a" sx={{ mb: 2 }}>MOBILE PREVIEW</Typography>
+                            <Paper sx={{ p: 2, borderRadius: 1.25, boxShadow: '0px 4px 20px rgba(0,0,0,0.1)' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Avatar sx={{ width: 20, height: 20, mr: 1, bgcolor: '#00695c', color: '#fff', fontSize: '0.6rem' }}>C</Avatar>
-                                    <Typography variant="caption" fontWeight={700}>CEYLO • Just now</Typography>
+                                    <Typography variant="caption" fontWeight={600}>CEYLO • Just now</Typography>
                                 </Box>
-                                <Typography variant="body2" fontWeight={800}>{title || 'Your Title Here'}</Typography>
+                                <Typography variant="body2" fontWeight={600}>{title || 'Your Title Here'}</Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                     {message || 'Notification content will appear here when users receive it on their devices.'}
                                 </Typography>
@@ -186,20 +181,20 @@ function Notifications() {
                         </CardContent>
                     </Card>
 
-                    <Paper sx={{ p: 3, borderRadius: 4, bgcolor: '#37474f', color: '#fff' }}>
-                        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>PUSH INFRASTRUCTURE</Typography>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, bgcolor: '#37474f', color: '#fff' }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>PUSH INFRASTRUCTURE</Typography>
                         <Stack spacing={2}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="caption">Expo Server Channel</Typography>
-                                <Typography variant="caption" fontWeight={700} color="#81c784">ONLINE</Typography>
+                                <Typography variant="caption" fontWeight={600} color="#81c784">ONLINE</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="caption">Push Delivery Service</Typography>
-                                <Typography variant="caption" fontWeight={700} color="#81c784">99.98% SLA</Typography>
+                                <Typography variant="caption" fontWeight={600} color="#81c784">99.98% SLA</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="caption">Delivery Mode</Typography>
-                                <Typography variant="caption" fontWeight={700}>FCM / APNS</Typography>
+                                <Typography variant="caption" fontWeight={600}>FCM / APNS</Typography>
                             </Box>
                         </Stack>
                     </Paper>

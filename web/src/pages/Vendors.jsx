@@ -21,6 +21,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { notifyUser } from '../utils/notifyUser';
+import StatusChip from '../components/StatusChip';
 
 export default function Vendors() {
     const [vendors, setVendors] = useState([]);
@@ -93,9 +94,9 @@ export default function Vendors() {
 
     const getStatusChip = (status) => {
         const s = (status || 'pending').toLowerCase();
-        if (s.includes('approve')) return <Chip label="Approved" size="small" sx={{ bgcolor: '#D1FAE5', color: '#059669', fontWeight: 600 }} />;
-        if (s.includes('reject')) return <Chip label="Rejected" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 600 }} />;
-        return <Chip label="Pending" size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 600 }} />;
+        if (s.includes('approve')) return <StatusChip label="Approved" tone="success" />;
+        if (s.includes('reject')) return <StatusChip label="Rejected" tone="error" />;
+        return <StatusChip label="Pending" tone="warning" />;
     };
 
     const handleExportPDF = () => {
@@ -139,7 +140,7 @@ export default function Vendors() {
         }
     };
 
-    const pendingVendorsCount = vendors.filter(v => v.verificationStatus === 'pending' || v.status === 'pending').length;
+    const pendingVendorsCount = vendors.filter(v => ['pending', 'pending_verification'].includes(v.verificationStatus || v.status)).length;
     const activeVendorsCount = vendors.filter(v => v.verificationStatus === 'approved' || v.status === 'approved').length;
 
     const filteredVendors = vendors.filter(v => {
@@ -154,26 +155,21 @@ export default function Vendors() {
             {/* Header segment */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        CMS: Vendors Registry
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Supervise, verify, and monitor business partners across the island.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Vendors</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button 
                         variant="outlined" 
                         onClick={handleExportPDF}
                         startIcon={<FileDownloadIcon />} 
-                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}
                     >
                         Export Registry
                     </Button>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
-                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}
                     >
                         Add Vendor
                     </Button>
@@ -183,41 +179,33 @@ export default function Vendors() {
             {/* KPI Banners */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL ACTIVE VENDORS</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#006A3B">{activeVendorsCount}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Verified Businesses</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">TOTAL ACTIVE VENDORS</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#006A3B">{activeVendorsCount}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Verified Businesses</Typography>
                     </Paper>
                 </Grid>
                 
                 <Grid size={{ xs: 12, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #FFCDD2', bgcolor: '#FFF5F5', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #FFCDD2', bgcolor: '#FFF5F5', boxShadow: 'none' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box>
-                                <Typography variant="caption" fontWeight={900} color="#BA1A1A">NEW APPLICATIONS</Typography>
-                                <Typography variant="h4" fontWeight={950} color="#BA1A1A">{pendingVendorsCount}</Typography>
-                                <Typography variant="caption" color="#BA1A1A" fontWeight={750}>Awaiting Verification</Typography>
+                                <Typography variant="caption" fontWeight={600} color="#BA1A1A">NEW APPLICATIONS</Typography>
+                                <Typography variant="h4" fontWeight={600} color="#BA1A1A">{pendingVendorsCount}</Typography>
+                                <Typography variant="caption" color="#BA1A1A" fontWeight={600}>Awaiting Verification</Typography>
                             </Box>
                             <ErrorOutlineIcon sx={{ color: '#BA1A1A' }} />
                         </Box>
                     </Paper>
                 </Grid>
-                
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
-                         <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ fontStyle: 'italic' }}>
-                            "Partner verification is essential for maintaining trust. Ensure all provided documents (business registration, IDs) are thoroughly reviewed within 48 hours."
-                         </Typography>
-                    </Paper>
-                </Grid>
             </Grid>
 
             {/* Premium Controls Toolbar */}
-            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
                         <FilterListIcon sx={{ color: '#006A3B' }} />
-                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                        <Typography variant="body2" fontWeight={600} color="#006A3B">FILTERS</Typography>
                     </Box>
                     <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
                     <TextField
@@ -225,12 +213,12 @@ export default function Vendors() {
                         size="small"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     >
-                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Statuses</MenuItem>
-                        <MenuItem value="Approved" sx={{ fontWeight: 700, color: '#006A3B' }}>Approved</MenuItem>
-                        <MenuItem value="Pending" sx={{ fontWeight: 700, color: '#BA1A1A' }}>Pending</MenuItem>
-                        <MenuItem value="Rejected" sx={{ fontWeight: 700, color: '#777' }}>Rejected</MenuItem>
+                        <MenuItem value="All" sx={{ fontWeight: 600 }}>All Statuses</MenuItem>
+                        <MenuItem value="Approved" sx={{ fontWeight: 600, color: '#006A3B' }}>Approved</MenuItem>
+                        <MenuItem value="Pending" sx={{ fontWeight: 600, color: '#BA1A1A' }}>Pending</MenuItem>
+                        <MenuItem value="Rejected" sx={{ fontWeight: 600, color: '#777' }}>Rejected</MenuItem>
                     </TextField>
                 </Box>
                 <TextField 
@@ -238,7 +226,7 @@ export default function Vendors() {
                     size="small"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
             </Paper>
@@ -246,17 +234,17 @@ export default function Vendors() {
             {/* High Density Table */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                         <TableContainer>
                             <Table>
                                 <TableHead sx={{ bgcolor: '#F8F9FA' }}>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>BUSINESS</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>CATEGORY</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>EMAIL</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>LOCATION</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 800, color: '#3F4941' }}>ACTIONS</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>BUSINESS</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>CATEGORY</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>EMAIL</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>LOCATION</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>STATUS</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 600, color: '#3F4941' }}>ACTIONS</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -265,7 +253,7 @@ export default function Vendors() {
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{ width: 32, height: 32, bgcolor: '#e0f2f1', color: '#004d40' }}><StoreIcon fontSize="small" /></Avatar>
-                                                    <Typography variant="body2" fontWeight={800} color="#0F172A">
+                                                    <Typography variant="body2" fontWeight={600} color="#0F172A">
                                                         {v.businessName || 'Unnamed Vendor'}
                                                     </Typography>
                                                 </Box>
@@ -296,14 +284,14 @@ export default function Vendors() {
             </Menu>
 
             {/* Sliding Detail Drawer */}
-            <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)} PaperProps={{ sx: { width: { xs: '100%', sm: 450 } } }}>
+            <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)} sx={{ zIndex: (t) => t.zIndex.appBar + 2 }} PaperProps={{ sx: { width: { xs: '100%', sm: 450 } } }}>
                 {selectedVendor && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                         
                         {/* Drawer Header */}
                         <Box sx={{ p: 3, borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box>
-                                <Typography variant="h5" fontWeight={700} color="#0F172A">{selectedVendor.businessName}</Typography>
+                                <Typography variant="h5" fontWeight={600} color="#0F172A">{selectedVendor.businessName}</Typography>
                                 <Typography variant="body2" color="text.secondary">{selectedVendor.email}</Typography>
                             </Box>
                             <IconButton onClick={() => setDrawerOpen(false)} size="small"><CloseIcon /></IconButton>
@@ -335,19 +323,35 @@ export default function Vendors() {
                                     <Typography variant="caption" color="text.secondary" display="block">Address</Typography>
                                     <Typography variant="body2" fontWeight={500}>{selectedVendor.address}</Typography>
                                 </Box>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary" display="block">Bank Account</Typography>
-                                    <Typography variant="body2" fontWeight={500} sx={{ fontFamily: 'monospace' }}>{selectedVendor.bankAccount || '**** **** ****'}</Typography>
-                                </Box>
+                                {selectedVendor.bankAccount && (
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary" display="block">Bank Account</Typography>
+                                        <Typography variant="body2" fontWeight={500} sx={{ fontFamily: 'monospace' }}>{selectedVendor.bankAccount}</Typography>
+                                    </Box>
+                                )}
                             </Stack>
 
                             <Typography variant="subtitle2" color="#64748B" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>KYC Documents</Typography>
-                            <Button variant="outlined" fullWidth startIcon={<DescriptionIcon />} sx={{ justifyContent: 'flex-start', mb: 1, color: '#0F172A', borderColor: '#E2E8F0' }}>
-                                Business_Registration.pdf
-                            </Button>
-                            <Button variant="outlined" fullWidth startIcon={<DescriptionIcon />} sx={{ justifyContent: 'flex-start', mb: 3, color: '#0F172A', borderColor: '#E2E8F0' }}>
-                                Owner_ID.jpg
-                            </Button>
+                            {/* The files the vendor uploaded in the app (private: only the vendor and staff can open them) */}
+                            <Stack spacing={1} sx={{ mb: 3 }}>
+                                {[['NIC – front', selectedVendor.nicFrontUrl], ['NIC – back', selectedVendor.nicBackUrl], ['Business registration certificate', selectedVendor.businessCertUrl]].map(([label, url]) => (
+                                    url ? (
+                                        <Button key={label} variant="outlined" fullWidth startIcon={<DescriptionIcon />} href={url} target="_blank" rel="noreferrer"
+                                            sx={{ justifyContent: 'flex-start' }}>
+                                            {label} · open
+                                        </Button>
+                                    ) : (
+                                        <Typography key={label} sx={{ fontSize: 13, color: 'error.main' }}>{label}: not uploaded</Typography>
+                                    )
+                                ))}
+                                {(selectedVendor.servicePhotoUrls || []).length > 0 && (
+                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', pt: 1 }}>
+                                        {selectedVendor.servicePhotoUrls.map((u) => (
+                                            <a key={u} href={u} target="_blank" rel="noreferrer"><img src={u} alt="Service" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6 }} /></a>
+                                        ))}
+                                    </Box>
+                                )}
+                            </Stack>
 
                             {/* Rejection Field */}
                             {(selectedVendor.verificationStatus === 'pending' || selectedVendor.status === 'pending_verification') && (

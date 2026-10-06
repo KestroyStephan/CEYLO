@@ -316,7 +316,9 @@ export default function App() {
                 <Stack.Screen name="EditProfile" component={EditProfileScreen} />
 
                 {/* Vendor & Utility Screens from Main */}
-                {userRole !== 'vendor_onboarding' && (
+                {/* Not for vendors mid-application: a screen with the same name would keep the form
+                    open after submitting instead of moving on to the pending-review screen */}
+                {!['vendor_onboarding', 'vendor_pending', 'vendor_rejected'].includes(userRole) && (
                   <Stack.Screen name="VendorRegistration" component={VendorRegistrationScreen} />
                 )}
                 <Stack.Screen name="OfflineMapSettings" component={OfflineMapSettings} />

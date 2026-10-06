@@ -189,6 +189,25 @@ describe('vendors and drivers', () => {
     await assertFails(updateDoc(doc(as('d1'), 'drivers', 'd1'), { status: 'approved' }));
   });
 
+  test('a rejected driver can send the application back for review, nothing else', async () => {
+    await seed({ 'drivers/d1': { status: 'rejected', rejectionReason: 'Blurred licence' } });
+    await assertFails(updateDoc(doc(as('d1'), 'drivers', 'd1'), { status: 'approved' }));
+    await assertFails(updateDoc(doc(as('d1'), 'drivers', 'd1'), { status: 'pending_verification', rejectionReason: '' }));
+    await assertSucceeds(updateDoc(doc(as('d1'), 'drivers', 'd1'), { status: 'pending_verification', documentsSubmittedAt: 1 }));
+    await assertFails(updateDoc(doc(as('d1'), 'drivers', 'd1'), { status: 'approved' }));
+  });
+
+  test('driver documents: private to the driver and staff; only staff review them', async () => {
+    await seed({ 'users/staff': { role: 'admin' }, 'users/t2': { role: 'tourist' } });
+    await assertSucceeds(setDoc(doc(as('d1'), 'driver_documents', 'd1'), { files: { nic_front: { url: 'u', uploadedAt: 1 } } }));
+    await assertFails(setDoc(doc(as('d1'), 'driver_documents', 'd1'), { review: { nic_front: { status: 'approved', at: 2 } } }, { merge: true }));
+    await assertFails(setDoc(doc(as('d2'), 'driver_documents', 'd2'), { review: { nic_front: { status: 'approved' } } }));
+    await assertFails(getDoc(doc(as('t2'), 'driver_documents', 'd1')));
+    await assertSucceeds(getDoc(doc(as('staff'), 'driver_documents', 'd1')));
+    await assertSucceeds(setDoc(doc(as('staff'), 'driver_documents', 'd1'), { review: { nic_front: { status: 'approved', at: 2 } } }, { merge: true }));
+    await assertSucceeds(setDoc(doc(as('d1'), 'driver_documents', 'd1'), { files: { nic_back: { url: 'u2', uploadedAt: 3 } } }, { merge: true }));
+  });
+
   test('vendor services are public, but only the owner can edit them', async () => {
     await seed({ 'vendors/v1/services/s1': { name: 'Cooking class' } });
     await assertSucceeds(getDoc(doc(anon(), 'vendors/v1/services/s1')));
@@ -209,6 +228,14 @@ describe('SOS, itineraries and content', () => {
     await assertSucceeds(getDoc(doc(as('sup'), 'sos_alerts', 'a1')));
     await assertSucceeds(updateDoc(doc(as('sup'), 'sos_alerts', 'a1'), { status: 'resolved' }));
     await assertFails(getDoc(doc(as('t2'), 'sos_alerts', 'a1')));
+  });
+
+  test('live-view snapshots are visible to the traveller and the desk, not to drivers', async () => {
+    await seed({ 'users/desk': { role: 'admin' }, 'users/drv': { role: 'driver_active' }, 'sos_alerts/a1': { userId: 't1', status: 'active' } });
+    await assertSucceeds(setDoc(doc(as('t1'), 'sos_alerts/a1/live/frame'), { data: 'data:image/jpeg;base64,AA', at: 1 }));
+    await assertFails(setDoc(doc(as('t2'), 'sos_alerts/a1/live/frame'), { data: 'x', at: 1 }));
+    await assertSucceeds(getDoc(doc(as('desk'), 'sos_alerts/a1/live/frame')));
+    await assertFails(getDoc(doc(as('drv'), 'sos_alerts/a1/live/frame')));
   });
 
   test('itineraries are private to their owner', async () => {

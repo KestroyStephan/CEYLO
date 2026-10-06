@@ -15,8 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
 import { signOut } from 'firebase/auth';
 import { doc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { toast } from '../../components/Toast';
+import { MAX_DOC_BYTES, extOf, isPdf, fmtSize, uploadFile } from '../../utils/documents';
 
 const { width } = Dimensions.get('window');
 const PRIMARY   = '#006A3B';
@@ -31,29 +31,8 @@ const ERROR     = '#BA1A1A';
 
 const BUSINESS_TYPES = ['Homestay','Tour Guide','Transport','Food & Beverage','Artisan','Equipment Rental'];
 const STEPS = ['Business Info','Documents','First Service'];
+const STEP_SHORT = ['Business', 'Documents', 'Service'];
 
-// Verification documents: photos or PDF scans, up to 5 MB each
-const MAX_DOC_BYTES = 5 * 1024 * 1024;
-const DOC_TYPES = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' };
-const extOf = (asset) => DOC_TYPES[asset.mimeType] || (String(asset.name || asset.uri).split('.').pop() || 'jpg').toLowerCase();
-const isPdf = (asset) => extOf(asset) === 'pdf';
-const fmtSize = (b) => (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
-
-// Uploads one file and reports its own progress as a fraction from 0 to 1
-const uploadFile = async (asset, storagePath, onFraction) => {
-  const res  = await fetch(asset.uri);
-  const blob = await res.blob();
-  const contentType = asset.mimeType || (isPdf(asset) ? 'application/pdf' : 'image/jpeg');
-  const r    = ref(storage, storagePath);
-  return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(r, blob, { contentType });
-    task.on('state_changed',
-      snap => onFraction && onFraction(snap.totalBytes ? Math.min(1, snap.bytesTransferred / snap.totalBytes) : 0),
-      reject,
-      async () => { onFraction && onFraction(1); resolve(await getDownloadURL(task.snapshot.ref)); }
-    );
-  });
-};
 
 export default function VendorRegistrationScreen({ navigation }) {
   const [step, setStep]             = useState(0);
@@ -288,7 +267,7 @@ export default function VendorRegistrationScreen({ navigation }) {
                 ? <Ionicons name="checkmark" size={14} color="#FFF" />
                 : <Text style={[styles.stepNum, i <= step && { color: '#FFF' }]}>{i + 1}</Text>}
             </View>
-            <Text style={[styles.stepLabel, i === step && { color: PRIMARY, fontWeight: '700' }]}>{s}</Text>
+            <Text numberOfLines={1} style={[styles.stepLabel, i === step && { color: PRIMARY, fontWeight: '700' }]}>{STEP_SHORT[i]}</Text>
             {i < STEPS.length - 1 && <View style={[styles.stepLine, i < step && { backgroundColor: PRIMARY }]} />}
           </View>
         ))}
@@ -473,7 +452,7 @@ const styles = StyleSheet.create({
   stepCircle:  { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EBEFE8', alignItems: 'center', justifyContent: 'center', marginRight: 6 },
   stepCircleActive: { backgroundColor: '#006A3B' },
   stepNum:     { fontSize: 11, fontWeight: '700', color: '#6F7A70' },
-  stepLabel:   { fontSize: 11, color: '#3F4941', flex: 1 },
+  stepLabel:   { fontSize: 12, color: '#3F4941', marginLeft: 6, flexShrink: 0 },
   stepLine:    { flex: 1, height: 2, backgroundColor: '#BECABE', marginHorizontal: 6 },
   card:        { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: '#181D19', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
   cardTitle:   { fontSize: 20, fontWeight: '800', color: '#181D19', marginBottom: 4 },

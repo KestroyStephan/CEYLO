@@ -74,18 +74,13 @@ export default function Settings() {
                 {/* Header segment */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        System Settings
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Manage global platform configurations, security, and preferences.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Settings</Typography>
                 </Box>
                 <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
                     onClick={handleSave}
-                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 4, py: 1.5 }}
+                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 1, px: 4, py: 1.5 }}
                 >
                     Save Changes
                 </Button>
@@ -94,8 +89,8 @@ export default function Settings() {
             <Grid container spacing={3}>
                 {/* General Settings */}
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="subtitle1" fontWeight={900} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="subtitle1" fontWeight={600} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <SettingsIcon sx={{ mr: 1, color: '#006A3B' }} /> General Configurations
                         </Typography>
                         <Stack spacing={2.5}>
@@ -116,12 +111,12 @@ export default function Settings() {
                                 InputProps={{ sx: { borderRadius: 2 } }}
                             />
                             <Box>
-                                <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" gutterBottom>
+                                <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom>
                                     Platform Status
                                 </Typography>
                                 <Box sx={{ p: 2, border: '1px solid #FEE2E2', bgcolor: '#FEF2F2', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Box>
-                                        <Typography variant="body2" fontWeight={800} color="#DC2626">Maintenance Mode</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#DC2626">Maintenance Mode</Typography>
                                         <Typography variant="caption" color="#7F1D1D">Takes the platform offline for users during upgrades.</Typography>
                                     </Box>
                                     <Switch checked={settings.maintenanceMode} onChange={handleChange('maintenanceMode')} color="error" />
@@ -133,8 +128,8 @@ export default function Settings() {
 
                 {/* Security Settings */}
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="subtitle1" fontWeight={900} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="subtitle1" fontWeight={600} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <SecurityIcon sx={{ mr: 1, color: '#006A3B' }} /> Security & Authentication
                         </Typography>
                         <Stack spacing={2.5}>
@@ -144,7 +139,7 @@ export default function Settings() {
                             
                             <Box sx={{ p: 2, border: '1px solid #EBEFE8', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Box>
-                                    <Typography variant="body2" fontWeight={800} color="#0F172A">Two-Factor Authentication (2FA)</Typography>
+                                    <Typography variant="body2" fontWeight={600} color="#0F172A">Two-Factor Authentication (2FA)</Typography>
                                     <Typography variant="caption" color="text.secondary">Require OTP for all administrative logins.</Typography>
                                 </Box>
                                 <Switch checked={settings.twoFactorAuth} onChange={handleChange('twoFactorAuth')} color="success" />
@@ -157,7 +152,7 @@ export default function Settings() {
                                 color="error" 
                                 startIcon={<LockResetIcon />}
                                 onClick={handleResetPassword}
-                                sx={{ fontWeight: 800, borderRadius: 3, py: 1.5, textTransform: 'none', boxShadow: 'none', '&:hover': { boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } }}
+                                sx={{ fontWeight: 600, borderRadius: 1.25, py: 1.5, textTransform: 'none', boxShadow: 'none', '&:hover': { boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } }}
                             >
                                 Send Password Reset Email
                             </Button>
@@ -167,15 +162,15 @@ export default function Settings() {
 
                 {/* Notifications & System */}
                 <Grid item xs={12} md={12}>
-                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="subtitle1" fontWeight={900} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="subtitle1" fontWeight={600} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <NotificationsActiveIcon sx={{ mr: 1, color: '#006A3B' }} /> Communication & Alerts
                         </Typography>
                         <Grid container spacing={4}>
                             <Grid item xs={12} md={6}>
                                 <Box sx={{ p: 2, border: '1px solid #EBEFE8', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Box>
-                                        <Typography variant="body2" fontWeight={800} color="#0F172A">System Email Alerts</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#0F172A">System Email Alerts</Typography>
                                         <Typography variant="caption" color="text.secondary">Receive daily summaries and critical warnings.</Typography>
                                     </Box>
                                     <Switch checked={settings.emailAlerts} onChange={handleChange('emailAlerts')} color="success" />
@@ -184,7 +179,7 @@ export default function Settings() {
                             <Grid item xs={12} md={6}>
                                 <Box sx={{ p: 2, border: '1px solid #EBEFE8', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Box>
-                                        <Typography variant="body2" fontWeight={800} color="#0F172A">Emergency SMS Alerts</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#0F172A">Emergency SMS Alerts</Typography>
                                         <Typography variant="caption" color="text.secondary">Immediate texts for SOS triggers and outages.</Typography>
                                     </Box>
                                     <Switch checked={settings.smsAlerts} onChange={handleChange('smsAlerts')} color="success" />
@@ -201,7 +196,7 @@ export default function Settings() {
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 700 }}>
+                <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>

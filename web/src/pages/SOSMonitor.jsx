@@ -32,7 +32,7 @@ import { storage } from '../firebaseConfig';
 // 'investigating' is the older name for dispatched and is still read.
 const OPEN_STATUSES = ['active', 'acknowledged', 'dispatched', 'investigating'];
 const STATUS_LABEL = { active: 'NEW', acknowledged: 'ACKNOWLEDGED', dispatched: 'DISPATCHED', investigating: 'DISPATCHED', resolved: 'RESOLVED', closed: 'CLOSED' };
-const toMillis = (t) => (t?.toMillis ? t.toMillis() : t ? Date.parse(t) || null : null);
+const toMillis = (t) => (t?.toMillis ? t.toMillis() : typeof t === 'number' ? t : t ? Date.parse(t) || null : null);
 const ago = (t) => {
     const ms = toMillis(t);
     if (!ms) return null;
@@ -48,16 +48,15 @@ function SOSMonitor() {
     const [selectedAlert, setSelectedAlert] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isMuted, setIsMuted] = useState(false);
-    const [subTab, setSubTab] = useState('alerts'); // 'feed', 'alerts'
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const audioRef = useRef(null);
-    const [, setClock] = useState(0);
+    const [now, setNow] = useState(() => Date.now());
     // Re-render every second so waiting times and location ages stay current
     useEffect(() => {
-        const t = setInterval(() => setClock(n => n + 1), 1000);
+        const t = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(t);
     }, []);
 
@@ -124,6 +123,17 @@ function SOSMonitor() {
             }
         }
     }, [alerts]);
+
+    // Low-bandwidth snapshots for the selected alert (only written when Storage uploads fail)
+    const [snapshotDoc, setSnapshotDoc] = useState({ id: null, data: null });
+    const selectedId = selectedAlert?.id;
+    useEffect(() => {
+        if (!selectedId) return undefined;
+        return onSnapshot(doc(db, 'sos_alerts', selectedId, 'live', 'frame'),
+            snap => setSnapshotDoc({ id: selectedId, data: snap.exists() ? snap.data() : null }),
+            () => setSnapshotDoc({ id: selectedId, data: null }));
+    }, [selectedId]);
+    const liveSnapshot = snapshotDoc.id === selectedId ? snapshotDoc.data : null;
 
     const updateLiveView = async (fields, message) => {
         if (!selectedAlert) return;
@@ -315,12 +325,13 @@ function SOSMonitor() {
     };
 
     const LIVE_VIEW_MS = 90 * 1000;
-    const handleRequestCamera = async (facing = 'back') => {
+    const handleRequestCamera = async (facing = 'back', duration = LIVE_VIEW_MS) => {
         if (!selectedAlert) return;
         try {
             await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
                 liveViewRequestedAt: Date.now(),
-                liveViewUntil: Date.now() + LIVE_VIEW_MS,
+                liveViewUntil: Date.now() + duration,
+                liveError: null,
                 liveViewFacing: facing,
                 liveViewStatus: 'requested',
                 // Asking to see the scene means the desk has picked the alert up
@@ -334,79 +345,63 @@ function SOSMonitor() {
 
     // Filter alerts for history table
     const activeAlertsList = alerts.filter(a => OPEN_STATUSES.includes(a.status));
-    const liveOn = Boolean(selectedAlert?.liveViewStatus === 'sharing' && selectedAlert?.liveFrameUrl);
+    // Camera: the phone streams frames through Storage; when that fails it falls back to small
+    // snapshots in sos_alerts/{id}/live/frame. Whichever arrived is shown, newest first.
+    const usingSnapshots = selectedAlert?.liveTransport === 'snapshot' && liveSnapshot?.data;
+    const frameSrc = usingSnapshots
+        ? liveSnapshot.data
+        : selectedAlert?.liveFrameUrl
+            ? `${selectedAlert.liveFrameUrl}${selectedAlert.liveFrameUrl.includes('?') ? '&' : '?'}t=${toMillis(selectedAlert.liveFrameAt) || 0}`
+            : liveSnapshot?.data || null;
+    const frameAgeS = selectedAlert?.liveFrameAt ? (now - toMillis(selectedAlert.liveFrameAt)) / 1000 : Infinity;
+    const sharing = selectedAlert?.liveViewStatus === 'sharing';
+    const liveOn = Boolean(sharing && frameSrc && frameAgeS < 8);
+    const cameraState = !selectedAlert ? null
+        : liveOn ? { label: usingSnapshots ? 'Live · low-bandwidth snapshots' : 'Live', tone: 'ok' }
+        : sharing && frameSrc ? { label: `Weak connection · last frame ${ago(selectedAlert.liveFrameAt)} ago`, tone: 'warn' }
+        : sharing ? { label: 'Opening the camera on the phone', tone: 'warn' }
+        : selectedAlert.liveViewStatus === 'requested' ? { label: 'Requested · waiting for the phone', tone: 'warn' }
+        : selectedAlert.liveViewStatus === 'declined' ? { label: 'Declined by the traveller', tone: 'bad' }
+        : selectedAlert.liveViewStatus === 'no_permission' ? { label: 'Camera permission denied on the phone', tone: 'bad' }
+        : selectedAlert.liveViewStatus === 'stopped_by_traveller' ? { label: 'Stopped by the traveller', tone: 'muted' }
+        : selectedAlert.liveViewStatus === 'ended' ? { label: 'Ended', tone: 'muted' }
+        : { label: 'Not requested', tone: 'muted' };
+    // Last time the phone was heard from: location heartbeat (every 15 s) or a camera frame
+    const lastContact = selectedAlert ? Math.max(toMillis(selectedAlert.lastLocationAt) || 0, toMillis(selectedAlert.liveFrameAt) || 0, toMillis(selectedAlert.timestamp) || 0) : 0;
+    const contactS = lastContact ? (now - lastContact) / 1000 : Infinity;
+    const connection = contactS < 40 ? { label: 'Phone online', tone: 'ok' } : contactS < 120 ? { label: 'Signal weak', tone: 'warn' } : { label: 'No contact', tone: 'bad' };
+    const TONE = { ok: '#1B7F4B', warn: '#B26A00', bad: '#BA1A1A', muted: '#5C6E64' };
     const historicalAlertsList = alerts.filter(a => a.status === 'resolved' || a.status === 'closed')
         .filter(a => a.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                      a.locationName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                      a.category?.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
-            {/* Header section with Ceylo Sub-Tabs */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: '1px solid #EBEFE8', pb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Typography variant="h5" fontWeight={900} color="#006A3B">
-                        Ceylo Admin Portal
+        <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>SOS monitor</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Box component="span" sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'success.main' }} /> Listening for alerts
                     </Typography>
-                    <Stack direction="row" spacing={3}>
-                        <Typography 
-                            variant="body2" 
-                            fontWeight={700} 
-                            onClick={() => setSubTab('feed')}
-                            sx={{ cursor: 'pointer', color: subTab === 'feed' ? '#006A3B' : '#777', borderBottom: subTab === 'feed' ? '2.5px solid #006A3B' : 'none', pb: 0.5 }}
-                        >
-                            Global Feed
-                        </Typography>
-                        <Typography 
-                            variant="body2" 
-                            fontWeight={700} 
-                            onClick={() => setSubTab('alerts')}
-                            sx={{ cursor: 'pointer', color: subTab === 'alerts' ? '#006A3B' : '#777', borderBottom: subTab === 'alerts' ? '2.5px solid #006A3B' : 'none', pb: 0.5 }}
-                        >
-                            Alerts
-                        </Typography>
-                    </Stack>
-                </Box>
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <IconButton onClick={() => setIsMuted(!isMuted)} color={isMuted ? "default" : "error"}>
-                        {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
-                    </IconButton>
-                    <Chip 
-                        label="Command Center Live" 
-                        color="success" 
-                        icon={<Box sx={{ width: 8, height: 8, bgcolor: '#FFF', borderRadius: '50%' }} />}
-                        sx={{ fontWeight: 800, bgcolor: '#006A3B', color: '#FFF' }}
-                    />
+                    <Tooltip title={isMuted ? 'Siren muted' : 'Siren on'}>
+                        <IconButton onClick={() => setIsMuted(!isMuted)} aria-label={isMuted ? 'Unmute siren' : 'Mute siren'} sx={{ color: isMuted ? 'text.secondary' : 'error.main' }}>
+                            {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+                        </IconButton>
+                    </Tooltip>
                 </Stack>
             </Box>
 
-            {subTab === 'feed' ? (
-                <Box sx={{ mt: 4 }}>
-                    <Paper sx={{ p: 5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', textAlign: 'center', bgcolor: '#FFF' }}>
-                        <Box sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: '#E8F5E9', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
-                            <WarningIcon sx={{ color: '#006A3B', fontSize: 32 }} />
-                        </Box>
-                        <Typography variant="h5" fontWeight={800} color="#181D19" gutterBottom>
-                            Global Incident Feed
-                        </Typography>
-                        <Typography variant="body1" color="#5C6E64" sx={{ maxWidth: 500, mx: 'auto', mb: 4 }}>
-                            The Global Feed aggregates all system events (Emergency Triggers, User Reports, System Anomalies) into a single chronological stream. The live integration for this feed is currently being provisioned.
-                        </Typography>
-                        <Button variant="contained" onClick={() => setSubTab('alerts')} sx={{ bgcolor: '#006A3B', color: '#FFF', borderRadius: 8, px: 4, fontWeight: 700, '&:hover': { bgcolor: '#004A29' }}}>
-                            Switch to Live Alerts Monitor
-                        </Button>
-                    </Paper>
-                </Box>
-            ) : (
+            {(
                 <Box>
                     {/* Three-column top grid workspace */}
                     <Grid container spacing={3} sx={{ mb: 4 }}>
                 
                 {/* Column 1: Active SOS list */}
                 <Grid size={{ xs: 12, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                            <Typography variant="subtitle1" fontWeight={900} color="#181D19" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="subtitle1" fontWeight={600} color="#181D19" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 Active SOS ({activeAlertsList.length}) <WarningIcon color="error" fontSize="small" />
                             </Typography>
                         </Box>
@@ -425,7 +420,7 @@ function SOSMonitor() {
                                             p: 2,
                                             mb: 2,
                                             cursor: 'pointer',
-                                            borderRadius: 4,
+                                            borderRadius: 1.25,
                                             border: isSelected ? '2px solid #006A3B' : '1px solid #BECABE',
                                             background: isCritical 
                                                 ? 'linear-gradient(135deg, #FFEBEB 0%, #FFF5F5 100%)' 
@@ -439,14 +434,14 @@ function SOSMonitor() {
                                                 label={alert.threatLevel} 
                                                 size="small" 
                                                 sx={{ 
-                                                    fontWeight: 900, 
+                                                    fontWeight: 600, 
                                                     fontSize: '0.65rem',
                                                     color: '#FFF', 
                                                     bgcolor: isCritical ? '#BA1A1A' : '#735C00' 
                                                 }} 
                                             />
-                                            <Typography variant="caption" fontWeight={800}
-                                                color={alert.status === 'active' && Date.now() - (toMillis(alert.timestamp) || Date.now()) > 120000 ? '#BA1A1A' : 'text.secondary'}>
+                                            <Typography variant="caption" fontWeight={600}
+                                                color={alert.status === 'active' && now - (toMillis(alert.timestamp) || now) > 120000 ? '#BA1A1A' : 'text.secondary'}>
                                                 {alert.status === 'active' ? `Waiting ${ago(alert.timestamp) || '0s'}` : timeStr}
                                             </Typography>
                                         </Box>
@@ -455,14 +450,14 @@ function SOSMonitor() {
                                                 {alert.userName.charAt(0)}
                                             </Avatar>
                                             <Box>
-                                                <Typography variant="body2" fontWeight={800} color="#181D19">
+                                                <Typography variant="body2" fontWeight={600} color="#181D19">
                                                     {alert.userName}
                                                 </Typography>
                                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                                                     {alert.locationName || (alert.location ? `${alert.location.latitude.toFixed(4)}, ${alert.location.longitude.toFixed(4)}` : 'Unknown Location')}
                                                 </Typography>
                                                 {alert.location && (
-                                                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: Date.now() - (toMillis(alert.lastLocationAt || alert.timestamp) || 0) > 60000 ? '#B26A00' : '#2E7D32' }}>
+                                                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, color: now - (toMillis(alert.lastLocationAt || alert.timestamp) || 0) > 60000 ? '#B26A00' : '#2E7D32' }}>
                                                         Location {ago(alert.lastLocationAt || alert.timestamp) || 'just now'} old{alert.location.accuracy ? ` · ±${alert.location.accuracy} m` : ''}
                                                     </Typography>
                                                 )}
@@ -482,22 +477,22 @@ function SOSMonitor() {
 
                 {/* Column 2: Live SOS Feed & Dispatch controls */}
                 <Grid size={{ xs: 12, md: 5.2 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column' }}>
                         
                         {selectedAlert ? (
                             <>
                                 <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
                                     {selectedAlert.reporterRole === 'driver' && (
-                                        <Chip label={`Raised by a driver${selectedAlert.rideId ? ` · ride ${selectedAlert.rideId.slice(-6).toUpperCase()}` : ''}`} sx={{ fontWeight: 900, bgcolor: '#E3F2FD', color: '#0D47A1' }} />
+                                        <Chip label={`Raised by a driver${selectedAlert.rideId ? ` · ride ${selectedAlert.rideId.slice(-6).toUpperCase()}` : ''}`} sx={{ fontWeight: 600, bgcolor: '#E3F2FD', color: '#0D47A1' }} />
                                     )}
-                                    <Chip label={selectedAlert.incidentType ? `Reported: ${selectedAlert.incidentType}` : 'Type not reported yet'} sx={{ fontWeight: 900, bgcolor: '#FFEBEE', color: '#BA1A1A' }} />
+                                    <Chip label={selectedAlert.incidentType ? `Reported: ${selectedAlert.incidentType}` : 'Type not reported yet'} sx={{ fontWeight: 600, bgcolor: '#FFEBEE', color: '#BA1A1A' }} />
                                 </Stack>
                                 {/* Video/Feed frame */}
                                 <Box sx={{ 
                                     position: 'relative', 
                                     bgcolor: '#000', 
                                     aspectRatio: '16/10', 
-                                    borderRadius: 4, 
+                                    borderRadius: 1.25, 
                                     overflow: 'hidden',
                                     border: '2px solid #BA1A1A',
                                     mb: 2.5
@@ -515,10 +510,13 @@ function SOSMonitor() {
                                         zIndex: 2 
                                     }}>
                                         <Box sx={{ width: 8, height: 8, bgcolor: '#f44336', borderRadius: '50%', mr: 1, animation: 'pulse 1.2s infinite' }} />
-                                        <Typography variant="caption" color="#FFF" fontWeight={800}>
+                                        <Typography variant="caption" color="#FFF" fontWeight={600}>
                                             {liveOn
-                                                ? `LIVE VIEW · ${selectedAlert.liveViewFacing === 'front' ? 'FRONT' : 'BACK'} CAMERA · frame ${ago(selectedAlert.liveFrameAt) || '0s'} old`
+                                                ? `LIVE · ${selectedAlert.liveViewFacing === 'front' ? 'FRONT' : 'BACK'} CAMERA · ${ago(selectedAlert.liveFrameAt) || '0s'} ago`
+                                                : sharing && frameSrc ? `WEAK CONNECTION · LAST FRAME ${ago(selectedAlert.liveFrameAt)} AGO`
+                                                : sharing ? 'OPENING CAMERA ON THE PHONE'
                                                 : selectedAlert.liveViewStatus === 'requested' ? 'LIVE VIEW REQUESTED · WAITING FOR THE PHONE'
+                                                : frameSrc ? `LATEST SNAPSHOT · ${ago(selectedAlert.liveFrameAt) || ''} AGO`
                                                 : selectedAlert.liveViewStatus === 'declined' ? 'TRAVELLER DECLINED THE LIVE VIEW'
                                                 : (selectedAlert.evidenceUrl || selectedAlert.photoUrl)
                                                 ? (selectedAlert.mediaType === 'video' ? 'VIDEO FROM TRAVELLER' : 'PHOTO FROM TRAVELLER')
@@ -526,12 +524,11 @@ function SOSMonitor() {
                                         </Typography>
                                     </Box>
 
-                                    {liveOn ? (
+                                    {frameSrc && (sharing || !(selectedAlert.evidenceUrl || selectedAlert.photoUrl) || (toMillis(selectedAlert.liveFrameAt) || 0) > (Date.parse(selectedAlert.evidence?.[selectedAlert.evidence.length - 1]?.at) || 0)) ? (
                                         <img
-                                            key={toMillis(selectedAlert.liveFrameAt) || 0}
-                                            src={`${selectedAlert.liveFrameUrl}${selectedAlert.liveFrameUrl.includes('?') ? '&' : '?'}t=${toMillis(selectedAlert.liveFrameAt) || 0}`}
-                                            alt="Live camera frame from the traveller"
-                                            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+                                            src={frameSrc}
+                                            alt="Camera frame from the traveller"
+                                            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', filter: liveOn ? 'none' : 'saturate(0.85)' }}
                                         />
                                     ) : selectedAlert.mediaType === 'video' && selectedAlert.evidenceUrl ? (
                                         <video
@@ -549,13 +546,13 @@ function SOSMonitor() {
                                     ) : (
                                         <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FFF', gap: 1, px: 3, textAlign: 'center' }}>
                                             <MyLocationIcon sx={{ fontSize: 40 }} />
-                                            <Typography fontWeight={800}>
+                                            <Typography fontWeight={600}>
                                                 {selectedAlert.location?.latitude != null
                                                     ? `${Number(selectedAlert.location.latitude).toFixed(5)}, ${Number(selectedAlert.location.longitude).toFixed(5)}`
                                                     : (selectedAlert.locationName || 'Location not shared')}
                                             </Typography>
                                             {selectedAlert.location?.latitude != null && (
-                                                <a href={`https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.latitude},${selectedAlert.location.longitude}`} target="_blank" rel="noreferrer" style={{ color: '#A5D6A7', fontWeight: 700 }}>
+                                                <a href={`https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.latitude},${selectedAlert.location.longitude}`} target="_blank" rel="noreferrer" style={{ color: '#A5D6A7', fontWeight: 600 }}>
                                                     Open in Google Maps
                                                 </a>
                                             )}
@@ -576,10 +573,10 @@ function SOSMonitor() {
                                         justifyContent: 'space-between'
                                     }}>
                                         <Box>
-                                            <Typography variant="subtitle2" fontWeight={900} color="#BA1A1A" sx={{ letterSpacing: 0.5 }}>
+                                            <Typography variant="subtitle2" fontWeight={600} color="#BA1A1A" sx={{ letterSpacing: 0.5 }}>
                                                 RESPONSE STATUS
                                             </Typography>
-                                            <Typography variant="caption" color="#444" fontWeight={800}>
+                                            <Typography variant="caption" color="#444" fontWeight={600}>
                                                 {[
                                                     fmtTime(selectedAlert.timestamp) && `Raised ${fmtTime(selectedAlert.timestamp)} (${ago(selectedAlert.timestamp)} ago)`,
                                                     fmtTime(selectedAlert.acknowledgedAt) && `acknowledged ${fmtTime(selectedAlert.acknowledgedAt)}`,
@@ -593,7 +590,7 @@ function SOSMonitor() {
                                             sx={{ 
                                                 bgcolor: '#FFF9C4', 
                                                 color: '#735C00', 
-                                                fontWeight: 900, 
+                                                fontWeight: 600, 
                                                 fontSize: '0.7rem',
                                                 border: '1px solid #FBC02D'
                                             }} 
@@ -601,12 +598,34 @@ function SOSMonitor() {
                                     </Box>
                                 </Box>
 
+                                {/* Situation summary: who, where, when, camera and phone connection */}
+                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', lg: 'repeat(3, 1fr)' }, border: '1px solid #E3E8E4', borderRadius: 2, mb: 2.5, '& > div': { p: 1.25, borderBottom: '1px solid #EEF1EE' } }}>
+                                    {[
+                                        ['Traveller', selectedAlert.userName, [selectedAlert.userEmail, selectedAlert.phone !== 'N/A' && selectedAlert.phone].filter(Boolean).join(' · ') || null],
+                                        ['Raised', fmtTime(selectedAlert.timestamp) || '—', selectedAlert.timestamp ? `${ago(selectedAlert.timestamp)} ago` : null],
+                                        ['Emergency status', STATUS_LABEL[selectedAlert.status] || 'NEW', selectedAlert.incidentType || null],
+                                        ['Location', selectedAlert.location?.latitude != null ? `${Number(selectedAlert.location.latitude).toFixed(5)}, ${Number(selectedAlert.location.longitude).toFixed(5)}` : 'Not shared',
+                                            selectedAlert.location ? `Updated ${ago(selectedAlert.lastLocationAt || selectedAlert.timestamp) || '0s'} ago${selectedAlert.location.accuracy ? ` · ±${selectedAlert.location.accuracy} m` : ''}` : null],
+                                        ['Camera', cameraState.label, !sharing ? null : selectedAlert.liveError === 'upload' ? 'Video upload failed, using snapshots' : selectedAlert.liveError === 'camera' ? 'Camera error on the phone' : null, cameraState.tone],
+                                        ['Connection', connection.label, lastContact ? `Last contact ${ago(lastContact)} ago` : null, connection.tone],
+                                    ].map(([label, value, sub, tone]) => (
+                                        <Box key={label}>
+                                            <Typography sx={{ fontSize: 11, fontWeight: 600, color: '#5C6E64', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Typography>
+                                            <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: tone ? TONE[tone] : '#181D19', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                {tone && <Box component="span" sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: TONE[tone], flexShrink: 0 }} />}
+                                                {value}
+                                            </Typography>
+                                            {sub && <Typography sx={{ fontSize: 12, color: '#5C6E64' }}>{sub}</Typography>}
+                                        </Box>
+                                    ))}
+                                </Box>
+
                                 {/* Tags & Indicators */}
                                 <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-                                    <Chip label={selectedAlert.handledBy?.email ? `Handled by ${selectedAlert.handledBy.email}` : 'Not yet handled'} size="small" variant="outlined" sx={{ borderColor: '#FFCDD2', color: '#BA1A1A', fontWeight: 800 }} />
-                                    {selectedAlert.forwardedToAuthorityAt && <Chip label={`Forwarded ${fmtTime(selectedAlert.forwardedToAuthorityAt) || ''}`} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 800 }} />}
-                                    {selectedAlert.smsStatus && <Chip label={selectedAlert.smsStatus === 'sent' ? `SMS sent to desk${selectedAlert.smsProvider ? ` via ${selectedAlert.smsProvider}` : ''} ${fmtTime(selectedAlert.smsAt) || ''}` : selectedAlert.smsStatus === 'not_configured' ? 'SMS gateway not configured' : 'SMS failed'} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: selectedAlert.smsStatus === 'sent' ? '#1B5E20' : '#B45309', fontWeight: 800 }} />}
-                                    {selectedAlert.channel && <Chip label={`Sent by ${selectedAlert.channel}`} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 800 }} />}
+                                    <Chip label={selectedAlert.handledBy?.email ? `Handled by ${selectedAlert.handledBy.email}` : 'Not yet handled'} size="small" variant="outlined" sx={{ borderColor: '#FFCDD2', color: '#BA1A1A', fontWeight: 600 }} />
+                                    {selectedAlert.forwardedToAuthorityAt && <Chip label={`Forwarded ${fmtTime(selectedAlert.forwardedToAuthorityAt) || ''}`} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 600 }} />}
+                                    {selectedAlert.smsStatus && <Chip label={selectedAlert.smsStatus === 'sent' ? `SMS sent to desk${selectedAlert.smsProvider ? ` via ${selectedAlert.smsProvider}` : ''} ${fmtTime(selectedAlert.smsAt) || ''}` : selectedAlert.smsStatus === 'not_configured' ? 'SMS gateway not configured' : 'SMS failed'} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: selectedAlert.smsStatus === 'sent' ? '#1B5E20' : '#B45309', fontWeight: 600 }} />}
+                                    {selectedAlert.channel && <Chip label={`Sent by ${selectedAlert.channel}`} size="small" variant="outlined" sx={{ borderColor: '#BECABE', color: '#3F4941', fontWeight: 600 }} />}
                                 </Stack>
 
                                 {/* Dispatch Action Grid buttons */}
@@ -614,13 +633,13 @@ function SOSMonitor() {
                                     <Grid size={{ xs: 6 }}>
                                         <Button fullWidth variant="contained" startIcon={<DoneAllIcon />} onClick={handleAcknowledge}
                                             disabled={selectedAlert.status !== 'active'}
-                                            sx={{ bgcolor: '#E65100', '&:hover': { bgcolor: '#BF360C' }, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            sx={{ bgcolor: '#E65100', '&:hover': { bgcolor: '#BF360C' }, py: 1.8, borderRadius: 1.25, fontWeight: 600, textTransform: 'none', fontSize: '0.9rem' }}>
                                             {selectedAlert.status === 'active' ? 'Acknowledge' : 'Acknowledged'}
                                         </Button>
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
                                         <Button fullWidth variant="outlined" startIcon={<ForwardToInboxIcon />} onClick={handleForward}
-                                            sx={{ color: '#3F4941', borderColor: '#BECABE', borderWidth: 1.5, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            sx={{ color: '#3F4941', borderColor: '#BECABE', borderWidth: 1.5, py: 1.8, borderRadius: 1.25, fontWeight: 600, textTransform: 'none', fontSize: '0.9rem' }}>
                                             Forward to authority
                                         </Button>
                                     </Grid>
@@ -634,8 +653,8 @@ function SOSMonitor() {
                                                 bgcolor: '#BA1A1A', 
                                                 '&:hover': { bgcolor: '#930006' },
                                                 py: 1.8, 
-                                                borderRadius: 3, 
-                                                fontWeight: 800, 
+                                                borderRadius: 1.25, 
+                                                fontWeight: 600, 
                                                 textTransform: 'none',
                                                 fontSize: '0.9rem'
                                             }}
@@ -655,8 +674,8 @@ function SOSMonitor() {
                                                 borderWidth: 1.5,
                                                 '&:hover': { borderColor: '#930006', borderWidth: 1.5 },
                                                 py: 1.8, 
-                                                borderRadius: 3, 
-                                                fontWeight: 800, 
+                                                borderRadius: 1.25, 
+                                                fontWeight: 600, 
                                                 textTransform: 'none',
                                                 fontSize: '0.9rem'
                                             }}
@@ -674,8 +693,8 @@ function SOSMonitor() {
                                                 bgcolor: '#006A3B', 
                                                 '&:hover': { bgcolor: '#004D2C' },
                                                 py: 1.8, 
-                                                borderRadius: 3, 
-                                                fontWeight: 800, 
+                                                borderRadius: 1.25, 
+                                                fontWeight: 600, 
                                                 textTransform: 'none',
                                                 fontSize: '0.9rem'
                                             }}
@@ -685,20 +704,20 @@ function SOSMonitor() {
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
                                         <Button fullWidth variant="contained" onClick={() => handleDispatchAction('Roadside assistance')}
-                                            sx={{ bgcolor: '#8D6E00', '&:hover': { bgcolor: '#6D5500' }, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            sx={{ bgcolor: '#8D6E00', '&:hover': { bgcolor: '#6D5500' }, py: 1.8, borderRadius: 1.25, fontWeight: 600, textTransform: 'none', fontSize: '0.9rem' }}>
                                             Roadside / breakdown help
                                         </Button>
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
                                         <Button fullWidth variant="contained" onClick={() => handleDispatchAction('CEYLO support (callback)')}
-                                            sx={{ bgcolor: '#1565C0', '&:hover': { bgcolor: '#0D47A1' }, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            sx={{ bgcolor: '#1565C0', '&:hover': { bgcolor: '#0D47A1' }, py: 1.8, borderRadius: 1.25, fontWeight: 600, textTransform: 'none', fontSize: '0.9rem' }}>
                                             Support callback
                                         </Button>
                                     </Grid>
                                     {selectedAlert.phone && selectedAlert.phone !== 'N/A' && (
                                         <Grid size={{ xs: 12 }}>
                                             <Button fullWidth variant="outlined" href={`tel:${selectedAlert.phone}`}
-                                                sx={{ py: 1.4, borderRadius: 3, fontWeight: 800, textTransform: 'none' }}>
+                                                sx={{ py: 1.4, borderRadius: 1.25, fontWeight: 600, textTransform: 'none' }}>
                                                 Call the traveller ({selectedAlert.phone})
                                             </Button>
                                         </Grid>
@@ -715,8 +734,8 @@ function SOSMonitor() {
                                                 borderWidth: 1.5,
                                                 '&:hover': { borderColor: '#3F4941', borderWidth: 1.5 },
                                                 py: 1.8, 
-                                                borderRadius: 3, 
-                                                fontWeight: 800, 
+                                                borderRadius: 1.25, 
+                                                fontWeight: 600, 
                                                 textTransform: 'none',
                                                 fontSize: '0.9rem'
                                             }}
@@ -729,7 +748,7 @@ function SOSMonitor() {
                         ) : (
                             <Box sx={{ p: 4, textAlign: 'center', my: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                                 <Typography variant="h2" sx={{ fontSize: '3rem' }}>🛡️</Typography>
-                                <Typography variant="h6" fontWeight={800} color="#1A2E1A">
+                                <Typography variant="h6" fontWeight={600} color="#1A2E1A">
                                     {alerts.length === 0 ? 'No emergency alerts received yet! 💚' : 'Select an alert to initiate monitoring'}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
@@ -741,7 +760,7 @@ function SOSMonitor() {
                 </Grid>
                 {/* Column 3: Live Map coordinates & Emergency Contacts */}
                 <Grid size={{ xs: 12, md: 3.8 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, height: '100%', border: '1px solid #EBEFE8', boxShadow: 'none', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         
                         {(() => {
                             const displayMapAlert = selectedAlert;
@@ -749,7 +768,7 @@ function SOSMonitor() {
                                 return (
                                     <>
                                         {/* Micro Map block */}
-                                        <Box sx={{ width: '100%', height: 200, borderRadius: 4, overflow: 'hidden', border: '1px solid #BECABE', position: 'relative' }}>
+                                        <Box sx={{ width: '100%', height: 200, borderRadius: 1.25, overflow: 'hidden', border: '1px solid #BECABE', position: 'relative' }}>
                                             <iframe 
                                                 title="SOS Location Map"
                                                 src={`https://maps.google.com/maps?q=${displayMapAlert.location?.latitude || 7.9573},${displayMapAlert.location?.longitude || 80.7603}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
@@ -766,7 +785,7 @@ function SOSMonitor() {
                                                 border: '1px solid #BECABE',
                                                 boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                                             }}>
-                                                <Typography variant="caption" fontWeight={900} color="#181D19">
+                                                <Typography variant="caption" fontWeight={600} color="#181D19">
                                                     🔴 Active Alert Location
                                                 </Typography>
                                             </Box>
@@ -782,7 +801,7 @@ function SOSMonitor() {
                                                 sx={{ 
                                                     bgcolor: isRecording ? '#BA1A1A' : '#777', 
                                                     color: '#FFF',
-                                                    fontWeight: 800,
+                                                    fontWeight: 600,
                                                     fontSize: '0.75rem',
                                                     textTransform: 'none',
                                                     borderRadius: 2,
@@ -801,7 +820,7 @@ function SOSMonitor() {
                                                 sx={{ 
                                                     bgcolor: '#006A3B', 
                                                     color: '#FFF',
-                                                    fontWeight: 800,
+                                                    fontWeight: 600,
                                                     fontSize: '0.75rem',
                                                     textTransform: 'none',
                                                     borderRadius: 2,
@@ -812,17 +831,23 @@ function SOSMonitor() {
                                             >
                                                 {selectedAlert.liveViewStatus === 'sharing' ? 'Live view on' : 'Live camera view'}
                                             </Button>
+                                            {selectedAlert.liveViewStatus !== 'sharing' && (
+                                                <Button fullWidth size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 600 }}
+                                                    onClick={() => handleRequestCamera('back', 15000)}>
+                                                    Request snapshot (15 s)
+                                                </Button>
+                                            )}
                                             {selectedAlert.liveViewStatus === 'sharing' && (
                                                 <Stack direction="row" spacing={1}>
-                                                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 800, flex: 1 }}
+                                                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 600, flex: 1 }}
                                                         onClick={() => updateLiveView({ liveViewFacing: selectedAlert.liveViewFacing === 'front' ? 'back' : 'front' })}>
                                                         Switch camera
                                                     </Button>
-                                                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 800, flex: 1 }}
+                                                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 600, flex: 1 }}
                                                         onClick={() => updateLiveView({ liveViewUntil: Math.max(Date.now(), selectedAlert.liveViewUntil || 0) + 60000 }, 'Live view extended by 60 seconds.')}>
                                                         +60 s
                                                     </Button>
-                                                    <Button size="small" color="error" variant="outlined" sx={{ textTransform: 'none', fontWeight: 800, flex: 1 }}
+                                                    <Button size="small" color="error" variant="outlined" sx={{ textTransform: 'none', fontWeight: 600, flex: 1 }}
                                                         onClick={() => updateLiveView({ liveViewUntil: 0, liveViewStatus: 'ended' }, 'Live view stopped.')}>
                                                         Stop
                                                     </Button>
@@ -831,11 +856,11 @@ function SOSMonitor() {
                                         </Stack>
 
                                         {/* Emergency contact details card */}
-                                        <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#F6FBF3', border: '1px solid #BECABE', boxShadow: 'none' }}>
-                                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>
+                                        <Paper sx={{ p: 2, borderRadius: 1.25, bgcolor: '#F6FBF3', border: '1px solid #BECABE', boxShadow: 'none' }}>
+                                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>
                                                 EMERGENCY CONTACT
                                             </Typography>
-                                            <Typography variant="body2" fontWeight={800} color="#181D19">
+                                            <Typography variant="body2" fontWeight={600} color="#181D19">
                                                 {selectedAlert.emergencyContactName}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
@@ -850,7 +875,7 @@ function SOSMonitor() {
                                                 sx={{ 
                                                     bgcolor: '#B2DFDB', 
                                                     color: '#004D40',
-                                                    fontWeight: 800,
+                                                    fontWeight: 600,
                                                     textTransform: 'none',
                                                     borderRadius: 2,
                                                     boxShadow: 'none',
@@ -866,7 +891,7 @@ function SOSMonitor() {
                                 return (
                                     <Box sx={{ p: 4, textAlign: 'center', my: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                                         <Typography variant="h3">🛡️</Typography>
-                                        <Typography variant="caption" fontWeight={900} color="text.secondary">
+                                        <Typography variant="caption" fontWeight={600} color="text.secondary">
                                             No active emergency alerts received yet! 💚
                                         </Typography>
                                     </Box>
@@ -879,9 +904,9 @@ function SOSMonitor() {
             </Grid>
 
             {/* Bottom Section: SOS Event History */}
-            <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+            <Paper sx={{ p: 3, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" fontWeight={800} color="#181D19">
+                    <Typography variant="h6" fontWeight={600} color="#181D19">
                         SOS Event History
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, width: 350 }}>
@@ -897,10 +922,10 @@ function SOSMonitor() {
                                         <SearchIcon fontSize="small" />
                                     </InputAdornment>
                                 ),
-                                sx: { borderRadius: 3, bgcolor: '#FFF' }
+                                sx: { borderRadius: 1.25, bgcolor: '#FFF' }
                             }}
                         />
-                        <IconButton sx={{ border: '1px solid #BECABE', borderRadius: 3 }}>
+                        <IconButton sx={{ border: '1px solid #BECABE', borderRadius: 1.25 }}>
                             <FilterListIcon fontSize="small" />
                         </IconButton>
                     </Box>
@@ -910,12 +935,12 @@ function SOSMonitor() {
                     <Table>
                         <TableHead sx={{ bgcolor: '#F6FBF3' }}>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>TIME / DATE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>USER</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>LOCATION</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>TYPE</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>RESPONSE TEAM</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>TIME / DATE</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>USER</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>LOCATION</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>TYPE</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>RESPONSE TEAM</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>STATUS</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -936,14 +961,14 @@ function SOSMonitor() {
                                 return (
                                     <TableRow key={row.id} hover sx={{ cursor: 'pointer' }} onClick={() => handleSelectAlert(row)}>
                                         <TableCell sx={{ fontWeight: 600, color: '#555' }}>{timeStr}</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }}>{row.userName}</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>{row.userName}</TableCell>
                                         <TableCell>{row.locationName || (row.location?.latitude != null ? `${Number(row.location.latitude).toFixed(4)}, ${Number(row.location.longitude).toFixed(4)}` : 'Not shared')}</TableCell>
                                         <TableCell>
                                             <Chip 
                                                 label={row.incidentType || row.category || 'Not reported'} 
                                                 size="small" 
                                                 sx={{ 
-                                                    fontWeight: 700, 
+                                                    fontWeight: 600, 
                                                     color: tagStyle.color, 
                                                     bgcolor: tagStyle.bg 
                                                 }} 
@@ -955,7 +980,7 @@ function SOSMonitor() {
                                                 label={row.status?.toUpperCase() || 'RESOLVED'} 
                                                 size="small" 
                                                 color={isResolved ? "success" : "default"}
-                                                sx={{ fontWeight: 800 }} 
+                                                sx={{ fontWeight: 600 }} 
                                             />
                                         </TableCell>
                                     </TableRow>

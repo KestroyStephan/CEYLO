@@ -122,7 +122,7 @@ export default function AccommodationDashboard() {
                     Your account is currently pending verification. Features may be limited until approval.
                 </Alert>
             )}
-            <Typography variant="h4" gutterBottom sx={{ color: '#00695c', fontWeight: 'bold' }}>
+            <Typography variant="h4" gutterBottom sx={{ color: '#00695c', fontWeight: 600 }}>
                 Accommodation Dashboard
             </Typography>
 

@@ -56,7 +56,7 @@ const ECO_FIELDS = [
     ['community_benefit_score', 'Community benefit (0-100)', 70],
 ];
 
-const card = { p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' };
+const card = { p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' };
 
 async function api(path, body) {
     const res = await fetch(`${BACKEND_URL}${path}`, body
@@ -71,9 +71,9 @@ function Kpi({ label, value, caption, color, icon }) {
         <Paper sx={card}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                    <Typography variant="caption" fontWeight={900} color="text.secondary">{label}</Typography>
-                    <Typography variant="h4" fontWeight={950} color={color}>{value}</Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight={700}>{caption}</Typography>
+                    <Typography variant="caption" fontWeight={600} color="text.secondary">{label}</Typography>
+                    <Typography variant="h4" fontWeight={600} color={color}>{value}</Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>{caption}</Typography>
                 </Box>
                 {icon}
             </Box>
@@ -161,21 +161,16 @@ export default function AICenter() {
         <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', p: 1 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        AI Model Monitor
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        CEYLO's own trained models: evaluation results, live latency, and tools to test each prediction.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>AI models</Typography>
                 </Box>
                 <Chip
                     icon={online === false ? <ErrorIcon /> : <CheckCircleIcon />}
                     label={online === null ? 'Model engine: checking…' : online ? 'Model engine: ONLINE' : 'Model engine: OFFLINE'}
-                    sx={{ bgcolor: online === false ? '#FEE2E2' : '#D1FAE5', color: online === false ? '#DC2626' : '#059669', fontWeight: 800, borderRadius: 2, px: 1, py: 2.5 }}
+                    sx={{ bgcolor: online === false ? '#FEE2E2' : '#D1FAE5', color: online === false ? '#DC2626' : '#059669', fontWeight: 600, borderRadius: 2, px: 1, py: 2.5 }}
                 />
             </Box>
 
-            {error && <Paper sx={{ ...card, mb: 3, bgcolor: '#FEF2F2', borderColor: '#FECACA' }}><Typography color="error" fontWeight={700}>{error}</Typography></Paper>}
+            {error && <Paper sx={{ ...card, mb: 3, bgcolor: '#FEF2F2', borderColor: '#FECACA' }}><Typography color="error" fontWeight={600}>{error}</Typography></Paper>}
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -205,7 +200,7 @@ export default function AICenter() {
                 <Grid size={{ xs: 12, md: 8 }}>
                     <Paper sx={{ ...card, p: 0, overflow: 'hidden', height: '100%' }}>
                         <Box sx={{ p: 2.5, borderBottom: '1px solid #EBEFE8' }}>
-                            <Typography variant="subtitle2" fontWeight={800} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="subtitle2" fontWeight={600} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                 <PsychologyIcon sx={{ mr: 1, fontSize: 20 }} /> Recommendation audit (explainable)
                             </Typography>
                             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -218,7 +213,7 @@ export default function AICenter() {
                                 </TextField>
                                 <FormControlLabel control={<Switch checked={avoidCrowds} onChange={e => setAvoidCrowds(e.target.checked)} />}
                                     label={<Typography variant="body2">Fewer crowds</Typography>} />
-                                <Button variant="contained" onClick={runRecommender} disabled={recsLoading} sx={{ bgcolor: '#006A3B', fontWeight: 800 }}>
+                                <Button variant="contained" onClick={runRecommender} disabled={recsLoading} sx={{ bgcolor: '#006A3B', fontWeight: 600 }}>
                                     {recsLoading ? <CircularProgress size={20} color="inherit" /> : 'Run model'}
                                 </Button>
                             </Stack>
@@ -227,9 +222,9 @@ export default function AICenter() {
                             <Table size="small">
                                 <TableHead sx={{ bgcolor: '#F8F9FA' }}>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 800 }}>DESTINATION</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }}>SCORES</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }}>WHY</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>DESTINATION</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>SCORES</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>WHY</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -246,13 +241,13 @@ export default function AICenter() {
                                     {recs?.top_matches.map(r => (
                                         <TableRow key={r.id} hover>
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={800}>{r.name}</Typography>
+                                                <Typography variant="body2" fontWeight={600}>{r.name}</Typography>
                                                 <Typography variant="caption" color="text.secondary">{r.category} · {r.province}</Typography>
                                             </TableCell>
                                             <TableCell>
                                                 <Stack spacing={0.5}>
-                                                    <Chip label={`Match ${r.matchScore}`} size="small" sx={{ fontWeight: 800, bgcolor: '#D1FAE5', color: '#059669' }} />
-                                                    <Chip label={`Eco ${r.ecoScore}`} size="small" sx={{ fontWeight: 700, bgcolor: '#F1F5F9', color: '#475569' }} />
+                                                    <Chip label={`Match ${r.matchScore}`} size="small" sx={{ fontWeight: 600, bgcolor: '#D1FAE5', color: '#059669' }} />
+                                                    <Chip label={`Eco ${r.ecoScore}`} size="small" sx={{ fontWeight: 600, bgcolor: '#F1F5F9', color: '#475569' }} />
                                                 </Stack>
                                             </TableCell>
                                             <TableCell><Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 320 }}>{r.reason}</Typography></TableCell>
@@ -266,8 +261,8 @@ export default function AICenter() {
 
                 {/* Safety guardrails: paused destinations are skipped by the recommender */}
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #FEE2E2', bgcolor: '#FEF2F2', height: '100%', boxShadow: 'none' }}>
-                        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1, display: 'flex', alignItems: 'center', color: '#DC2626', textTransform: 'uppercase' }}>
+                    <Paper sx={{ p: 3, borderRadius: 1.25, border: '1px solid #FEE2E2', bgcolor: '#FEF2F2', height: '100%', boxShadow: 'none' }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1, display: 'flex', alignItems: 'center', color: '#DC2626', textTransform: 'uppercase' }}>
                             <WarningAmberIcon sx={{ mr: 1, fontSize: 20 }} /> Safety Guardrails
                         </Typography>
                         <Typography variant="body2" color="#7F1D1D" fontWeight={500} sx={{ mb: 3 }}>
@@ -278,14 +273,14 @@ export default function AICenter() {
                                 <Typography variant="caption" color="text.secondary">No destinations in the database yet.</Typography>
                             ) : (
                                 destinations.slice(0, 6).map(dest => (
-                                    <Box key={dest.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, bgcolor: '#FFF', borderRadius: 3, border: '1px solid #FECACA' }}>
+                                    <Box key={dest.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, bgcolor: '#FFF', borderRadius: 1.25, border: '1px solid #FECACA' }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                             <Avatar src={dest.imageUrl} variant="rounded" sx={{ width: 36, height: 36, borderRadius: 2 }} />
-                                            <Typography variant="body2" fontWeight={800} color={dest.aiBlocked ? '#DC2626' : '#0F172A'}>{dest.name}</Typography>
+                                            <Typography variant="body2" fontWeight={600} color={dest.aiBlocked ? '#DC2626' : '#0F172A'}>{dest.name}</Typography>
                                         </Box>
                                         <FormControlLabel
                                             control={<Switch size="small" checked={!!dest.aiBlocked} onChange={() => toggleSafetyBlock(dest.id, !!dest.aiBlocked)} color="error" />}
-                                            label={<Typography variant="caption" fontWeight={800} color={dest.aiBlocked ? 'error' : 'text.secondary'}>{dest.aiBlocked ? 'PAUSED' : 'ACTIVE'}</Typography>}
+                                            label={<Typography variant="caption" fontWeight={600} color={dest.aiBlocked ? 'error' : 'text.secondary'}>{dest.aiBlocked ? 'PAUSED' : 'ACTIVE'}</Typography>}
                                             labelPlacement="start" sx={{ m: 0 }}
                                         />
                                     </Box>
@@ -300,15 +295,15 @@ export default function AICenter() {
                 {/* Offline evaluation against baselines */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ ...card, height: '100%' }}>
-                        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 0.5 }}>Recommender vs baselines</Typography>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>Recommender vs baselines</Typography>
                         <Typography variant="caption" color="text.secondary">{m?.recommender?.metric || 'Loading…'}</Typography>
                         <Table size="small" sx={{ mt: 1 }}>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 800 }}>Ranker</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }} align="right">Precision@5</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }} align="right">NDCG@5</TableCell>
-                                    <TableCell sx={{ fontWeight: 800 }} align="right">Hit@5</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Ranker</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }} align="right">Precision@5</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }} align="right">NDCG@5</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }} align="right">Hit@5</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -328,7 +323,7 @@ export default function AICenter() {
                 {/* Live usage by strategy */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ ...card, height: '100%' }}>
-                        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 0.5 }}>Generated itineraries by strategy</Typography>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 0.5 }}>Generated itineraries by strategy</Typography>
                         <Typography variant="caption" color="text.secondary">
                             Last {records.length} itineraries from recommendation_records. NFR-001 target: 95% under 3 s.
                         </Typography>
@@ -338,24 +333,24 @@ export default function AICenter() {
                             <Table size="small" sx={{ mt: 1 }}>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 800 }}>Strategy</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }} align="right">Itineraries</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }} align="right">Offline</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }} align="right">p95</TableCell>
-                                        <TableCell sx={{ fontWeight: 800 }} align="right">Under 3 s</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>Strategy</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }} align="right">Itineraries</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }} align="right">Offline</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }} align="right">p95</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }} align="right">Under 3 s</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {recordStats(records).map(r => (
                                         <TableRow key={r.strategy}>
-                                            <TableCell sx={{ fontWeight: 700, textTransform: 'capitalize' }}>{r.strategy}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, textTransform: 'capitalize' }}>{r.strategy}</TableCell>
                                             <TableCell align="right">{r.count}</TableCell>
                                             <TableCell align="right">{r.offline}</TableCell>
                                             <TableCell align="right">{r.p95Ms != null ? `${(r.p95Ms / 1000).toFixed(1)} s` : '—'}</TableCell>
                                             <TableCell align="right">
                                                 {r.under3s != null && (
                                                     <Chip size="small" label={`${Math.round(r.under3s * 100)}%`}
-                                                        sx={{ fontWeight: 800, bgcolor: r.under3s >= 0.95 ? '#D1FAE5' : '#FEF3C7', color: r.under3s >= 0.95 ? '#059669' : '#D97706' }} />
+                                                        sx={{ fontWeight: 600, bgcolor: r.under3s >= 0.95 ? '#D1FAE5' : '#FEF3C7', color: r.under3s >= 0.95 ? '#059669' : '#D97706' }} />
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -371,7 +366,7 @@ export default function AICenter() {
                 {/* Demand forecast */}
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ ...card, height: '100%' }}>
-                        <Typography variant="subtitle2" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                             <TimelineIcon sx={{ mr: 1, fontSize: 20 }} /> Booking demand forecast (LSTM)
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -401,25 +396,25 @@ export default function AICenter() {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Stack spacing={3}>
                         <Paper sx={card}>
-                            <Typography variant="subtitle2" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                 <ChatIcon sx={{ mr: 1, fontSize: 20 }} /> Test the chatbot intent classifier
                             </Typography>
                             <Stack direction="row" spacing={1}>
                                 <TextField size="small" fullWidth value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && runIntent()} />
-                                <Button variant="outlined" onClick={runIntent} sx={{ fontWeight: 800 }}>Classify</Button>
+                                <Button variant="outlined" onClick={runIntent} sx={{ fontWeight: 600 }}>Classify</Button>
                             </Stack>
                             {intents && (
                                 <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap', gap: 1 }}>
                                     {intents.map((i, idx) => (
                                         <Chip key={i.intent} label={`${i.intent} ${(i.confidence * 100).toFixed(1)}%`}
-                                            sx={{ fontWeight: 800, bgcolor: idx === 0 ? '#D1FAE5' : '#F1F5F9', color: idx === 0 ? '#059669' : '#475569' }} />
+                                            sx={{ fontWeight: 600, bgcolor: idx === 0 ? '#D1FAE5' : '#F1F5F9', color: idx === 0 ? '#059669' : '#475569' }} />
                                     ))}
                                 </Stack>
                             )}
                         </Paper>
 
                         <Paper sx={card}>
-                            <Typography variant="subtitle2" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                 <EcoIcon sx={{ mr: 1, fontSize: 20 }} /> Score a new place with the eco model
                             </Typography>
                             <Grid container spacing={1.5}>
@@ -437,8 +432,8 @@ export default function AICenter() {
                                     label={<Typography variant="body2">Respects carrying capacity</Typography>}
                                 />
                                 <Stack direction="row" spacing={2} alignItems="center">
-                                    {ecoScore != null && <Typography variant="h5" fontWeight={900} color="#059669">{ecoScore}</Typography>}
-                                    <Button variant="contained" onClick={runEco} sx={{ bgcolor: '#059669', fontWeight: 800 }}>Predict</Button>
+                                    {ecoScore != null && <Typography variant="h5" fontWeight={600} color="#059669">{ecoScore}</Typography>}
+                                    <Button variant="contained" onClick={runEco} sx={{ bgcolor: '#059669', fontWeight: 600 }}>Predict</Button>
                                 </Stack>
                             </Stack>
                         </Paper>

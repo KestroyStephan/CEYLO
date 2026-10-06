@@ -60,6 +60,14 @@ describe('SOS files', () => {
     await assertSucceeds(uploadBytes(ref(st('desk'), 'sos_alerts/a1_admin_audio_1.webm'), bytes()));
   });
 
+  test('phone uploads under their own folder need no alert lookup', async () => {
+    await assertSucceeds(uploadBytes(ref(st('t1'), 'sos_media/t1/a1_live.jpg'), bytes()));
+    await assertFails(uploadBytes(ref(st('t2'), 'sos_media/t1/a1_live.jpg'), bytes()));
+    await seedFile('sos_media/t1/a1_live.jpg');
+    await assertSucceeds(getBytes(ref(st('desk'), 'sos_media/t1/a1_live.jpg')));
+    await assertFails(getBytes(ref(st('t2'), 'sos_media/t1/a1_live.jpg')));
+  });
+
   test('files over 25 MB are refused', async () => {
     await assertFails(uploadBytes(ref(st('t1'), 'sos_alerts/a1_evidence_9.mp4'), bytes(26 * 1024 * 1024)));
   });
@@ -95,6 +103,16 @@ describe('profiles, partners and orders', () => {
     await assertFails(uploadBytes(ref(st('t1'), 'orders/o1/proof.jpg'), bytes()));
     await assertSucceeds(getBytes(ref(st('t1'), 'orders/o1/proof.jpg')));
     await assertFails(getBytes(ref(st('t2'), 'orders/o1/proof.jpg')));
+  });
+
+  test('driver documents are visible only to the driver and the admin team', async () => {
+    await seed({ 'users/staff': { role: 'admin' }, 'users/t2': { role: 'tourist' } });
+    await assertSucceeds(uploadBytes(ref(st('d1'), 'driver_documents/d1/licence_front.jpg'), bytes()));
+    await assertFails(uploadBytes(ref(st('t2'), 'driver_documents/d1/licence_front.jpg'), bytes()));
+    await seedFile('driver_documents/d1/vehicle_cr.pdf');
+    await assertSucceeds(getBytes(ref(st('staff'), 'driver_documents/d1/vehicle_cr.pdf')));
+    await assertFails(getBytes(ref(st('t2'), 'driver_documents/d1/vehicle_cr.pdf')));
+    await assertFails(uploadBytes(ref(st('d1'), 'driver_documents/d1/big.pdf'), bytes(11 * 1024 * 1024)));
   });
 
   test('unknown paths are closed', async () => {

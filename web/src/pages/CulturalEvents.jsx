@@ -206,18 +206,13 @@ export default function CulturalEvents() {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom>
-                        CMS: AI Events & Culture
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Review AI-predicted events, approve tourist activities, and manage geofenced broadcasts.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Cultural events</Typography>
                 </Box>
                 <Button
                     variant="contained"
                     onClick={() => handleOpenEditor()}
                     startIcon={<AddIcon />}
-                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, px: 3 }}
+                    sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2, px: 3 }}
                 >
                     Create Manual Event
                 </Button>
@@ -230,7 +225,7 @@ export default function CulturalEvents() {
                     size="small"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 8 } }}
+                    sx={{ width: 320, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action"/></InputAdornment> }}
                 />
                 <TextField
@@ -238,26 +233,26 @@ export default function CulturalEvents() {
                     size="small"
                     value={timeFilter}
                     onChange={(e) => { setTimeFilter(e.target.value); setPage(0); }}
-                    sx={{ width: 200, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 8 } }}
+                    sx={{ width: 200, bgcolor: '#FFF', '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
                 >
-                    <MenuItem value="all" sx={{ fontWeight: 700 }}>All Timeline</MenuItem>
-                    <MenuItem value="happening_now" sx={{ fontWeight: 700, color: '#006A3B' }}>Happening Now</MenuItem>
-                    <MenuItem value="upcoming" sx={{ fontWeight: 700, color: '#1976D2' }}>Upcoming Events</MenuItem>
-                    <MenuItem value="finished" sx={{ fontWeight: 700, color: '#777' }}>Finished</MenuItem>
+                    <MenuItem value="all" sx={{ fontWeight: 600 }}>All Timeline</MenuItem>
+                    <MenuItem value="happening_now" sx={{ fontWeight: 600, color: '#006A3B' }}>Happening Now</MenuItem>
+                    <MenuItem value="upcoming" sx={{ fontWeight: 600, color: '#1976D2' }}>Upcoming Events</MenuItem>
+                    <MenuItem value="finished" sx={{ fontWeight: 600, color: '#777' }}>Finished</MenuItem>
                 </TextField>
             </Box>
 
             {/* Table */}
-            <Paper sx={{ borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+            <Paper sx={{ borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead sx={{ bgcolor: '#F4F7F6' }}>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>Event Details</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>Category</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>Date & Location</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>AI Status</TableCell>
-                                <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>Approval / Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Event Details</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Category</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Date & Location</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>AI Status</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>Approval / Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -267,37 +262,37 @@ export default function CulturalEvents() {
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                             <Avatar variant="rounded" src={row.imageUrl} sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#EBEFE8' }} />
                                             <Box>
-                                                <Typography variant="subtitle2" fontWeight={800} color="#181D19">{row.title}</Typography>
+                                                <Typography variant="subtitle2" fontWeight={600} color="#181D19">{row.title}</Typography>
                                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
                                                     {row.aiSuggested && (
                                                         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#E3F2FD', color: '#1976D2', px: 1, py: 0.2, borderRadius: 1 }}>
                                                             <AutoAwesomeIcon sx={{ fontSize: 12 }} />
-                                                            <Typography variant="caption" fontWeight={700}>AI Picked</Typography>
+                                                            <Typography variant="caption" fontWeight={600}>AI Picked</Typography>
                                                         </Box>
                                                     )}
                                                     {row.isRare && (
                                                         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#FCE4EC', color: '#C2185B', px: 1, py: 0.2, borderRadius: 1 }}>
-                                                            <Typography variant="caption" fontWeight={700}>✨ Rare Event</Typography>
+                                                            <Typography variant="caption" fontWeight={600}>✨ Rare Event</Typography>
                                                         </Box>
                                                     )}
                                                     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#FFF8E1', color: '#F57F17', px: 1, py: 0.2, borderRadius: 1, border: '1px solid #FFECB3' }}>
-                                                        <Typography variant="caption" fontWeight={800}>{row.rating ? `★ ${row.rating}` : 'Rare'}</Typography>
+                                                        <Typography variant="caption" fontWeight={600}>{row.rating ? `★ ${row.rating}` : 'Rare'}</Typography>
                                                     </Box>
                                                 </Box>
                                             </Box>
                                         </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip label={row.category} size="small" sx={{ fontWeight: 700, bgcolor: '#E8F5E9', color: '#006A3B' }} />
+                                        <Chip label={row.category} size="small" sx={{ fontWeight: 600, bgcolor: '#E8F5E9', color: '#006A3B' }} />
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="body2" fontWeight={700} color="#181D19">{row.date}</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#181D19">{row.date}</Typography>
                                         <Typography variant="caption" color="text.secondary">{row.location}</Typography>
                                     </TableCell>
                                     <TableCell>
-                                        {row.approvalStatus === 'approved' && <Chip label="Approved" size="small" color="success" sx={{ fontWeight: 700 }} />}
-                                        {row.approvalStatus === 'declined' && <Chip label="Declined" size="small" color="error" sx={{ fontWeight: 700 }} />}
-                                        {row.approvalStatus === 'waiting' && <Chip label="Awaiting Approval" size="small" color="warning" sx={{ fontWeight: 700 }} />}
+                                        {row.approvalStatus === 'approved' && <Chip label="Approved" size="small" color="success" sx={{ fontWeight: 600 }} />}
+                                        {row.approvalStatus === 'declined' && <Chip label="Declined" size="small" color="error" sx={{ fontWeight: 600 }} />}
+                                        {row.approvalStatus === 'waiting' && <Chip label="Awaiting Approval" size="small" color="warning" sx={{ fontWeight: 600 }} />}
                                     </TableCell>
                                     <TableCell>
                                         <Stack direction="row" spacing={1}>
@@ -307,7 +302,7 @@ export default function CulturalEvents() {
                                                     <IconButton size="small" color="error" onClick={() => handleApproval(row, 'declined')}><CancelIcon /></IconButton>
                                                 </>
                                             )}
-                                            <Button variant="outlined" size="small" sx={{ borderRadius: 8, fontWeight: 700, textTransform: 'none' }} onClick={() => handleOpenEditor(row)}>
+                                            <Button variant="outlined" size="small" sx={{ borderRadius: 1, fontWeight: 600, textTransform: 'none' }} onClick={() => handleOpenEditor(row)}>
                                                 Review / Edit
                                             </Button>
                                         </Stack>
@@ -329,46 +324,46 @@ export default function CulturalEvents() {
             </Paper>
 
             {/* Dialog Editor */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 2 } }}>
+            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 1.25, p: 2 } }}>
                 <DialogTitle>
-                    <Typography variant="h5" fontWeight={900} color="#006A3B">
+                    <Typography variant="h5" fontWeight={600} color="#006A3B">
                         {isCreating ? 'Create Manual Event' : 'Review Event Configuration'}
                     </Typography>
                 </DialogTitle>
                 <DialogContent>
                     <Grid container spacing={3} sx={{ mt: 1 }}>
                         <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>EVENT NAME</Typography>
-                            <TextField fullWidth value={formData.title || ''} onChange={(e) => setFormData({ ...formData, title: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }} />
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>EVENT NAME</Typography>
+                            <TextField fullWidth value={formData.title || ''} onChange={(e) => setFormData({ ...formData, title: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }} />
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>CATEGORY</Typography>
-                            <TextField select fullWidth value={formData.category || 'Festival'} onChange={(e) => setFormData({ ...formData, category: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>CATEGORY</Typography>
+                            <TextField select fullWidth value={formData.category || 'Festival'} onChange={(e) => setFormData({ ...formData, category: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}>
                                 {CATEGORIES.map(cat => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
                             </TextField>
                         </Grid>
                         <Grid item xs={12}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>DESCRIPTION</Typography>
-                            <TextField fullWidth multiline rows={3} value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }} />
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>DESCRIPTION</Typography>
+                            <TextField fullWidth multiline rows={3} value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }} />
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>START DATE</Typography>
-                            <TextField type="date" fullWidth value={formData.date || ''} onChange={(e) => setFormData({ ...formData, date: e.target.value })} InputLabelProps={{ shrink: true }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }} />
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>START DATE</Typography>
+                            <TextField type="date" fullWidth value={formData.date || ''} onChange={(e) => setFormData({ ...formData, date: e.target.value })} InputLabelProps={{ shrink: true }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }} />
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <Typography variant="caption" fontWeight={900} color="#3F4941" sx={{ display: 'block', mb: 1 }}>GEOFENCE RADIUS (km)</Typography>
+                            <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>GEOFENCE RADIUS (km)</Typography>
                             <Slider value={formData.geofenceRadius || 3.5} min={0.5} max={10.0} step={0.5} onChange={(e, val) => setFormData({ ...formData, geofenceRadius: val })} sx={{ color: '#006A3B', mt: 2 }} />
                         </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions sx={{ p: 3, pt: 0 }}>
                     {!isCreating && (
-                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => { handleDelete(selectedEvent.id); setOpenDialog(false); }} sx={{ mr: 'auto', fontWeight: 800 }}>
+                        <Button color="error" startIcon={<DeleteIcon />} onClick={() => { handleDelete(selectedEvent.id); setOpenDialog(false); }} sx={{ mr: 'auto', fontWeight: 600 }}>
                             Delete Event
                         </Button>
                     )}
-                    <Button onClick={() => setOpenDialog(false)} sx={{ color: '#5C6E64', fontWeight: 800 }}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSave} sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2 }}>
+                    <Button onClick={() => setOpenDialog(false)} sx={{ color: '#5C6E64', fontWeight: 600 }}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSave} sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2 }}>
                         Save Configuration
                     </Button>
                 </DialogActions>

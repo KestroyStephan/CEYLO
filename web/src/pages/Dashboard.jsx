@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { 
     Grid, Paper, Typography, Box, Chip, Button, 
     Divider, Stack, Avatar, List, ListItem, ListItemIcon, ListItemText,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment,
-    Menu, MenuItem, Snackbar, Alert
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Snackbar, Alert
 } from '@mui/material';
 import { collection, onSnapshot, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -15,9 +15,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import AddIcon from '@mui/icons-material/Add';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import MapIcon from '@mui/icons-material/Map';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
@@ -34,8 +31,6 @@ export default function Dashboard() {
     const [liveActivities, setLiveActivities] = useState([]);
     
     // Filter States
-    const [dateFilter, setDateFilter] = useState(new Date().toISOString().slice(0,10));
-    const [filterAnchor, setFilterAnchor] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
     const navigate = useNavigate();
@@ -132,83 +127,10 @@ export default function Dashboard() {
             {/* Operations Header with Filters */}
             <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { md: 'flex-end' }, gap: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={800} color="#006A3B" gutterBottom>
-                        CEYLO Operations
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        {todayDate} — Control Center
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Dashboard</Typography>
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>{todayDate}</Typography>
                 </Box>
                 
-                {/* Advanced Filter Bar */}
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                    <TextField 
-                        type="date" 
-                        size="small" 
-                        value={dateFilter}
-                        onChange={(e) => setDateFilter(e.target.value)}
-                        sx={{ 
-                            bgcolor: '#FFF', 
-                            minWidth: 160, 
-                            '& .MuiOutlinedInput-root': { 
-                                borderRadius: 8, 
-                                '& fieldset': { borderColor: '#EBEFE8' },
-                                '&:hover fieldset': { borderColor: '#006A3B' }
-                            } 
-                        }}
-                        InputProps={{
-                            startAdornment: <InputAdornment position="start"><CalendarMonthIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment>
-                        }}
-                    />
-                    <Button 
-                        variant="outlined" 
-                        size="small" 
-                        startIcon={<FilterListIcon />} 
-                        onClick={(e) => setFilterAnchor(e.currentTarget)}
-                        sx={{ 
-                            borderColor: '#EBEFE8', 
-                            color: '#181D19', 
-                            bgcolor: '#FFF',
-                            borderRadius: 8,
-                            px: 2,
-                            fontWeight: 600,
-                            '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6' }
-                        }}
-                    >
-                        More Filters
-                    </Button>
-                    <Menu
-                        anchorEl={filterAnchor}
-                        open={Boolean(filterAnchor)}
-                        onClose={() => setFilterAnchor(null)}
-                        PaperProps={{
-                            sx: { mt: 1, borderRadius: 3, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #EBEFE8' }
-                        }}
-                    >
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>View: Weekly Stats</Typography></MenuItem>
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>View: Monthly Stats</Typography></MenuItem>
-                        <Divider />
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" color="error" fontWeight={600}>Clear Filters</Typography></MenuItem>
-                    </Menu>
-
-                    <Button 
-                        variant="contained" 
-                        size="small" 
-                        startIcon={<AddIcon />} 
-                        onClick={() => setSnackbar({ open: true, message: 'Opening Quick Action Modal...' })}
-                        sx={{ 
-                            bgcolor: '#006A3B', 
-                            color: '#FFF',
-                            borderRadius: 8,
-                            px: 2,
-                            fontWeight: 600,
-                            boxShadow: 'none',
-                            '&:hover': { boxShadow: '0 4px 12px rgba(0, 106, 59, 0.2)' }
-                        }}
-                    >
-                        New Action
-                    </Button>
-                </Box>
             </Box>
 
             {/* High-value KPI Blocks */}
@@ -279,14 +201,14 @@ export default function Dashboard() {
                                             {operationalQueue.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#5C6E64' }}>
-                                                        Queue is clear. Excellent work.
+                                                        Nothing waiting for review.
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
                                                 operationalQueue.slice(0, 6).map(item => (
                                                     <TableRow key={item.id} hover>
                                                         <TableCell>
-                                                            <Typography variant="body2" fontWeight={700} color="#181D19">
+                                                            <Typography variant="body2" fontWeight={600} color="#181D19">
                                                                 {item.title}
                                                             </Typography>
                                                             <Typography variant="caption" color="text.secondary">
@@ -297,7 +219,7 @@ export default function Dashboard() {
                                                             <Chip 
                                                                 label={item.typeLabel} 
                                                                 size="small" 
-                                                                sx={{ bgcolor: item.typeBg, color: item.typeColor, fontWeight: 700 }} 
+                                                                sx={{ bgcolor: item.typeBg, color: item.typeColor, fontWeight: 600 }} 
                                                             />
                                                         </TableCell>
                                                         <TableCell sx={{ color: '#5C6E64' }}>{item.submitted}</TableCell>
@@ -319,22 +241,14 @@ export default function Dashboard() {
                                 </TableContainer>
                             </Paper>
 
-                    {/* Quick Analytics / Map Stub */}
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" color="#181D19" sx={{ mb: 2 }}>Geographic Activity</Typography>
-                        <Box sx={{ width: '100%', height: 280, bgcolor: '#F4F7F6', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #EBEFE8' }}>
-                            <Typography variant="body2" color="#8B9B92" fontWeight={600}>Live Map Visualization (Active)</Typography>
-                        </Box>
-                    </Paper>
-
                 </Grid>
 
                 {/* Right Column: Recent Activity & Quick Actions */}
                 <Grid size={{ xs: 12, md: 4 }}>
                     
                     {/* Quick Actions (Moved to Top) */}
-                    <Paper sx={{ p: 3, mb: 4, background: 'linear-gradient(180deg, #FFFFFF 0%, #F8F9FA 100%)' }}>
-                        <Typography variant="subtitle2" fontWeight={800} color="#006A3B" sx={{ mb: 2.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <Paper sx={{ p: 3, mb: 4, bgcolor: '#FFFFFF' }}>
+                        <Typography variant="subtitle2" fontWeight={600} color="#006A3B" sx={{ mb: 2.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Quick Actions
                         </Typography>
                         <Stack spacing={1.5}>
@@ -349,9 +263,9 @@ export default function Dashboard() {
                                     borderColor: '#EBEFE8', 
                                     py: 1.5, px: 2,
                                     bgcolor: '#FFF',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     transition: 'all 0.2s ease',
-                                    '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,106,59,0.05)' }
+                                    '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6', boxShadow: 'none' }
                                 }}
                             >
                                 Add New Destination
@@ -367,9 +281,9 @@ export default function Dashboard() {
                                     borderColor: '#EBEFE8', 
                                     py: 1.5, px: 2,
                                     bgcolor: '#FFF',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     transition: 'all 0.2s ease',
-                                    '&:hover': { borderColor: '#F57C00', bgcolor: '#FFF3E0', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(245,124,0,0.05)' }
+                                    '&:hover': { borderColor: '#F57C00', bgcolor: '#FFF3E0', boxShadow: '0 4px 12px rgba(245,124,0,0.05)' }
                                 }}
                             >
                                 Broadcast Emergency
@@ -385,9 +299,9 @@ export default function Dashboard() {
                                     borderColor: '#EBEFE8', 
                                     py: 1.5, px: 2,
                                     bgcolor: '#FFF',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     transition: 'all 0.2s ease',
-                                    '&:hover': { borderColor: '#1976D2', bgcolor: '#E3F2FD', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(25,118,210,0.05)' }
+                                    '&:hover': { borderColor: '#1976D2', bgcolor: '#E3F2FD', boxShadow: '0 4px 12px rgba(25,118,210,0.05)' }
                                 }}
                             >
                                 Generate KPI Report
@@ -402,6 +316,9 @@ export default function Dashboard() {
                         </Box>
                         
                         <List sx={{ p: 0 }}>
+                            {liveActivities.length === 0 && (
+                                <Typography sx={{ p: 2.5, fontSize: 13, color: 'text.secondary' }}>No activity yet.</Typography>
+                            )}
                             {liveActivities.map((act, index) => (
                                 <Box key={act.id}>
                                     <ListItem sx={{ py: 2, px: 2.5 }}>
@@ -411,7 +328,7 @@ export default function Dashboard() {
                                             </Avatar>
                                         </ListItemIcon>
                                         <ListItemText 
-                                            primary={<Typography variant="body2" fontWeight={700} color="#181D19">{act.title}</Typography>}
+                                            primary={<Typography variant="body2" fontWeight={600} color="#181D19">{act.title}</Typography>}
                                             secondary={
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                                                     <Typography variant="caption" color="text.secondary">{act.subtitle}</Typography>

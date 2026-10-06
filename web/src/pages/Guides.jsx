@@ -258,19 +258,14 @@ export default function Guides() {
             {/* Header segment */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        CMS: Guide Registry
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Supervise, verify, and monitor tour operators across the island.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Guides</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button 
                         variant="outlined" 
                         onClick={handleExportPDF}
                         startIcon={<FileDownloadIcon />} 
-                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}
                     >
                         Export Registry
                     </Button>
@@ -278,7 +273,7 @@ export default function Guides() {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => setOpenOnboardDialog(true)}
-                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2, px: 3, textTransform: 'none' }}
+                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2, px: 3, textTransform: 'none' }}
                     >
                         Onboard New Guide
                     </Button>
@@ -288,20 +283,20 @@ export default function Guides() {
             {/* KPI Banners */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL ACTIVE GUIDES</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#006A3B">{activeGuidesCount}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Verified Operators</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">TOTAL ACTIVE GUIDES</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#006A3B">{activeGuidesCount}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Verified Operators</Typography>
                     </Paper>
                 </Grid>
                 
                 <Grid size={{ xs: 12, md: 3 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #FFCDD2', bgcolor: '#FFF5F5', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #FFCDD2', bgcolor: '#FFF5F5', boxShadow: 'none' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box>
-                                <Typography variant="caption" fontWeight={900} color="#BA1A1A">NEW APPLICATIONS</Typography>
-                                <Typography variant="h4" fontWeight={950} color="#BA1A1A">{pendingReviewCount}</Typography>
-                                <Typography variant="caption" color="#BA1A1A" fontWeight={750}>Awaiting Verification</Typography>
+                                <Typography variant="caption" fontWeight={600} color="#BA1A1A">NEW APPLICATIONS</Typography>
+                                <Typography variant="h4" fontWeight={600} color="#BA1A1A">{pendingReviewCount}</Typography>
+                                <Typography variant="caption" color="#BA1A1A" fontWeight={600}>Awaiting Verification</Typography>
                             </Box>
                             <ErrorOutlineIcon sx={{ color: '#BA1A1A' }} />
                         </Box>
@@ -309,7 +304,7 @@ export default function Guides() {
                 </Grid>
                 
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
                          <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ fontStyle: 'italic' }}>
                             "To ensure highest quality tours, prioritize processing pending applications within 48 hours. Ensure language proficiencies match required operational zones."
                          </Typography>
@@ -318,11 +313,11 @@ export default function Guides() {
             </Grid>
 
             {/* Premium Controls Toolbar */}
-            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
                         <FilterListIcon sx={{ color: '#006A3B' }} />
-                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                        <Typography variant="body2" fontWeight={600} color="#006A3B">FILTERS</Typography>
                     </Box>
                     <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
                     <TextField
@@ -330,10 +325,10 @@ export default function Guides() {
                         size="small"
                         value={filterRegion}
                         onChange={(e) => setFilterRegion(e.target.value)}
-                        sx={{ width: 220, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 220, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                         InputProps={{ startAdornment: <InputAdornment position="start"><LocationOnIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment> }}
                     >
-                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Regions</MenuItem>
+                        <MenuItem value="All" sx={{ fontWeight: 600 }}>All Regions</MenuItem>
                         <MenuItem value="Central Province">Central</MenuItem>
                         <MenuItem value="Southern Province">Southern</MenuItem>
                         <MenuItem value="North Central Province">North Central</MenuItem>
@@ -346,7 +341,7 @@ export default function Guides() {
                         size="small"
                         value={filterExpertise}
                         onChange={(e) => setFilterExpertise(e.target.value)}
-                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     >
                         <MenuItem value="All">All Expertise</MenuItem>
                         <MenuItem value="Wildlife">Wildlife</MenuItem>
@@ -359,12 +354,12 @@ export default function Guides() {
                         size="small"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     >
-                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Statuses</MenuItem>
-                        <MenuItem value="Verified" sx={{ fontWeight: 700, color: '#006A3B' }}>Verified</MenuItem>
-                        <MenuItem value="Pending" sx={{ fontWeight: 700, color: '#BA1A1A' }}>Pending</MenuItem>
-                        <MenuItem value="Rejected" sx={{ fontWeight: 700, color: '#777' }}>Rejected</MenuItem>
+                        <MenuItem value="All" sx={{ fontWeight: 600 }}>All Statuses</MenuItem>
+                        <MenuItem value="Verified" sx={{ fontWeight: 600, color: '#006A3B' }}>Verified</MenuItem>
+                        <MenuItem value="Pending" sx={{ fontWeight: 600, color: '#BA1A1A' }}>Pending</MenuItem>
+                        <MenuItem value="Rejected" sx={{ fontWeight: 600, color: '#777' }}>Rejected</MenuItem>
                     </TextField>
                 </Box>
                 <TextField 
@@ -372,7 +367,7 @@ export default function Guides() {
                     size="small"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
             </Paper>
@@ -382,17 +377,17 @@ export default function Guides() {
                 
                 {/* Guides Table list */}
                 <Grid size={{ xs: 12, md: selectedGuide ? 7 : 12 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                         
                         <TableContainer>
                             <Table>
                                 <TableHead sx={{ bgcolor: '#F8F9FA' }}>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>NAME & LICENSE</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>LANGUAGES</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>EXPERTISE</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>VERIFICATION</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ECO-SCORE</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>NAME & LICENSE</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>LANGUAGES</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>EXPERTISE</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>VERIFICATION</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>ECO-SCORE</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -412,7 +407,7 @@ export default function Guides() {
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                         <Box sx={{ position: 'relative' }}>
-                                                            <Avatar sx={{ bgcolor: '#e0f2f1', color: '#004d40', fontWeight: 800 }}>
+                                                            <Avatar sx={{ bgcolor: '#e0f2f1', color: '#004d40', fontWeight: 600 }}>
                                                                 {g.name.split(' ').map(n => n[0]).join('')}
                                                             </Avatar>
                                                             {g.status === 'Verified' && (
@@ -424,7 +419,7 @@ export default function Guides() {
                                                             )}
                                                         </Box>
                                                         <Box>
-                                                            <Typography variant="body2" fontWeight={800}>{g.name}</Typography>
+                                                            <Typography variant="body2" fontWeight={600}>{g.name}</Typography>
                                                             <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
                                                                 {g.guideLicense}
                                                             </Typography>
@@ -441,7 +436,7 @@ export default function Guides() {
                                                                 label={lng} 
                                                                 size="small" 
                                                                 sx={{ 
-                                                                    height: 18, fontSize: '0.65rem', fontWeight: 800,
+                                                                    height: 18, fontSize: '0.65rem', fontWeight: 600,
                                                                     bgcolor: lng === 'Sinhala' ? '#E1F5FE' : lng === 'Tamil' ? '#FFF3E0' : '#E8F5E9',
                                                                     color: lng === 'Sinhala' ? '#0288D1' : lng === 'Tamil' ? '#E65100' : '#2E7D32'
                                                                 }} 
@@ -457,7 +452,7 @@ export default function Guides() {
                                                         icon={getExpertiseIcon(g.specializations)}
                                                         size="small" 
                                                         sx={{ 
-                                                            fontWeight: 700, 
+                                                            fontWeight: 600, 
                                                             bgcolor: '#F5F5F5', 
                                                             color: '#333',
                                                             border: '1px solid #EBEFE8'
@@ -471,7 +466,7 @@ export default function Guides() {
                                                         label={g.status} 
                                                         size="small" 
                                                         sx={{ 
-                                                            fontWeight: 800, fontSize: '0.65rem',
+                                                            fontWeight: 600, fontSize: '0.65rem',
                                                             bgcolor: g.status === 'Verified' ? '#E8F5E9' : g.status === 'Pending' ? '#FFF3E0' : '#E0F7FA',
                                                             color: g.status === 'Verified' ? '#2E7D32' : g.status === 'Pending' ? '#E65100' : '#00838F'
                                                         }} 
@@ -489,7 +484,7 @@ export default function Guides() {
                                                             sx={{ color: g.ecoScore > 80 ? '#2E7D32' : g.ecoScore > 60 ? '#F57C00' : '#D32F2F' }} 
                                                         />
                                                         <Box sx={{ top: 0, left: 0, bottom: 0, right: 0, position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                            <Typography variant="caption" fontSize="0.65rem" fontWeight={900}>{g.ecoScore}</Typography>
+                                                            <Typography variant="caption" fontSize="0.65rem" fontWeight={600}>{g.ecoScore}</Typography>
                                                         </Box>
                                                     </Box>
                                                 </TableCell>
@@ -503,7 +498,7 @@ export default function Guides() {
 
                         {/* Pagination footer */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
-                            <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                            <Typography variant="caption" color="text.secondary" fontWeight={600}>
                                 Showing {startIndex + 1}-{Math.min(startIndex + rowsPerPage, filteredGuides.length)} of {filteredGuides.length} guides
                             </Typography>
                             <Pagination 
@@ -521,7 +516,7 @@ export default function Guides() {
                 {/* Right panel: Detail Drawer sheet */}
                 {selectedGuide && (
                     <Grid size={{ xs: 12, md: 5 }}>
-                        <Paper sx={{ p: 3, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none', position: 'relative' }}>
+                        <Paper sx={{ p: 3, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none', position: 'relative' }}>
                             <IconButton 
                                 onClick={() => setSelectedGuide(null)} 
                                 sx={{ position: 'absolute', top: 16, right: 16 }}
@@ -530,10 +525,10 @@ export default function Guides() {
                             </IconButton>
 
                             <Box sx={{ textAlign: 'center', mb: 3, mt: 1 }}>
-                                <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 1.5, bgcolor: '#e0f2f1', color: '#004d40', fontSize: '1.5rem', fontWeight: 800 }}>
+                                <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 1.5, bgcolor: '#e0f2f1', color: '#004d40', fontSize: '1.5rem', fontWeight: 600 }}>
                                     {selectedGuide.name.split(' ').map(n => n[0]).join('')}
                                 </Avatar>
-                                <Typography variant="h6" fontWeight={900}>{selectedGuide.name}</Typography>
+                                <Typography variant="h6" fontWeight={600}>{selectedGuide.name}</Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                     {selectedGuide.region} • {selectedGuide.experience} Years Experience
                                 </Typography>
@@ -544,11 +539,11 @@ export default function Guides() {
                             <Stack spacing={2.5}>
                                 {/* License detail */}
                                 <Box>
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                    <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                         LICENSE IDENTIFICATION
                                     </Typography>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Typography variant="body2" fontWeight={800} sx={{ fontFamily: 'monospace' }}>
+                                        <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
                                             {selectedGuide.guideLicense}
                                         </Typography>
                                         {selectedGuide.status === 'Verified' && <CheckCircleOutlineIcon color="success" sx={{ fontSize: 16 }} />}
@@ -557,7 +552,7 @@ export default function Guides() {
 
                                 {/* Documents uploaded during onboarding */}
                                 <Box>
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                    <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                         DOCUMENTS
                                     </Typography>
                                     <Stack direction="row" spacing={1}>
@@ -573,18 +568,18 @@ export default function Guides() {
                                 {/* Contact detail */}
                                 <Grid container spacing={2}>
                                     <Grid size={{ xs: 6 }}>
-                                        <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                        <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                             EMAIL
                                         </Typography>
-                                        <Typography variant="body2" fontWeight={700}>
+                                        <Typography variant="body2" fontWeight={600}>
                                             {selectedGuide.email || 'N/A'}
                                         </Typography>
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
-                                        <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                        <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                             PHONE
                                         </Typography>
-                                        <Typography variant="body2" fontWeight={700}>
+                                        <Typography variant="body2" fontWeight={600}>
                                             {selectedGuide.phone || 'N/A'}
                                         </Typography>
                                     </Grid>
@@ -592,44 +587,44 @@ export default function Guides() {
 
                                 {/* Expertise description details */}
                                 <Box>
-                                    <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                    <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                         EXPERTISE SPECIALIZATION
                                     </Typography>
                                     <Chip 
                                         label={selectedGuide.specializations} 
                                         icon={getExpertiseIcon(selectedGuide.specializations)}
                                         size="small" 
-                                        sx={{ fontWeight: 800 }} 
+                                        sx={{ fontWeight: 600 }} 
                                     />
                                 </Box>
 
                                 {/* Eco passport detail */}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F1F8F6', p: 2, borderRadius: 3, border: '1px solid #EBEFE8' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F1F8F6', p: 2, borderRadius: 1.25, border: '1px solid #EBEFE8' }}>
                                     <Box>
-                                        <Typography variant="body2" fontWeight={900} color="#006A3B">Eco Score Authority</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#006A3B">Eco Score Authority</Typography>
                                         <Typography variant="caption" color="text.secondary">Adherence to sustainable tourism guidelines</Typography>
                                     </Box>
-                                    <Typography variant="h5" fontWeight={950} color="#006A3B">{selectedGuide.ecoScore}%</Typography>
+                                    <Typography variant="h5" fontWeight={600} color="#006A3B">{selectedGuide.ecoScore}%</Typography>
                                 </Box>
 
                                 {/* Performance and Bookings stats */}
                                 <Grid container spacing={2}>
                                     <Grid size={{ xs: 6 }}>
-                                        <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
-                                            <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                        <Paper sx={{ p: 2, borderRadius: 1.25, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
+                                            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                                 PERFORMANCE
                                             </Typography>
-                                            <Typography variant="h6" fontWeight={900} color="#F57C00">
+                                            <Typography variant="h6" fontWeight={600} color="#F57C00">
                                                 {selectedGuide.rating || '4.8'} <span style={{ fontSize: '0.8rem', color: '#777' }}>/ 5.0</span>
                                             </Typography>
                                         </Paper>
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
-                                        <Paper sx={{ p: 2, borderRadius: 3, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
-                                            <Typography variant="caption" fontWeight={900} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                        <Paper sx={{ p: 2, borderRadius: 1.25, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
+                                            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                                                 ASSIGNED TOURS
                                             </Typography>
-                                            <Typography variant="h6" fontWeight={900} color="#006A3B">
+                                            <Typography variant="h6" fontWeight={600} color="#006A3B">
                                                 {selectedGuide.completedTours || '24'}
                                             </Typography>
                                         </Paper>
@@ -646,7 +641,7 @@ export default function Guides() {
                                                     variant="contained" 
                                                     color="success" 
                                                     onClick={() => handleDecision(selectedGuide.id, true)}
-                                                    sx={{ borderRadius: 2, py: 1.2, fontWeight: 800, textTransform: 'none' }}
+                                                    sx={{ borderRadius: 2, py: 1.2, fontWeight: 600, textTransform: 'none' }}
                                                 >
                                                     Approve Partner
                                                 </Button>
@@ -657,7 +652,7 @@ export default function Guides() {
                                                     variant="outlined" 
                                                     color="error" 
                                                     onClick={() => handleDecision(selectedGuide.id, false)}
-                                                    sx={{ borderRadius: 2, py: 1.2, fontWeight: 800, textTransform: 'none' }}
+                                                    sx={{ borderRadius: 2, py: 1.2, fontWeight: 600, textTransform: 'none' }}
                                                 >
                                                     Reject
                                                 </Button>
@@ -669,7 +664,7 @@ export default function Guides() {
                                                 label={selectedGuide.status === 'Verified' ? 'Verification Complete — Active Guide' : 'Application Rejected'} 
                                                 color={selectedGuide.status === 'Verified' ? 'success' : 'error'}
                                                 variant="outlined" 
-                                                sx={{ fontWeight: 850, py: 2, px: 1, borderRadius: 2 }} 
+                                                sx={{ fontWeight: 600, py: 2, px: 1, borderRadius: 2 }} 
                                             />
                                         </Box>
                                     )}
@@ -683,8 +678,8 @@ export default function Guides() {
             </Grid>
 
             {/* Onboard New Guide Modal Dialog */}
-            <Dialog open={openOnboardDialog} onClose={() => setOpenOnboardDialog(false)} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
-                <DialogTitle sx={{ fontWeight: 900 }}>Onboard New Guide</DialogTitle>
+            <Dialog open={openOnboardDialog} onClose={() => setOpenOnboardDialog(false)} PaperProps={{ sx: { borderRadius: 1.25, p: 1 } }}>
+                <DialogTitle sx={{ fontWeight: 600 }}>Onboard New Guide</DialogTitle>
                 <DialogContent>
                     <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2.5, minWidth: 400 }}>
                         <TextField 
@@ -692,21 +687,21 @@ export default function Guides() {
                             fullWidth
                             value={newGuideData.name}
                             onChange={(e) => setNewGuideData({ ...newGuideData, name: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                         />
                         <TextField 
                             label="SLTDA LICENSE NUMBER" 
                             fullWidth
                             value={newGuideData.guideLicense}
                             onChange={(e) => setNewGuideData({ ...newGuideData, guideLicense: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                         />
                         <TextField 
                             label="SPOKEN LANGUAGES (comma separated)" 
                             fullWidth
                             value={newGuideData.languages}
                             onChange={(e) => setNewGuideData({ ...newGuideData, languages: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                         />
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 6 }}>
@@ -717,7 +712,7 @@ export default function Guides() {
                                         value={newGuideData.specializations}
                                         label="EXPERTISE"
                                         onChange={(e) => setNewGuideData({ ...newGuideData, specializations: e.target.value })}
-                                        sx={{ borderRadius: 3 }}
+                                        sx={{ borderRadius: 1.25 }}
                                     >
                                         <MenuItem value="Wildlife">Wildlife</MenuItem>
                                         <MenuItem value="Cultural">Cultural</MenuItem>
@@ -734,7 +729,7 @@ export default function Guides() {
                                         value={newGuideData.region}
                                         label="REGION"
                                         onChange={(e) => setNewGuideData({ ...newGuideData, region: e.target.value })}
-                                        sx={{ borderRadius: 3 }}
+                                        sx={{ borderRadius: 1.25 }}
                                     >
                                         <MenuItem value="Central Province">Central Province</MenuItem>
                                         <MenuItem value="Southern Province">Southern Province</MenuItem>
@@ -754,7 +749,7 @@ export default function Guides() {
                                     fullWidth
                                     value={newGuideData.ecoScore}
                                     onChange={(e) => setNewGuideData({ ...newGuideData, ecoScore: e.target.value })}
-                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                                 />
                             </Grid>
                             <Grid size={{ xs: 6 }}>
@@ -764,7 +759,7 @@ export default function Guides() {
                                     fullWidth
                                     value={newGuideData.experience}
                                     onChange={(e) => setNewGuideData({ ...newGuideData, experience: e.target.value })}
-                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                                 />
                             </Grid>
                         </Grid>
@@ -774,26 +769,26 @@ export default function Guides() {
                             fullWidth
                             value={newGuideData.email}
                             onChange={(e) => setNewGuideData({ ...newGuideData, email: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                         />
                         <TextField 
                             label="PHONE NUMBER" 
                             fullWidth
                             value={newGuideData.phone}
                             onChange={(e) => setNewGuideData({ ...newGuideData, phone: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.25 } }}
                         />
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenOnboardDialog(false)} sx={{ fontWeight: 800 }}>Cancel</Button>
-                    <Button onClick={handleOnboardSubmit} variant="contained" sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 2 }}>Onboard Guide</Button>
+                    <Button onClick={() => setOpenOnboardDialog(false)} sx={{ fontWeight: 600 }}>Cancel</Button>
+                    <Button onClick={handleOnboardSubmit} variant="contained" sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 2 }}>Onboard Guide</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Custom Toast Alert */}
             <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-                <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })} sx={{ borderRadius: 3 }}>
+                <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })} sx={{ borderRadius: 1.25 }}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>

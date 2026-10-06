@@ -191,9 +191,9 @@ export default function ProviderRegister() {
 
     return (
         <Container maxWidth="md" sx={{ mt: 8, mb: 4 }}>
-            <Card sx={{ borderRadius: 3, boxShadow: 4, p: 2 }}>
+            <Card sx={{ borderRadius: 1.25, boxShadow: 4, p: 2 }}>
                 <CardContent>
-                    <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', color: '#00695c' }}>
+                    <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 600, color: '#00695c' }}>
                         Partner Registration
                     </Typography>
                     <Typography variant="body1" align="center" color="textSecondary" sx={{ mb: 4 }}>

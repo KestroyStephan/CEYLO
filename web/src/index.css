@@ -1,11 +1,11 @@
 :root {
-  font-family: 'Outfit', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light;
-  color: #333;
-  background-color: #f4f7f6;
+  color: #18201C;
+  background-color: #F6F7F6;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,31 +26,31 @@ body {
 
 a {
   font-weight: 500;
-  color: #00695c;
+  color: #0B6B3A;
   text-decoration: inherit;
-  transition: color 0.3s ease;
 }
 
 a:hover {
-  color: #004d40;
+  color: #08532D;
 }
 
-/* Custom scrollbar for a premium feel */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #00695c;
+  background: #CBD2CE;
   border-radius: 10px;
+  border: 2px solid #F6F7F6;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #004d40;
+  background: #A9B3AE;
 }
 
 .alert-row-active {

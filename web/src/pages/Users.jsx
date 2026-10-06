@@ -171,19 +171,14 @@ export default function Users() {
             {/* Header segment */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '1px solid #EBEFE8', pb: 2 }}>
                 <Box>
-                    <Typography variant="h4" fontWeight={900} color="#006A3B" gutterBottom sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        CMS: Users Registry
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                        Supervise, verify, and monitor tourists and stakeholders across the island.
-                    </Typography>
+                    <Typography component="h1" sx={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em' }}>Users</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button 
                         variant="outlined" 
                         onClick={handleExportPDF}
                         startIcon={<FileDownloadIcon />} 
-                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                        sx={{ color: '#006A3B', borderColor: '#006A3B', fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}
                     >
                         Export Registry
                     </Button>
@@ -191,7 +186,7 @@ export default function Users() {
                         variant="contained"
                         onClick={() => setBroadcastOpen(true)}
                         startIcon={<CampaignIcon />}
-                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 800, borderRadius: 8, px: 3, py: 1, textTransform: 'none' }}
+                        sx={{ bgcolor: '#006A3B', '&:hover': { bgcolor: '#004D2C' }, fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}
                     >
                         Broadcast Alert
                     </Button>
@@ -201,20 +196,20 @@ export default function Users() {
             {/* KPI Banners */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">TOTAL USERS</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#006A3B">{users.length.toLocaleString()}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>Registered Members</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">TOTAL USERS</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#006A3B">{users.length.toLocaleString()}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Registered Members</Typography>
                     </Paper>
                 </Grid>
                 
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #D1FAE5', bgcolor: '#F0FDF4', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #D1FAE5', bgcolor: '#F0FDF4', boxShadow: 'none' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box>
-                                <Typography variant="caption" fontWeight={900} color="#059669">NEW SIGNUPS (24H)</Typography>
-                                <Typography variant="h4" fontWeight={950} color="#059669">+{newSignups.toLocaleString()}</Typography>
-                                <Typography variant="caption" color="#059669" fontWeight={750}>Growing community</Typography>
+                                <Typography variant="caption" fontWeight={600} color="#059669">NEW SIGNUPS (24H)</Typography>
+                                <Typography variant="h4" fontWeight={600} color="#059669">+{newSignups.toLocaleString()}</Typography>
+                                <Typography variant="caption" color="#059669" fontWeight={600}>Growing community</Typography>
                             </Box>
                             <PersonAddIcon sx={{ color: '#059669' }} />
                         </Box>
@@ -222,20 +217,20 @@ export default function Users() {
                 </Grid>
                 
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="caption" fontWeight={900} color="text.secondary">ADMINISTRATORS</Typography>
-                        <Typography variant="h4" fontWeight={950} color="#006A3B">{users.filter(u => u.role === 'admin' || u.role === 'super_admin').length}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={750}>System maintainers</Typography>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                        <Typography variant="caption" fontWeight={600} color="text.secondary">ADMINISTRATORS</Typography>
+                        <Typography variant="h4" fontWeight={600} color="#006A3B">{users.filter(u => u.role === 'admin' || u.role === 'super_admin').length}</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>System maintainers</Typography>
                     </Paper>
                 </Grid>
             </Grid>
 
             {/* Premium Controls Toolbar */}
-            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
+            <Paper sx={{ mb: 3, p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', bgcolor: '#FFF' }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
                         <FilterListIcon sx={{ color: '#006A3B' }} />
-                        <Typography variant="body2" fontWeight={900} color="#006A3B">FILTERS</Typography>
+                        <Typography variant="body2" fontWeight={600} color="#006A3B">FILTERS</Typography>
                     </Box>
                     <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
                     <TextField
@@ -243,13 +238,13 @@ export default function Users() {
                         size="small"
                         value={filterRole}
                         onChange={(e) => setFilterRole(e.target.value)}
-                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                        sx={{ width: 180, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     >
-                        <MenuItem value="All" sx={{ fontWeight: 700 }}>All Roles</MenuItem>
-                        <MenuItem value="Admin" sx={{ fontWeight: 700 }}>Admin</MenuItem>
-                        <MenuItem value="Tourist" sx={{ fontWeight: 700 }}>Tourist</MenuItem>
-                        <MenuItem value="Guide" sx={{ fontWeight: 700 }}>Guide</MenuItem>
-                        <MenuItem value="Vendor" sx={{ fontWeight: 700 }}>Vendor</MenuItem>
+                        <MenuItem value="All" sx={{ fontWeight: 600 }}>All Roles</MenuItem>
+                        <MenuItem value="Admin" sx={{ fontWeight: 600 }}>Admin</MenuItem>
+                        <MenuItem value="Tourist" sx={{ fontWeight: 600 }}>Tourist</MenuItem>
+                        <MenuItem value="Guide" sx={{ fontWeight: 600 }}>Guide</MenuItem>
+                        <MenuItem value="Vendor" sx={{ fontWeight: 600 }}>Vendor</MenuItem>
                     </TextField>
                 </Box>
                 <TextField 
@@ -257,7 +252,7 @@ export default function Users() {
                     size="small"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 1.25, bgcolor: '#FAFCFA', '& fieldset': { borderColor: '#EBEFE8' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
                 />
             </Paper>
@@ -265,18 +260,18 @@ export default function Users() {
             {/* High Density Table */}
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 4, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                         <TableContainer>
                             <Table>
                                 <TableHead sx={{ bgcolor: '#F8F9FA' }}>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>NAME</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>EMAIL</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ROLE</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>ECO SCORE</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>JOIN DATE</TableCell>
-                                        <TableCell sx={{ fontWeight: 800, color: '#3F4941' }}>STATUS</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 800, color: '#3F4941' }}>ACTIONS</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>NAME</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>EMAIL</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>ROLE</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>ECO SCORE</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>JOIN DATE</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#3F4941' }}>STATUS</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 600, color: '#3F4941' }}>ACTIONS</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -284,16 +279,16 @@ export default function Users() {
                                         <TableRow key={u.id} hover onClick={() => openDrawer(u)} sx={{ cursor: 'pointer' }}>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: '#e0f2f1', color: '#004d40', fontSize: '0.85rem', fontWeight: 800 }}>
+                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: '#e0f2f1', color: '#004d40', fontSize: '0.85rem', fontWeight: 600 }}>
                                                         {u.name.substring(0, 2).toUpperCase()}
                                                     </Avatar>
-                                                    <Typography variant="body2" fontWeight={800} color="#0F172A">{u.name}</Typography>
+                                                    <Typography variant="body2" fontWeight={600} color="#0F172A">{u.name}</Typography>
                                                 </Box>
                                             </TableCell>
                                             <TableCell><Typography variant="body2" color="text.secondary" fontWeight={500}>{u.email}</Typography></TableCell>
                                             <TableCell><Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }} fontWeight={600}>{u.role.replace('_', ' ')}</Typography></TableCell>
                                             <TableCell>
-                                                <Typography variant="body2" fontWeight={800} color={u.ecoScore >= 90 ? '#059669' : (u.ecoScore >= 70 ? '#D97706' : '#DC2626')}>
+                                                <Typography variant="body2" fontWeight={600} color={u.ecoScore >= 90 ? '#059669' : (u.ecoScore >= 70 ? '#D97706' : '#DC2626')}>
                                                     {u.ecoScore}/100
                                                 </Typography>
                                             </TableCell>
@@ -331,7 +326,7 @@ export default function Users() {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <Avatar sx={{ width: 48, height: 48, bgcolor: '#0F172A' }}>{selectedUser.name.substring(0,2).toUpperCase()}</Avatar>
                                 <Box>
-                                    <Typography variant="h6" fontWeight={700} color="#0F172A" sx={{ lineHeight: 1.2 }}>{selectedUser.name}</Typography>
+                                    <Typography variant="h6" fontWeight={600} color="#0F172A" sx={{ lineHeight: 1.2 }}>{selectedUser.name}</Typography>
                                     <Typography variant="body2" color="text.secondary">{selectedUser.email}</Typography>
                                 </Box>
                             </Box>
@@ -360,7 +355,7 @@ export default function Users() {
             </Drawer>
 
             <Dialog open={broadcastOpen} onClose={() => setBroadcastOpen(false)} PaperProps={{ sx: { borderRadius: 2, width: 400 } }}>
-                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Broadcast Notification</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>Broadcast Notification</DialogTitle>
                 <DialogContent>
                     <TextField fullWidth label="Title" size="small" margin="normal" value={broadcastMsg.title} onChange={e => setBroadcastMsg({...broadcastMsg, title: e.target.value})} />
                     <TextField fullWidth multiline rows={3} label="Message" size="small" margin="normal" value={broadcastMsg.body} onChange={e => setBroadcastMsg({...broadcastMsg, body: e.target.value})} />
