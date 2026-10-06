@@ -4,7 +4,7 @@ import { getAuth, initializeAuth, getReactNativePersistence, connectAuthEmulator
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // Replace these values with your actual Firebase configuration
 const firebaseConfig = {
@@ -39,4 +39,5 @@ const emulatorHost = process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST;
 if (emulatorHost) {
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, emulatorHost, 8085);
+    connectStorageEmulator(storage, emulatorHost, 9199);
 }

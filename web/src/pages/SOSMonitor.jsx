@@ -125,6 +125,16 @@ function SOSMonitor() {
         }
     }, [alerts]);
 
+    const updateLiveView = async (fields, message) => {
+        if (!selectedAlert) return;
+        try {
+            await updateDoc(doc(db, "sos_alerts", selectedAlert.id), fields);
+            if (message) setSnackbar({ open: true, message, severity: 'success' });
+        } catch (e) {
+            setSnackbar({ open: true, message: 'Live view update failed: ' + e.message, severity: 'error' });
+        }
+    };
+
     const handleSelectAlert = (alert) => {
         setSelectedAlert(alert);
     };
@@ -304,13 +314,17 @@ function SOSMonitor() {
         }
     };
 
-    const handleRequestCamera = async () => {
+    const LIVE_VIEW_MS = 90 * 1000;
+    const handleRequestCamera = async (facing = 'back') => {
         if (!selectedAlert) return;
         try {
             await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
-                cameraRequestedAt: serverTimestamp()
+                liveViewRequestedAt: Date.now(),
+                liveViewUntil: Date.now() + LIVE_VIEW_MS,
+                liveViewFacing: facing,
+                liveViewStatus: 'requested',
             });
-            setSnackbar({ open: true, message: 'Camera request sent to tourist!', severity: 'success' });
+            setSnackbar({ open: true, message: 'Live view requested. The traveller sees a notice and it starts in 5 seconds unless they decline.', severity: 'success' });
         } catch (e) {
             setSnackbar({ open: true, message: 'Failed to request camera: ' + e.message, severity: 'error' });
         }
@@ -318,6 +332,7 @@ function SOSMonitor() {
 
     // Filter alerts for history table
     const activeAlertsList = alerts.filter(a => OPEN_STATUSES.includes(a.status));
+    const liveOn = Boolean(selectedAlert?.liveViewStatus === 'sharing' && selectedAlert?.liveFrameUrl);
     const historicalAlertsList = alerts.filter(a => a.status === 'resolved' || a.status === 'closed')
         .filter(a => a.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                      a.locationName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -469,6 +484,12 @@ function SOSMonitor() {
                         
                         {selectedAlert ? (
                             <>
+                                <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap' }}>
+                                    {selectedAlert.reporterRole === 'driver' && (
+                                        <Chip label={`Raised by a driver${selectedAlert.rideId ? ` · ride ${selectedAlert.rideId.slice(-6).toUpperCase()}` : ''}`} sx={{ fontWeight: 900, bgcolor: '#E3F2FD', color: '#0D47A1' }} />
+                                    )}
+                                    <Chip label={selectedAlert.incidentType ? `Reported: ${selectedAlert.incidentType}` : 'Type not reported yet'} sx={{ fontWeight: 900, bgcolor: '#FFEBEE', color: '#BA1A1A' }} />
+                                </Stack>
                                 {/* Video/Feed frame */}
                                 <Box sx={{ 
                                     position: 'relative', 
@@ -493,13 +514,24 @@ function SOSMonitor() {
                                     }}>
                                         <Box sx={{ width: 8, height: 8, bgcolor: '#f44336', borderRadius: '50%', mr: 1, animation: 'pulse 1.2s infinite' }} />
                                         <Typography variant="caption" color="#FFF" fontWeight={800}>
-                                            {(selectedAlert.evidenceUrl || selectedAlert.photoUrl)
+                                            {liveOn
+                                                ? `LIVE VIEW · ${selectedAlert.liveViewFacing === 'front' ? 'FRONT' : 'BACK'} CAMERA · frame ${ago(selectedAlert.liveFrameAt) || '0s'} old`
+                                                : selectedAlert.liveViewStatus === 'requested' ? 'LIVE VIEW REQUESTED · WAITING FOR THE PHONE'
+                                                : selectedAlert.liveViewStatus === 'declined' ? 'TRAVELLER DECLINED THE LIVE VIEW'
+                                                : (selectedAlert.evidenceUrl || selectedAlert.photoUrl)
                                                 ? (selectedAlert.mediaType === 'video' ? 'VIDEO FROM TRAVELLER' : 'PHOTO FROM TRAVELLER')
                                                 : 'NO EVIDENCE SENT YET'}
                                         </Typography>
                                     </Box>
 
-                                    {selectedAlert.mediaType === 'video' && selectedAlert.evidenceUrl ? (
+                                    {liveOn ? (
+                                        <img
+                                            key={toMillis(selectedAlert.liveFrameAt) || 0}
+                                            src={`${selectedAlert.liveFrameUrl}${selectedAlert.liveFrameUrl.includes('?') ? '&' : '?'}t=${toMillis(selectedAlert.liveFrameAt) || 0}`}
+                                            alt="Live camera frame from the traveller"
+                                            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+                                        />
+                                    ) : selectedAlert.mediaType === 'video' && selectedAlert.evidenceUrl ? (
                                         <video
                                             src={selectedAlert.evidenceUrl}
                                             controls
@@ -650,6 +682,26 @@ function SOSMonitor() {
                                         </Button>
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
+                                        <Button fullWidth variant="contained" onClick={() => handleDispatchAction('Roadside assistance')}
+                                            sx={{ bgcolor: '#8D6E00', '&:hover': { bgcolor: '#6D5500' }, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            Roadside / breakdown help
+                                        </Button>
+                                    </Grid>
+                                    <Grid size={{ xs: 6 }}>
+                                        <Button fullWidth variant="contained" onClick={() => handleDispatchAction('CEYLO support (callback)')}
+                                            sx={{ bgcolor: '#1565C0', '&:hover': { bgcolor: '#0D47A1' }, py: 1.8, borderRadius: 3, fontWeight: 800, textTransform: 'none', fontSize: '0.9rem' }}>
+                                            Support callback
+                                        </Button>
+                                    </Grid>
+                                    {selectedAlert.phone && selectedAlert.phone !== 'N/A' && (
+                                        <Grid size={{ xs: 12 }}>
+                                            <Button fullWidth variant="outlined" href={`tel:${selectedAlert.phone}`}
+                                                sx={{ py: 1.4, borderRadius: 3, fontWeight: 800, textTransform: 'none' }}>
+                                                Call the traveller ({selectedAlert.phone})
+                                            </Button>
+                                        </Grid>
+                                    )}
+                                    <Grid size={{ xs: 6 }}>
                                         <Button 
                                             fullWidth 
                                             variant="outlined" 
@@ -742,7 +794,7 @@ function SOSMonitor() {
                                             <Button 
                                                 fullWidth
                                                 variant="contained" 
-                                                onClick={handleRequestCamera}
+                                                onClick={() => handleRequestCamera('back')}
                                                 startIcon={<CameraAltIcon />}
                                                 sx={{ 
                                                     bgcolor: '#006A3B', 
@@ -756,8 +808,24 @@ function SOSMonitor() {
                                                     '&:hover': { bgcolor: '#004D2C' }
                                                 }}
                                             >
-                                                Check Camera
+                                                {selectedAlert.liveViewStatus === 'sharing' ? 'Live view on' : 'Live camera view'}
                                             </Button>
+                                            {selectedAlert.liveViewStatus === 'sharing' && (
+                                                <Stack direction="row" spacing={1}>
+                                                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 800, flex: 1 }}
+                                                        onClick={() => updateLiveView({ liveViewFacing: selectedAlert.liveViewFacing === 'front' ? 'back' : 'front' })}>
+                                                        Switch camera
+                                                    </Button>
+                                                    <Button size="small" variant="outlined" sx={{ textTransform: 'none', fontWeight: 800, flex: 1 }}
+                                                        onClick={() => updateLiveView({ liveViewUntil: Math.max(Date.now(), selectedAlert.liveViewUntil || 0) + 60000 }, 'Live view extended by 60 seconds.')}>
+                                                        +60 s
+                                                    </Button>
+                                                    <Button size="small" color="error" variant="outlined" sx={{ textTransform: 'none', fontWeight: 800, flex: 1 }}
+                                                        onClick={() => updateLiveView({ liveViewUntil: 0, liveViewStatus: 'ended' }, 'Live view stopped.')}>
+                                                        Stop
+                                                    </Button>
+                                                </Stack>
+                                            )}
                                         </Stack>
 
                                         {/* Emergency contact details card */}

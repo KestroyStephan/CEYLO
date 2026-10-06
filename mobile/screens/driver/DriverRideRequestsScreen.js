@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { stopLocationTracking } from '../../services/DriverLocationService';
 import { notifyBooking } from '../../services/aiClient';
 
-export default function DriverRideRequestsScreen() {
+export default function DriverRideRequestsScreen({ navigation }) {
   const { t } = useTranslation();
   const [activeRide, setActiveRide] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -185,6 +185,13 @@ export default function DriverRideRequestsScreen() {
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('p_ride')}</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('SOSScreen', { role: 'driver', bookingId: activeRide?.id })}
+            style={{ marginLeft: 'auto', marginRight: 10, backgroundColor: '#C62828', borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6 }}
+            accessibilityLabel="Emergency SOS"
+          >
+            <Text style={{ color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 }}>SOS</Text>
+          </TouchableOpacity>
           <View style={[styles.statusBadge, { 
             backgroundColor: getStatusColor(activeRide?.status) + '20' 
           }]}>

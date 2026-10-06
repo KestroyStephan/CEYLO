@@ -10,7 +10,7 @@ import { db, auth, storage } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
 import { logEvent } from '../services/Analytics';
 import { sendSosSms } from '../services/aiClient';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as SMS from 'expo-sms';
 import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
@@ -70,7 +70,13 @@ const EMBASSIES = [
   { country: 'China', phone: '+94 11 2688610', address: 'Vidya Mawatha, Colombo 07' },
 ];
 
-export default function SOSScreen({ navigation }) {
+const INCIDENT_TYPES = ['Medical', 'Accident', 'Threat or crime', 'Vehicle breakdown', 'Lost', 'Other'];
+const LIVE_FRAME_MS = 2500;
+
+export default function SOSScreen({ navigation, route }) {
+  // Drivers open this screen from an active ride; their alerts carry the ride
+  const reporterRole = route?.params?.role || 'traveller';
+  const rideId = route?.params?.bookingId || null;
   const [active, setActive] = useState(false);
   const [activeDocId, setActiveDocId] = useState(null);
   const [deskStatus, setDeskStatus] = useState(null);
@@ -95,6 +101,17 @@ export default function SOSScreen({ navigation }) {
   const cameraRef = useRef(null);
   const lastAudioTimestampRef = useRef(null);
   const lastCameraRequestRef = useRef(null);
+
+  // Live view: the desk can ask to see the scene; the traveller gets a notice and can decline
+  const [liveConsent, setLiveConsent] = useState(null);   // seconds left before sharing starts
+  const [liveSharing, setLiveSharing] = useState(false);
+  const [liveFacing, setLiveFacing] = useState('back');
+  const [incidentType, setIncidentType] = useState(null);
+  const liveRef = useRef({ until: 0 });
+  const liveCamRef = useRef(null);
+  const liveReadyRef = useRef(false);
+  const liveBusyRef = useRef(false);
+  const consentTimerRef = useRef(null);
 
   // AI Assistant States
   const [userLoc, setUserLoc] = useState(null);
@@ -250,16 +267,13 @@ export default function SOSScreen({ navigation }) {
           }
         }
 
-        // Camera Request Logic
-        if (data.cameraRequestedAt) {
-          const reqTime = data.cameraRequestedAt.toMillis ? data.cameraRequestedAt.toMillis() : Date.now();
-          if (lastCameraRequestRef.current !== reqTime) {
-            lastCameraRequestRef.current = reqTime;
-            // Prevent showing camera if it's an old request from previous sessions
-            if (Date.now() - reqTime < 60000) {
-              handleOptionalPhoto();
-            }
-          }
+        // Live view requested by the desk (only while the request is still current)
+        liveRef.current = { until: data.liveViewUntil || 0 };
+        setLiveFacing(data.liveViewFacing === 'front' ? 'front' : 'back');
+        if (data.incidentType) setIncidentType(data.incidentType);
+        if (data.liveViewRequestedAt && lastCameraRequestRef.current !== data.liveViewRequestedAt) {
+          lastCameraRequestRef.current = data.liveViewRequestedAt;
+          if ((data.liveViewUntil || 0) > Date.now() && data.liveViewStatus === 'requested') startLiveConsent();
         }
       });
     }
@@ -298,6 +312,85 @@ export default function SOSScreen({ navigation }) {
       }
     } catch (e) { /* fall through to the share sheet */ }
     Share.share({ message: text }).catch(() => {});
+  };
+
+  const setLiveStatus = (liveViewStatus) => {
+    if (activeDocIdRef.current) updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), { liveViewStatus }).catch(() => {});
+  };
+
+  const startLiveConsent = async () => {
+    if (!permission?.granted) {
+      const perm = await requestPermission();
+      if (!perm.granted) {
+        setLiveStatus('no_permission');
+        return;
+      }
+    }
+    setShowCamera(false);
+    clearInterval(consentTimerRef.current);
+    let left = 5;
+    setLiveConsent(left);
+    consentTimerRef.current = setInterval(() => {
+      left -= 1;
+      if (left > 0) {
+        setLiveConsent(left);
+      } else {
+        clearInterval(consentTimerRef.current);
+        beginLive();
+      }
+    }, 1000);
+  };
+
+  const beginLive = () => {
+    clearInterval(consentTimerRef.current);
+    setLiveConsent(null);
+    liveReadyRef.current = false;
+    setLiveSharing(true);
+    setLiveStatus('sharing');
+  };
+
+  const declineLive = () => {
+    clearInterval(consentTimerRef.current);
+    setLiveConsent(null);
+    setLiveStatus('declined');
+  };
+
+  const stopLive = (status = 'ended') => {
+    setLiveSharing(false);
+    setLiveStatus(status);
+  };
+
+  // While sharing: a fresh frame every few seconds until the desk's time window runs out
+  useEffect(() => {
+    if (!liveSharing) return undefined;
+    const t = setInterval(async () => {
+      if (Date.now() > liveRef.current.until) {
+        stopLive('ended');
+        return;
+      }
+      if (liveBusyRef.current || !liveReadyRef.current || !liveCamRef.current || !activeDocIdRef.current) return;
+      liveBusyRef.current = true;
+      try {
+        const shot = await liveCamRef.current.takePictureAsync({ quality: 0.3, skipProcessing: true, shutterSound: false });
+        const blob = await (await fetch(shot.uri)).blob();
+        const r = ref(storage, `sos_alerts/${activeDocIdRef.current}_live.jpg`);
+        await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+        const url = await getDownloadURL(r);
+        await updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), { liveFrameUrl: url, liveFrameAt: serverTimestamp() });
+      } catch (e) {
+        console.log('Live frame failed:', e.message);
+      } finally {
+        liveBusyRef.current = false;
+      }
+    }, LIVE_FRAME_MS);
+    return () => clearInterval(t);
+  }, [liveSharing]);
+
+  useEffect(() => () => clearInterval(consentTimerRef.current), []);
+
+  const chooseIncident = (type) => {
+    setIncidentType(type);
+    if (activeDocIdRef.current) updateDoc(doc(db, 'sos_alerts', activeDocIdRef.current), { incidentType: type }).catch(() => {});
   };
 
   const cancelSOS = () => {
@@ -395,6 +488,8 @@ export default function SOSScreen({ navigation }) {
         phone: user?.phoneNumber || 'N/A',
         status: 'active',
         channel: 'online',
+        reporterRole,
+        rideId,
         clientCreatedAt: new Date().toISOString(),
         photoUrl: null, // Photo can be added later
         breadcrumbs,
@@ -586,6 +681,19 @@ export default function SOSScreen({ navigation }) {
           </View>
         )}
         {active && (
+          <View style={styles.incidentBox}>
+            <Text style={styles.incidentTitle}>What is happening? (helps the desk send the right help)</Text>
+            <View style={styles.incidentRow}>
+              {INCIDENT_TYPES.map(type => (
+                <TouchableOpacity key={type} onPress={() => chooseIncident(type)}
+                  style={[styles.incidentChip, incidentType === type && styles.incidentChipOn]}>
+                  <Text style={[styles.incidentText, incidentType === type && { color: '#FFF' }]}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+        {active && (
           <View style={styles.activeActions}>
             <TouchableOpacity style={styles.addPhotoBtn} onPress={handleOptionalPhoto}>
               <MaterialCommunityIcons name="camera-plus" size={20} color="#D32F2F" />
@@ -600,6 +708,12 @@ export default function SOSScreen({ navigation }) {
               <Text style={[styles.addPhotoText, { color: '#FFF' }]}>Call Police 119</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {!active && (
+          <Text style={styles.privacyNote}>
+            Your live location goes to the CEYLO emergency desk. If they need to see what is happening, they can ask to view your camera: you will see a notice first and can decline.
+          </Text>
         )}
 
         <View style={styles.actionGrid}>
@@ -716,6 +830,48 @@ export default function SOSScreen({ navigation }) {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Live view for the emergency desk */}
+      <Modal visible={liveConsent !== null || liveSharing} animationType="fade" transparent={false} onRequestClose={() => (liveSharing ? stopLive('stopped_by_traveller') : declineLive())}>
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          {liveSharing ? (
+            <>
+              <CameraView
+                ref={liveCamRef}
+                style={{ flex: 1 }}
+                facing={liveFacing}
+                animateShutter={false}
+                onCameraReady={() => { liveReadyRef.current = true; }}
+              />
+              <View style={styles.liveTop}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveTopText}>LIVE · Your camera is shared with the CEYLO emergency desk</Text>
+              </View>
+              <View style={styles.liveBottom}>
+                <TouchableOpacity style={styles.liveStop} onPress={() => stopLive('stopped_by_traveller')}>
+                  <Ionicons name="stop-circle" size={22} color="#FFF" />
+                  <Text style={styles.liveStopText}>Stop sharing</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <View style={styles.consent}>
+              <MaterialCommunityIcons name="cctv" size={64} color="#FFF" />
+              <Text style={styles.consentTitle}>The emergency desk wants to see your surroundings</Text>
+              <Text style={styles.consentBody}>
+                Your camera will be shared for up to 90 seconds so they can decide what help to send. Point it at what is happening.
+              </Text>
+              <Text style={styles.consentCount}>Starting in {liveConsent}</Text>
+              <TouchableOpacity style={styles.consentShare} onPress={beginLive}>
+                <Text style={styles.consentShareText}>Share now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.consentDecline} onPress={declineLive}>
+                <Text style={styles.consentDeclineText}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
+
       {/* Camera Modal */}
       <Modal visible={showCamera} animationType="slide" transparent={false}>
         <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -807,6 +963,27 @@ const styles = StyleSheet.create({
   stepTime: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', marginTop: 1 },
   trackerNote: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', lineHeight: 17 },
   activeActions: { gap: 10, marginBottom: 18 },
+  incidentBox: { marginHorizontal: 20, marginBottom: 14 },
+  incidentTitle: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#3F3F3F', marginBottom: 8 },
+  incidentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  incidentChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1.5, borderColor: '#E3A0A0', backgroundColor: '#FFF' },
+  incidentChipOn: { backgroundColor: '#C62828', borderColor: '#C62828' },
+  incidentText: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#C62828' },
+  privacyNote: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7280', textAlign: 'center', marginHorizontal: 32, marginBottom: 18, lineHeight: 17 },
+  liveTop: { position: 'absolute', top: 48, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(198,40,40,0.9)', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FFF' },
+  liveTopText: { flex: 1, color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 },
+  liveBottom: { position: 'absolute', bottom: 48, left: 0, right: 0, alignItems: 'center' },
+  liveStop: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 26, paddingHorizontal: 22, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' },
+  liveStopText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 15 },
+  consent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, backgroundColor: '#7F0000' },
+  consentTitle: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 22, textAlign: 'center', marginTop: 18 },
+  consentBody: { color: 'rgba(255,255,255,0.85)', fontFamily: 'Outfit-Regular', fontSize: 15, textAlign: 'center', marginTop: 10, lineHeight: 21 },
+  consentCount: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 40, marginTop: 24 },
+  consentShare: { marginTop: 24, backgroundColor: '#FFF', borderRadius: 28, paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
+  consentShareText: { color: '#7F0000', fontFamily: 'Outfit-Bold', fontSize: 17 },
+  consentDecline: { marginTop: 12, paddingVertical: 12, alignSelf: 'stretch', alignItems: 'center', borderRadius: 28, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)' },
+  consentDeclineText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16 },
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   backButton: { marginBottom: 10, width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
   header: { padding: 40, paddingTop: 50, paddingBottom: 50, borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },

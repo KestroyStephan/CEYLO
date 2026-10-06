@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -33,4 +33,5 @@ const emulatorHost = import.meta.env.VITE_FIREBASE_EMULATOR_HOST;
 if (emulatorHost) {
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, emulatorHost, 8085);
+    connectStorageEmulator(storage, emulatorHost, 9199);
 }
