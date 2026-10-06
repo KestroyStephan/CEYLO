@@ -137,7 +137,7 @@ export default function GuideDiscoverScreen({ navigation }) {
                       <Text style={styles.announcementTitle}>{ann.title}</Text>
                       <Text style={styles.announcementDesc}>{ann.message}</Text>
                       <Text style={styles.announcementDate}>
-                        {ann.sentAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                        {ann.sentAt?.toDate?.()?.toLocaleDateString('en-GB') || 'Recently'}
                       </Text>
                     </View>
                   </View>
