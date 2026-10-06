@@ -180,6 +180,8 @@ export default function LoginScreen({ navigation }) {
                 onFocus={() => setPasswordFocused(true)}
                 onBlur={() => setPasswordFocused(false)}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
                 style={[styles.input, { flex: 1 }]}
               />
               <TouchableOpacity

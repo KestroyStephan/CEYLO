@@ -25,6 +25,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { notifyUser } from '../utils/notifyUser';
 
 export default function Drivers() {
   const [drivers, setDrivers] = useState([]);
@@ -92,6 +93,7 @@ export default function Drivers() {
         role: 'driver_active',
         status: 'approved',
       });
+      notifyUser(driverId, 'You are approved to drive with CEYLO', 'Open CEYLO and switch online to start receiving ride requests.', { type: 'account_approved' });
 
       setSnackbar({
         open: true,
@@ -121,6 +123,7 @@ export default function Drivers() {
         role: 'driver_rejected',
         status: 'rejected',
       });
+      notifyUser(selectedDriverId, 'Driver application needs changes', `Reason: ${rejectionReason}. Open CEYLO to update your details.`, { type: 'account_rejected' });
 
       setSnackbar({
         open: true,

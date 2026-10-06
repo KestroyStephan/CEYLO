@@ -20,6 +20,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { notifyUser } from '../utils/notifyUser';
 
 export default function Vendors() {
     const [vendors, setVendors] = useState([]);
@@ -78,6 +79,11 @@ export default function Vendors() {
                 status: status
             });
 
+            if (status === 'approved') {
+                notifyUser(selectedVendor.id, 'Your CEYLO shop is approved', 'Open CEYLO to add products and start receiving orders.', { type: 'account_approved' });
+            } else if (status === 'rejected') {
+                notifyUser(selectedVendor.id, 'Vendor application needs changes', `Reason: ${rejectionReason}. Open CEYLO to upload corrected documents.`, { type: 'account_rejected' });
+            }
             setSnackbar({ open: true, message: `Vendor ${status} successfully.`, severity: 'success' });
             setDrawerOpen(false);
         } catch (error) {

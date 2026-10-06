@@ -108,8 +108,8 @@ class NotificationServiceClass {
       const token = tokenData.data;
       const uid = auth.currentUser?.uid;
       if (uid && token) {
-        await setDoc(doc(db, 'users', uid), { expoPushToken: token }, { merge: true });
-        // Readable by booking partners, unlike the private profile
+        // Only in push_tokens: writing users/{uid} here would create the profile before
+        // registration saves the chosen role (that made new drivers become tourists)
         await setDoc(doc(db, 'push_tokens', uid), { token, updatedAt: new Date().toISOString() });
         console.log('[Notifications] Token registered:', token.slice(0, 20) + '...');
       }
@@ -119,7 +119,6 @@ class NotificationServiceClass {
       this._tokenListener = Notifications.addPushTokenListener(async ({ data: newToken }) => {
         const currentUid = auth.currentUser?.uid;
         if (currentUid && newToken) {
-          await setDoc(doc(db, 'users', currentUid), { expoPushToken: newToken }, { merge: true });
           await setDoc(doc(db, 'push_tokens', currentUid), { token: newToken, updatedAt: new Date().toISOString() });
         }
       });

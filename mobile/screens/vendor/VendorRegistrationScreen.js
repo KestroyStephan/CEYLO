@@ -8,6 +8,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, Animated, Dimensions, Platform, StatusBar } from 'react-native';
 import KeyboardAvoider from '../../components/KeyboardAvoider';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,16 +32,25 @@ const ERROR     = '#BA1A1A';
 const BUSINESS_TYPES = ['Homestay','Tour Guide','Transport','Food & Beverage','Artisan','Equipment Rental'];
 const STEPS = ['Business Info','Documents','First Service'];
 
-const uploadFile = async (uri, storagePath, onProgress) => {
-  const res  = await fetch(uri);
+// Verification documents: photos or PDF scans, up to 5 MB each
+const MAX_DOC_BYTES = 5 * 1024 * 1024;
+const DOC_TYPES = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' };
+const extOf = (asset) => DOC_TYPES[asset.mimeType] || (String(asset.name || asset.uri).split('.').pop() || 'jpg').toLowerCase();
+const isPdf = (asset) => extOf(asset) === 'pdf';
+const fmtSize = (b) => (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+// Uploads one file and reports its own progress as a fraction from 0 to 1
+const uploadFile = async (asset, storagePath, onFraction) => {
+  const res  = await fetch(asset.uri);
   const blob = await res.blob();
+  const contentType = asset.mimeType || (isPdf(asset) ? 'application/pdf' : 'image/jpeg');
   const r    = ref(storage, storagePath);
   return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(r, blob);
+    const task = uploadBytesResumable(r, blob, { contentType });
     task.on('state_changed',
-      snap => onProgress && onProgress(snap.bytesTransferred / snap.totalBytes),
+      snap => onFraction && onFraction(snap.totalBytes ? Math.min(1, snap.bytesTransferred / snap.totalBytes) : 0),
       reject,
-      async () => resolve(await getDownloadURL(task.snapshot.ref))
+      async () => { onFraction && onFraction(1); resolve(await getDownloadURL(task.snapshot.ref)); }
     );
   });
 };
@@ -107,11 +117,39 @@ export default function VendorRegistrationScreen({ navigation }) {
     finally { setGpsLoading(false); }
   };
 
+  // Checks type and size before accepting a file
+  const acceptFile = (asset, setter, { allowPdf = true } = {}) => {
+    const ext = extOf(asset);
+    const okType = allowPdf ? ['jpg', 'jpeg', 'png', 'pdf'].includes(ext) : ['jpg', 'jpeg', 'png'].includes(ext);
+    if (!okType) {
+      toast.warning('Unsupported file', allowPdf ? 'Use a JPG or PNG photo, or a PDF.' : 'Use a JPG or PNG photo.');
+      return;
+    }
+    const size = asset.size ?? asset.fileSize;
+    if (size && size > MAX_DOC_BYTES) {
+      toast.warning('File too large', `This file is ${fmtSize(size)}. The limit is 5 MB.`);
+      return;
+    }
+    setter({ ...asset, size });
+  };
+
+  const pickDocument = async (setter) => {
+    try {
+      const r = await DocumentPicker.getDocumentAsync({ type: ['image/jpeg', 'image/png', 'application/pdf'], copyToCacheDirectory: true });
+      if (!r.canceled && r.assets?.length > 0) acceptFile(r.assets[0], setter);
+    } catch (e) {
+      toast.error('Could not open files', e.message);
+    }
+  };
+
   const pickImage = async (setter) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return;
+    if (status !== 'granted') {
+      toast.warning('Permission needed', 'Allow photo access to add service photos.');
+      return;
+    }
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true });
-    if (!r.canceled && r.assets?.length > 0) setter(r.assets[0]);
+    if (!r.canceled && r.assets?.length > 0) acceptFile(r.assets[0], setter, { allowPdf: false });
   };
 
   const uploadAllDocs = async () => {
@@ -122,20 +160,31 @@ export default function VendorRegistrationScreen({ navigation }) {
     setUploading(true);
     setUploadPct(0);
     try {
-      const total = 3 + svcPhotos.length;
-      let done = 0;
-      const prog = () => { done++; setUploadPct(Math.round((done/total)*100)); };
-      const nf  = await uploadFile(nicFront.uri,  `vendors/${uid}/nic_front.jpg`,   prog);
-      const nb  = await uploadFile(nicBack.uri,   `vendors/${uid}/nic_back.jpg`,    prog);
-      const bc  = await uploadFile(bizCert.uri,   `vendors/${uid}/biz_cert.jpg`,    prog);
+      // Overall progress = finished files + the fraction of the current one, always 0-100
+      const files = [nicFront, nicBack, bizCert, ...svcPhotos];
+      let finished = 0;
+      const progressFor = () => (fraction) => {
+        const pct = Math.round(((finished + Math.min(1, Math.max(0, fraction))) / files.length) * 100);
+        setUploadPct(prev => Math.min(100, Math.max(prev, pct)));
+      };
+      const put = async (asset, name) => {
+        const url = await uploadFile(asset, `vendors/${uid}/${name}.${extOf(asset)}`, progressFor());
+        finished += 1;
+        return url;
+      };
+      const nf  = await put(nicFront, 'nic_front');
+      const nb  = await put(nicBack, 'nic_back');
+      const bc  = await put(bizCert, 'biz_cert');
       const sp  = [];
       for (let i = 0; i < svcPhotos.length; i++) {
-        const u = await uploadFile(svcPhotos[i].uri, `vendors/${uid}/svc_${i}.jpg`, prog);
-        sp.push(u);
+        sp.push(await put(svcPhotos[i], `svc_${i}`));
       }
+      setUploadPct(100);
       setUploadedUrls({ nicFront: nf, nicBack: nb, bizCert: bc, svcPhotos: sp });
       setStep(2);
-    } catch (e) { Alert.alert('Upload Error', e.message); }
+    } catch (e) {
+      toast.error('Upload failed', e.code === 'storage/unauthorized' ? 'You are not allowed to upload here. Please sign in again.' : 'Check your connection and try again.');
+    }
     finally { setUploading(false); }
   };
 
@@ -180,37 +229,16 @@ export default function VendorRegistrationScreen({ navigation }) {
         createdAt: serverTimestamp(),
       });
 
+      await updateDoc(doc(db, 'users', user.uid), {
+        role: 'vendor_pending',
+        status: 'pending_verification',
+      });
       setLoading(false);
-
-      Alert.alert(
-        'Application Submitted!',
-        'Our team will review your documents within 1-2 business days.',
-        [
-          {
-            text: 'OK',
-            onPress: async () => {
-              try {
-                setLoading(true);
-                await updateDoc(doc(db, 'users', user.uid), {
-                  role: 'vendor_pending',
-                  status: 'pending_verification',
-                });
-              } catch (error) {
-                Alert.alert('Finalization Failed', error.message);
-              } finally {
-                setLoading(false);
-              }
-            }
-          }
-        ]
-      );
+      toast.success('Application submitted', 'Our team reviews documents within 1-2 business days. You will be notified.');
     } catch (e) {
       setLoading(false);
       console.error('Vendor submission error:', e);
-      Alert.alert(
-        'Submission Failed',
-        'Error: ' + e.message + '\n\nPlease check your connection and try again.'
-      );
+      toast.error('Submission failed', 'Please check your connection and try again.');
     }
   };
 
@@ -225,9 +253,13 @@ export default function VendorRegistrationScreen({ navigation }) {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.docLabel}>{label}</Text>
-        <Text style={styles.docSub}>{asset ? 'Uploaded ✓' : 'Tap to upload'}</Text>
+        <Text style={styles.docSub} numberOfLines={1}>
+          {asset ? `${asset.name || (isPdf(asset) ? 'Document.pdf' : 'Photo')}${asset.size ? ` · ${fmtSize(asset.size)}` : ''} · tap to change` : 'JPG, PNG or PDF · max 5 MB'}
+        </Text>
       </View>
-      {asset && <Image source={{ uri: asset.uri }} style={styles.docThumb} />}
+      {asset && (isPdf(asset)
+        ? <View style={[styles.docThumb, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FDECEC' }]}><Ionicons name="document-text" size={22} color="#C62828" /></View>
+        : <Image source={{ uri: asset.uri }} style={styles.docThumb} />)}
     </TouchableOpacity>
   );
 
@@ -310,11 +342,11 @@ export default function VendorRegistrationScreen({ navigation }) {
         {step === 1 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Verification Documents</Text>
-            <Text style={styles.cardSub}>Upload clear photos of your documents</Text>
+            <Text style={styles.cardSub}>Clear photos or PDF scans (JPG, PNG or PDF, up to 5 MB each)</Text>
 
-            <DocPicker label="NIC Front *" asset={nicFront} onPick={() => pickImage(setNicFront)} />
-            <DocPicker label="NIC Back *"  asset={nicBack}  onPick={() => pickImage(setNicBack)} />
-            <DocPicker label="Business Certificate *" asset={bizCert} onPick={() => pickImage(setBizCert)} />
+            <DocPicker label="NIC Front *" asset={nicFront} onPick={() => pickDocument(setNicFront)} />
+            <DocPicker label="NIC Back *"  asset={nicBack}  onPick={() => pickDocument(setNicBack)} />
+            <DocPicker label="Business Certificate *" asset={bizCert} onPick={() => pickDocument(setBizCert)} />
 
             <Text style={styles.fieldLabel}>Service Photos (up to 3)</Text>
             <View style={styles.photoGrid}>

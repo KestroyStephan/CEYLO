@@ -38,9 +38,11 @@ function Notifications() {
                 targetUsers = users.filter(u => ['vendor', 'accommodation', 'tour_provider', 'vendor_active', 'vendor_pending'].includes(u.role));
             }
 
-            const tokens = targetUsers
-                .map(u => u.expoPushToken)
-                .filter(token => typeof token === 'string' && token.startsWith('ExponentPushToken'));
+            const tokenSnap = await getDocs(collection(db, "push_tokens"));
+            const tokenByUid = Object.fromEntries(tokenSnap.docs.map(d => [d.id, d.data().token]));
+            const tokens = [...new Set(targetUsers
+                .map(u => tokenByUid[u.id] || u.expoPushToken)
+                .filter(token => typeof token === 'string' && token.startsWith('ExponentPushToken')))];
 
             // 3. Send Push Notifications via Expo Push API if tokens exist
             if (tokens.length > 0) {

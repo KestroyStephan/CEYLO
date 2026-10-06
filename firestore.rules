@@ -50,9 +50,10 @@ service cloud.firestore {
       let before = resource.data.get('role', null);
       let after = request.resource.data.get('role', null);
       return before == after
-        || (before == null && after == 'tourist')
+        || (before == null && isSelfServiceRole(after))
         || (before in ['vendor_onboarding', 'vendor_rejected'] && after == 'vendor_pending')
-        || (before in ['guide_pending', 'guide_rejected'] && after == 'guide_pending');
+        || (before in ['guide_pending', 'guide_rejected'] && after == 'guide_pending')
+        || (before == 'driver_rejected' && after == 'driver_pending');
     }
 
     // phoneVerified may only be claimed for the number Firebase verified at sign-in

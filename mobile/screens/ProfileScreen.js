@@ -80,12 +80,9 @@ export default function ProfileScreen({ navigation }) {
 
     const Header = () => (
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.openDrawer()}>
-                <Feather name="menu" size={24} color="#004D40" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{t('explore_sri_lanka')}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('HiddenGemsList', { filterType: 'all' })} accessibilityLabel="Browse destinations">
-                <Feather name="search" size={24} color="#004D40" />
+            <Text style={styles.headerTitle}>{t('profile')}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} accessibilityLabel={t('edit_profile')}>
+                <Feather name="edit-2" size={22} color="#004D40" />
             </TouchableOpacity>
         </View>
     );

@@ -170,11 +170,6 @@ export default function HomeScreen({ navigation }) {
   const Header = () => (
     <View style={styles.header}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <View style={styles.menuBtn}>
-            <Feather name="grid" size={20} color={COLORS.primary} />
-          </View>
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>CEYLO</Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

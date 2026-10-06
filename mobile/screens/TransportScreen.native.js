@@ -4,7 +4,10 @@ import {
   View, StyleSheet, Dimensions, Animated, TouchableOpacity,
   Image, ScrollView, TextInput, FlatList, Alert, Linking, Keyboard
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, MapViewDirections } from '../components/Map';
+import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from '../components/Map';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { fetchRoutes } from '../services/routes';
+import { transportIcon } from '../utils/transport';
 import { Text, Surface, Button, Avatar, IconButton, Divider, ActivityIndicator } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import PayButton from '../components/PayButton';
@@ -21,10 +24,10 @@ const { width, height } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 const VEHICLE_OPTIONS = [
-  { id: 'Tuk', label: 'TUK TUK', icon: 'bus-outline' },
-  { id: 'Bike', label: 'BIKE', icon: 'bicycle-outline' },
-  { id: 'Car', label: 'CAR', icon: 'car-outline' },
-  { id: 'Van', label: 'VAN', icon: 'car-sport-outline' },
+  { id: 'Tuk', label: 'TUK-TUK' },
+  { id: 'Bike', label: 'BIKE' },
+  { id: 'Car', label: 'CAR' },
+  { id: 'Van', label: 'VAN' },
 ];
 
 export default function TransportScreen({ route, navigation }) {
@@ -50,6 +53,9 @@ export default function TransportScreen({ route, navigation }) {
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [canTouristCancel, setCanTouristCancel] = useState(true);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [routes, setRoutes] = useState([]);          // road alternatives, shortest first
+  const [routeIdx, setRouteIdx] = useState(0);
+  const [routesLoading, setRoutesLoading] = useState(false);
   const [onlineDrivers, setOnlineDrivers] = useState([]);
   const [now, setNow] = useState(Date.now());
   const [ratingFor, setRatingFor] = useState(null);     // completed booking waiting for a rating
@@ -175,6 +181,44 @@ export default function TransportScreen({ route, navigation }) {
     }
     return onSnapshot(doc(db, 'bookings', ratingFor.id), (snap) => setRatedRide(snap.exists() ? { id: snap.id, ...snap.data() } : null), () => {});
   }, [ratingFor?.id]);
+
+  // Shortest path and suggested alternatives whenever both ends of the trip are known
+  const pickKey = pickupCoords ? `${pickupCoords.latitude.toFixed(5)},${pickupCoords.longitude.toFixed(5)}` : '';
+  const dropKey = dropoffCoords ? `${dropoffCoords.latitude.toFixed(5)},${dropoffCoords.longitude.toFixed(5)}` : '';
+  useEffect(() => {
+    if (!pickupCoords || !dropoffCoords) {
+      setRoutes([]);
+      return undefined;
+    }
+    let cancelled = false;
+    setRoutesLoading(true);
+    fetchRoutes(pickupCoords, dropoffCoords)
+      .then(list => {
+        if (cancelled) return;
+        setRoutes(list);
+        setRouteIdx(0); // shortest
+        mapRef.current?.fitToCoordinates(list.flatMap(r => r.coords), {
+          edgePadding: { top: 120, right: 50, bottom: 420, left: 50 },
+          animated: true,
+        });
+      })
+      .catch(e => {
+        if (!cancelled) {
+          console.log('Routes unavailable:', e.message);
+          setRoutes([]);
+        }
+      })
+      .finally(() => { if (!cancelled) setRoutesLoading(false); });
+    return () => { cancelled = true; };
+  }, [pickKey, dropKey]);
+
+  // The chosen route drives the distance, time and fares
+  useEffect(() => {
+    const r = routes[routeIdx];
+    if (!r) return;
+    setRouteInfo({ distance: `${r.km} km`, duration: `${r.minutes} mins`, distanceValue: r.km * 1000, durationMin: r.minutes });
+    setEstimatedFares(estimateAllFares(r.km));
+  }, [routes, routeIdx]);
 
   // Resume an unfinished ride when the screen opens (app restarted or navigated away mid-ride)
   useEffect(() => {
@@ -649,7 +693,7 @@ export default function TransportScreen({ route, navigation }) {
         onPress={() => setSelectedVehicle(item.id)}
         style={[styles.vehicleBtn, isSelected && styles.selectedVehicle]}
       >
-        <Ionicons name={item.icon} size={32} color={isSelected ? '#FFF' : '#006A3B'} />
+        <MaterialCommunityIcons name={transportIcon(item.id)} size={34} color={isSelected ? '#FFF' : '#006A3B'} />
         <Text style={[styles.vName, isSelected && { color: '#FFF' }]}>{item.label}</Text>
         <Text style={[styles.vPrice, isSelected && { color: '#FFF' }]}>
           LKR {estimatedFares[item.id] ? estimatedFares[item.id].toLocaleString() : '...'}
@@ -658,6 +702,40 @@ export default function TransportScreen({ route, navigation }) {
           {nearbyByType(item.id).length ? `${nearbyByType(item.id).length} near · ${nearbyByType(item.id)[0].eta} min` : 'None nearby'}
         </Text>
       </TouchableOpacity>
+    );
+  };
+
+  // Shortest path and suggested alternatives, one tap to switch
+  const RouteChoices = ({ compact = false }) => {
+    if (routesLoading && !routes.length) {
+      return (
+        <View style={styles.routeLoading}>
+          <ActivityIndicator size="small" color="#006A3B" />
+          <Text style={styles.routeLoadingText}>Finding the best routes…</Text>
+        </View>
+      );
+    }
+    if (!routes.length) return null;
+    return (
+      <View style={{ marginTop: compact ? 4 : 12, marginBottom: compact ? 8 : 0 }}>
+        <Text style={styles.routesTitle}>{routes.length > 1 ? 'Suggested routes' : 'Route'}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
+          {routes.map((r, i) => {
+            const on = i === routeIdx;
+            return (
+              <TouchableOpacity key={r.id} onPress={() => setRouteIdx(i)} style={[styles.routeCard, on && styles.routeCardOn]}
+                accessibilityLabel={`${r.km} kilometres, ${r.minutes} minutes ${r.summary}`}>
+                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
+                  {r.isShortest && <Text style={[styles.routeTag, on && styles.routeTagOn]}>SHORTEST</Text>}
+                  {r.isFastest && <Text style={[styles.routeTag, styles.routeTagFast, on && styles.routeTagOn]}>FASTEST</Text>}
+                </View>
+                <Text style={[styles.routeKm, on && { color: '#FFF' }]}>{r.km} km · {r.minutes} min</Text>
+                <Text style={[styles.routeVia, on && { color: 'rgba(255,255,255,0.85)' }]} numberOfLines={1}>{r.summary}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
     );
   };
 
@@ -690,18 +768,9 @@ export default function TransportScreen({ route, navigation }) {
         }
       }
 
-      const dirRes = await fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${currentLat},${currentLng}&destination=${destLat},${destLng}&key=${GOOGLE_API_KEY}`);
-      const dirData = await dirRes.json();
-      let distanceKm = 0;
-      let durationMins = 0;
-      if (dirData.routes && dirData.routes.length > 0) {
-        const leg = dirData.routes[0].legs[0];
-        distanceKm = leg.distance.value / 1000;
-        durationMins = Math.ceil(leg.duration.value / 60);
-        setRouteInfo({ distance: distanceKm.toFixed(1), duration: durationMins });
-      }
-
-      const km = distanceKm || calculateDistance(currentLat, currentLng, destLat, destLng);
+      // Fares follow the chosen road route; straight-line distance only if no route came back
+      const chosen = routes[routeIdx];
+      const km = chosen ? chosen.km : calculateDistance(currentLat, currentLng, destLat, destLng);
       setEstimatedFares(estimateAllFares(km));
       setBookingStep('vehicleSelect');
     } catch (error) {
@@ -726,34 +795,19 @@ export default function TransportScreen({ route, navigation }) {
         }}
         showsUserLocation
       >
-        {pickupCoords && dropoffCoords && (
-          <MapViewDirections
-            origin={pickupCoords}
-            destination={dropoffCoords}
-            apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
-            strokeWidth={4}
-            strokeColor="#006A3B"
-            onError={(errorMessage) => {
-              console.log('Directions error:', errorMessage);
-            }}
-            onReady={(result) => {
-              setRouteInfo({
-                distance: `${result.distance.toFixed(1)} km`,
-                duration: `${Math.ceil(result.duration)} mins`,
-                distanceValue: result.distance * 1000,
-                durationMin: Math.ceil(result.duration),
-              });
-              // Fares follow the road distance, not the straight line
-              setEstimatedFares(estimateAllFares(result.distance));
-            }}
-          />
+        {/* Suggested routes in grey, the chosen one (shortest by default) in green on top */}
+        {routes.map((r, i) => i !== routeIdx && (
+          <Polyline key={r.id} coordinates={r.coords} strokeWidth={5} strokeColor="#9FB3AB" tappable onPress={() => setRouteIdx(i)} />
+        ))}
+        {routes[routeIdx] && (
+          <Polyline key={`${routes[routeIdx].id}_sel`} coordinates={routes[routeIdx].coords} strokeWidth={6} strokeColor="#006A3B" zIndex={2} />
         )}
 
         {/* Nearby online drivers (positions rounded to ~100 m) */}
         {(bookingStep === 'input' || bookingStep === 'vehicleSelect' || bookingStep === 'searching') && nearby.map(d => (
           <Marker key={d.id} coordinate={{ latitude: d.location.latitude, longitude: d.location.longitude }} title={`${d.vehicleType || 'Driver'} · ~${d.eta} min`}>
             <View style={styles.nearbyCar}>
-              <Ionicons name={d.vehicleType === 'Bike' ? 'bicycle' : 'car'} size={14} color="#FFF" />
+              <MaterialCommunityIcons name={transportIcon(d.vehicleType || 'Car')} size={15} color="#FFF" />
             </View>
           </Marker>
         ))}
@@ -866,8 +920,9 @@ export default function TransportScreen({ route, navigation }) {
               </View>
             )}
 
-            {/* ADD route info card when route is calculated */}
-            {routeInfo && (
+            <RouteChoices />
+            {/* Distance and time of the chosen route */}
+            {routeInfo && !routes.length && (
               <View style={styles.routeInfoCard}>
                 <View style={styles.routeInfoItem}>
                   <Ionicons name="navigate-outline" size={18} color="#006A3B" />
@@ -904,6 +959,7 @@ export default function TransportScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
 
+            <RouteChoices compact />
             <Text style={styles.sectionTitle}>{i18n.t('ui_select_vehicle')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vehicleScroll}>
               {VEHICLE_OPTIONS.map(v => <RenderVehicle key={v.id} item={v} />)}
@@ -920,7 +976,7 @@ export default function TransportScreen({ route, navigation }) {
             {routeInfo && (
               <View style={{ backgroundColor: '#F8F9FA', padding: 15, borderRadius: 12, width: '100%', marginBottom: 10 }}>
                 <Text style={{ fontSize: 16, fontFamily: 'Outfit-Bold', color: '#181D19', marginBottom: 4 }}>{dropAddress}</Text>
-                <Text style={{ fontSize: 14, color: '#6F7A70' }}>{routeInfo.distance} km - {routeInfo.duration} mins</Text>
+                <Text style={{ fontSize: 14, color: '#6F7A70' }}>{routeInfo.distance} · {routeInfo.duration}</Text>
               </View>
             )}
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -1125,6 +1181,16 @@ const styles = StyleSheet.create({
     color: '#6F7A70',
     marginTop: 2,
   },
+  routesTitle: { fontSize: 14, fontFamily: 'Outfit-Bold', color: '#1B2B28', marginBottom: 6 },
+  routeCard: { minWidth: 150, maxWidth: 220, padding: 12, borderRadius: 14, backgroundColor: '#F2F6F4', borderWidth: 1.5, borderColor: '#DCE6E2' },
+  routeCardOn: { backgroundColor: '#006A3B', borderColor: '#006A3B' },
+  routeTag: { fontSize: 10, fontFamily: 'Outfit-Bold', color: '#006A3B', backgroundColor: '#DDF0E6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+  routeTagFast: { color: '#1565C0', backgroundColor: '#E3EEFB' },
+  routeTagOn: { color: '#006A3B', backgroundColor: '#FFF' },
+  routeKm: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#1B2B28' },
+  routeVia: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#5F6F6B', marginTop: 2 },
+  routeLoading: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  routeLoadingText: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#5F6F6B' },
   routeInfoCard: {
     flexDirection: 'row',
     backgroundColor: '#F0F5EE',

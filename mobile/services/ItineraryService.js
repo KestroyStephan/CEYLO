@@ -197,12 +197,13 @@ function orderByProximity(stops) {
 
 function transportFor(km) {
   if (km < 2) return 'walk';
+  if (km < 12) return 'tuk'; // short hops in Sri Lanka are tuk-tuk rides
   if (km < 40) return 'bus';
   if (km < 150) return 'train';
   return 'car';
 }
 
-const SPEED_KMH = { walk: 4.5, bus: 30, train: 40, car: 45 };
+const SPEED_KMH = { walk: 4.5, tuk: 25, bus: 30, train: 40, car: 45 };
 
 // Spreads the stops across the trip days (several stops a day on short trips)
 export function buildPlan(stops, budget, days = stops.length) {

@@ -10,13 +10,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from '../../components/Toast';
+import { transportIcon } from '../../utils/transport';
 
 const ROLES = [
-  { key: 'tourist', icon: 'map-marker-outline', label: 'Tourist' },
-  { key: 'guide', icon: 'account-voice', label: 'Guide' },
-  { key: 'driver', icon: 'car-outline', label: 'Driver' },
-  { key: 'vendor_onboarding', icon: 'storefront-outline', label: 'Vendor' },
+  { key: 'tourist', icon: 'map-marker-outline', label: 'Tourist', hint: 'Plan trips, book rides and guides' },
+  { key: 'guide', icon: 'account-voice', label: 'Guide', hint: 'Offer tours (verified by CEYLO)' },
+  { key: 'driver', icon: 'steering', label: 'Driver', hint: 'Give rides (verified by CEYLO)' },
+  { key: 'vendor_onboarding', icon: 'storefront-outline', label: 'Vendor', hint: 'Sell crafts and produce (verified)' },
 ];
+// Must match the ride request vehicle types exactly, or the driver never receives requests
+const VEHICLE_TYPES = ['Tuk', 'Bike', 'Car', 'Van'];
+const VEHICLE_LABEL = { Tuk: 'Tuk-tuk', Bike: 'Bike', Car: 'Car', Van: 'Van' };
 
 export default function RegisterScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
@@ -27,6 +31,7 @@ export default function RegisterScreen({ navigation, route }) {
   const [role, setRole] = useState(route?.params?.presetRole || 'tourist');
   const [vehicleType, setVehicleType] = useState('');
   const [licensePlate, setLicensePlate] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState('');
@@ -39,9 +44,10 @@ export default function RegisterScreen({ navigation, route }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) { toast.warning('Invalid Email', 'Please enter a valid email address.'); return; }
     if (!phone.trim()) { toast.warning('Phone Required', 'Please enter your phone number.'); return; }
     if (password.length < 6) { toast.warning('Weak Password', 'Password must be at least 6 characters.'); return; }
-    if (role === 'driver' && (!vehicleType.trim() || !licensePlate.trim())) {
-      toast.info('Driver Info', 'Please fill in vehicle type and license plate.');
-      return;
+    if (role === 'driver') {
+      if (!VEHICLE_TYPES.includes(vehicleType)) { toast.warning('Vehicle type', 'Choose your vehicle: Tuk-tuk, Bike, Car or Van.'); return; }
+      if (!/^([A-Z]{2,3}[\s-]?[A-Z]{0,3}|\d{2,3})[\s-]?\d{3,4}$/i.test(licensePlate.trim())) { toast.warning('Number plate', 'Enter the plate like WP CAB-1234 or CAB-1234.'); return; }
+      if (licenseNumber.trim().length < 5) { toast.warning('Driving licence', 'Enter your driving licence number.'); return; }
     }
 
     setLoading(true);
@@ -59,7 +65,7 @@ export default function RegisterScreen({ navigation, route }) {
         });
         await setDoc(doc(db, 'drivers', user.uid), {
           uid: user.uid, name: name.trim(), email: user.email, phone,
-          vehicleType, licensePlate, licenseNumber: '',
+          vehicleType, licensePlate: licensePlate.trim().toUpperCase(), licenseNumber: licenseNumber.trim().toUpperCase(),
           status: 'pending_verification', isOnline: false, rejectionReason: '',
           createdAt: serverTimestamp(),
         });
@@ -75,7 +81,9 @@ export default function RegisterScreen({ navigation, route }) {
     } catch (error) {
       let msg = error.message;
       if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Try logging in.';
-      Alert.alert('Registration Failed', msg);
+      else if (error.code === 'auth/network-request-failed') msg = 'No internet connection. Please try again.';
+      else if (error.code === 'permission-denied') msg = 'Your account was created but your details could not be saved. Please sign in and try again.';
+      toast.error('Registration failed', msg);
     } finally {
       setLoading(false);
     }
@@ -92,7 +100,7 @@ export default function RegisterScreen({ navigation, route }) {
         onBlur={() => setFocusedField('')}
         secureTextEntry={secure && !showPassword}
         keyboardType={keyType || 'default'}
-        autoCapitalize={field === 'email' ? 'none' : 'words'}
+        autoCapitalize={field === 'name' ? 'words' : 'none'}
         autoCorrect={false}
         style={[styles.input, secure && { flex: 1 }]}
         {...extra}
@@ -140,6 +148,21 @@ export default function RegisterScreen({ navigation, route }) {
           </View>
 
           <View style={styles.formCard}>
+            <Text style={styles.fieldLabel}>I want to join as</Text>
+            <View style={styles.roleGrid}>
+              {ROLES.map(r => {
+                const on = role === r.key;
+                return (
+                  <TouchableOpacity key={r.key} onPress={() => setRole(r.key)} activeOpacity={0.85}
+                    style={[styles.roleCard, on && styles.roleCardActive]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
+                    <MaterialCommunityIcons name={r.icon} size={22} color={on ? '#006A3B' : '#8A9E8A'} />
+                    <Text style={[styles.roleLabel, on && styles.roleLabelActive]}>{r.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={styles.roleHint}>{ROLES.find(r => r.key === role)?.hint}</Text>
+
             {/* Full Name */}
             <Text style={styles.fieldLabel}>{i18n.t('ui_full_name')}</Text>
             {renderField("name", "Arjuna Perera", name, setName)}
@@ -161,9 +184,23 @@ export default function RegisterScreen({ navigation, route }) {
             {role === 'driver' && (
               <View style={styles.extraFields}>
                 <Text style={styles.fieldLabel}>{i18n.t('ui_vehicle_type')}</Text>
-                {renderField("vehicleType", "e.g. Tuk, Car, Van", vehicleType, setVehicleType)}
+                <View style={styles.roleGrid}>
+                  {VEHICLE_TYPES.map(v => {
+                    const on = vehicleType === v;
+                    return (
+                      <TouchableOpacity key={v} onPress={() => setVehicleType(v)} activeOpacity={0.85}
+                        style={[styles.roleCard, on && styles.roleCardActive]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
+                        <MaterialCommunityIcons name={transportIcon(v)} size={22} color={on ? '#006A3B' : '#8A9E8A'} />
+                        <Text style={[styles.roleLabel, on && styles.roleLabelActive]}>{VEHICLE_LABEL[v]}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
                 <Text style={styles.fieldLabel}>{i18n.t('ui_license_plate')}</Text>
-                {renderField("licensePlate", "e.g. CAB-1234", licensePlate, setLicensePlate, false, "default", { autoCapitalize: 'characters' })}
+                {renderField("licensePlate", "e.g. WP CAB-1234", licensePlate, setLicensePlate, false, "default", { autoCapitalize: 'characters' })}
+                <Text style={styles.fieldLabel}>Driving licence number</Text>
+                {renderField("licenseNumber", "e.g. B1234567", licenseNumber, setLicenseNumber, false, "default", { autoCapitalize: 'characters' })}
+                <Text style={styles.roleHint}>CEYLO checks your details before you can accept rides. You will be notified when your account is approved.</Text>
               </View>
             )}
 
@@ -221,6 +258,7 @@ const styles = StyleSheet.create({
   roleCardActive: { backgroundColor: '#E8F5E9', borderColor: '#006A3B' },
   roleLabel: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#8A9E8A' },
   roleLabelActive: { color: '#006A3B', fontFamily: 'Outfit-Bold' },
+  roleHint: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7A6B', marginTop: -6, marginBottom: 14 },
 
   extraFields: { gap: 0 },
 

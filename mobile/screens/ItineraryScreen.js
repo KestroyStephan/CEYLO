@@ -6,12 +6,14 @@ import { auth } from '../firebaseConfig';
 import { generateItinerary } from '../services/ItineraryService';
 import { loadPreferences, moodFromPreferences } from '../services/PreferencesService';
 import { toast } from '../components/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FOCUS_TO_MOOD = { 'Nature/Eco': 'Eco Explorer', 'Balanced': 'Family Trip', 'Culture/History': 'Culture Seeker' };
 const MAX_DAYS = 14;
 
 export default function ItineraryScreen({ navigation, route }) {
     const destination = route?.params?.destination || null;
+    const insets = useSafeAreaInsets();
     const [focus, setFocus] = useState('Nature/Eco');
     const [days, setDays] = useState(5);
     const [budget, setBudget] = useState('$$ Standard');
@@ -52,7 +54,13 @@ export default function ItineraryScreen({ navigation, route }) {
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+            style={styles.screen}
+            contentContainerStyle={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 }]}
+            showsVerticalScrollIndicator
+            persistentScrollbar
+            keyboardShouldPersistTaps="handled"
+        >
             <View style={styles.header}>
                 <IconButton accessibilityLabel="Go back" icon="arrow-left" size={24} onPress={() => navigation.goBack()} />
                 <Text variant="titleLarge" style={styles.headerTitle}>{i18n.t('ui_tailor_your_journey')}</Text>
@@ -122,16 +130,15 @@ export default function ItineraryScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+    screen: { flex: 1, backgroundColor: '#f5f5f5' },
     container: {
         flexGrow: 1,
-        padding: 20,
-        backgroundColor: '#f5f5f5',
+        paddingHorizontal: 20,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 30, // Safe area
-        marginBottom: 20,
+        marginBottom: 16,
     },
     headerTitle: {
         fontWeight: 'bold',
@@ -176,7 +183,7 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 10,
         marginTop: 10,
-        marginBottom: 30,
+        marginBottom: 12,
     },
     budgetBtn: {
         borderRadius: 20,

@@ -14,6 +14,7 @@ import { cacheItinerary, getLatestCachedItinerary } from '../services/ItineraryC
 import WeatherChip from '../components/WeatherChip';
 import ItineraryFeedback from '../components/ItineraryFeedback';
 import { cacheRoute } from '../services/RouteCache';
+import { transportIcon, transportLabel } from '../utils/transport';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 import { toast } from '../components/Toast';
@@ -203,14 +204,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
     await Sharing.shareAsync(uri);
   };
 
-  const getTransportIcon = (mode) => {
-    switch(mode) {
-      case 'walk': return 'walk';
-      case 'train': return 'train';
-      case 'bus': return 'bus';
-      default: return 'car';
-    }
-  };
+  const getTransportIcon = transportIcon;
 
   const renderItem = ({ item, drag, isActive }) => (
     <ScaleDecorator>
@@ -248,7 +242,10 @@ export default function ItineraryDetailScreen({ route, navigation }) {
             </View>
 
             {item.distanceKm > 0 && (
-              <Text style={styles.legText}>{item.distanceKm} km • ~{item.travelMinutes} min by {item.transport}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <MaterialCommunityIcons name={transportIcon(item.transport)} size={16} color="#00695C" />
+                <Text style={styles.legText}>{item.distanceKm} km • ~{item.travelMinutes} min by {transportLabel(item.transport).toLowerCase()}</Text>
+              </View>
             )}
             <View style={styles.chipRow}>
               <Chip style={[styles.ecoChip, { backgroundColor: (item.eco || 80) >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>

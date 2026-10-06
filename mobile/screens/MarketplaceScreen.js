@@ -87,9 +87,7 @@ export default function MarketplaceScreen({ navigation }) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.openDrawer ? navigation.openDrawer() : null}>
-          <MaterialCommunityIcons name="menu" size={28} color="#00695C" />
-        </TouchableOpacity>
+        <View style={{ width: 28 }} />
         <Text style={styles.headerTitle}>{i18n.t('ui_marketplace')}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('MyOrders')} accessibilityLabel="My orders">
           <MaterialCommunityIcons name="receipt-text-outline" size={26} color="#00695C" />

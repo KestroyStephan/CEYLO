@@ -356,3 +356,28 @@ describe('payments', () => {
     await assertSucceeds(updateDoc(doc(as('v1'), 'orders', 'o1'), { status: 'preparing' }));
   });
 });
+
+describe('registration roles', () => {
+  test('drivers apply as pending, can reapply after rejection, and never approve themselves', async () => {
+    await assertSucceeds(setDoc(doc(as('d9'), 'users', 'd9'), { role: 'driver_pending', status: 'pending_verification' }));
+    await assertFails(setDoc(doc(as('d8'), 'users', 'd8'), { role: 'driver_active' }));
+    await seed({ 'users/d7': { role: 'driver_rejected', status: 'rejected' } });
+    await assertSucceeds(updateDoc(doc(as('d7'), 'users', 'd7'), { role: 'driver_pending', status: 'pending_verification' }));
+    await assertFails(updateDoc(doc(as('d9'), 'users', 'd9'), { role: 'driver_active' }));
+  });
+
+  test('a vendor finishing registration moves to pending review', async () => {
+    await seed({ 'users/v5': { role: 'vendor_onboarding' } });
+    await assertSucceeds(updateDoc(doc(as('v5'), 'users', 'v5'), { role: 'vendor_pending', status: 'pending_verification' }));
+    await assertFails(updateDoc(doc(as('v5'), 'users', 'v5'), { role: 'vendor_active' }));
+  });
+});
+
+describe('first role on a profile created early', () => {
+  test('a profile that exists without a role can take a self-service role, never an approved one', async () => {
+    await seed({ 'users/n1': { expoPushToken: 'ExponentPushToken[x]' } });
+    await assertSucceeds(setDoc(doc(as('n1'), 'users', 'n1'), { role: 'driver_pending', status: 'pending_verification', name: 'N' }));
+    await seed({ 'users/n2': { expoPushToken: 'ExponentPushToken[y]' } });
+    await assertFails(setDoc(doc(as('n2'), 'users', 'n2'), { role: 'driver_active' }));
+  });
+});

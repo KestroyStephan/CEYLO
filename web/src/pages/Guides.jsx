@@ -30,6 +30,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { notifyUser } from '../utils/notifyUser';
 
 
 export default function Guides() {
@@ -123,6 +124,9 @@ export default function Guides() {
                 role: role,
                 status: approve ? 'approved' : 'rejected'
             });
+            notifyUser(id, approve ? 'You are a verified CEYLO guide' : 'Guide application needs changes',
+                approve ? 'Open CEYLO to set your availability and receive bookings.' : 'Open CEYLO to see what to update and reapply.',
+                { type: approve ? 'account_approved' : 'account_rejected' });
             setSnackbar({
                 open: true,
                 message: `Guide applications successfully ${approve ? 'approved' : 'rejected'}!`,

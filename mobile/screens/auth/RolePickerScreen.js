@@ -152,8 +152,9 @@ export default function RolePickerScreen({ navigation }) {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.menuBtn}
+          accessibilityLabel="Go back"
         >
-          <MaterialCommunityIcons name="menu" size={22} color="#1A2E1A" />
+          <MaterialCommunityIcons name="arrow-left" size={22} color="#1A2E1A" />
         </TouchableOpacity>
         <Text style={styles.brandName}>Ceylo</Text>
         <View style={styles.avatarPlaceholder}>

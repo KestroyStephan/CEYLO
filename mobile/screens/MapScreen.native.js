@@ -438,9 +438,9 @@ export default function MapScreen({ navigation }) {
       <View style={[styles.header, { top: insets.top + 10 }]}>
         {!isSearching ? (
           <>
-            <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.openDrawer ? navigation.openDrawer() : console.log('Menu pressed')}>
-              <MaterialCommunityIcons name="menu" size={26} color="#00695C" />
-            </TouchableOpacity>
+            <View style={styles.menuBtn}>
+              <MaterialCommunityIcons name="compass-outline" size={24} color="#00695C" />
+            </View>
             <Text style={styles.headerTitle}>{i18n.t('ui_explore_sri_lanka')}</Text>
             <TouchableOpacity style={styles.searchBtn} onPress={() => setIsSearching(true)}>
               <MaterialCommunityIcons name="magnify" size={26} color="#00695C" />

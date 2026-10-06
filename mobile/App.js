@@ -167,6 +167,11 @@ export default function App() {
               setUserRole(data.role || 'tourist');
               setUserData(data);
             } else {
+              const createdMs = Date.parse(currentUser.metadata?.creationTime || '') || 0;
+              if (!currentUser.isAnonymous && Date.now() - createdMs < 20000) {
+                // Registration is still writing the profile with the chosen role; the next snapshot has it
+                return;
+              }
               setUserRole('tourist');
             }
             setLoading(false);
