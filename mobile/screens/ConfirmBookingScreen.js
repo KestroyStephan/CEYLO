@@ -355,7 +355,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
                     <View style={{ marginLeft: 10 }}>
                       <Text style={styles.journalName}>{r.name || 'Traveller'}</Text>
                       <Text style={styles.journalMeta}>
-                        {'★'.repeat(Math.round(Number(r.rating) || 0))}{r.createdAt?.toDate ? ` • ${r.createdAt.toDate().toLocaleDateString()}` : ''}
+                        {'★'.repeat(Math.round(Number(r.rating) || 0))}{r.createdAt?.toDate ? ` • ${r.createdAt.toDate().toLocaleDateString('en-GB')}` : ''}
                       </Text>
                     </View>
                   </View>
