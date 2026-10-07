@@ -22,8 +22,10 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { notifyUser } from '../utils/notifyUser';
 import StatusChip from '../components/StatusChip';
+import { useLocation } from 'react-router-dom';
 
 export default function Vendors() {
+    const location = useLocation();
     const [vendors, setVendors] = useState([]);
     const [selectedVendor, setSelectedVendor] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -32,7 +34,13 @@ export default function Vendors() {
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuVendor, setMenuVendor] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterStatus, setFilterStatus] = useState('All');
+    const [filterStatus, setFilterStatus] = useState(location.state?.status || 'All');
+
+    useEffect(() => {
+        if (location.state?.status) {
+            setFilterStatus(location.state.status);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const q = query(collection(db, 'vendors'), orderBy('createdAt', 'desc'));

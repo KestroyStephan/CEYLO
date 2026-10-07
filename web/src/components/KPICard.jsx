@@ -24,9 +24,11 @@ export default function KPICard({
                 boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.02)', // Minimal shadow
                 position: 'relative',
                 cursor: onClick ? 'pointer' : 'default',
-                transition: 'border-color 0.2s',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': onClick ? {
-                    borderColor: '#CBD5E1', // Hover state border
+                    borderColor: '#006A3B',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.06)',
                 } : {}
             }}
         >

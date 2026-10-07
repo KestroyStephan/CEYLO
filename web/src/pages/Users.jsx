@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { useLocation } from 'react-router-dom';
 import KPICard from '../components/KPICard';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -23,16 +24,23 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import CampaignIcon from '@mui/icons-material/Campaign';
 
 export default function Users() {
+    const location = useLocation();
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterRole, setFilterRole] = useState('All');
+    const [filterRole, setFilterRole] = useState(location.state?.role || 'All');
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuUser, setMenuUser] = useState(null);
     const [broadcastOpen, setBroadcastOpen] = useState(false);
     const [broadcastMsg, setBroadcastMsg] = useState({ title: '', body: '', target: 'all' });
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    useEffect(() => {
+        if (location.state?.role) {
+            setFilterRole(location.state.role);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {

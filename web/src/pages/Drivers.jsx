@@ -10,6 +10,7 @@ import { db } from '../firebaseConfig';
 import { useAuth } from '../context/AuthContext';
 import { notifyUser } from '../utils/notifyUser';
 import { DRIVER_DOCS, docState, docSummary, isExpired, toMs } from '../utils/driverDocs';
+import { useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import StatusChip from '../components/StatusChip';
 import SearchIcon from '@mui/icons-material/Search';
@@ -28,12 +29,13 @@ const fmtDate = (ms) => (ms ? new Date(ms).toLocaleDateString('en-GB', { day: 'n
 const fmtSize = (b) => (!b ? null : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 export default function Drivers() {
+  const location = useLocation();
   const { currentUser } = useAuth();
   const [drivers, setDrivers] = useState([]);
   const [documents, setDocuments] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [statusTab, setStatusTab] = useState('all');
+  const [statusTab, setStatusTab] = useState(location.state?.tab || 'all');
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewId, setReviewId] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null); // { type: 'driver' } or { type: 'doc', key }
@@ -41,6 +43,12 @@ export default function Drivers() {
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setStatusTab(location.state.tab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const unsubDrivers = onSnapshot(query(collection(db, 'drivers'), orderBy('createdAt', 'desc')),

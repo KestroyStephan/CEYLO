@@ -136,29 +136,48 @@ export default function Dashboard() {
             {/* High-value KPI Blocks */}
             <Grid container spacing={2.5} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                    <KPICard title="Active Travelers" value={activeUsersCount.toLocaleString()} icon={<PeopleIcon fontSize="small" />} />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                    <KPICard title="Platform Revenue" value={`LKR ${revenueToday.toLocaleString()}`} icon={<CurrencyLkrIcon fontSize="small" />} />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard 
-                        title="Pending Drivers" value={pendingDrivers.length} 
-                        icon={<DirectionsCarIcon fontSize="small" />} iconBgColor="#EFF6FF" iconColor="#1D4ED8" 
-                        onClick={() => navigate('/drivers')}
+                        title="Active Travelers" 
+                        value={activeUsersCount.toLocaleString()} 
+                        icon={<PeopleIcon fontSize="small" />} 
+                        onClick={() => navigate('/users', { state: { role: 'Tourist' } })}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard 
-                        title="Pending Vendors" value={pendingVendors.length} 
-                        icon={<StoreIcon fontSize="small" />} iconBgColor="#FEF3C7" iconColor="#D97706" 
-                        onClick={() => navigate('/vendors')}
+                        title="Platform Revenue" 
+                        value={`LKR ${revenueToday.toLocaleString()}`} 
+                        icon={<CurrencyLkrIcon fontSize="small" />} 
+                        onClick={() => navigate('/reports')}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                     <KPICard 
-                        title="Open SOS Cases" value={activeSosCount} 
-                        icon={<WarningIcon fontSize="small" />} iconBgColor="#FEE2E2" iconColor="#DC2626" 
+                        title="Pending Drivers" 
+                        value={pendingDrivers.length} 
+                        icon={<DirectionsCarIcon fontSize="small" />} 
+                        iconBgColor="#EFF6FF" 
+                        iconColor="#1D4ED8" 
+                        onClick={() => navigate('/drivers', { state: { tab: 'pending' } })}
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+                    <KPICard 
+                        title="Pending Vendors" 
+                        value={pendingVendors.length} 
+                        icon={<StoreIcon fontSize="small" />} 
+                        iconBgColor="#FEF3C7" 
+                        iconColor="#D97706" 
+                        onClick={() => navigate('/vendors', { state: { status: 'Pending' } })}
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+                    <KPICard 
+                        title="Open SOS Cases" 
+                        value={activeSosCount} 
+                        icon={<WarningIcon fontSize="small" />} 
+                        iconBgColor="#FEE2E2" 
+                        iconColor="#DC2626" 
                         onClick={() => navigate('/sos')}
                     />
                 </Grid>
