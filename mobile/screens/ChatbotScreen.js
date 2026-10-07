@@ -10,6 +10,7 @@ import i18next from '../i18n';
 import { db, auth } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import * as Speech from 'expo-speech';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { chatTurn } from '../services/aiClient';
 import ProgressiveImage from '../components/ProgressiveImage';
@@ -343,11 +344,46 @@ export default function ChatbotScreen({ navigation, route }) {
     if (buildWith) generateItinerary(buildWith);
   };
 
-  // Speech-to-text needs a native module this app does not ship, so the mic hands
-  // over to the keyboard's built-in dictation instead of faking a transcript.
-  const startVoiceInput = () => {
-    inputRef.current?.focus();
-    Alert.alert(t('voice_title'), t('voice_body'));
+  // Voice input: the phone's speech recognizer fills the box while you speak and sends the
+  // question when you stop. Tap the mic again to stop early.
+  const [listening, setListening] = useState(false);
+  const handleSendRef = useRef(handleSend);
+  handleSendRef.current = handleSend;
+  useSpeechRecognitionEvent('start', () => setListening(true));
+  useSpeechRecognitionEvent('end', () => setListening(false));
+  useSpeechRecognitionEvent('result', (event) => {
+    const text = event.results?.[0]?.transcript || '';
+    setInputText(text);
+    if (event.isFinal && text.trim()) handleSendRef.current(text);
+  });
+  useSpeechRecognitionEvent('error', (event) => {
+    setListening(false);
+    if (event.error === 'no-speech' || event.error === 'speech-timeout') toast.info('Did not hear anything', 'Tap the mic and speak again.');
+    else if (event.error !== 'aborted') toast.error('Voice input stopped', event.message || 'Try again, or type your question.');
+  });
+
+  const startVoiceInput = async () => {
+    try {
+      if (listening) { ExpoSpeechRecognitionModule.stop(); return; }
+      if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+        toast.warning('Voice input not available', 'Install or enable Google speech services, or use the keyboard mic.');
+        inputRef.current?.focus();
+        return;
+      }
+      const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!perm.granted) { toast.warning('Microphone needed', 'Allow the microphone to talk to the assistant.'); return; }
+      Speech.stop();
+      ExpoSpeechRecognitionModule.start({
+        lang: i18n.language === 'si' ? 'si-LK' : i18n.language === 'ta' ? 'ta-LK' : 'en-US',
+        interimResults: true,
+        continuous: false,
+        maxAlternatives: 1,
+      });
+    } catch (e) {
+      console.warn('Voice input failed:', e.message);
+      setListening(false);
+      toast.error('Voice input failed', 'Please type your question instead.');
+    }
   };
 
   const generateItinerary = async (trip = extractedState) => {
@@ -461,17 +497,17 @@ export default function ChatbotScreen({ navigation, route }) {
 
       <Surface style={styles.inputArea} elevation={5}>
         <View style={styles.inputRow}>
-          <IconButton accessibilityLabel="Voice input"
-            icon="microphone"
-            containerColor="#E0F2F1"
-            iconColor="#00695C"
+          <IconButton accessibilityLabel={listening ? 'Stop listening' : 'Voice input'}
+            icon={listening ? 'stop' : 'microphone'}
+            containerColor={listening ? '#C62828' : '#E0F2F1'}
+            iconColor={listening ? '#FFFFFF' : '#00695C'}
             size={24}
             onPress={startVoiceInput}
             disabled={loading}
           />
           <TextInput
             ref={inputRef}
-            placeholder={t('chat_placeholder')}
+            placeholder={listening ? 'Listening… speak now' : t('chat_placeholder')}
             value={inputText}
             onChangeText={setInputText}
             mode="flat"

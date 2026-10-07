@@ -10,7 +10,7 @@ const {
   assertFails,
   assertSucceeds,
 } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, deleteDoc, query, where } = require('firebase/firestore');
+const { doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, collectionGroup, deleteDoc, query, where } = require('firebase/firestore');
 
 let env;
 
@@ -438,5 +438,19 @@ describe('chats', () => {
     await seed({ 'chats/o1': { participants: ['ven1', 'tour2'] }, 'chats/o1/messages/m1': { text: 'Hi', senderId: 'ven1', read_by: ['ven1'] } });
     await assertSucceeds(updateDoc(doc(as('tour2'), 'chats', 'o1', 'messages', 'm1'), { read_by: ['ven1', 'tour2'] }));
     await assertFails(updateDoc(doc(as('tour2'), 'chats', 'o1', 'messages', 'm1'), { text: 'edited' }));
+  });
+});
+
+describe('marketplace', () => {
+  test('a tourist can list every vendor\'s services and products (collection group, no filter)', async () => {
+    await seed({
+      'vendors/v1/services/s1': { name: 'Rent', price: 15500, isAvailable: true },
+      'vendors/v2/services/s2': { name: 'Alan', price: 100, isAvailable: true },
+      'vendors/v1/products/p1': { name_en: 'Mask', price: 2500, isAvailable: true },
+    });
+    const t = as('tour9');
+    const services = await assertSucceeds(getDocs(collectionGroup(t, 'services')));
+    expect(services.size).toBe(2);
+    await assertSucceeds(getDocs(collectionGroup(t, 'products')));
   });
 });

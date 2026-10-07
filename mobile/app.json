@@ -73,7 +73,15 @@
       ],
       "expo-camera",
       "expo-image-picker",
-      "react-native-fast-tflite"
+      "react-native-fast-tflite",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "CEYLO uses the microphone so you can speak to the travel assistant and the SOS desk.",
+          "speechRecognitionPermission": "CEYLO turns your voice into text for the travel assistant.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
     ],
     "extra": {
       "eas": {

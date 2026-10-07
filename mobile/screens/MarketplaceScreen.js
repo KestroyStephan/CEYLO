@@ -6,7 +6,7 @@ import ProgressiveImage from '../components/ProgressiveImage';
 import { Text, Surface, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collectionGroup, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collectionGroup, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { Svg, Circle, Ellipse } from 'react-native-svg';
 import SosButton from '../components/SosButton';
@@ -52,19 +52,22 @@ export default function MarketplaceScreen({ navigation }) {
     };
 
     const unsubProducts = onSnapshot(
-      query(collectionGroup(db, 'products'), where('isAvailable', '==', true)),
+      // No filter in the query, so it needs no Firestore index; hidden items are skipped here
+      collectionGroup(db, 'products'),
       (snapshot) => {
-        items.products = snapshot.docs.map((d) => ({ id: d.id, vendorId: d.ref.parent.parent.id, ...d.data() }));
+        items.products = snapshot.docs
+          .filter(d => d.data().isAvailable !== false && d.data().status !== 'removed')
+          .map((d) => ({ id: d.id, vendorId: d.ref.parent.parent?.id || d.data().vendorId, ...d.data() }));
         publish(); done('products');
       },
       (error) => { console.error('Marketplace products error:', error); done('products'); }
     );
 
     const unsubServices = onSnapshot(
-      query(collectionGroup(db, 'services'), where('isAvailable', '==', true)),
+      collectionGroup(db, 'services'),
       (snapshot) => {
         const list = snapshot.docs
-          .filter(d => d.ref.parent.parent?.parent?.id === 'vendors')
+          .filter(d => d.ref.parent.parent?.parent?.id === 'vendors' && d.data().isAvailable !== false)
           .map((d) => {
             const s = d.data();
             const cap = Number(s.maxCapacity) || 1;
