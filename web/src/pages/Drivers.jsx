@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Box, Typography, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Snackbar, Stack, Paper, InputAdornment, Tabs, Tab, Avatar, Tooltip,
-  Drawer, IconButton, Divider, Link,
+  Drawer, IconButton, Divider, Link, Grid,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, where, getDocs, limit } from 'firebase/firestore';
@@ -17,6 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 const STATUS = {
   pending_verification: { label: 'Pending', tone: 'warning' },
@@ -242,6 +243,53 @@ export default function Drivers() {
           slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
         />
       </PageHeader>
+
+      {/* KPI Banners */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Paper 
+            onClick={() => setStatusTab('approved')}
+            sx={{ 
+              p: 2.5, 
+              borderRadius: 1.25, 
+              border: '1px solid #EBEFE8', 
+              boxShadow: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { borderColor: '#006A3B', transform: 'translateY(-2px)' }
+            }}
+          >
+            <Typography variant="caption" fontWeight={600} color="text.secondary">TOTAL ACTIVE DRIVERS</Typography>
+            <Typography variant="h4" fontWeight={600} color="#006A3B">{counts.approved}</Typography>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>Verified Operators</Typography>
+          </Paper>
+        </Grid>
+        
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Paper 
+            onClick={() => setStatusTab('pending')}
+            sx={{ 
+              p: 2.5, 
+              borderRadius: 1.25, 
+              border: '1px solid #FFCDD2', 
+              bgcolor: '#FFF5F5', 
+              boxShadow: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { borderColor: '#BA1A1A', transform: 'translateY(-2px)' }
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box>
+                <Typography variant="caption" fontWeight={600} color="#BA1A1A">NEW APPLICATIONS</Typography>
+                <Typography variant="h4" fontWeight={600} color="#BA1A1A">{counts.pending}</Typography>
+                <Typography variant="caption" color="#BA1A1A" fontWeight={600}>Awaiting Verification</Typography>
+              </Box>
+              <ErrorOutlineIcon sx={{ color: '#BA1A1A' }} />
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {loadError && <Alert severity="error" sx={{ mb: 2 }}>Could not load drivers: {loadError}</Alert>}
 
