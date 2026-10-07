@@ -18,6 +18,7 @@ import { onSnapshot } from 'firebase/firestore';
 import { OfflineQueue } from '../services/OfflineQueue';
 import { SOS_SMS_NUMBER, MAPS_API_KEY } from '../config';
 import { toast } from '../components/Toast';
+import { playAlert } from '../utils/alertSound';
 
 const GOOGLE_API_KEY = MAPS_API_KEY;
 const GPS_TIMEOUT_MS = 5000;
@@ -102,6 +103,7 @@ export default function SOSScreen({ navigation, route }) {
   const countdownRef = useRef(null);
   const cameraRef = useRef(null);
   const lastAudioTimestampRef = useRef(null);
+  const lastDeskStatusRef = useRef(null);
   // Voice messages with the desk (walkie-talkie): the traveller records, the desk replies
   const recordingRef = useRef(null);
   const [talkState, setTalkState] = useState('idle'); // idle | recording | sending
@@ -246,11 +248,18 @@ export default function SOSScreen({ navigation, route }) {
   // Walkie-Talkie & Admin Camera Request Listener
   useEffect(() => {
     activeDocIdRef.current = activeDocId;
+    lastDeskStatusRef.current = null;
     let unsub = () => {};
     if (activeDocId) {
       unsub = onSnapshot(doc(db, "sos_alerts", activeDocId), async (snap) => {
         const data = snap.data();
         if (!data) return;
+        // Sound and vibrate when the desk picks up the alert or sends help
+        if (lastDeskStatusRef.current && lastDeskStatusRef.current !== data.status && ['acknowledged', 'dispatched', 'investigating'].includes(data.status)) {
+          playAlert('sos');
+          toast.success(data.status === 'acknowledged' ? 'The desk has seen your alert' : 'Help is on the way', data.dispatchTeam ? `${data.dispatchTeam} is coming to you.` : 'Stay where you are if it is safe.');
+        }
+        lastDeskStatusRef.current = data.status;
         setDeskStatus({
           status: data.status,
           team: data.dispatchTeam || null,
@@ -573,6 +582,7 @@ export default function SOSScreen({ navigation, route }) {
       // Ask for the camera now, so a live-view request from the desk does not stop at a permission prompt
       if (!permission?.granted) requestPermission().catch(() => {});
       logEvent('sos_used', { alertId: docRef.id, online: true });
+      playAlert('sos');
       sendSosSms(docRef.id);
       toast.success("Emergency Alert Sent!", "Admins and authorities have been notified with your live location.");
     } catch (error) {

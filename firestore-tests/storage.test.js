@@ -115,6 +115,15 @@ describe('profiles, partners and orders', () => {
     await assertFails(uploadBytes(ref(st('d1'), 'driver_documents/d1/big.pdf'), bytes(11 * 1024 * 1024)));
   });
 
+  test('order proof photos go only in the vendor\'s own folder', async () => {
+    await seed({ 'users/staff': { role: 'admin' }, 'users/t2': { role: 'tourist' } });
+    await assertSucceeds(uploadBytes(ref(st('v1'), 'order_proofs/v1/order123.jpg'), bytes()));
+    await assertFails(uploadBytes(ref(st('t2'), 'order_proofs/v1/order123.jpg'), bytes()));
+    await seedFile('order_proofs/v1/order456.jpg');
+    await assertSucceeds(getBytes(ref(st('staff'), 'order_proofs/v1/order456.jpg')));
+    await assertFails(getBytes(ref(st('t2'), 'order_proofs/v1/order456.jpg')));
+  });
+
   test('unknown paths are closed', async () => {
     await assertFails(uploadBytes(ref(st('u1'), 'random/file.jpg'), bytes()));
   });

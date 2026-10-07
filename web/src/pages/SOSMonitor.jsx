@@ -6,7 +6,7 @@ import {
     TextField, InputAdornment, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Snackbar
 } from '@mui/material';
-import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../context/AuthContext';
 import ForwardToInboxIcon from '@mui/icons-material/ForwardToInbox';
@@ -27,6 +27,7 @@ import MyLocationIcon from '@mui/icons-material/MyLocation';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebaseConfig';
+import { startSiren, stopSiren, chime, unlock, blocked } from '../utils/siren';
 
 // Emergency workflow (Sprint 3): active -> acknowledged -> dispatched -> resolved.
 // 'investigating' is the older name for dispatched and is still read.
@@ -52,7 +53,6 @@ function SOSMonitor() {
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-    const audioRef = useRef(null);
     const [now, setNow] = useState(() => Date.now());
     // Re-render every second so waiting times and location ages stay current
     useEffect(() => {
@@ -60,22 +60,30 @@ function SOSMonitor() {
         return () => clearInterval(t);
     }, []);
 
+    // Browsers keep sound off until the page is clicked once; show a prompt until then
+    const [soundBlocked, setSoundBlocked] = useState(() => blocked());
+    const sirenWanted = useRef(false);
     useEffect(() => {
-        // Initialize emergency alert sound
-        audioRef.current = new Audio("https://actions.google.com/sounds/v1/emergency/emergency_siren.ogg");
-        audioRef.current.loop = true;
-
+        const onClick = () => {
+            unlock();
+            setTimeout(() => {
+                setSoundBlocked(blocked());
+                if (sirenWanted.current) startSiren();
+            }, 50);
+        };
+        window.addEventListener('pointerdown', onClick);
         if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
-
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-        };
+        return () => { window.removeEventListener('pointerdown', onClick); stopSiren(); };
     }, []);
+
+    // New voice messages from travellers play once, after a chime
+    const heardVoice = useRef(null);
+    const playVoice = (url) => {
+        chime();
+        setTimeout(() => { new Audio(url).play().catch(e => console.log('Voice playback blocked:', e)); }, 600);
+    };
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, "sos_alerts"), (snapshot) => {
@@ -92,12 +100,24 @@ function SOSMonitor() {
 
             setAlerts(firebaseAlerts);
 
-            // Handle active siren
+            // Siren while any alert is new and not yet acknowledged
             const activeInDB = firebaseAlerts.some(a => a.status === 'active');
-            if (activeInDB && !isMuted) {
-                audioRef.current?.play().catch(e => console.log("Audio block:", e));
-            } else {
-                audioRef.current?.pause();
+            sirenWanted.current = activeInDB && !isMuted;
+            if (sirenWanted.current) startSiren(); else stopSiren();
+            if (activeInDB && "Notification" in window && Notification.permission === "granted" && document.hidden) {
+                new Notification('CEYLO SOS', { body: 'A traveller needs help. Open the SOS monitor.' });
+            }
+
+            // Play a traveller's newest voice message (skip the ones already there when the page opened)
+            const latest = firebaseAlerts
+                .filter(a => OPEN_STATUSES.includes(a.status) && a.travellerAudioUrl && a.travellerAudioAt)
+                .sort((a, b) => b.travellerAudioAt - a.travellerAudioAt)[0];
+            if (heardVoice.current === null) {
+                heardVoice.current = latest ? latest.travellerAudioAt : 0;
+            } else if (latest && latest.travellerAudioAt > heardVoice.current) {
+                heardVoice.current = latest.travellerAudioAt;
+                if (!isMuted) playVoice(latest.travellerAudioUrl);
+                setSnackbar({ open: true, message: `New voice message from ${latest.userName || 'the traveller'}`, severity: 'info' });
             }
         }, (err) => {
             console.error("SOS Monitor listener error:", err);
@@ -302,13 +322,15 @@ function SOSMonitor() {
                     stream.getTracks().forEach(track => track.stop());
                     
                     try {
-                        const audioStorageRef = ref(storage, `sos_alerts/${selectedAlert.id}_admin_audio_${Date.now()}.${extension}`);
-                        await uploadBytes(audioStorageRef, audioBlob);
+                        const at = Date.now();
+                        const audioStorageRef = ref(storage, `sos_media/${currentUser.uid}/${selectedAlert.id}_admin_audio_${at}.${extension}`);
+                        await uploadBytes(audioStorageRef, audioBlob, { contentType: mimeType });
                         const downloadUrl = await getDownloadURL(audioStorageRef);
                         
                         await updateDoc(doc(db, "sos_alerts", selectedAlert.id), {
                             adminAudioUrl: downloadUrl,
-                            adminAudioTimestamp: Date.now()
+                            adminAudioTimestamp: at,
+                            voiceNotes: arrayUnion({ from: 'desk', url: downloadUrl, at }),
                         });
                         setSnackbar({ open: true, message: 'Voice message sent!', severity: 'success' });
                     } catch (err) {
@@ -384,6 +406,12 @@ function SOSMonitor() {
                     <Typography sx={{ fontSize: 13, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <Box component="span" sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'success.main' }} /> Listening for alerts
                     </Typography>
+                    {soundBlocked && !isMuted && (
+                        <Button size="small" color="error" variant="outlined" onClick={() => { unlock(); setTimeout(() => setSoundBlocked(blocked()), 50); }}
+                            startIcon={<VolumeUpIcon />} sx={{ textTransform: 'none' }}>
+                            Turn on alert sound
+                        </Button>
+                    )}
                     <Tooltip title={isMuted ? 'Siren muted' : 'Siren on'}>
                         <IconButton onClick={() => setIsMuted(!isMuted)} aria-label={isMuted ? 'Unmute siren' : 'Mute siren'} sx={{ color: isMuted ? 'text.secondary' : 'error.main' }}>
                             {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
@@ -810,7 +838,7 @@ function SOSMonitor() {
                                                     '&:hover': { bgcolor: isRecording ? '#930006' : '#555' }
                                                 }}
                                             >
-                                                {isRecording ? 'Recording...' : 'Hold to Talk'}
+                                                {isRecording ? 'Stop and send' : 'Talk to traveller'}
                                             </Button>
                                             <Button 
                                                 fullWidth
@@ -854,6 +882,28 @@ function SOSMonitor() {
                                                 </Stack>
                                             )}
                                         </Stack>
+
+                                        {/* Voice messages between the traveller and the desk */}
+                                        {(selectedAlert.voiceNotes?.length > 0 || selectedAlert.travellerAudioUrl) && (
+                                            <Paper sx={{ p: 2, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
+                                                <Typography variant="caption" fontWeight={600} color="#3F4941" sx={{ display: 'block', mb: 1 }}>
+                                                    VOICE MESSAGES
+                                                </Typography>
+                                                <Stack spacing={1.25}>
+                                                    {(selectedAlert.voiceNotes?.length ? selectedAlert.voiceNotes : [{ from: 'traveller', url: selectedAlert.travellerAudioUrl, at: selectedAlert.travellerAudioAt }])
+                                                        .slice().sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 6)
+                                                        .map(v => (
+                                                            <Box key={v.url}>
+                                                                <Typography variant="caption" sx={{ fontWeight: 600, color: v.from === 'desk' ? '#006A3B' : '#BA1A1A' }}>
+                                                                    {v.from === 'desk' ? 'Desk' : (selectedAlert.userName || 'Traveller')}
+                                                                    {v.at ? ` · ${new Date(v.at).toLocaleTimeString()}` : ''}
+                                                                </Typography>
+                                                                <audio controls preload="none" src={v.url} style={{ width: '100%', height: 36, display: 'block' }} />
+                                                            </Box>
+                                                        ))}
+                                                </Stack>
+                                            </Paper>
+                                        )}
 
                                         {/* Emergency contact details card */}
                                         <Paper sx={{ p: 2, borderRadius: 1.25, bgcolor: '#F6FBF3', border: '1px solid #BECABE', boxShadow: 'none' }}>

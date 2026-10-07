@@ -11,6 +11,8 @@ import { startLocationTracking, startAvailability, stopAvailability } from '../s
 import { requestsForDriver, acceptRide, RideTakenError, MATCH_RADIUS_KM } from '../utils/rideDispatch';
 import { notifyBooking } from '../services/aiClient';
 import { toast } from '../components/Toast';
+import { playAlert, stopAlert } from '../utils/alertSound';
+import * as Notifications from 'expo-notifications';
 
 const { width } = Dimensions.get('window');
 
@@ -44,6 +46,25 @@ export default function DriverDashboard({ navigation }) {
 
   // Only fresh requests near this driver, nearest first
   const visibleRequests = requestsForDriver(rideRequests, driverPos, now);
+
+  // Ring like a phone call when a new ride request reaches this driver; stop when none are left
+  const ringSeen = React.useRef(new Set());
+  const visibleIds = visibleRequests.map(r => r.id).join(',');
+  useEffect(() => {
+    const ids = visibleIds ? visibleIds.split(',') : [];
+    if (!ids.length) { stopAlert(); return; }
+    const fresh = ids.filter(id => !ringSeen.current.has(id));
+    fresh.forEach(id => ringSeen.current.add(id));
+    if (fresh.length) {
+      playAlert('ride', { loop: true, maxMs: 30000 });
+      const r = visibleRequests.find(x => x.id === fresh[0]);
+      Notifications.scheduleNotificationAsync({
+        content: { title: 'New ride request', body: r?.dropoff ? `To ${r.dropoff}` : 'A rider near you needs a ride.', sound: true, priority: 'max' },
+        trigger: null,
+      }).catch(() => {});
+    }
+  }, [visibleIds]);
+  useEffect(() => () => { stopAlert(); }, []);
 
   useEffect(() => {
     (async () => {
@@ -139,6 +160,7 @@ export default function DriverDashboard({ navigation }) {
 
   const handleAcceptFromDashboard = async (bookingId) => {
     setAccepting(bookingId);
+    stopAlert();
     try {
       // Atomic claim: fails cleanly if another driver accepted first or the rider cancelled
       await acceptRide(bookingId, auth.currentUser.uid);
