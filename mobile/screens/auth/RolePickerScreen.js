@@ -204,11 +204,6 @@ export default function RolePickerScreen({ navigation }) {
         {/* Footer policy */}
         <Text style={styles.policyText}>{i18n.t('ui_by_continuing_you_agree_to_our_eco_polic')}</Text>
       </ScrollView>
-
-      {/* Floating action dot (decorative orange) */}
-      <View style={[styles.fab, { bottom: insets.bottom + 100 }]}>
-        <View style={styles.fabInner} />
-      </View>
     </View>
   );
 }

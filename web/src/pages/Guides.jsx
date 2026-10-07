@@ -7,7 +7,7 @@ import {
     CircularProgress, Snackbar, Alert, Pagination, Drawer, Dialog,
     DialogTitle, DialogContent, DialogActions, InputAdornment
 } from '@mui/material';
-import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -36,6 +36,24 @@ import { notifyUser } from '../utils/notifyUser';
 export default function Guides() {
     const [guides, setGuides] = useState([]);
     const [selectedGuide, setSelectedGuide] = useState(null);
+    // Real performance for the selected guide: average review rating and completed bookings
+    const [guideStats, setGuideStats] = useState({ id: null, rating: null, reviews: 0, tours: 0 });
+    const statsId = selectedGuide?.id;
+    useEffect(() => {
+        if (!statsId) return;
+        let cancelled = false;
+        Promise.all([
+            getDocs(query(collection(db, 'reviews'), where('guideId', '==', statsId))).catch(() => null),
+            getDocs(query(collection(db, 'bookings'), where('guideId', '==', statsId))).catch(() => null),
+        ]).then(([rs, bs]) => {
+            if (cancelled) return;
+            const ratings = (rs?.docs || []).map(d => Number(d.data().rating)).filter(n => n > 0);
+            const done = (bs?.docs || []).filter(d => ['completed', 'Completed'].includes(d.data().status)).length;
+            setGuideStats({ id: statsId, rating: ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : null, reviews: ratings.length, tours: done });
+        });
+        return () => { cancelled = true; };
+    }, [statsId]);
+    const stats = guideStats.id === statsId ? guideStats : { rating: null, reviews: 0, tours: 0 };
     const [filterExpertise, setFilterExpertise] = useState('All');
     const [filterStatus, setFilterStatus] = useState('All');
     const [filterRegion, setFilterRegion] = useState('All');
@@ -522,7 +540,7 @@ export default function Guides() {
                                 </Avatar>
                                 <Typography variant="h6" fontWeight={600}>{selectedGuide.name}</Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                    {selectedGuide.region} • {selectedGuide.experience} Years Experience
+                                    {[selectedGuide.region, selectedGuide.experience ? `${selectedGuide.experience} years experience` : null].filter(Boolean).join(' • ')}
                                 </Typography>
                             </Box>
 
@@ -604,20 +622,20 @@ export default function Guides() {
                                     <Grid size={{ xs: 6 }}>
                                         <Paper sx={{ p: 2, borderRadius: 1.25, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
                                             <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                PERFORMANCE
+                                                RATING
                                             </Typography>
                                             <Typography variant="h6" fontWeight={600} color="#F57C00">
-                                                {selectedGuide.rating || '4.8'} <span style={{ fontSize: '0.8rem', color: '#777' }}>/ 5.0</span>
+                                                {stats.rating ? <>{stats.rating} <span style={{ fontSize: '0.8rem', color: '#777' }}>/ 5 · {stats.reviews} reviews</span></> : <span style={{ fontSize: '0.9rem', color: '#777' }}>No reviews yet</span>}
                                             </Typography>
                                         </Paper>
                                     </Grid>
                                     <Grid size={{ xs: 6 }}>
                                         <Paper sx={{ p: 2, borderRadius: 1.25, border: '1px solid #EBEFE8', bgcolor: '#FFF', boxShadow: 'none', textAlign: 'center' }}>
                                             <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                ASSIGNED TOURS
+                                                COMPLETED TOURS
                                             </Typography>
                                             <Typography variant="h6" fontWeight={600} color="#006A3B">
-                                                {selectedGuide.completedTours || '24'}
+                                                {stats.tours}
                                             </Typography>
                                         </Paper>
                                     </Grid>
