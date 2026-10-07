@@ -10,7 +10,7 @@ import KeyboardAvoider from '../../components/KeyboardAvoider';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { auth, db, storage } from '../../firebaseConfig';
-import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { toast } from '../../components/Toast';
 
@@ -82,7 +82,10 @@ export default function VendorServiceListingScreen() {
       const data = { name:form.name.trim(), description:form.description.trim(),
         price:parseFloat(form.price)||0, duration:form.duration.trim(),
         maxCapacity:parseInt(form.maxCapacity)||1, ecoCertified:form.ecoCertified,
-        photoUrl, isAvailable:true };
+        photoUrl, isAvailable:true, vendorId:uid };
+      // The marketplace shows who offers the service
+      const vendorSnap = await getDoc(doc(db,'vendors',uid)).catch(() => null);
+      if (vendorSnap?.exists()) data.vendorBusinessName = vendorSnap.data().businessName || '';
       if (editing) {
         await updateDoc(doc(db,'vendors',uid,'services',editing.id), data);
       } else {

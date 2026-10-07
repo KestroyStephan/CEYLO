@@ -5,7 +5,6 @@ import { Text, Button, Card, Switch, ActivityIndicator, Surface, ProgressBar } f
 import * as Location from 'expo-location';
 import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { startLocationTracking, startAvailability, stopAvailability } from '../services/DriverLocationService';
@@ -177,8 +176,8 @@ export default function DriverDashboard({ navigation }) {
             <Text style={styles.welcome}>{t('d_hi')}</Text>
             <Text style={styles.driverName}>{driverName}</Text>
           </View>
-          {/* Replace existing avatar with dynamic profile photo / letter logic */}
-          <TouchableOpacity onPress={() => signOut(auth)}>
+          {/* Avatar opens the profile tab */}
+          <TouchableOpacity onPress={() => navigation.navigate('DriverProfile')} accessibilityLabel="Open profile">
             <View style={styles.avatarCircle}>
               {driverData?.profilePhotoUrl ? (
                 <Image 

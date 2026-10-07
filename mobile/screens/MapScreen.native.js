@@ -14,6 +14,7 @@ import destinationsData from '../assets/data/ai_destinations.json';
 import { distanceKm } from '../services/ItineraryService';
 import ProgressiveImage from '../components/ProgressiveImage';
 import SosButton from '../components/SosButton';
+import { MAPS_API_KEY } from '../config';
 
 // Real attractions from the CEYLO dataset (Wikidata places, Wikipedia photos, Google ratings)
 const PLACES = destinationsData.map(d => ({
@@ -45,7 +46,7 @@ const PROVINCE_CENTERS = Object.fromEntries(PROVINCES.map(name => {
 }));
 
 const { width, height } = Dimensions.get('window');
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = MAPS_API_KEY;
 
 
 export default function MapScreen({ navigation }) {
@@ -170,7 +171,7 @@ export default function MapScreen({ navigation }) {
     setIsSearchLoading(true);
 
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const apiKey = MAPS_API_KEY;
 
       const searchQueryText = query.includes('Sri Lanka') ? query : `${query}, Sri Lanka`;
       const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQueryText)}&key=${apiKey}&region=lk&language=en`;

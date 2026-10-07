@@ -10,9 +10,10 @@ import { startLocationTracking, stopLocationTracking } from '../../services/Driv
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { notifyBooking } from '../../services/aiClient';
 import { toast } from '../../components/Toast';
+import { MAPS_API_KEY } from '../../config';
 
 const { width } = Dimensions.get('window');
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = MAPS_API_KEY;
 
 export default function ActiveRideScreen({ route, navigation }) {
   const { bookingId } = route.params || {};

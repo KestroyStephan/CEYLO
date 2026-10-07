@@ -6,7 +6,7 @@ import ProgressiveImage from '../components/ProgressiveImage';
 import { Text, Surface, Searchbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collectionGroup, query, where, onSnapshot } from 'firebase/firestore';
+import { collectionGroup, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { Svg, Circle, Ellipse } from 'react-native-svg';
 import SosButton from '../components/SosButton';
@@ -31,33 +31,58 @@ export default function MarketplaceScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
 
-  // Real-time listener for all vendor products
+  // Real-time listeners for vendor products and vendor services (tours, rentals, experiences)
   useEffect(() => {
     setLoading(true);
+    const items = { products: [], services: [] };
+    const pending = new Set(['products', 'services']);
+    const vendorNames = {};
+    const publish = () => setProducts([...items.products, ...items.services]);
+    const done = (key) => { pending.delete(key); if (!pending.size) setLoading(false); };
 
-    const q = query(
-      collectionGroup(db, 'products'),
-      where('isAvailable', '==', true)
-    );
+    // Older service listings do not carry the business name; look it up once per vendor
+    const fillNames = async (list) => {
+      const missing = [...new Set(list.filter(s => !s.vendorBusinessName && !(s.vendorId in vendorNames)).map(s => s.vendorId))];
+      await Promise.all(missing.map(async (id) => {
+        try { const v = await getDoc(doc(db, 'vendors', id)); vendorNames[id] = v.exists() ? (v.data().businessName || '') : ''; }
+        catch { vendorNames[id] = ''; }
+      }));
+      items.services = list.map(s => ({ ...s, vendorBusinessName: s.vendorBusinessName || vendorNames[s.vendorId] || '' }));
+      publish();
+    };
 
-    const unsubscribe = onSnapshot(
-      q,
+    const unsubProducts = onSnapshot(
+      query(collectionGroup(db, 'products'), where('isAvailable', '==', true)),
       (snapshot) => {
-        const list = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          vendorId: doc.ref.parent.parent.id, // parent vendor uid
-          ...doc.data(),
-        }));
-        setProducts(list);
-        setLoading(false);
+        items.products = snapshot.docs.map((d) => ({ id: d.id, vendorId: d.ref.parent.parent.id, ...d.data() }));
+        publish(); done('products');
       },
-      (error) => {
-        console.error('Marketplace fetch error:', error);
-        setLoading(false);
-      }
+      (error) => { console.error('Marketplace products error:', error); done('products'); }
     );
 
-    return () => unsubscribe();
+    const unsubServices = onSnapshot(
+      query(collectionGroup(db, 'services'), where('isAvailable', '==', true)),
+      (snapshot) => {
+        const list = snapshot.docs
+          .filter(d => d.ref.parent.parent?.parent?.id === 'vendors')
+          .map((d) => {
+            const s = d.data();
+            const cap = Number(s.maxCapacity) || 1;
+            return {
+              id: d.id, kind: 'service', vendorId: d.ref.parent.parent.id,
+              name_en: s.name, description: s.description, price: s.price,
+              images: s.photoUrl ? [s.photoUrl] : [], category: s.category || 'Experiences',
+              isEcoFriendly: !!s.ecoCertified, stock: cap, maxOrderQty: cap,
+              duration: s.duration, vendorBusinessName: s.vendorBusinessName || '',
+              pickupLocation: s.location || '',
+            };
+          });
+        fillNames(list).finally(() => done('services'));
+      },
+      (error) => { console.error('Marketplace services error:', error); done('services'); }
+    );
+
+    return () => { unsubProducts(); unsubServices(); };
   }, []);
 
   // Derive categories dynamically from the actual categories in database

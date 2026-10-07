@@ -19,6 +19,7 @@ import { nearbyDrivers, REQUEST_TTL_MS, MATCH_RADIUS_KM } from '../utils/rideDis
 import { notifyBooking } from '../services/aiClient';
 import { logEvent } from '../services/Analytics';
 import { toast } from '../components/Toast';
+import { MAPS_API_KEY } from '../config';
 
 // Live traffic on a suggested route (from Google Directions)
 const TRAFFIC = {
@@ -28,7 +29,7 @@ const TRAFFIC = {
 };
 
 const { width, height } = Dimensions.get('window');
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = MAPS_API_KEY;
 
 const VEHICLE_OPTIONS = [
   { id: 'Tuk', label: 'TUK-TUK' },
@@ -452,7 +453,7 @@ export default function TransportScreen({ route, navigation }) {
     }
 
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const apiKey = MAPS_API_KEY;
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${apiKey}&components=country:lk&language=en&types=geocode|establishment`;
 
       const response = await fetch(url);
@@ -486,7 +487,7 @@ export default function TransportScreen({ route, navigation }) {
     setDestinationSuggestions([]);
 
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const apiKey = MAPS_API_KEY;
       const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry,formatted_address&key=${apiKey}`;
 
       const response = await fetch(detailsUrl);
@@ -523,7 +524,7 @@ export default function TransportScreen({ route, navigation }) {
 
   const calculateRoute = async (origin, destination) => {
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const apiKey = MAPS_API_KEY;
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${apiKey}&mode=driving&region=lk`;
 
       const response = await fetch(url);
@@ -776,7 +777,7 @@ export default function TransportScreen({ route, navigation }) {
         destLat = dropoffCoords.latitude;
         destLng = dropoffCoords.longitude;
       } else {
-        const response = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(dropAddress)}&key=${GOOGLE_API_KEY}`);
+        const response = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(dropAddress)}&region=lk&key=${GOOGLE_API_KEY}`);
         const data = await response.json();
         if (data.results && data.results.length > 0) {
           destLat = data.results[0].geometry.location.lat;

@@ -16,10 +16,10 @@ import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
 import { onSnapshot } from 'firebase/firestore';
 import { OfflineQueue } from '../services/OfflineQueue';
-import { SOS_SMS_NUMBER } from '../config';
+import { SOS_SMS_NUMBER, MAPS_API_KEY } from '../config';
 import { toast } from '../components/Toast';
 
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = MAPS_API_KEY;
 const GPS_TIMEOUT_MS = 5000;
 
 // Never let a missing GPS fix block an emergency: last known position first, then a bounded wait
@@ -102,6 +102,11 @@ export default function SOSScreen({ navigation, route }) {
   const countdownRef = useRef(null);
   const cameraRef = useRef(null);
   const lastAudioTimestampRef = useRef(null);
+  // Voice messages with the desk (walkie-talkie): the traveller records, the desk replies
+  const recordingRef = useRef(null);
+  const [talkState, setTalkState] = useState('idle'); // idle | recording | sending
+  const [talkSecs, setTalkSecs] = useState(0);
+  const [deskVoiceUrl, setDeskVoiceUrl] = useState(null);
   const lastCameraRequestRef = useRef(null);
 
   // Live view: the desk can ask to see the scene; the traveller gets a notice and can decline
@@ -264,6 +269,8 @@ export default function SOSScreen({ navigation, route }) {
         if (data.adminAudioUrl && data.adminAudioTimestamp) {
           if (lastAudioTimestampRef.current !== data.adminAudioTimestamp) {
             lastAudioTimestampRef.current = data.adminAudioTimestamp;
+            setDeskVoiceUrl(data.adminAudioUrl);
+            Vibration.vibrate([0, 200, 100, 200]);
             try {
               const { sound } = await Audio.Sound.createAsync({ uri: data.adminAudioUrl });
               await sound.playAsync();
@@ -669,6 +676,77 @@ export default function SOSScreen({ navigation, route }) {
 
   const handleCall = (num) => Linking.openURL(`tel:${num}`);
 
+  // Push-to-talk: tap to start recording, tap again to send the voice message to the desk
+  useEffect(() => {
+    if (talkState !== 'recording') return undefined;
+    const t = setInterval(() => setTalkSecs(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [talkState]);
+
+  // One minute per message: send automatically at the limit
+  useEffect(() => { if (talkState === 'recording' && talkSecs >= 60) toggleTalk(); }, [talkSecs]);
+
+  useEffect(() => () => { recordingRef.current?.stopAndUnloadAsync().catch(() => {}); }, []);
+
+  const toggleTalk = async () => {
+    if (talkState === 'sending') return;
+    if (talkState === 'idle') {
+      try {
+        const perm = await Audio.requestPermissionsAsync();
+        if (!perm.granted) { toast.warning('Microphone needed', 'Allow microphone access to talk to the emergency desk.'); return; }
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true, staysActiveInBackground: true });
+        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        recordingRef.current = recording;
+        setTalkSecs(0);
+        setTalkState('recording');
+        Vibration.vibrate(60);
+      } catch (e) {
+        console.warn('Voice recording failed to start:', e.message);
+        toast.error('Microphone busy', 'Could not start recording. Try again.');
+      }
+      return;
+    }
+    // Stop and send
+    const recording = recordingRef.current;
+    recordingRef.current = null;
+    if (!recording) { setTalkState('idle'); return; }
+    setTalkState('sending');
+    try {
+      await recording.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true, staysActiveInBackground: true });
+      const uri = recording.getURI();
+      const alertId = activeDocIdRef.current;
+      const uid = auth.currentUser?.uid;
+      if (!uri || !alertId || !uid) throw new Error('No open alert');
+      const blob = await (await fetch(uri)).blob();
+      const at = Date.now();
+      const r = ref(storage, `sos_media/${uid}/${alertId}_voice_${at}.m4a`);
+      await uploadBytes(r, blob, { contentType: 'audio/mp4' });
+      const url = await getDownloadURL(r);
+      await updateDoc(doc(db, 'sos_alerts', alertId), {
+        travellerAudioUrl: url,
+        travellerAudioAt: at,
+        voiceNotes: arrayUnion({ from: 'traveller', url, at }),
+      });
+      toast.success('Voice message sent', 'The emergency desk will hear it now.');
+    } catch (e) {
+      console.warn('Voice message failed:', e.message);
+      toast.error('Not sent', 'The voice message could not be sent. Check your connection and try again.');
+    } finally {
+      setTalkState('idle');
+      setTalkSecs(0);
+    }
+  };
+
+  const replayDesk = async () => {
+    if (!deskVoiceUrl) return;
+    try {
+      const { sound } = await Audio.Sound.createAsync({ uri: deskVoiceUrl });
+      sound.setOnPlaybackStatusUpdate(st => { if (st.didJustFinish) sound.unloadAsync(); });
+      await sound.playAsync();
+    } catch (e) { toast.error('Playback failed', 'Could not play the desk message.'); }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -753,6 +831,34 @@ export default function SOSScreen({ navigation, route }) {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+        )}
+        {active && (
+          <View style={styles.talkBox}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.talkTitle}>Talk to the emergency desk</Text>
+              <Text style={styles.talkSub}>
+                {talkState === 'recording' ? `Recording… ${talkSecs}s  ·  tap to send`
+                  : talkState === 'sending' ? 'Sending your voice message…'
+                  : 'Tap the mic, speak, then tap again to send.'}
+              </Text>
+              {deskVoiceUrl ? (
+                <TouchableOpacity onPress={replayDesk} style={styles.deskReply} accessibilityLabel="Play the desk's voice message">
+                  <MaterialCommunityIcons name="play-circle" size={20} color="#00695C" />
+                  <Text style={styles.deskReplyText}>Play the desk's last message</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <TouchableOpacity
+              onPress={toggleTalk}
+              disabled={talkState === 'sending'}
+              style={[styles.talkBtn, talkState === 'recording' && styles.talkBtnOn]}
+              accessibilityLabel={talkState === 'recording' ? 'Stop and send voice message' : 'Record a voice message for the desk'}
+            >
+              {talkState === 'sending'
+                ? <ActivityIndicator color="#FFF" />
+                : <MaterialCommunityIcons name={talkState === 'recording' ? 'send' : 'microphone'} size={28} color="#FFF" />}
+            </TouchableOpacity>
           </View>
         )}
         {active && (
@@ -1041,6 +1147,13 @@ const styles = StyleSheet.create({
   noReplyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#C62828', borderRadius: 10, paddingVertical: 9, marginTop: 8 },
   noReplyBtnText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 14 },
   incidentBox: { marginHorizontal: 20, marginBottom: 14 },
+  talkBox: { flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 20, marginBottom: 14, padding: 16, borderRadius: 20, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#F3D5D5', elevation: 2, shadowColor: '#7A1F1F', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  talkTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: '#1D2B27' },
+  talkSub: { fontSize: 13, fontFamily: 'Outfit-Regular', color: '#5B6B66', marginTop: 3 },
+  talkBtn: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#00695C', alignItems: 'center', justifyContent: 'center', elevation: 4 },
+  talkBtnOn: { backgroundColor: '#D32F2F' },
+  deskReply: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  deskReplyText: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#00695C' },
   incidentTitle: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#3F3F3F', marginBottom: 8 },
   incidentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   incidentChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1.5, borderColor: '#E3A0A0', backgroundColor: '#FFF' },

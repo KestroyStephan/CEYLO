@@ -12,7 +12,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { db, storage } from '../../firebaseConfig';
+import { auth, db, storage } from '../../firebaseConfig';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
@@ -48,9 +48,10 @@ export default function ProofOfServiceScreen({ route, navigation }) {
     try {
       const res  = await fetch(capturedUri);
       const blob = await res.blob();
-      const r    = ref(storage, `orders/${orderId}/proof.jpg`);
+      // Stored under the vendor's own folder so the rule needs no database lookup
+      const r    = ref(storage, `order_proofs/${auth.currentUser.uid}/${orderId}.jpg`);
       const url  = await new Promise((resolve, reject) => {
-        const task = uploadBytesResumable(r, blob);
+        const task = uploadBytesResumable(r, blob, { contentType: 'image/jpeg' });
         task.on('state_changed',
           snap => setUploadPct(Math.round((snap.bytesTransferred/snap.totalBytes)*100)),
           reject,

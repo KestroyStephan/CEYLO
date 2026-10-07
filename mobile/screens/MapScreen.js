@@ -6,9 +6,10 @@ import * as Location from 'expo-location';
 import { IconButton, Text, Surface, Button, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MAPS_API_KEY } from '../config';
 
 const { width, height } = Dimensions.get('window');
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_API_KEY = MAPS_API_KEY || '';
 
 export default function MapScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();

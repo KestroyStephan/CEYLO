@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { stopLocationTracking } from '../../services/DriverLocationService';
 import { notifyBooking } from '../../services/aiClient';
 import { nearbyOfType, openDirections, fmtKm } from '../../services/places';
+import { MAPS_API_KEY } from '../../config';
 
 export default function DriverRideRequestsScreen({ navigation }) {
   const { t } = useTranslation();
@@ -245,7 +246,7 @@ export default function DriverRideRequestsScreen({ navigation }) {
               <MapViewDirections
                 origin={activeRide.pickupCoords}
                 destination={activeRide.dropoffCoords}
-                apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
+                apikey={MAPS_API_KEY}
                 strokeWidth={4}
                 strokeColor="#006A3B"
                 onReady={r => setRouteInfo({ km: r.distance, min: r.duration, leg: 'drop-off' })}
@@ -255,7 +256,7 @@ export default function DriverRideRequestsScreen({ navigation }) {
               <MapViewDirections
                 origin={driverLocation}
                 destination={activeRide.pickupCoords}
-                apikey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}
+                apikey={MAPS_API_KEY}
                 strokeWidth={4}
                 strokeColor="#006A6A"
                 onReady={r => setRouteInfo({ km: r.distance, min: r.duration, leg: 'pickup' })}

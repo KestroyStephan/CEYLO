@@ -2,6 +2,7 @@
 // Global configuration for the CEYLO mobile app
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // Set this to true when deploying the app for production (APK)
 const IS_PRODUCTION = true;
@@ -18,3 +19,10 @@ export const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || (IS_PRODUCTIO
 // Mobile number of the CEYLO emergency desk that receives the SMS when SOS is triggered without
 // internet. Set EXPO_PUBLIC_SOS_SMS_NUMBER in mobile/.env; if unset, the traveller chooses a contact.
 export const SOS_SMS_NUMBER = process.env.EXPO_PUBLIC_SOS_SMS_NUMBER || null;
+
+// Google Maps Platform key for Places and Directions calls. Falls back to the key the native map
+// already uses (app.json) so an APK built without mobile/.env can still search and draw routes.
+export const MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+  || Constants.expoConfig?.android?.config?.googleMaps?.apiKey
+  || Constants.expoConfig?.ios?.config?.googleMapsApiKey
+  || '';

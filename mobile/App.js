@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import { OfflineQueue } from './services/OfflineQueue';
 import { ToastHost } from './components/Toast';
+import { DialogHost } from './components/Dialog';
 import { NotificationService } from './services/NotificationService';
 // Registers the background geofencing task; must run at start-up
 import './services/GeofenceService';
@@ -360,6 +361,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
         <ToastHost />
+        <DialogHost />
       </PaperProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

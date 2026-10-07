@@ -6,8 +6,9 @@
  */
 import { Linking } from 'react-native';
 import { distanceKm } from './ItineraryService';
+import { MAPS_API_KEY } from '../config';
 
-const KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const KEY = MAPS_API_KEY;
 const NEARBY = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
 
 // Google has types for churches, Hindu temples and mosques; Buddhist temples are found by keyword

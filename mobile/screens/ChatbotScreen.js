@@ -25,6 +25,9 @@ const MOOD_CHIP = {
   adventurer: 'adventurer', family: 'family_trip', 'family trip': 'family_trip', spiritual: 'spiritual',
 };
 
+// Messages that ask for the plan once the trip details are complete
+const WANTS_PLAN = /\b(generate|create|make|build|plan it|plan my|my plan|itinerary|go ahead|yes|yeah|yep|ok|okay|sure|let'?s go|do it|ready)\b/;
+
 const MOOD_CATEGORIES = {
   eco: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
   adventurer: ['Nature & Viewpoint', 'Waterfall', 'Wildlife'],
@@ -197,6 +200,7 @@ export default function ChatbotScreen({ navigation, route }) {
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
     setLoading(true);
+    let buildWith = null;
 
     try {
       // The trained concierge model keeps the trip profile in extractedState between turns
@@ -216,6 +220,9 @@ export default function ChatbotScreen({ navigation, route }) {
           ? responseJson.recommendations
           : (destinationChanged ? findRecommendations(nextState) : null),
       }]);
+      // "Create my plan" once the trip is complete builds the itinerary straight away
+      const ready = Boolean(nextState.days && (nextState.destination || nextState.mood));
+      if (responseJson.action === 'generate_itinerary' || (ready && WANTS_PLAN.test(text.toLowerCase()))) buildWith = nextState;
     } catch (error) {
       console.warn('Concierge request failed:', error.message);
       setMessages(prev => [...prev, {
@@ -226,6 +233,7 @@ export default function ChatbotScreen({ navigation, route }) {
     } finally {
       setLoading(false);
     }
+    if (buildWith) generateItinerary(buildWith);
   };
 
   // Speech-to-text needs a native module this app does not ship, so the mic hands
@@ -235,14 +243,14 @@ export default function ChatbotScreen({ navigation, route }) {
     Alert.alert(t('voice_title'), t('voice_body'));
   };
 
-  const generateItinerary = async () => {
+  const generateItinerary = async (trip = extractedState) => {
     setLoading(true);
     try {
       const itinerary = await buildItinerary({
-        mood: extractedState.mood,
-        days: extractedState.days,
-        budget: extractedState.budget,
-        destination: extractedState.destination,
+        mood: trip.mood,
+        days: trip.days,
+        budget: trip.budget,
+        destination: trip.destination,
       });
       Alert.alert(
         itinerary.offline ? t('itinerary_ready_offline') : t('itinerary_ready'),
@@ -334,7 +342,7 @@ export default function ChatbotScreen({ navigation, route }) {
         <Button
           mode="contained"
           icon="creation"
-          onPress={generateItinerary}
+          onPress={() => generateItinerary()}
           style={styles.genBtn}
           loading={loading}
           disabled={loading}

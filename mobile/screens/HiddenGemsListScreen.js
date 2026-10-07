@@ -8,8 +8,9 @@ import * as Location from 'expo-location';
 
 import { loadDestinations } from '../utils/destinationStore';
 import ProgressiveImage from '../components/ProgressiveImage';
+import { MAPS_API_KEY } from '../config';
 
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = MAPS_API_KEY;
 
 
 export default function HiddenGemsListScreen({ navigation, route }) {

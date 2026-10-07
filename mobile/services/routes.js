@@ -2,7 +2,8 @@
  * Road routes between two points from the Google Directions API, with alternatives, so the
  * traveller can see the shortest path and other suggested routes before booking.
  */
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+import { MAPS_API_KEY } from '../config';
+const GOOGLE_API_KEY = MAPS_API_KEY;
 
 /** Google encoded polyline -> [{ latitude, longitude }] */
 export function decodePolyline(encoded) {

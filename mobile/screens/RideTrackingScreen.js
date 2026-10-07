@@ -7,9 +7,10 @@ import { auth, db } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { toast } from '../components/Toast';
 import PersonAvatar from '../components/PersonAvatar';
+import { MAPS_API_KEY } from '../config';
 
 const { width } = Dimensions.get('window');
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = MAPS_API_KEY;
 
 export default function RideTrackingScreen({ route, navigation }) {
   const { bookingId } = route.params || {};

@@ -59,6 +59,12 @@ service firebase.storage {
         firestore.get(/databases/(default)/documents/orders/$(orderId)).data.vendorId == request.auth.uid;
     }
 
+    // Proof photos uploaded by the vendor; the customer opens them through the link on the order
+    match /order_proofs/{uid}/{file} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isOwner(uid) && (request.resource == null || underMB(10));
+    }
+
     // SOS evidence, live-view frames and desk voice notes: files are named <alertId>_...
     // The traveller who raised the alert and the emergency desk can write and read them.
     match /sos_alerts/{file} {

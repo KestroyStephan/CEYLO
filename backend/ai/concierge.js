@@ -95,12 +95,18 @@ function nextQuestion(state) {
     return null;
 }
 
-function readyReply(state) {
+function readyReply(state, again = false) {
     return {
-        text: `Perfect: ${summary(state)}. Tap "Generate Itinerary" and I'll build your day-by-day plan with our recommender.`,
-        options: ['Suggest places first', 'Start over'],
+        text: again
+            ? `Your trip is set: ${summary(state)}. Say "create my plan" when you're ready, or change the days, place or budget.`
+            : `Perfect: ${summary(state)}. Shall I build your day-by-day plan now?`,
+        options: ['Create my plan', 'Suggest places first', 'Start over'],
     };
 }
+
+// "create my plan", "yes", "go ahead" once the trip profile is complete
+const WANTS_PLAN = /\b(generate|create|make|build|plan it|plan my|my plan|itinerary|go ahead|yes|yeah|yep|ok|okay|sure|let'?s go|do it|ready)\b/;
+const buildingReply = (state) => `Building your plan: ${summary(state)}. One moment…`;
 
 function toCards(matches) {
     return matches.map(m => ({
@@ -169,9 +175,11 @@ function reply(message, state = {}) {
     const confidentInfo = confidence >= CONFIDENT && (intent.startsWith('faq_') || INFO_INTENTS.has(intent)) &&
         (isQuestion || Object.keys(found).length === 0);
     if (confidentInfo) for (const k of Object.keys(found)) delete found[k];
+    const isQuestionAboutInfo = () => confidentInfo && isQuestion;
     let next = { ...prev, ...found };
     if (found.mood === 'Eco Explorer') next.eco_interest = Math.max(next.eco_interest, 80);
 
+    const wasReady = isReady(prev);
     const out = (resp, options, extra = {}) => {
         const q = isReady(next) ? null : nextQuestion(next);
         return {
@@ -182,8 +190,14 @@ function reply(message, state = {}) {
             intent,
             confidence: Math.round(confidence * 1000) / 1000,
             ...(extra.recommendations ? { recommendations: extra.recommendations } : {}),
+            ...(extra.action ? { action: extra.action } : {}),
         };
     };
+
+    // The trip is complete and the traveller asks for it: tell the app to build the itinerary
+    if (isReady(next) && WANTS_PLAN.test(text) && !(confidence >= CONFIDENT && intent === 'reset') && !isQuestionAboutInfo()) {
+        return out(buildingReply(next), [], { action: 'generate_itinerary' });
+    }
 
     // Answer factual questions, then nudge the trip profile forward
     if (confidentInfo) {
@@ -224,10 +238,7 @@ function reply(message, state = {}) {
     }
 
     if (Object.keys(found).length === 0 && confidence >= CONFIDENT && intent === 'generate_itinerary') {
-        if (isReady(next)) {
-            const r = readyReply(next);
-            return out(r.text, r.options);
-        }
+        if (isReady(next)) return out(buildingReply(next), [], { action: 'generate_itinerary' });
         const q = nextQuestion(next);
         return out(`Almost there. ${q.text}`, q.options);
     }
@@ -245,7 +256,8 @@ function reply(message, state = {}) {
         if (isReady(next)) {
             const q = nextQuestion(next);
             if (q) return out(`${ack}${reco} ${q.text}`, q.options, extra);
-            const r = readyReply(next);
+            // Nothing new since the trip was complete: don't repeat the same sentence
+            const r = readyReply(next, wasReady && Object.keys(found).length === 0);
             return out(`${r.text}${reco}`, r.options, extra);
         }
         const q = nextQuestion(next);
