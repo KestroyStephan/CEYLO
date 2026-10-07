@@ -20,6 +20,13 @@ import { notifyBooking } from '../services/aiClient';
 import { logEvent } from '../services/Analytics';
 import { toast } from '../components/Toast';
 
+// Live traffic on a suggested route (from Google Directions)
+const TRAFFIC = {
+  light: { label: 'Light traffic', color: '#2E7D32' },
+  moderate: { label: 'Moderate traffic', color: '#F9A825' },
+  heavy: { label: 'Heavy traffic', color: '#C62828' },
+};
+
 const { width, height } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -119,9 +126,10 @@ export default function TransportScreen({ route, navigation }) {
 
   // Prepopulate if passed from elsewhere (e.g. MapScreen)
   useEffect(() => {
-    if (passedDestination && passedDestination.coords && pickupCoords) {
-      const lat = passedDestination.coords.latitude;
-      const lng = passedDestination.coords.longitude;
+    // Map pins pass coords; destination pages pass the dataset's lat/lon
+    const lat = passedDestination ? Number(passedDestination.coords?.latitude ?? passedDestination.lat ?? passedDestination.latitude) : NaN;
+    const lng = passedDestination ? Number(passedDestination.coords?.longitude ?? passedDestination.lon ?? passedDestination.longitude) : NaN;
+    if (passedDestination && Number.isFinite(lat) && Number.isFinite(lng) && pickupCoords) {
       const address = passedDestination.name || "Destination";
 
       const destObj = { latitude: lat, longitude: lng };
@@ -735,6 +743,14 @@ export default function TransportScreen({ route, navigation }) {
                 </View>
                 <Text style={[styles.routeKm, on && { color: '#FFF' }]}>{r.km} km · {r.minutes} min</Text>
                 <Text style={[styles.routeVia, on && { color: 'rgba(255,255,255,0.85)' }]} numberOfLines={1}>{r.summary}</Text>
+                {r.traffic && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: TRAFFIC[r.traffic].color }} />
+                    <Text style={[styles.routeVia, on && { color: 'rgba(255,255,255,0.85)' }]} numberOfLines={1}>
+                      {TRAFFIC[r.traffic].label}{r.minutes > r.usualMinutes ? ` · +${r.minutes - r.usualMinutes} min` : ''}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}

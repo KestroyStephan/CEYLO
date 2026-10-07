@@ -33,15 +33,23 @@ export function decodePolyline(encoded) {
   return points;
 }
 
+// Live traffic compared with the usual time for the same route
+function trafficLevel(normalSec, trafficSec) {
+  if (!trafficSec || !normalSec) return null;
+  const ratio = trafficSec / normalSec;
+  return ratio >= 1.4 ? 'heavy' : ratio >= 1.15 ? 'moderate' : 'light';
+}
+
 /**
  * Up to three driving routes, shortest first. Each has
- * { id, summary, km, minutes, coords, isShortest, isFastest }.
+ * { id, summary, km, minutes, usualMinutes, traffic, coords, isShortest, isFastest }.
+ * Times include live traffic when Google has it (departure_time=now).
  */
 export async function fetchRoutes(origin, destination) {
   const url = 'https://maps.googleapis.com/maps/api/directions/json'
     + `?origin=${origin.latitude},${origin.longitude}`
     + `&destination=${destination.latitude},${destination.longitude}`
-    + `&mode=driving&alternatives=true&region=lk&key=${GOOGLE_API_KEY}`;
+    + `&mode=driving&alternatives=true&departure_time=now&traffic_model=best_guess&region=lk&key=${GOOGLE_API_KEY}`;
   const data = await (await fetch(url)).json();
   if (data.status !== 'OK' || !data.routes?.length) {
     throw new Error(data.error_message || data.status || 'No route found');
@@ -53,6 +61,8 @@ export async function fetchRoutes(origin, destination) {
       summary: r.summary ? `via ${r.summary}` : `Route ${i + 1}`,
       km: Math.round((leg.distance.value / 1000) * 10) / 10,
       minutes: Math.max(1, Math.round((leg.duration_in_traffic || leg.duration).value / 60)),
+      usualMinutes: Math.max(1, Math.round(leg.duration.value / 60)),
+      traffic: trafficLevel(leg.duration.value, leg.duration_in_traffic?.value),
       coords: decodePolyline(r.overview_polyline.points),
     };
   }).sort((a, b) => a.km - b.km);
