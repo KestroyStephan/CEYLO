@@ -2,13 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import i18n from '../../i18n';
 import {
   View, StyleSheet, ImageBackground, TouchableOpacity,
-  Alert, Animated, StatusBar
+  Animated, StatusBar
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import { auth } from '../../firebaseConfig';
-import { signInAnonymously } from 'firebase/auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,14 +30,6 @@ export default function WelcomeScreen({ navigation }) {
       Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
     ]).start();
   }, []);
-
-  const handleContinueGuest = async () => {
-    try {
-      await signInAnonymously(auth);
-    } catch (e) {
-      Alert.alert('Error', 'Failed to continue as guest: ' + e.message);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -103,9 +93,6 @@ export default function WelcomeScreen({ navigation }) {
               <Text style={styles.registerBtnText}>{i18n.t('ui_create_account')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleContinueGuest} style={styles.guestBtn}>
-              <Text style={styles.guestBtnText}>{i18n.t('ui_continue_as_guest')}</Text>
-            </TouchableOpacity>
           </View>
 
 
@@ -176,12 +163,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   registerBtnText: { fontSize: 17, fontFamily: 'Outfit-Bold', color: '#FFF' },
-  guestBtn: { alignItems: 'center', paddingVertical: 4 },
-  guestBtnText: {
-    fontSize: 13, fontFamily: 'Outfit-Regular',
-    color: 'rgba(255,255,255,0.55)',
-    textDecorationLine: 'underline',
-  },
 
 
 });
