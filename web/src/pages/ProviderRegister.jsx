@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { emailError, nameError, phoneError, newPasswordError, confirmPasswordError, passwordStrength, authErrorMessage } from '../utils/validation';
 import {
     Container, Box, Typography, TextField, Button,
     FormControl, InputLabel, Select, MenuItem,
@@ -36,12 +37,34 @@ export default function ProviderRegister() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleNext = () => setActiveStep((prev) => prev + 1);
+    // Errors per step; a field shows its error after it is left or when Next is pressed
+    const [touched, setTouched] = useState({});
+    const fieldErrors = {
+        name: nameError(formData.name),
+        email: emailError(formData.email),
+        password: newPasswordError(formData.password),
+        confirmPassword: confirmPasswordError(formData.password, formData.confirmPassword),
+        businessName: (formData.businessName || '').trim().length < 2 ? 'Enter the business name.' : null,
+        location: (formData.location || '').trim().length < 3 ? 'Enter the location or address.' : null,
+        contact: phoneError(formData.contact, { required: true }),
+    };
+    const STEP_FIELDS = [['name', 'email', 'password', 'confirmPassword'], ['businessName', 'location', 'contact']];
+    const err = (f) => (touched[f] ? fieldErrors[f] : null);
+    const blur = (e) => setTouched(t => ({ ...t, [e.target.name]: true }));
+    const strength = passwordStrength(formData.password);
+
+    const handleNext = () => {
+        const fields = STEP_FIELDS[activeStep] || [];
+        setTouched(t => ({ ...t, ...Object.fromEntries(fields.map(f => [f, true])) }));
+        if (fields.some(f => fieldErrors[f])) return;
+        setActiveStep((prev) => prev + 1);
+    };
     const handleBack = () => setActiveStep((prev) => prev - 1);
 
     const handleSubmit = async () => {
-        if (formData.password !== formData.confirmPassword) {
-            setError("Passwords do not match");
+        const firstError = Object.values(fieldErrors).find(Boolean);
+        if (firstError) {
+            setError(firstError);
             return;
         }
 
@@ -50,7 +73,7 @@ export default function ProviderRegister() {
 
         try {
             // 1. Create Auth User
-            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email.trim(), formData.password);
             const user = userCredential.user;
 
             // 2. Update Profile
@@ -98,7 +121,7 @@ export default function ProviderRegister() {
             navigate('/');
 
         } catch (err) {
-            setError(err.message);
+            setError(authErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -124,16 +147,16 @@ export default function ProviderRegister() {
                             </FormControl>
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField fullWidth label="Full Name" name="name" value={formData.name} onChange={handleChange} required />
+                            <TextField fullWidth label="Full Name" name="name" value={formData.name} onChange={handleChange} onBlur={blur} error={Boolean(err('name'))} helperText={err('name') || ' '} required />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField fullWidth label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+                            <TextField fullWidth label="Email" name="email" type="email" value={formData.email} onChange={handleChange} onBlur={blur} error={Boolean(err('email'))} helperText={err('email') || ' '} autoComplete="email" required />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField fullWidth label="Password" name="password" type="password" value={formData.password} onChange={handleChange} required />
+                            <TextField fullWidth label="Password" name="password" type="password" value={formData.password} onChange={handleChange} onBlur={blur} error={Boolean(err('password'))} helperText={err('password') || (strength.label ? `Strength: ${strength.label} · 8+ characters with upper and lower case, a number and a symbol` : '8+ characters with upper and lower case, a number and a symbol')} autoComplete="new-password" required />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField fullWidth label="Confirm Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required />
+                            <TextField fullWidth label="Confirm Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} onBlur={blur} error={Boolean(err('confirmPassword'))} helperText={err('confirmPassword') || ' '} autoComplete="new-password" required />
                         </Grid>
                     </Grid>
                 );
@@ -141,13 +164,13 @@ export default function ProviderRegister() {
                 return (
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
-                            <TextField fullWidth label="Business Name" name="businessName" value={formData.businessName} onChange={handleChange} required />
+                            <TextField fullWidth label="Business Name" name="businessName" value={formData.businessName} onChange={handleChange} onBlur={blur} error={Boolean(err('businessName'))} helperText={err('businessName') || ' '} required />
                         </Grid>
                         <Grid item xs={12}>
-                            <TextField fullWidth label="Location/Address" name="location" value={formData.location} onChange={handleChange} required />
+                            <TextField fullWidth label="Location/Address" name="location" value={formData.location} onChange={handleChange} onBlur={blur} error={Boolean(err('location'))} helperText={err('location') || ' '} required />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField fullWidth label="Contact Number" name="contact" value={formData.contact} onChange={handleChange} required />
+                            <TextField fullWidth label="Contact Number" name="contact" value={formData.contact} onChange={handleChange} onBlur={blur} error={Boolean(err('contact'))} helperText={err('contact') || ' '} required />
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField fullWidth label="Business License Number" name="licenseNumber" value={formData.licenseNumber} onChange={handleChange} />

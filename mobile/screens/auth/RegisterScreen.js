@@ -9,6 +9,7 @@ import { auth, db } from '../../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { emailError, nameError, phoneError, newPasswordError, confirmPasswordError, passwordRules, passwordStrength, authErrorMessage } from '../../utils/validation';
 import { toast } from '../../components/Toast';
 import { transportIcon } from '../../utils/transport';
 
@@ -35,15 +36,25 @@ export default function RegisterScreen({ navigation, route }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState('');
+  const [confirm, setConfirm] = useState('');
+  // Each field shows its error once it has been left (or on submit) and clears when fixed
+  const [touched, setTouched] = useState({});
+  const errors = {
+    name: nameError(name),
+    email: emailError(email),
+    phone: phoneError(phone, { required: true }),
+    password: newPasswordError(password),
+    confirm: confirmPasswordError(password, confirm),
+  };
+  const shown = (f) => (touched[f] ? errors[f] : null);
+  const strength = passwordStrength(password);
 
   const isActive = (field) => focusedField === field;
 
   const handleRegister = async () => {
-    if (!name.trim()) { toast.warning('Name Required', 'Please enter your full name.'); return; }
-    if (!email.trim()) { toast.warning('Email Required', 'Please enter your email address.'); return; }
-    if (!/^\S+@\S+\.\S+$/.test(email)) { toast.warning('Invalid Email', 'Please enter a valid email address.'); return; }
-    if (!phone.trim()) { toast.warning('Phone Required', 'Please enter your phone number.'); return; }
-    if (password.length < 6) { toast.warning('Weak Password', 'Password must be at least 6 characters.'); return; }
+    setTouched({ name: true, email: true, phone: true, password: true, confirm: true });
+    const firstError = Object.values(errors).find(Boolean);
+    if (firstError) { toast.warning('Check your details', firstError); return; }
     if (role === 'driver') {
       if (!VEHICLE_TYPES.includes(vehicleType)) { toast.warning('Vehicle type', 'Choose your vehicle: Tuk-tuk, Bike, Car or Van.'); return; }
       if (!/^([A-Z]{2,3}[\s-]?[A-Z]{0,3}|\d{2,3})[\s-]?\d{3,4}$/i.test(licensePlate.trim())) { toast.warning('Number plate', 'Enter the plate like WP CAB-1234 or CAB-1234.'); return; }
@@ -58,13 +69,13 @@ export default function RegisterScreen({ navigation, route }) {
 
       if (role === 'driver') {
         await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid, name: name.trim(), email: user.email, phone,
+          uid: user.uid, name: name.trim(), email: user.email, phone: phone.replace(/[\s-]/g, ''),
           role: 'driver_pending', status: 'pending_verification',
           isOnboarded: true, onboardingCompleted: true,
           createdAt: new Date().toISOString(),
         });
         await setDoc(doc(db, 'drivers', user.uid), {
-          uid: user.uid, name: name.trim(), email: user.email, phone,
+          uid: user.uid, name: name.trim(), email: user.email, phone: phone.replace(/[\s-]/g, ''),
           vehicleType, licensePlate: licensePlate.trim().toUpperCase(), licenseNumber: licenseNumber.trim().toUpperCase(),
           status: 'pending_verification', isOnline: false, rejectionReason: '',
           createdAt: serverTimestamp(),
@@ -74,15 +85,14 @@ export default function RegisterScreen({ navigation, route }) {
         if (role === 'guide') finalRole = 'guide_pending';
         
         await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid, name: name.trim(), email: user.email, phone,
+          uid: user.uid, name: name.trim(), email: user.email, phone: phone.replace(/[\s-]/g, ''),
           role: finalRole, isOnboarded: false, createdAt: new Date().toISOString(),
         });
       }
     } catch (error) {
-      let msg = error.message;
-      if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Try logging in.';
-      else if (error.code === 'auth/network-request-failed') msg = 'No internet connection. Please try again.';
-      else if (error.code === 'permission-denied') msg = 'Your account was created but your details could not be saved. Please sign in and try again.';
+      const msg = error.code === 'permission-denied'
+        ? 'Your account was created but your details could not be saved. Please sign in and try again.'
+        : authErrorMessage(error);
       toast.error('Registration failed', msg);
     } finally {
       setLoading(false);
@@ -90,14 +100,16 @@ export default function RegisterScreen({ navigation, route }) {
   };
 
   const renderField = (field, placeholder, value, onChange, secure, keyType, extra) => (
-    <View key={field} style={[styles.inputWrapper, isActive(field) && styles.inputWrapperFocused]}>
+    <View key={field}>
+    <View style={[styles.inputWrapper, isActive(field) && styles.inputWrapperFocused, shown(field) && styles.inputWrapperError]}>
       <TextInput
         placeholder={placeholder}
         placeholderTextColor="#B0BCB0"
         value={value}
         onChangeText={onChange}
         onFocus={() => setFocusedField(field)}
-        onBlur={() => setFocusedField('')}
+        onBlur={() => { setFocusedField(''); if (value) setTouched(t => ({ ...t, [field]: true })); }}
+        accessibilityLabel={placeholder}
         secureTextEntry={secure && !showPassword}
         keyboardType={keyType || 'default'}
         autoCapitalize={field === 'name' ? 'words' : 'none'}
@@ -110,6 +122,9 @@ export default function RegisterScreen({ navigation, route }) {
           <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#8A9E8A" />
         </TouchableOpacity>
       )}
+      {!shown(field) && touched[field] && value ? <MaterialCommunityIcons name="check-circle" size={18} color="#1B8A4B" style={{ marginLeft: 6 }} /> : null}
+    </View>
+    {shown(field) ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{shown(field)}</Text> : null}
     </View>
   );
 
@@ -154,15 +169,35 @@ export default function RegisterScreen({ navigation, route }) {
 
             {/* Email */}
             <Text style={styles.fieldLabel}>{i18n.t('ui_email_address')}</Text>
-            {renderField("email", "you@example.com", email, setEmail, false, "email-address", { autoCapitalize: 'none' })}
+            {renderField("email", "you@example.com", email, setEmail, false, "email-address", { autoCapitalize: 'none', textContentType: 'emailAddress', autoComplete: 'email' })}
 
             {/* Phone */}
             <Text style={styles.fieldLabel}>{i18n.t('ui_phone_number')}</Text>
-            {renderField("phone", "+94 XX XXX XXXX", phone, setPhone, false, "phone-pad", { autoCapitalize: 'none' })}
+            {renderField("phone", "077 123 4567", phone, setPhone, false, "phone-pad", { autoCapitalize: 'none', maxLength: 15, autoComplete: 'tel' })}
 
             {/* Password */}
             <Text style={styles.fieldLabel}>{i18n.t('ui_password')}</Text>
-            {renderField("password", "Min. 6 characters", password, setPassword, true)}
+            {renderField("password", "At least 8 characters", password, setPassword, true, null, { textContentType: 'newPassword', autoComplete: 'new-password' })}
+            {password ? (
+              <View style={styles.strengthBox}>
+                <View style={styles.strengthRow}>
+                  {[1, 2, 3, 4].map(i => (
+                    <View key={i} style={[styles.strengthSeg, { backgroundColor: strength.score >= i ? strength.color : '#E1E7E3' }]} />
+                  ))}
+                  <Text style={[styles.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
+                </View>
+                {passwordRules(password).map(r => (
+                  <View key={r.key} style={styles.ruleRow}>
+                    <MaterialCommunityIcons name={r.ok ? 'check-circle' : 'circle-outline'} size={14} color={r.ok ? '#1B8A4B' : '#9AA8A2'} />
+                    <Text style={[styles.ruleText, r.ok && { color: '#1B8A4B' }]}>{r.label}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {/* Confirm password */}
+            <Text style={styles.fieldLabel}>Confirm password</Text>
+            {renderField("confirm", "Type the password again", confirm, setConfirm, true, null, { textContentType: 'newPassword', autoComplete: 'new-password' })}
 
 
             {/* Driver Extra Fields */}
@@ -235,6 +270,14 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#4A5E4A', marginBottom: 6, marginTop: 2 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F2F5F2', borderRadius: 14, paddingHorizontal: 14, marginBottom: 12, borderWidth: 1.5, borderColor: 'transparent' },
   inputWrapperFocused: { borderColor: '#006A3B', backgroundColor: '#FAFCFA' },
+  inputWrapperError: { borderColor: '#C62828', backgroundColor: '#FFF8F8', marginBottom: 4 },
+  fieldError: { color: '#C62828', fontSize: 12.5, fontFamily: 'Outfit-Medium', marginBottom: 10, marginLeft: 6 },
+  strengthBox: { marginTop: -4, marginBottom: 12, gap: 4 },
+  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 },
+  strengthSeg: { flex: 1, height: 5, borderRadius: 3 },
+  strengthLabel: { fontSize: 12, fontFamily: 'Outfit-Bold', marginLeft: 6, minWidth: 64, textAlign: 'right' },
+  ruleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ruleText: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7A75' },
   input: { flex: 1, height: 50, fontSize: 14, fontFamily: 'Outfit-Regular', color: '#1A2E1A' },
   eyeBtn: { paddingLeft: 8 },
 

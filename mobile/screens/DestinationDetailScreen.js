@@ -206,7 +206,7 @@ export default function DestinationDetailScreen({ route, navigation }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Hero Section */}
         <View style={styles.imageContainer}>
-          <ProgressiveImage source={{ uri: place.image }} style={styles.heroImage} resizeMode="cover" />
+          <ProgressiveImage source={{ uri: place.image }} style={styles.heroImage} resizeMode="cover" width={960} />
           <LinearGradient colors={['rgba(0,0,0,0.5)', 'transparent']} style={styles.topGradient} />
 
           <IconButton accessibilityLabel="Go back" icon="arrow-left" iconColor="#FFF" style={styles.backBtn} onPress={() => navigation.goBack()} />

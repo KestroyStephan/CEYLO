@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
     Container, Box, Typography, TextField, Button, Alert, Card, CardContent,
     InputAdornment, IconButton 
@@ -9,10 +9,14 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
+import { emailError, loginPasswordError, authErrorMessage } from '../utils/validation';
 
 export default function Login() {
-    const emailRef = useRef();
-    const passwordRef = useRef();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [touched, setTouched] = useState({ email: false, password: false });
+    const emailErr = touched.email ? emailError(email) : null;
+    const passwordErr = touched.password ? loginPasswordError(password) : null;
     const { login, currentUser } = useAuth();
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
@@ -26,30 +30,32 @@ export default function Login() {
     }, [currentUser, navigate]);
 
     async function handleForgotPassword() {
-        const email = emailRef.current.value.trim();
         setError('');
         setInfo('');
-        if (!email) {
+        if (emailError(email)) {
+            setTouched(t => ({ ...t, email: true }));
             setError('Enter your email address first, then click "Forgot Password?" again.');
             return;
         }
         try {
-            await sendPasswordResetEmail(auth, email);
-            setInfo('A password reset link has been sent to ' + email + '.');
+            await sendPasswordResetEmail(auth, email.trim());
+            setInfo('A password reset link has been sent to ' + email.trim() + '.');
         } catch (err) {
-            setError('Could not send reset email: ' + err.message);
+            setError('Could not send reset email: ' + authErrorMessage(err));
         }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setTouched({ email: true, password: true });
+        if (emailError(email) || loginPasswordError(password)) return;
 
         try {
             setError('');
             setLoading(true);
-            await login(emailRef.current.value, passwordRef.current.value);
+            await login(email.trim(), password);
         } catch (err) {
-            setError('Failed to log in: ' + err.message);
+            setError(authErrorMessage(err));
         } finally {
             setLoading(false);
         }
@@ -80,22 +86,32 @@ export default function Login() {
                         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                         {info && <Alert severity="success" sx={{ mb: 2 }}>{info}</Alert>}
 
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit} noValidate>
                             <TextField
-                                inputRef={emailRef}
                                 id="email"
                                 label="Email Address"
                                 type="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                onBlur={() => email && setTouched(t => ({ ...t, email: true }))}
+                                error={Boolean(emailErr)}
+                                helperText={emailErr || ' '}
                                 fullWidth
                                 required
                                 margin="normal"
                                 variant="outlined"
                             />
                             <TextField
-                                inputRef={passwordRef}
                                 id="password"
                                 label="Password"
                                 type={showPassword ? 'text' : 'password'}
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                onBlur={() => password && setTouched(t => ({ ...t, password: true }))}
+                                error={Boolean(passwordErr)}
+                                helperText={passwordErr || ' '}
                                 fullWidth
                                 required
                                 margin="normal"

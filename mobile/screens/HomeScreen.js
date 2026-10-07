@@ -155,7 +155,7 @@ export default function HomeScreen({ navigation }) {
   const Hero = () => (
     <View style={styles.hero}>
       {forYou?.image ? (
-        <ProgressiveImage source={{ uri: forYou.image }} style={StyleSheet.absoluteFillObject} />
+        <ProgressiveImage source={{ uri: forYou.image }} style={StyleSheet.absoluteFillObject} width={960} />
       ) : (
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: COLORS.dark }]} />
       )}

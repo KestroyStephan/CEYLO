@@ -32,10 +32,11 @@ const RETRY_DELAYS_MS = [1500, 4000, 9000];
 /**
  * ProgressiveImage
  * Drop-in replacement for <Image source={{ uri }} style={...} />
+ * `width` is the widest the image is shown (in pixels), so photos download at that size.
  * Shows an animated shimmer while loading, retries failed loads, and finally a neutral
  * placeholder (or the `fallback` source) instead of a photo of some other place.
  */
-const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => {
+const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover', width = 500 }) => {
   const uri = source?.uri && source.uri !== 'null' && source.uri !== 'undefined' ? source.uri : null;
   const [loaded, setLoaded] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -60,7 +61,7 @@ const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => 
   if (failed && fallback?.uri) {
     return (
       <View style={[style, styles.container]}>
-        <Image source={imgSource(fallback.uri)} style={StyleSheet.absoluteFillObject} resizeMode={resizeMode} />
+        <Image source={imgSource(fallback.uri, width)} style={StyleSheet.absoluteFillObject} resizeMode={resizeMode} />
       </View>
     );
   }
@@ -78,7 +79,8 @@ const ProgressiveImage = ({ source, style, fallback, resizeMode = 'cover' }) => 
       {!loaded && <ShimmerPlaceholder />}
       <Image
         key={`${uri}#${attempt}`}
-        source={imgSource(uri)}
+        source={imgSource(uri, width)}
+        fadeDuration={200}
         style={StyleSheet.absoluteFillObject}
         resizeMode={resizeMode}
         onLoad={() => setLoaded(true)}

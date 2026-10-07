@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { phoneSignInAvailable } from '../../services/aiClient';
+import { emailError, loginPasswordError, authErrorMessage } from '../../utils/validation';
 import { toast } from '../../components/Toast';
 
 const { width, height } = Dimensions.get('window');
@@ -41,21 +42,20 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  // Errors show after the field is left or on submit, and clear as soon as the value is fixed
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const emailErr = touched.email ? emailError(email) : null;
+  const passwordErr = touched.password ? loginPasswordError(password) : null;
 
   const handleLogin = async () => {
-    if (!email.trim()) { toast.warning('Email Required', 'Please enter your email address.'); return; }
-    if (!password) { toast.warning('Password Required', 'Please enter your password.'); return; }
+    setTouched({ email: true, password: true });
+    if (emailError(email) || loginPasswordError(password)) return;
 
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (error) {
-      let message = 'The email or password is not correct. Please try again.';
-      if (error.code === 'auth/invalid-email') message = 'The email address is not valid.';
-      else if (error.code === 'auth/too-many-requests') message = 'Too many attempts. Please wait a few minutes and try again.';
-      else if (error.code === 'auth/network-request-failed') message = 'No internet connection. Check your connection and try again.';
-      else if (error.code === 'auth/user-disabled') message = 'This account has been disabled. Contact support@ceylo.lk.';
-      toast.error('Login failed', message);
+      toast.error('Login failed', authErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -108,15 +108,16 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      toast.info('Reset Password', 'Please enter your email address first, then tap Forgot Password again.');
+    if (emailError(email)) {
+      setTouched(t => ({ ...t, email: true }));
+      toast.info('Reset Password', 'Enter your email address above, then tap Forgot Password again.');
       return;
     }
     try {
       await sendPasswordResetEmail(auth, email.trim());
       toast.success('Email Sent', 'A password reset link has been sent to your email.');
     } catch (error) {
-      Alert.alert('Error', error.message);
+      toast.error('Could not send the email', authErrorMessage(error));
     }
   };
 
@@ -155,31 +156,38 @@ export default function LoginScreen({ navigation }) {
           {/* ── Form Card ── */}
           <View style={styles.formCard}>
             {/* Email */}
-            <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused]}>
+            <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused, emailErr && styles.inputWrapperError]}>
               <TextInput
                 placeholder="Email Address"
                 placeholderTextColor="#B0BCB0"
                 value={email}
                 onChangeText={setEmail}
                 onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
+                onBlur={() => { setEmailFocused(false); if (email) setTouched(t => ({ ...t, email: true })); }}
                 keyboardType="email-address"
+                textContentType="emailAddress"
+                autoComplete="email"
+                accessibilityLabel="Email address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={styles.input}
               />
             </View>
+            {emailErr ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{emailErr}</Text> : null}
 
             {/* Password */}
-            <View style={[styles.inputWrapper, passwordFocused && styles.inputWrapperFocused]}>
+            <View style={[styles.inputWrapper, passwordFocused && styles.inputWrapperFocused, passwordErr && styles.inputWrapperError]}>
               <TextInput
                 placeholder="Password"
                 placeholderTextColor="#B0BCB0"
                 value={password}
                 onChangeText={setPassword}
                 onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
+                onBlur={() => { setPasswordFocused(false); if (password) setTouched(t => ({ ...t, password: true })); }}
                 secureTextEntry={!showPassword}
+                textContentType="password"
+                autoComplete="password"
+                accessibilityLabel="Password"
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={[styles.input, { flex: 1 }]}
@@ -196,6 +204,7 @@ export default function LoginScreen({ navigation }) {
                 />
               </TouchableOpacity>
             </View>
+            {passwordErr ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{passwordErr}</Text> : null}
 
             {/* Forgot Password */}
             <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotRow}>
@@ -318,6 +327,8 @@ const styles = StyleSheet.create({
     borderColor: '#006A3B',
     backgroundColor: '#FAFCFA',
   },
+  inputWrapperError: { borderColor: '#C62828', backgroundColor: '#FFF8F8', marginBottom: 6 },
+  fieldError: { color: '#C62828', fontSize: 12.5, fontFamily: 'Outfit-Medium', marginBottom: 12, marginLeft: 6 },
   input: {
     flex: 1,
     height: 52,
