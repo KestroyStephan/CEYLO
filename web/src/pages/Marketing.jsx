@@ -3,7 +3,8 @@ import {
     Box, Typography, Grid, Paper, TextField, Button,
     Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, Stack, Chip, Divider
 } from '@mui/material';
-import { collection, getDocs, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import destinationsData from '../../../mobile/assets/data/ai_destinations.json';
 import { db } from '../firebaseConfig';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
@@ -32,8 +33,14 @@ export default function Marketing() {
     useEffect(() => {
         const fetchContent = async () => {
             try {
+                // Dataset places plus places staff added in the portal
                 const destSnap = await getDocs(collection(db, 'destinations'));
-                setDestinations(destSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                const stored = Object.fromEntries(destSnap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
+                const list = destinationsData.map(d => ({ id: d.destination_id, name: d.name, ...(stored[d.destination_id] || {}) }))
+                    .concat(Object.values(stored).filter(x => !destinationsData.some(d => d.destination_id === x.id)))
+                    .filter(d => !d.removed && d.name)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                setDestinations(list);
 
                 const eventSnap = await getDocs(collection(db, 'cultural_events'));
                 setEvents(eventSnap.docs.map(e => ({ id: e.id, ...e.data() })));
@@ -52,13 +59,13 @@ export default function Marketing() {
         setSeoLoading(true);
         try {
             const collName = targetType === 'destination' ? 'destinations' : 'cultural_events';
-            await updateDoc(doc(db, collName, selectedTarget), {
+            await setDoc(doc(db, collName, selectedTarget), {
                 seoMeta: {
                     title: seoTitle,
                     description: seoDescription,
-                    keywords: seoKeywords.split(',').map(k => k.trim())
+                    keywords: seoKeywords.split(',').map(k => k.trim()).filter(Boolean)
                 }
-            });
+            }, { merge: true });
             setSnackbar({ open: true, message: 'SEO Meta updated successfully!', severity: 'success' });
             setSeoTitle('');
             setSeoDescription('');
@@ -78,16 +85,15 @@ export default function Marketing() {
         }
         setEmailLoading(true);
         try {
-            // In a real app, this would trigger an edge function or mail extension
-            // We simulate it by logging to a marketing_campaigns collection
+            // No email provider is connected yet, so campaigns are saved as drafts rather than claimed as sent
             await addDoc(collection(db, 'marketing_campaigns'), {
                 subject: emailSubject,
                 body: emailBody,
                 audience: emailAudience,
-                sentAt: serverTimestamp(),
-                status: 'Sent'
+                createdAt: serverTimestamp(),
+                status: 'draft'
             });
-            setSnackbar({ open: true, message: `Email campaign sent to ${emailAudience}!`, severity: 'success' });
+            setSnackbar({ open: true, message: 'Campaign saved as a draft. Email sending is not connected yet, so nothing was sent.', severity: 'info' });
             setEmailSubject('');
             setEmailBody('');
         } catch (e) {
@@ -212,7 +218,7 @@ export default function Marketing() {
                                 disabled={emailLoading}
                                 sx={{ bgcolor: '#1565c0', '&:hover': { bgcolor: '#0d47a1' }, fontWeight: 600, py: 1.5, borderRadius: 2 }}
                             >
-                                {emailLoading ? 'Sending...' : 'Send Campaign Blast'}
+                                {emailLoading ? 'Saving…' : 'Save campaign draft'}
                             </Button>
                         </Stack>
                     </Paper>
