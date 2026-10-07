@@ -9,6 +9,7 @@ import { auth, db } from '../firebaseConfig';
 import { signOut } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, getCountFromServer, getDocs, limit, orderBy } from 'firebase/firestore';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import SosButton from '../components/SosButton';
 
 const { width } = Dimensions.get('window');
 
@@ -220,13 +221,7 @@ export default function ProfileScreen({ navigation }) {
             </ScrollView>
 
             {/* Floating SOS Button */}
-            <TouchableOpacity
-                style={styles.fabSOS}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('SOSScreen')}
-            >
-                <Text style={styles.fabSOSText}>SOS</Text>
-            </TouchableOpacity>
+            <SosButton onPress={() => navigation.navigate('SOSScreen')} />
         </View>
     );
 }

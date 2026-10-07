@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import destinationsData from '../assets/data/ai_destinations.json';
 import { distanceKm } from '../services/ItineraryService';
 import ProgressiveImage from '../components/ProgressiveImage';
+import SosButton from '../components/SosButton';
 
 // Real attractions from the CEYLO dataset (Wikidata places, Wikipedia photos, Google ratings)
 const PLACES = destinationsData.map(d => ({
@@ -517,9 +518,7 @@ export default function MapScreen({ navigation }) {
       <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: sheetAnim }] }]}>
 
         {/* Floating SOS Button attached to bottom sheet */}
-        <TouchableOpacity style={styles.sosButton} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
-          <Text style={styles.sosText}>SOS</Text>
-        </TouchableOpacity>
+        <SosButton style={styles.sosDock} onPress={() => navigation.navigate('SOSScreen')} />
 
         <Surface style={styles.sheetContent} elevation={5}>
           <View style={styles.dragBarContainer}>
@@ -735,7 +734,7 @@ const styles = StyleSheet.create({
   filterIconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EBEBEB', justifyContent: 'center', alignItems: 'center' },
 
   // SOS Button
-  sosButton: { position: 'absolute', top: -30, right: 20, width: 66, height: 66, borderRadius: 33, backgroundColor: '#C62828', justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#C62828', shadowOpacity: 0.4, shadowRadius: 6, zIndex: 30 },
+  sosDock: { top: -24, bottom: undefined, zIndex: 30 },
   sosText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16, letterSpacing: 1 },
 
   // Cards

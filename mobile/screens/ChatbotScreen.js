@@ -316,6 +316,18 @@ export default function ChatbotScreen({ navigation, route }) {
             onSetDestination={handleSetDestination}
           />
         ))}
+        {/* Starter questions until the traveller sends their first message */}
+        {messages.length === 1 && !loading && (
+          <View style={styles.starters}>
+            <Text style={styles.startersTitle}>Try asking</Text>
+            {STARTERS.map(q => (
+              <TouchableOpacity key={q} style={styles.starter} onPress={() => handleSend(q)}>
+                <MaterialCommunityIcons name="chat-processing-outline" size={16} color="#00695C" />
+                <Text style={styles.starterText}>{q}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       {canGenerate && (
@@ -365,7 +377,18 @@ export default function ChatbotScreen({ navigation, route }) {
   );
 }
 
+const STARTERS = [
+  'Plan 3 days of nature and wildlife',
+  'Cultural trip to Kandy for 2 days',
+  'Relaxing beach holiday in the south',
+  'What should I know about Poya days?',
+];
+
 const styles = StyleSheet.create({
+  starters: { marginTop: 8, gap: 8 },
+  startersTitle: { fontSize: 13, fontFamily: 'Outfit-Medium', color: '#5C6E64', marginBottom: 2, marginLeft: 4 },
+  starter: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#D5E6DE', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9 },
+  starterText: { fontSize: 14, fontFamily: 'Outfit-Medium', color: '#004D40' },
   container: { flex: 1, backgroundColor: '#F0F2F5' },
   topBar: { paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
   barTitle: { color: '#FFF', fontSize: 20, fontFamily: 'Outfit-Bold' },

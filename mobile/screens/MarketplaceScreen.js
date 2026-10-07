@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collectionGroup, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { Svg, Circle, Ellipse } from 'react-native-svg';
+import SosButton from '../components/SosButton';
 
 const { width } = Dimensions.get('window');
 
@@ -178,9 +179,7 @@ export default function MarketplaceScreen({ navigation }) {
       </ScrollView>
 
       {/* Floating SOS Button */}
-      <TouchableOpacity style={styles.sosButton} onPress={() => navigation.navigate('SOSScreen')} accessibilityLabel="Emergency SOS">
-        <MaterialCommunityIcons name="car-emergency" size={24} color="#FFF" />
-      </TouchableOpacity>
+      <SosButton onPress={() => navigation.navigate('SOSScreen')} />
     </View>
   );
 }

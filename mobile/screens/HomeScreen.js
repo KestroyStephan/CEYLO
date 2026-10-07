@@ -18,6 +18,7 @@ import { SUSTAINABLE_ROUTES } from '../utils/destinations';
 import { loadEvents, eventsNear } from '../utils/events';
 import { NotificationService } from '../services/NotificationService';
 import { buildDiscover } from '../services/DiscoverService';
+import SosButton from '../components/SosButton';
 
 
 const { width } = Dimensions.get('window');
@@ -401,16 +402,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       </ScrollView>
 
-      {/* Emergency: labelled, always reachable */}
-      <TouchableOpacity
-        style={styles.fabSOS}
-        activeOpacity={0.85}
-        onPress={() => navigation.navigate('SOSScreen')}
-        accessibilityLabel="Emergency SOS"
-      >
-        <MaterialCommunityIcons name="alarm-light-outline" size={18} color="#FFF" />
-        <Text style={styles.fabText}>SOS</Text>
-      </TouchableOpacity>
+      <SosButton onPress={() => navigation.navigate('SOSScreen')} />
 
       {/* Small Chat Modal */}
       <Modal visible={showChatModal} animationType="fade" transparent>
