@@ -27,14 +27,13 @@ function Bookings() {
     const [filteredRows, setFilteredRows] = useState([]);
     const [tab, setTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateFilter, setDateFilter] = useState(new Date().toISOString().slice(0,10));
+    const [dateFilter, setDateFilter] = useState(''); // empty = all dates
     
     // UI State
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuBooking, setMenuBooking] = useState(null);
-    const [filterAnchor, setFilterAnchor] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
@@ -48,6 +47,15 @@ function Bookings() {
     useEffect(() => {
         let result = rows;
         if (tab !== 'all') result = result.filter(r => bookingStage(r.status) === tab || (tab === 'confirmed' && bookingStage(r.status) === 'completed'));
+        // Bookings on the chosen day (trip date, falling back to when it was made)
+        if (dateFilter) {
+            const dayOf = (r) => {
+                const v = r.date || r.bookingDate || r.createdAt;
+                const ms = v?.toMillis ? v.toMillis() : Date.parse(v);
+                return Number.isNaN(ms) || !ms ? null : new Date(ms).toISOString().slice(0, 10);
+            };
+            result = result.filter(r => dayOf(r) === dateFilter);
+        }
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter(r => 
@@ -57,7 +65,7 @@ function Bookings() {
             );
         }
         setFilteredRows(result);
-    }, [rows, tab, searchQuery]);
+    }, [rows, tab, searchQuery, dateFilter]);
 
     const handleMenuClick = (event, booking) => {
         event.stopPropagation();
@@ -159,6 +167,7 @@ function Bookings() {
                         size="small" 
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
+                        helperText={dateFilter ? <span style={{ cursor: 'pointer' }} onClick={() => setDateFilter('')}>Show all dates</span> : 'Filter by day'}
                         sx={{ 
                             bgcolor: '#FFF', 
                             minWidth: 160, 
@@ -172,37 +181,6 @@ function Bookings() {
                             startAdornment: <InputAdornment position="start"><CalendarMonthIcon sx={{ fontSize: 18, color: '#006A3B' }}/></InputAdornment>
                         }}
                     />
-                    <Button 
-                        variant="outlined" 
-                        size="small" 
-                        startIcon={<FilterListIcon />} 
-                        onClick={(e) => setFilterAnchor(e.currentTarget)}
-                        sx={{ 
-                            borderColor: '#EBEFE8', 
-                            color: '#181D19', 
-                            bgcolor: '#FFF',
-                            borderRadius: 1,
-                            px: 2,
-                            fontWeight: 600,
-                            '&:hover': { borderColor: '#006A3B', bgcolor: '#F1F8F6' }
-                        }}
-                    >
-                        More Filters
-                    </Button>
-                    <Menu
-                        anchorEl={filterAnchor}
-                        open={Boolean(filterAnchor)}
-                        onClose={() => setFilterAnchor(null)}
-                        PaperProps={{
-                            sx: { mt: 1, borderRadius: 1.25, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #EBEFE8' }
-                        }}
-                    >
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>Service Type: Safari</Typography></MenuItem>
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>Service Type: Transport</Typography></MenuItem>
-                        <Divider />
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" fontWeight={600}>High Value (&gt; LKR 10k)</Typography></MenuItem>
-                        <MenuItem onClick={() => setFilterAnchor(null)}><Typography variant="body2" color="error" fontWeight={600}>Clear Filters</Typography></MenuItem>
-                    </Menu>
 
                     <Button 
                         variant="contained" 

@@ -3,7 +3,7 @@ import 'react-native-reanimated';
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import './i18n';
-import { View, ActivityIndicator, LogBox, Platform, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, LogBox, Platform, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
@@ -108,6 +108,14 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userData, setUserData] = useState(null);
+  // Maintenance mode from the admin portal (Settings); staff and partners are not blocked
+  const [maintenance, setMaintenance] = useState(false);
+  useEffect(() => {
+    if (!user) return undefined;
+    return onSnapshot(doc(db, 'system_config', 'global'),
+      snap => setMaintenance(Boolean(snap.exists() && snap.data().maintenanceMode)),
+      () => setMaintenance(false));
+  }, [user]);
   const [loading, setLoading] = useState(true);
   // The screens style text with these family names
   const [fontsLoaded, fontError] = useFonts({
@@ -233,6 +241,17 @@ export default function App() {
       NotificationService.init(navigationRef.current);
     }
   }, [user]);
+
+  if (maintenance && (userRole === 'tourist' || user?.isAnonymous)) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#F6FBF5' }}>
+        <Text style={{ fontSize: 22, fontFamily: 'Outfit-Bold', color: '#004D40', marginBottom: 8 }}>Back shortly</Text>
+        <Text style={{ fontSize: 15, fontFamily: 'Outfit-Regular', color: '#4A5E4A', textAlign: 'center', lineHeight: 22 }}>
+          CEYLO is being updated. In an emergency call 119 (Police) or 1990 (Ambulance).
+        </Text>
+      </View>
+    );
+  }
 
   if (loading || (!fontsLoaded && !fontError) || (user && !userRole && !user.isAnonymous)) {
     return (

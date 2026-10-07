@@ -54,11 +54,9 @@ function SystemHealth() {
 
 
     const services = [
-        { name: 'Firebase Alpha (Auth/DB)', status: 'operational', version: 'v12.9.0' },
-        { name: 'SOS Real-time WebSocket', status: 'operational', version: 'v2.4.1' },
-        { name: 'Google Maps API Core', status: 'operational', version: 'v3.54' },
-        { name: 'CEYLO trained models (Render)', status: aiEngineStatus, version: BACKEND_URL.replace(/^https?:\/\//, '') },
-        { name: 'Notification Service', status: 'operational', version: 'v3.0.0' },
+        // Only services this page actually checks
+        { name: 'Firestore database', status: dbLatency >= 0 && dbLatency != null ? 'operational' : 'degraded', version: dbLatency >= 0 && dbLatency != null ? `${dbLatency} ms read` : 'unreachable' },
+        { name: 'CEYLO backend and trained models', status: aiEngineStatus, version: BACKEND_URL.replace(/^https?:\/\//, '') },
     ];
 
     useEffect(() => {
@@ -222,7 +220,7 @@ function SystemHealth() {
                         </Typography>
                         <Stack spacing={2}>
                             {[
-                                ['Database access', 'Firestore security rules (28 emulator tests)'],
+                                ['Database access', 'Firestore and Storage security rules (59 emulator tests)'],
                                 ['Backend rate limit', '60 requests/min, chatbot 20/min per IP'],
                                 ['Broadcast push', 'Staff-only, verified Firebase ID token'],
                                 ['AI services', 'Trained in-house models, no third-party AI keys'],

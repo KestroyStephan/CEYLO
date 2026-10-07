@@ -22,9 +22,6 @@ export default function Settings() {
         appName: 'CEYLO Tourism',
         contactEmail: 'admin@ceylo.lk',
         maintenanceMode: false,
-        twoFactorAuth: true,
-        emailAlerts: true,
-        smsAlerts: false
     });
 
     useEffect(() => {
@@ -117,7 +114,7 @@ export default function Settings() {
                                 <Box sx={{ p: 2, border: '1px solid #FEE2E2', bgcolor: '#FEF2F2', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Box>
                                         <Typography variant="body2" fontWeight={600} color="#DC2626">Maintenance Mode</Typography>
-                                        <Typography variant="caption" color="#7F1D1D">Takes the platform offline for users during upgrades.</Typography>
+                                        <Typography variant="caption" color="#7F1D1D">Travellers see a maintenance notice instead of the app. Staff can still sign in.</Typography>
                                     </Box>
                                     <Switch checked={settings.maintenanceMode} onChange={handleChange('maintenanceMode')} color="error" />
                                 </Box>
@@ -133,21 +130,7 @@ export default function Settings() {
                             <SecurityIcon sx={{ mr: 1, color: '#006A3B' }} /> Security & Authentication
                         </Typography>
                         <Stack spacing={2.5}>
-                            <Alert severity="info" sx={{ borderRadius: 2, '& .MuiAlert-message': { fontWeight: 600 } }}>
-                                Admin sessions automatically expire after 2 hours of inactivity.
-                            </Alert>
-                            
-                            <Box sx={{ p: 2, border: '1px solid #EBEFE8', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Box>
-                                    <Typography variant="body2" fontWeight={600} color="#0F172A">Two-Factor Authentication (2FA)</Typography>
-                                    <Typography variant="caption" color="text.secondary">Require OTP for all administrative logins.</Typography>
-                                </Box>
-                                <Switch checked={settings.twoFactorAuth} onChange={handleChange('twoFactorAuth')} color="success" />
-                            </Box>
-                            
-                            <Divider sx={{ my: 1 }} />
-                            
-                            <Button 
+                            <Button
                                 variant="contained" 
                                 color="error" 
                                 startIcon={<LockResetIcon />}
@@ -160,34 +143,6 @@ export default function Settings() {
                     </Paper>
                 </Grid>
 
-                {/* Notifications & System */}
-                <Grid item xs={12} md={12}>
-                    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
-                        <Typography variant="subtitle1" fontWeight={600} color="#0F172A" sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                            <NotificationsActiveIcon sx={{ mr: 1, color: '#006A3B' }} /> Communication & Alerts
-                        </Typography>
-                        <Grid container spacing={4}>
-                            <Grid item xs={12} md={6}>
-                                <Box sx={{ p: 2, border: '1px solid #EBEFE8', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Box>
-                                        <Typography variant="body2" fontWeight={600} color="#0F172A">System Email Alerts</Typography>
-                                        <Typography variant="caption" color="text.secondary">Receive daily summaries and critical warnings.</Typography>
-                                    </Box>
-                                    <Switch checked={settings.emailAlerts} onChange={handleChange('emailAlerts')} color="success" />
-                                </Box>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <Box sx={{ p: 2, border: '1px solid #EBEFE8', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Box>
-                                        <Typography variant="body2" fontWeight={600} color="#0F172A">Emergency SMS Alerts</Typography>
-                                        <Typography variant="caption" color="text.secondary">Immediate texts for SOS triggers and outages.</Typography>
-                                    </Box>
-                                    <Switch checked={settings.smsAlerts} onChange={handleChange('smsAlerts')} color="success" />
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                </Grid>
             </Grid>
 
             <Snackbar 

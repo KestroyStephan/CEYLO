@@ -187,9 +187,6 @@ export default function Reports() {
                         ))}
                     </Box>
 
-                    <Button variant="outlined" startIcon={<FilterListIcon />} sx={{ color: '#3F4941', borderColor: '#BECABE', fontWeight: 600, borderRadius: 1, px: 3, py: 1, textTransform: 'none' }}>
-                        More Filters
-                    </Button>
                 </Box>
 
                 <TextField
@@ -257,7 +254,6 @@ export default function Reports() {
                 onClose={() => setAnchorEl(null)}
                 PaperProps={{ sx: { minWidth: 180, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' } }}
             >
-                <MenuItem onClick={() => setAnchorEl(null)} sx={{ fontSize: '0.875rem', fontWeight: 600, py: 1.5 }}>View Invoice Document</MenuItem>
                 <MenuItem onClick={handleApprovePayout} sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#006A3B', py: 1.5 }}>Approve Payout Transfer</MenuItem>
             </Menu>
 

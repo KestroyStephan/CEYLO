@@ -302,14 +302,6 @@ export default function Guides() {
                         </Box>
                     </Paper>
                 </Grid>
-                
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
-                         <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ fontStyle: 'italic' }}>
-                            "To ensure highest quality tours, prioritize processing pending applications within 48 hours. Ensure language proficiencies match required operational zones."
-                         </Typography>
-                    </Paper>
-                </Grid>
             </Grid>
 
             {/* Premium Controls Toolbar */}

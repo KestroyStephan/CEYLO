@@ -209,7 +209,7 @@ export default function Users() {
                             <Box>
                                 <Typography variant="caption" fontWeight={600} color="#059669">NEW SIGNUPS (24H)</Typography>
                                 <Typography variant="h4" fontWeight={600} color="#059669">+{newSignups.toLocaleString()}</Typography>
-                                <Typography variant="caption" color="#059669" fontWeight={600}>Growing community</Typography>
+                                <Typography variant="caption" color="text.secondary" fontWeight={600}>Joined in the last 24 hours</Typography>
                             </Box>
                             <PersonAddIcon sx={{ color: '#059669' }} />
                         </Box>
@@ -220,7 +220,7 @@ export default function Users() {
                     <Paper sx={{ p: 2.5, borderRadius: 1.25, border: '1px solid #EBEFE8', boxShadow: 'none' }}>
                         <Typography variant="caption" fontWeight={600} color="text.secondary">ADMINISTRATORS</Typography>
                         <Typography variant="h4" fontWeight={600} color="#006A3B">{users.filter(u => u.role === 'admin' || u.role === 'super_admin').length}</Typography>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600}>System maintainers</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Staff accounts</Typography>
                     </Paper>
                 </Grid>
             </Grid>

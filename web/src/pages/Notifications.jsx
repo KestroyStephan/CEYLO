@@ -180,24 +180,6 @@ function Notifications() {
                             </Paper>
                         </CardContent>
                     </Card>
-
-                    <Paper sx={{ p: 3, borderRadius: 1.25, bgcolor: '#37474f', color: '#fff' }}>
-                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>PUSH INFRASTRUCTURE</Typography>
-                        <Stack spacing={2}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">Expo Server Channel</Typography>
-                                <Typography variant="caption" fontWeight={600} color="#81c784">ONLINE</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">Push Delivery Service</Typography>
-                                <Typography variant="caption" fontWeight={600} color="#81c784">99.98% SLA</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">Delivery Mode</Typography>
-                                <Typography variant="caption" fontWeight={600}>FCM / APNS</Typography>
-                            </Box>
-                        </Stack>
-                    </Paper>
                 </Grid>
             </Grid>
 
