@@ -21,8 +21,8 @@ export const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || (IS_PRODUCTIO
 export const SOS_SMS_NUMBER = process.env.EXPO_PUBLIC_SOS_SMS_NUMBER || null;
 
 // Google Maps Platform key for Places and Directions calls. Falls back to the key the native map
-// already uses (app.json) so an APK built without mobile/.env can still search and draw routes.
+// already uses (app.json, exposed through app.config.js) so an APK built without mobile/.env still works.
 export const MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+  || Constants.expoConfig?.extra?.mapsApiKey   // copied from app.json by app.config.js
   || Constants.expoConfig?.android?.config?.googleMaps?.apiKey
-  || Constants.expoConfig?.ios?.config?.googleMapsApiKey
   || '';
