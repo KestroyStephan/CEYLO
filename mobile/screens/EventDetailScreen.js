@@ -76,6 +76,9 @@ export default function EventDetailScreen({ route, navigation }) {
     Alert.alert('Reminder Set', `We'll remind you on ${remindAt.toDateString()}.`);
   };
 
+  // Island-wide holidays (e.g. Poya days) have no single place to navigate to
+  const canNavigate = Boolean(displayEvent.coords) || !/all island/i.test(displayEvent.location || '');
+
   const openDirections = () => {
     const dest = displayEvent.coords
       ? `${displayEvent.coords.latitude},${displayEvent.coords.longitude}`
@@ -99,9 +102,11 @@ export default function EventDetailScreen({ route, navigation }) {
           onPress={() => navigation.goBack()}
         />
         <View style={styles.imageOverlay}>
-          <Chip icon={({ size }) => <MaterialCommunityIcons name="calendar" size={size} color="#FFF" />} style={styles.dateChip} textStyle={styles.dateChipText}>
-            {dateLabel}
-          </Chip>
+          {/* Plain wrapping badge: long labels ("Usually Sep, Oct · …") must not be cut off */}
+          <View style={styles.dateBadge}>
+            <MaterialCommunityIcons name="calendar" size={16} color="#FFF" />
+            <Text style={styles.dateBadgeText}>{dateLabel}</Text>
+          </View>
           <Text style={styles.title}>{displayEvent.title}</Text>
         </View>
       </View>
@@ -146,7 +151,7 @@ export default function EventDetailScreen({ route, navigation }) {
         >
           Remind Me
         </Button>
-        <Button
+        {canNavigate && <Button
           mode="outlined"
           onPress={openDirections}
           style={[styles.arBtn, { marginTop: 0 }]}
@@ -154,13 +159,21 @@ export default function EventDetailScreen({ route, navigation }) {
           icon="directions"
         >
           Get Directions
-        </Button>
+        </Button>}
+        {displayEvent.source ? (
+          <Text style={styles.sourceText} onPress={() => displayEvent.sourceUrl && Linking.openURL(displayEvent.sourceUrl)}>
+            Date source: {displayEvent.source}{displayEvent.sourceUrl ? ' ↗' : ''}
+          </Text>
+        ) : null}
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: 'rgba(0,105,92,0.92)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 },
+  dateBadgeText: { color: '#FFF', fontSize: 14, fontFamily: 'Outfit-Bold', flexShrink: 1 },
+  sourceText: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#6B7A6B', textAlign: 'center', marginTop: 4, marginBottom: 24 },
   container: { flex: 1, backgroundColor: '#FFF' },
   imageContainer: { width: '100%', height: 350 },
   image: { width: '100%', height: '100%' },
