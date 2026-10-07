@@ -139,6 +139,13 @@ service cloud.firestore {
     }
 
     // Vendor subcollections
+    // Vendor NIC and business registration links: private to the vendor and staff
+    match /vendor_documents/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
     match /vendors/{uid}/services/{serviceId} {
       allow read: if true;
       allow write: if isOwner(uid) || isAdmin();

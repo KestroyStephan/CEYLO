@@ -322,7 +322,7 @@ export default function Drivers() {
                   <Box key={t.id} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', py: 0.75, borderTop: 1, borderColor: 'divider' }}>
                     <Typography sx={{ fontSize: 12.5, color: 'text.secondary', width: 90, flexShrink: 0 }}>{fmtDate(toMs(t.createdAt))}</Typography>
                     <Typography sx={{ fontSize: 13, flex: 1, minWidth: 0 }} noWrap>{t.pickup || '—'} → {t.dropoff || '—'}</Typography>
-                    {t.fare != null && <Typography sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>LKR {Number(t.fare).toLocaleString()}</Typography>}
+                    {(t.finalFare ?? t.price) != null && <Typography sx={{ fontSize: 13, whiteSpace: 'nowrap' }}>LKR {Number(t.finalFare ?? t.price).toLocaleString()}</Typography>}
                     <StatusChip label={t.status || '—'} tone={t.status === 'Completed' ? 'success' : t.status === 'Cancelled' ? 'neutral' : 'info'} />
                   </Box>
                 ))}

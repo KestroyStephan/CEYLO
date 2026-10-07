@@ -187,15 +187,20 @@ export default function VendorRegistrationScreen({ navigation }) {
         address: address,
         onlineStatus: 'closed',
         status: 'pending_verification',
-        nicFrontUrl: uploadedUrls.nicFront || '',
-        nicBackUrl: uploadedUrls.nicBack || '',
-        businessCertUrl: uploadedUrls.bizCert || '',
         servicePhotoUrls: uploadedUrls.svcPhotos || [],
         rejectionReason: '',
         createdAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, 'vendors', user.uid), vendorData);
+      // ID and business documents stay private (vendor + staff only); vendors/{uid} is readable by all users
+      await setDoc(doc(db, 'vendor_documents', user.uid), {
+        uid: user.uid,
+        nicFrontUrl: uploadedUrls.nicFront || '',
+        nicBackUrl: uploadedUrls.nicBack || '',
+        businessCertUrl: uploadedUrls.bizCert || '',
+        uploadedAt: serverTimestamp(),
+      });
 
       await addDoc(collection(db, 'vendors', user.uid, 'services'), {
         name: svcName,

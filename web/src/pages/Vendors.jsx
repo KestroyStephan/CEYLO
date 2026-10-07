@@ -53,6 +53,20 @@ export default function Vendors() {
         setMenuVendor(null);
     };
 
+    // Private document links (vendor_documents/{uid}); vendors registered earlier kept them on the vendor record
+    const [docsRecord, setDocsRecord] = useState({ id: null, data: null });
+    const selectedId = selectedVendor?.id;
+    useEffect(() => {
+        if (!selectedId) return undefined;
+        return onSnapshot(doc(db, 'vendor_documents', selectedId),
+            snap => setDocsRecord({ id: selectedId, data: snap.exists() ? snap.data() : null }),
+            () => setDocsRecord({ id: selectedId, data: null }));
+    }, [selectedId]);
+    const privateDocs = docsRecord.id === selectedId ? docsRecord.data : null;
+    const vendorDocs = privateDocs || {
+        nicFrontUrl: selectedVendor?.nicFrontUrl, nicBackUrl: selectedVendor?.nicBackUrl, businessCertUrl: selectedVendor?.businessCertUrl,
+    };
+
     const openDrawer = (vendor) => {
         setSelectedVendor(vendor);
         setRejectionReason(vendor.rejectionReason || '');
@@ -334,7 +348,7 @@ export default function Vendors() {
                             <Typography variant="subtitle2" color="#64748B" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>KYC Documents</Typography>
                             {/* The files the vendor uploaded in the app (private: only the vendor and staff can open them) */}
                             <Stack spacing={1} sx={{ mb: 3 }}>
-                                {[['NIC – front', selectedVendor.nicFrontUrl], ['NIC – back', selectedVendor.nicBackUrl], ['Business registration certificate', selectedVendor.businessCertUrl]].map(([label, url]) => (
+                                {[['NIC – front', vendorDocs.nicFrontUrl], ['NIC – back', vendorDocs.nicBackUrl], ['Business registration certificate', vendorDocs.businessCertUrl]].map(([label, url]) => (
                                     url ? (
                                         <Button key={label} variant="outlined" fullWidth startIcon={<DescriptionIcon />} href={url} target="_blank" rel="noreferrer"
                                             sx={{ justifyContent: 'flex-start' }}>

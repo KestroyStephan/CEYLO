@@ -208,6 +208,14 @@ describe('vendors and drivers', () => {
     await assertSucceeds(setDoc(doc(as('d1'), 'driver_documents', 'd1'), { files: { nic_back: { url: 'u2', uploadedAt: 3 } } }, { merge: true }));
   });
 
+  test('vendor ID documents are private to the vendor and staff', async () => {
+    await seed({ 'users/staff': { role: 'admin' }, 'users/t2': { role: 'tourist' } });
+    await assertSucceeds(setDoc(doc(as('v1'), 'vendor_documents', 'v1'), { nicFrontUrl: 'u' }));
+    await assertFails(setDoc(doc(as('t2'), 'vendor_documents', 'v1'), { nicFrontUrl: 'x' }));
+    await assertFails(getDoc(doc(as('t2'), 'vendor_documents', 'v1')));
+    await assertSucceeds(getDoc(doc(as('staff'), 'vendor_documents', 'v1')));
+  });
+
   test('vendor services are public, but only the owner can edit them', async () => {
     await seed({ 'vendors/v1/services/s1': { name: 'Cooking class' } });
     await assertSucceeds(getDoc(doc(anon(), 'vendors/v1/services/s1')));
