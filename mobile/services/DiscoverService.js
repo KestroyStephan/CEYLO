@@ -8,7 +8,7 @@
  */
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
-import destinations from '../assets/data/ai_destinations.json';
+import { loadDestinations } from '../utils/destinationStore';
 import { inSeasonMonth, profileFromApp } from '../utils/recommenderModel';
 import { loadEvents, eventsDuring } from '../utils/events';
 import { loadPreferences, moodFromPreferences } from './PreferencesService';
@@ -56,7 +56,7 @@ const eventWhen = (e) => (e.months ? 'This season' : e.endDate ? `${fmtDay(e.dat
  * @returns {Promise<{ window, sections: Array<{ key, title, items }> }>} empty sections are dropped
  */
 export async function buildDiscover(position) {
-  const [prefs, window, events] = await Promise.all([loadPreferences(), tripWindow(), loadEvents().catch(() => [])]);
+  const [prefs, window, events, destinations] = await Promise.all([loadPreferences(), tripWindow(), loadEvents().catch(() => []), loadDestinations()]);
   const month = window.start.getMonth() + 1;
   const mood = moodFromPreferences(prefs);
   const moodCats = MOOD_CATEGORIES[moodKey(mood)] || [];

@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
-import destinationsData from '../assets/data/ai_destinations.json';
+import { loadDestinations } from '../utils/destinationStore';
 import ProgressiveImage from '../components/ProgressiveImage';
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -62,8 +62,9 @@ export default function HiddenGemsListScreen({ navigation, route }) {
     };
   }, []);
 
-  const fetchGems = (userLat, userLon) => {
+  const fetchGems = async (userLat, userLon) => {
     try {
+      const destinationsData = await loadDestinations();
       // Filter based on route params
       let filteredData = destinationsData;
       if (filterType === 'hidden') {

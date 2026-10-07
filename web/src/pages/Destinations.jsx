@@ -7,7 +7,7 @@ import {
     Snackbar, Alert, TablePagination, Dialog, DialogTitle, DialogContent, DialogActions,
     InputAdornment, Stack, Slider, Divider
 } from '@mui/material';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, setDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -34,7 +34,7 @@ const defaultDestinations = destinationsData.map((d, index) => {
         nameTamil = "தலதா மாளிகை";
     }
 
-    // Map existing categories to the new ones where appropriate, or just assign randomly for mock variety
+    // Show temples, churches and parks under their own filter
     let cat = d.category || 'Heritage';
     if (d.name.toLowerCase().includes('temple')) cat = 'Temples';
     else if (d.name.toLowerCase().includes('church') || d.name.toLowerCase().includes('cathedral')) cat = 'Churches';
@@ -51,7 +51,8 @@ const defaultDestinations = destinationsData.map((d, index) => {
         description: d.description || `${d.name} is a ${cat.toLowerCase()} destination in the ${d.province}.`,
         latitude: parseFloat(d.lat || 6.9271),
         longitude: parseFloat(d.lon || 79.8612),
-        imageUrl: d.image || "https://images.unsplash.com/photo-1580193813605-a5c78b4ee01a",
+        imageUrl: d.image || '',
+        fromDataset: true,
         hasPhoto: Boolean(d.image),
         isHiddenGem: d.hidden_gem === true || d.hidden_gem === "true" || d.hidden_gem === "True"
     };
@@ -81,13 +82,12 @@ export default function Destinations() {
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, "destinations"), (snapshot) => {
-            const firebaseDest = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            let merged = [...firebaseDest];
-            defaultDestinations.forEach(mock => {
-                if (!merged.some(d => d.id === mock.id || d.name === mock.name)) {
-                    merged.push(mock);
-                }
-            });
+            // Database records are admin changes: new places, or edits/removals of dataset places (same id)
+            const stored = Object.fromEntries(snapshot.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
+            const merged = defaultDestinations
+                .map(d => (stored[d.id] ? { ...d, ...stored[d.id], fromDataset: true } : d))
+                .concat(Object.values(stored).filter(s => !defaultDestinations.some(d => d.id === s.id)))
+                .filter(d => !d.removed);
             setDestinations(merged);
         }, (err) => {
             console.error("Destinations listen error:", err);
@@ -126,9 +126,10 @@ export default function Destinations() {
                 await addDoc(collection(db, "destinations"), formData);
                 setSnackbar({ open: true, message: 'Destination created!', severity: 'success' });
             } else {
-                if (!selectedDest.id.startsWith('mock-')) {
-                    await updateDoc(doc(db, "destinations", selectedDest.id), formData);
-                }
+                // Dataset places are saved as an override under the same id, so the app picks the edit up
+                const fields = { ...formData };
+                ['id', 'fromDataset', 'hasPhoto'].forEach(k => delete fields[k]);
+                await setDoc(doc(db, "destinations", selectedDest.id), { ...fields, updatedAt: serverTimestamp() }, { merge: true });
                 setSnackbar({ open: true, message: 'Destination updated!', severity: 'success' });
             }
             setOpenDialog(false);
@@ -139,11 +140,16 @@ export default function Destinations() {
 
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this destination?")) return;
-        if (!id.startsWith('mock-')) {
-            await deleteDoc(doc(db, "destinations", id));
+        try {
+            const dest = destinations.find(d => d.id === id);
+            // A dataset place cannot be deleted from the bundled file; it is marked removed instead
+            if (dest?.fromDataset) await setDoc(doc(db, "destinations", id), { removed: true, updatedAt: serverTimestamp() }, { merge: true });
+            else await deleteDoc(doc(db, "destinations", id));
+            setSnackbar({ open: true, message: 'Destination removed from the app.', severity: 'info' });
+            setOpenDialog(false);
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Failed to delete: ' + error.message, severity: 'error' });
         }
-        setSnackbar({ open: true, message: 'Destination deleted.', severity: 'info' });
-        setOpenDialog(false);
     };
 
     // Filters
