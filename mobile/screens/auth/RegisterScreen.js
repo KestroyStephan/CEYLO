@@ -142,7 +142,7 @@ export default function RegisterScreen({ navigation, route }) {
               </View>
             </View>
             <Text style={styles.brandName}>
-              Create {role === 'vendor_onboarding' ? 'Vendor' : role.charAt(0).toUpperCase() + role.slice(1)} Account
+              {i18n.t('create_role_account', { role: i18n.t(`role_${role === 'vendor_onboarding' ? 'vendor' : role}`) })}
             </Text>
             <Text style={styles.brandTagline}>{i18n.t('ui_join_the_eco_luxury_community')}</Text>
           </View>

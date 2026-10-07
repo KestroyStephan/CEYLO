@@ -204,7 +204,7 @@ export default function GuidesListScreen({ navigation }) {
           onPress={() => navigation.navigate('WaitingApproval', {
             bookingId: pendingBooking.id,
             guideName: pendingBooking.guideName,
-            guidePhoto: pendingBooking.guidePhoto || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400'
+            guidePhoto: pendingBooking.guidePhoto || null
           })}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>

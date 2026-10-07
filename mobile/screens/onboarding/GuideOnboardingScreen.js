@@ -1,3 +1,4 @@
+import i18n from '../../i18n';
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, StatusBar, Image } from 'react-native';
 import KeyboardAvoider from '../../components/KeyboardAvoider';
@@ -342,7 +343,7 @@ export default function GuideOnboardingScreen({ navigation }) {
           <View style={styles.infoBox}>
             <MaterialCommunityIcons name="information-outline" size={16} color="#8A9E8A" style={{ marginTop: 1 }} />
             <Text style={styles.infoText}>
-              Your application will be reviewed by the SLTDA team. Verification typically takes 2–3 business days. You will be notified via email once your Eco-Guide status is active.
+              {i18n.t('guide_review_note')}
             </Text>
           </View>
         </View>

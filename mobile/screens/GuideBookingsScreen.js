@@ -6,6 +6,7 @@ import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { notifyBooking } from '../services/aiClient';
 import { toast } from '../components/Toast';
+import PersonAvatar from '../components/PersonAvatar';
 
 const TYPE_COLORS = {
   'HERITAGE TOUR': '#6A1B9A',
@@ -52,10 +53,7 @@ export default function GuideBookingsScreen({ route, navigation }) {
     const type = (item.guideSpecialization || item.tourType || 'GUIDED TOUR').toUpperCase();
     return (
       <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => setSelectedBooking(item)}>
-        <Image
-          source={{ uri: item.touristPhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
-          style={styles.cardImg}
-        />
+        <PersonAvatar uri={item.touristPhoto} name={item.touristName || item.userName} size={56} style={styles.cardImg} />
         <View style={styles.cardBody}>
           <Text style={[styles.type, { color: TYPE_COLORS[type] || '#006A3B' }]}>{type}</Text>
           <Text style={styles.title}>{item.tourTitle || `Tour with ${item.touristName}`}</Text>

@@ -6,6 +6,7 @@ import { doc, onSnapshot, getDoc, addDoc, collection, serverTimestamp } from 'fi
 import { auth, db } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { toast } from '../components/Toast';
+import PersonAvatar from '../components/PersonAvatar';
 
 const { width } = Dimensions.get('window');
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -231,7 +232,7 @@ export default function RideTrackingScreen({ route, navigation }) {
         ) : (
           <View style={styles.activeContainer}>
             <View style={styles.driverInfo}>
-              <Avatar.Image size={50} source={{ uri: 'https://i.pravatar.cc/150?u=driver' }} />
+              <PersonAvatar uri={assignedDriver?.photoUrl} name={assignedDriver?.name} size={50} />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.driverName}>{assignedDriver?.name || 'Your Driver'}</Text>
                 <Text style={styles.subtext}>

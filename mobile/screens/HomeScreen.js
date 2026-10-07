@@ -19,6 +19,7 @@ import { loadEvents, eventsNear } from '../utils/events';
 import { NotificationService } from '../services/NotificationService';
 import { buildDiscover } from '../services/DiscoverService';
 import SosButton from '../components/SosButton';
+import PersonAvatar from '../components/PersonAvatar';
 
 
 const { width } = Dimensions.get('window');
@@ -434,15 +435,7 @@ export default function HomeScreen({ navigation }) {
                       navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: item.guideName });
                     }}
                   >
-                    <Image
-                      source={
-                        'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' && 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100'.startsWith('http')
-                          ? { uri: 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }
-                          : require('../assets/icon.png')
-                      }
-                      style={styles.chatAvatar}
-                      onError={(e) => console.log('Image error:', e.nativeEvent.error)}
-                    />
+                    <PersonAvatar uri={item.guidePhoto} name={item.guideName} size={40} style={styles.chatAvatar} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.chatName}>{item.guideName}</Text>
                       <Text style={styles.chatDesc} numberOfLines={1}>Tap to view messages</Text>

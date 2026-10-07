@@ -427,5 +427,7 @@
   "role_guide": "Guide",
   "role_guide_desc": "Share cultural stories and protect the beauty of our island.",
   "role_vendor": "Vendor",
-  "role_vendor_desc": "Offer local goods, eco-stays or experiences to travellers."
+  "role_vendor_desc": "Offer local goods, eco-stays or experiences to travellers.",
+  "create_role_account": "Create {{role}} account",
+  "guide_review_note": "The CEYLO team checks your SLTDA licence and ID, usually within 2–3 business days. You will get a notification in the app when your account is active."
 }

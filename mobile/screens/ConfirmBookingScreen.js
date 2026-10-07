@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { toast } from '../components/Toast';
+import PersonAvatar from '../components/PersonAvatar';
 
 const { width } = Dimensions.get('window');
 
@@ -192,19 +193,13 @@ export default function ConfirmBookingScreen({ route, navigation }) {
             <MaterialCommunityIcons name="arrow-left" size={22} color="#1A2E1A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{i18n.t('ui_confirm_booking')}</Text>
-          <Image
-            source={{ uri: auth.currentUser?.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }}
-            style={styles.headerAvatar}
-          />
+          <PersonAvatar uri={auth.currentUser?.photoURL} name={auth.currentUser?.displayName} size={40} style={styles.headerAvatar} />
         </View>
 
         <View style={styles.body}>
           {/* Guide Card */}
           <View style={styles.guideCard}>
-            <Image
-              source={{ uri: guide?.photoUrl || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=120' }}
-              style={styles.guidePhoto}
-            />
+            <PersonAvatar uri={guide?.photoUrl} name={guide?.name} size={64} style={styles.guidePhoto} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <View style={styles.guideTitleRow}>
                 <Text style={styles.guideName}>{guide?.name || 'Guide'}</Text>

@@ -8,6 +8,7 @@ import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import PayButton from '../components/PayButton';
 import { db } from '../firebaseConfig';
 import { notifyBooking } from '../services/aiClient';
+import PersonAvatar from '../components/PersonAvatar';
 
 const { width } = Dimensions.get('window');
 
@@ -90,10 +91,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
       </View>
 
       <View style={styles.content}>
-        <Image
-          source={{ uri: guidePhoto || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400' }}
-          style={styles.avatar}
-        />
+        <PersonAvatar uri={guidePhoto} name={guideName} size={100} style={styles.avatar} />
         <Text style={styles.guideName}>{guideName}</Text>
 
         {status === 'pending' && (

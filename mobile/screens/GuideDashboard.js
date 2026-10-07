@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { notifyBooking } from '../services/aiClient';
+import PersonAvatar from '../components/PersonAvatar';
 
 const { width } = Dimensions.get('window');
 
@@ -181,10 +182,7 @@ export default function GuideDashboard({ navigation }) {
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
-              <Image
-                source={{ uri: guideData?.photoUrl || 'https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=100' }}
-                style={styles.avatar}
-              />
+              <PersonAvatar uri={guideData?.photoUrl} name={guideData?.name} size={44} style={styles.avatar} />
             </TouchableOpacity>
           </View>
         </View>
@@ -405,7 +403,7 @@ export default function GuideDashboard({ navigation }) {
                         navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: item.touristName });
                       }}
                     >
-                      <Image source={{ uri: item.touristPhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' }} style={styles.chatAvatar} />
+                      <PersonAvatar uri={item.touristPhoto} name={item.touristName} size={40} style={styles.chatAvatar} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.chatName}>{item.touristName || 'Tourist'}</Text>
                         <Text style={styles.chatDesc} numberOfLines={1}>{t('g_tap_messages')}</Text>
