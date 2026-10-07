@@ -104,6 +104,7 @@ export default function SOSScreen({ navigation, route }) {
   const cameraRef = useRef(null);
   const lastAudioTimestampRef = useRef(null);
   const lastDeskStatusRef = useRef(null);
+  const lastSosTapRef = useRef(0);
   // Voice messages with the desk (walkie-talkie): the traveller records, the desk replies
   const recordingRef = useRef(null);
   const [talkState, setTalkState] = useState('idle'); // idle | recording | sending
@@ -489,10 +490,16 @@ export default function SOSScreen({ navigation, route }) {
       ]);
     } else {
       if (countdown !== null) {
-        // Tap again to cancel during countdown
+        // A quick second tap (double tap) sends now; a later tap cancels the countdown
+        if (Date.now() - lastSosTapRef.current < 400) {
+          cancelSOS();
+          submitEmergency();
+          return;
+        }
         cancelSOS();
         return;
       }
+      lastSosTapRef.current = Date.now();
 
       // Start 3 second countdown
       setCountdown(3);
@@ -533,6 +540,15 @@ export default function SOSScreen({ navigation, route }) {
       toast.warning("Offline SOS Sent", "No internet detected. An emergency SMS with your location was sent, and the alert will sync when you reconnect.");
     }
   };
+
+  // The floating SOS button: one tap starts the countdown here, a double tap or long press sends now
+  const sosTrigger = route?.params?.sosTrigger;
+  const sosTriggerAt = route?.params?.at;
+  useEffect(() => {
+    if (!sosTriggerAt || active || loading) return;
+    if (sosTrigger === 'now') { cancelSOS(); submitEmergency(); }
+    else if (countdown === null) handleSOSPress();
+  }, [sosTriggerAt]);
 
   const submitEmergency = async () => {
     setLoading(true);
@@ -774,6 +790,11 @@ export default function SOSScreen({ navigation, route }) {
             activeOpacity={0.8}
             style={[styles.sosBtn, active && { backgroundColor: '#B71C1C' }, countdown !== null && { backgroundColor: '#E65100' }]}
             onPress={handleSOSPress}
+            onLongPress={() => { if (!active) { cancelSOS(); submitEmergency(); } }}
+            delayLongPress={700}
+            accessibilityRole="button"
+            accessibilityLabel={active ? "I'm safe, end the alert" : 'Send emergency alert'}
+            accessibilityHint={active ? undefined : 'Tap to send after 3 seconds. Double tap or press and hold to send now.'}
             disabled={loading}
           >
             {loading ? (
@@ -786,7 +807,7 @@ export default function SOSScreen({ navigation, route }) {
             ) : (
               <>
                 <Text style={[styles.sosText, active && { fontSize: 26 }]}>{active ? "I'M SAFE" : 'SOS'}</Text>
-                <Text style={styles.tapText}>{active ? 'Tap to end the alert' : 'Tap for Help'}</Text>
+                <Text style={styles.tapText}>{active ? 'Tap to end the alert' : 'Tap · double tap = send now'}</Text>
               </>
             )}
           </TouchableOpacity>

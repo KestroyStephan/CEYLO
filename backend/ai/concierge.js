@@ -6,6 +6,7 @@
 const { classifyIntent, chatbotResponses } = require('./models');
 const { recommend } = require('./recommender');
 const { events, findPlace, MONTHS } = require('./places');
+const { travelAnswer } = require('./travelGuide');
 
 // Below this the classifier is guessing, so rely on the extracted trip details instead
 const CONFIDENT = 0.45;
@@ -191,12 +192,21 @@ function reply(message, state = {}) {
             confidence: Math.round(confidence * 1000) / 1000,
             ...(extra.recommendations ? { recommendations: extra.recommendations } : {}),
             ...(extra.action ? { action: extra.action } : {}),
+            ...(extra.route ? { route: extra.route } : {}),
+            ...(extra.places ? { places: extra.places } : {}),
         };
     };
 
     // The trip is complete and the traveller asks for it: tell the app to build the itinerary
     if (isReady(next) && WANTS_PLAN.test(text) && !(confidence >= CONFIDENT && intent === 'reset') && !isQuestionAboutInfo()) {
         return out(buildingReply(next), [], { action: 'generate_itinerary' });
+    }
+
+    // Travel questions: where to stay, what to eat, what things cost, how to get somewhere
+    const guide = travelAnswer(text, next);
+    if (guide) {
+        next = { ...prev, ...(found.budget ? { budget: found.budget } : {}) }; // a question does not change the trip
+        return out(guide.text, guide.options, { action: guide.action, route: guide.route, places: guide.places });
     }
 
     // Answer factual questions, then nudge the trip profile forward

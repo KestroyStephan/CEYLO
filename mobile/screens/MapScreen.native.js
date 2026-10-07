@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   filterIconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EBEBEB', justifyContent: 'center', alignItems: 'center' },
 
   // SOS Button
-  sosDock: { top: -24, bottom: undefined, zIndex: 30 },
+  sosDock: { top: -34, bottom: undefined, zIndex: 30 },
   sosText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16, letterSpacing: 1 },
 
   // Cards

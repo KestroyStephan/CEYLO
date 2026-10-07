@@ -43,6 +43,7 @@ const normalise = (p, coords, kind) => {
     rating: p.rating || null,
     ratings: p.user_ratings_total || 0,
     openNow: p.opening_hours ? p.opening_hours.open_now : null,
+    priceLevel: p.price_level || null,
   };
 };
 

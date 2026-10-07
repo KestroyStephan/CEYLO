@@ -18,6 +18,9 @@ import { loadPreferences } from '../services/PreferencesService';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 import { toast } from '../components/Toast';
+import * as Location from 'expo-location';
+import { nearbyOfType, openDirections, fmtKm } from '../services/places';
+import { fetchRoutes } from '../services/routes';
 
 // Mood keys from onboarding and labels from the concierge, shown with the translated label
 const MOOD_CHIP = {
@@ -61,7 +64,7 @@ function findRecommendations(state) {
     }));
 }
 
-const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
+const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination, onBookRide }) => (
   <View style={[styles.msgWrapper, item.sender === 'user' ? styles.userRow : styles.botRow]}>
     {item.sender === 'bot' && <Avatar.Icon size={32} icon="robot" style={{ backgroundColor: '#00695C' }} />}
     <View style={{ flexShrink: 1, gap: 5, marginLeft: item.sender === 'bot' ? 10 : 0 }}>
@@ -112,6 +115,57 @@ const RenderMessage = memo(({ item, onSpeak, onSend, onSetDestination }) => (
             </Surface>
           ))}
         </ScrollView>
+      )}
+
+      {item.sender === 'bot' && item.placesLoading && (
+        <Text style={styles.liveNote}>Finding the best-rated places…</Text>
+      )}
+      {item.sender === 'bot' && item.places?.length > 0 && (
+        <View style={styles.placeList}>
+          {item.places.map(p => (
+            <Surface key={p.id} style={styles.placeCard} elevation={1}>
+              <View style={[styles.placeIcon, { backgroundColor: p.kind === 'lodging' ? '#E8F1FC' : '#FFF4E0' }]}>
+                <MaterialCommunityIcons name={p.kind === 'lodging' ? 'bed' : 'silverware-fork-knife'} size={18} color={p.kind === 'lodging' ? '#1565C0' : '#C77700'} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.placeName} numberOfLines={1}>{p.name}</Text>
+                <Text style={styles.placeMeta} numberOfLines={1}>
+                  {p.rating ? `★ ${p.rating} (${p.ratings})` : 'New'}{p.priceLevel ? `  ·  ${'$'.repeat(p.priceLevel)}` : ''}  ·  {fmtKm(p.distanceKm)}
+                </Text>
+                {p.address ? <Text style={styles.placeAddr} numberOfLines={1}>{p.address}</Text> : null}
+              </View>
+              <TouchableOpacity onPress={() => openDirections(p)} style={styles.placeGo} accessibilityLabel={`Directions to ${p.name}`}>
+                <MaterialCommunityIcons name="directions" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </Surface>
+          ))}
+        </View>
+      )}
+      {item.sender === 'bot' && item.routes?.length > 0 && (
+        <Surface style={styles.routeBox} elevation={1}>
+          <Text style={styles.routeHead}>{item.routeLabel}</Text>
+          {item.routes.map(r => (
+            <View key={r.id} style={styles.routeRow}>
+              <View style={[styles.routeTag, r.isShortest && { backgroundColor: '#00695C' }]}>
+                <Text style={[styles.routeTagText, r.isShortest && { color: '#FFF' }]}>{r.isShortest ? 'SHORTEST' : r.isFastest ? 'FASTEST' : 'OPTION'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.routeMain}>{r.km} km · {r.minutes} min</Text>
+                <Text style={styles.routeVia} numberOfLines={1}>{r.summary}{r.traffic ? ` · ${r.traffic} traffic` : ''}</Text>
+              </View>
+            </View>
+          ))}
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <TouchableOpacity style={styles.routeBtn} onPress={() => onBookRide(item.routeTo)}>
+              <MaterialCommunityIcons name="car" size={16} color="#FFF" />
+              <Text style={styles.routeBtnText}>Book a ride</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.routeBtn, styles.routeBtnGhost]} onPress={() => openDirections({ latitude: item.routeTo.lat, longitude: item.routeTo.lon })}>
+              <MaterialCommunityIcons name="map-marker-path" size={16} color="#00695C" />
+              <Text style={[styles.routeBtnText, { color: '#00695C' }]}>Open in Maps</Text>
+            </TouchableOpacity>
+          </View>
+        </Surface>
       )}
 
       {item.options && (
@@ -193,8 +247,58 @@ export default function ChatbotScreen({ navigation, route }) {
     return () => sub.remove();
   }, []);
 
+  const patchMessage = (id, fields) => setMessages(prev => prev.map(m => (m.id === id ? { ...m, ...fields } : m)));
+  const lastRouteRef = useRef(null);
+
+  const herePosition = async () => {
+    const perm = await Location.requestForegroundPermissionsAsync();
+    if (perm.status !== 'granted') return null;
+    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+  };
+
+  // Best-rated hotels or restaurants around the place the traveller asked about (Google Places)
+  const loadPlaces = async (id, req) => {
+    patchMessage(id, { placesLoading: true });
+    try {
+      const list = await nearbyOfType({ latitude: req.near.lat, longitude: req.near.lon }, req.type, 6000);
+      const ranked = list
+        .filter(p => p.rating)
+        .sort((a, b) => (b.rating * Math.log10(b.ratings + 10)) - (a.rating * Math.log10(a.ratings + 10)))
+        .slice(0, 5);
+      patchMessage(id, { placesLoading: false, places: ranked.length ? ranked : list.slice(0, 5) });
+    } catch (e) {
+      console.warn('Places lookup failed:', e.message);
+      patchMessage(id, { placesLoading: false });
+    }
+  };
+
+  // The real road routes (shortest first) from Google Directions
+  const loadRoute = async (id, req) => {
+    try {
+      const origin = req.from ? { latitude: req.from.lat, longitude: req.from.lon } : await herePosition();
+      if (!origin) { toast.info('Location needed', 'Allow location so I can find the route from where you are.'); return; }
+      const routes = await fetchRoutes(origin, { latitude: req.to.lat, longitude: req.to.lon });
+      lastRouteRef.current = req.to;
+      patchMessage(id, {
+        routes: routes.slice(0, 3),
+        routeTo: req.to,
+        routeLabel: `${req.from ? req.from.name : 'Your location'} → ${req.to.name}`,
+      });
+    } catch (e) {
+      console.warn('Route lookup failed:', e.message);
+      setMessages(prev => prev.map(m => (m.id === id ? { ...m, text: `${m.text}\n\nI couldn't load the live route right now. Try again in a moment.` } : m)));
+    }
+  };
+
+  const bookRide = (to) => {
+    const dest = to || lastRouteRef.current;
+    navigation.navigate('Transport', dest ? { destination: { name: dest.name, lat: dest.lat, lon: dest.lon } } : undefined);
+  };
+
   const handleSend = async (text = inputText) => {
     if (!text.trim() || loading) return;
+    if (text.trim().toLowerCase() === 'book a ride') { bookRide(); return; }
     const userMsg = { id: Date.now().toString(), text, sender: 'user' };
 
     setMessages(prev => [...prev, userMsg]);
@@ -210,8 +314,9 @@ export default function ChatbotScreen({ navigation, route }) {
       setExtractedState(nextState);
 
       const destinationChanged = nextState.destination && nextState.destination !== extractedState.destination;
+      const botId = (Date.now() + 1).toString();
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+        id: botId,
         text: responseJson.resp || t('chat_fallback'),
         sender: 'bot',
         options: responseJson.ui_options,
@@ -220,6 +325,8 @@ export default function ChatbotScreen({ navigation, route }) {
           ? responseJson.recommendations
           : (destinationChanged ? findRecommendations(nextState) : null),
       }]);
+      if (responseJson.places) loadPlaces(botId, responseJson.places);
+      if (responseJson.action === 'route' && responseJson.route?.to) loadRoute(botId, responseJson.route);
       // "Create my plan" once the trip is complete builds the itinerary straight away
       const ready = Boolean(nextState.days && (nextState.destination || nextState.mood));
       if (responseJson.action === 'generate_itinerary' || (ready && WANTS_PLAN.test(text.toLowerCase()))) buildWith = nextState;
@@ -322,6 +429,7 @@ export default function ChatbotScreen({ navigation, route }) {
             onSpeak={handleSpeak}
             onSend={handleSendCallback}
             onSetDestination={handleSetDestination}
+            onBookRide={bookRide}
           />
         ))}
         {/* Starter questions until the traveller sends their first message */}
@@ -387,9 +495,10 @@ export default function ChatbotScreen({ navigation, route }) {
 
 const STARTERS = [
   'Plan 3 days of nature and wildlife',
-  'Cultural trip to Kandy for 2 days',
-  'Relaxing beach holiday in the south',
-  'What should I know about Poya days?',
+  'Where should I stay in Ella?',
+  'Best food in Galle',
+  'How do I get from Kandy to Ella?',
+  'What does a day in Sri Lanka cost?',
 ];
 
 const styles = StyleSheet.create({
@@ -416,6 +525,24 @@ const styles = StyleSheet.create({
   botBubble: { backgroundColor: '#FFF', borderBottomLeftRadius: 4 },
   msgText: { fontFamily: 'Outfit-Regular', fontSize: 15 },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  liveNote: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#5B6B66', marginTop: 4 },
+  placeList: { gap: 8, marginTop: 4 },
+  placeCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF', borderRadius: 14, padding: 10 },
+  placeIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  placeName: { fontSize: 14, fontFamily: 'Outfit-SemiBold', color: '#15211E' },
+  placeMeta: { fontSize: 12, fontFamily: 'Outfit-Medium', color: '#B26A00', marginTop: 1 },
+  placeAddr: { fontSize: 11.5, fontFamily: 'Outfit-Regular', color: '#6B7A75', marginTop: 1 },
+  placeGo: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#00695C', alignItems: 'center', justifyContent: 'center' },
+  routeBox: { backgroundColor: '#FFF', borderRadius: 16, padding: 12, marginTop: 4, gap: 8 },
+  routeHead: { fontSize: 14, fontFamily: 'Outfit-Bold', color: '#004D40' },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  routeTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: '#E8F3EC', minWidth: 74, alignItems: 'center' },
+  routeTagText: { fontSize: 10, fontFamily: 'Outfit-Bold', color: '#00695C', letterSpacing: 0.5 },
+  routeMain: { fontSize: 14, fontFamily: 'Outfit-SemiBold', color: '#15211E' },
+  routeVia: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#5B6B66' },
+  routeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#00695C', borderRadius: 12, paddingVertical: 10 },
+  routeBtnGhost: { backgroundColor: '#E8F3EC' },
+  routeBtnText: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#FFF' },
   optionBtn: { backgroundColor: '#B2DFDB' },
   recordingOverlay: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10, backgroundColor: '#FFEBEE', borderRadius: 20, marginHorizontal: 20, marginBottom: 10 },
   recordingText: { color: '#D32F2F', fontFamily: 'Outfit-Bold', marginLeft: 10 },
