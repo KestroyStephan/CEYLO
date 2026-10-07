@@ -5,14 +5,14 @@
 // outline:#6F7A70 outlineVariant:#BECABE
 
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Platform, ActivityIndicator, Image, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Platform, ActivityIndicator, Image, StatusBar, Alert } from 'react-native';
 import KeyboardAvoider from '../../components/KeyboardAvoider';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db, storage } from '../../firebaseConfig';
 import {
   collection, onSnapshot, addDoc, query, orderBy,
-  serverTimestamp, doc, getDoc, updateDoc, writeBatch,
+  serverTimestamp, doc, getDoc, setDoc, updateDoc, writeBatch,
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
@@ -49,7 +49,24 @@ export default function VendorChatScreen({ route }) {
     }
   }, [bookingId]);
 
+  // The chat record (id = order id) lists the vendor and the customer; the security rules need it
+  // before anyone can read the messages
+  const [chatReady, setChatReady] = useState(false);
   useEffect(() => {
+    if (!bookingId) return;
+    (async () => {
+      try {
+        const o = await getDoc(doc(db,'orders',bookingId));
+        const d = o.exists() ? o.data() : order || {};
+        const participants = [d.vendorId || uid, d.touristId].filter(Boolean);
+        await setDoc(doc(db,'chats',bookingId), { participants, orderId: bookingId, updatedAt: serverTimestamp() }, { merge: true });
+      } catch (e) { console.warn('Chat record not saved:', e?.message || e); }
+      setChatReady(true);
+    })();
+  }, [bookingId]);
+
+  useEffect(() => {
+    if (!chatReady) return undefined;
     const q = query(collection(db,'chats',bookingId,'messages'), orderBy('timestamp','asc'));
     const unsub = onSnapshot(q, async snap => {
       const msgs = snap.docs.map(d=>({ id:d.id,...d.data() }));
@@ -65,16 +82,17 @@ export default function VendorChatScreen({ route }) {
       });
       if(hasUnread) await batch.commit().catch(()=>{});
       setTimeout(()=>flatRef.current?.scrollToEnd({animated:true}),100);
-    });
+    }, err => { console.warn('Vendor chat listener error:', err?.message || err); setLoading(false); });
     return ()=>unsub();
-  },[bookingId,uid]);
+  },[bookingId,uid,chatReady]);
 
   useEffect(()=>{
+    if (!chatReady) return undefined;
     const unsub = onSnapshot(doc(db,'chats',bookingId), snap=>{
       if(snap.exists()) setTouristTyping(!!snap.data().touristTyping);
-    });
+    }, () => {});
     return ()=>unsub();
-  },[bookingId]);
+  },[bookingId,chatReady]);
 
   const handleTyping = (t) => {
     setText(t);
@@ -94,7 +112,11 @@ export default function VendorChatScreen({ route }) {
         senderId:uid, text:msg.trim(), imageUrl:null,
         timestamp:serverTimestamp(), read_by:[uid],
       });
-    } catch(e) {}
+      updateDoc(doc(db,'chats',bookingId),{ lastMessage: msg.trim(), lastSenderId: uid, updatedAt: serverTimestamp() }).catch(()=>{});
+    } catch(e) {
+      setText(msg);
+      Alert.alert('Message not sent', e.message);
+    }
   };
 
   const sendImage = async () => {

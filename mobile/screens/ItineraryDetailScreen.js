@@ -18,6 +18,7 @@ import { transportIcon, transportLabel } from '../utils/transport';
 import { logEvent } from '../services/Analytics';
 import destinationsData from '../assets/data/ai_destinations.json';
 import { toast } from '../components/Toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -94,6 +95,9 @@ export default function ItineraryDetailScreen({ route, navigation }) {
 
   // Forecast for the trip area, matched to each day when the trip starts within the forecast window
   const [forecast, setForecast] = useState(null);
+  // The action buttons float over the list, so the list leaves room for them below the last stop
+  const insets = useSafeAreaInsets();
+  const [footerH, setFooterH] = useState(150);
   const firstStop = plan[0];
   useEffect(() => {
     if (!firstStop?.lat || !firstStop?.lon) return;
@@ -307,7 +311,10 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         onDragEnd={({ data: reordered }) => updatePlan(reordered)}
         keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        containerStyle={{ flex: 1 }}
+        contentContainerStyle={[styles.listContent, { paddingBottom: footerH + 24 }]}
+        showsVerticalScrollIndicator
+        persistentScrollbar
         ListEmptyComponent={<Text style={styles.dayHeader}>{i18n.t('ui_no_stops_in_this_itinerary_yet')}</Text>}
         ListHeaderComponent={data?.tripEvents?.length ? (
           <View style={styles.tripEvents}>
@@ -330,7 +337,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
         ListFooterComponent={<ItineraryFeedback itinerary={data} />}
       />
 
-      <Surface style={styles.footer} elevation={8}>
+      <Surface style={[styles.footer, { paddingBottom: 20 + insets.bottom }]} elevation={8} onLayout={e => setFooterH(e.nativeEvent.layout.height)}>
         <Button
           mode="contained"
           icon="navigation"

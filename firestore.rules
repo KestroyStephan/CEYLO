@@ -246,7 +246,7 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.auth.uid == request.resource.data.senderId;
         allow read: if isSignedIn() && (isChatMember() || isAdmin());
         // read receipts
-        allow update: if isSignedIn() && isChatMember() && changedKeys().hasOnly(['read', 'readAt', 'seen', 'status']);
+        allow update: if isSignedIn() && isChatMember() && changedKeys().hasOnly(['read', 'readAt', 'seen', 'status', 'read_by']);
       }
     }
 

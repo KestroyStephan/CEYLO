@@ -416,3 +416,27 @@ describe('first role on a profile created early', () => {
     await assertFails(setDoc(doc(as('n2'), 'users', 'n2'), { role: 'driver_active' }));
   });
 });
+
+describe('chats', () => {
+  test('a participant creates the chat record, then both sides read and send in real time', async () => {
+    const t = as('tour1'), g = as('guide1'), x = as('other1');
+    await assertSucceeds(setDoc(doc(t, 'chats', 'tour1_guide1'), { participants: ['tour1', 'guide1'] }, { merge: true }));
+    // The other side opening the chat merges into the existing record
+    await assertSucceeds(setDoc(doc(g, 'chats', 'tour1_guide1'), { participants: ['tour1', 'guide1'] }, { merge: true }));
+    await assertSucceeds(addDoc(collection(t, 'chats', 'tour1_guide1', 'messages'), { text: 'Hi', senderId: 'tour1' }));
+    await assertSucceeds(getDocs(collection(g, 'chats', 'tour1_guide1', 'messages')));
+    await assertFails(getDocs(collection(x, 'chats', 'tour1_guide1', 'messages')));
+    await assertFails(setDoc(doc(x, 'chats', 'tour1_guide1'), { participants: ['other1'] }, { merge: true }));
+  });
+
+  test('without the chat record nobody can read the messages', async () => {
+    await seed({ 'chats/a_b/messages/m1': { text: 'Hi', senderId: 'a' } });
+    await assertFails(getDocs(collection(as('a'), 'chats', 'a_b', 'messages')));
+  });
+
+  test('members can mark messages read', async () => {
+    await seed({ 'chats/o1': { participants: ['ven1', 'tour2'] }, 'chats/o1/messages/m1': { text: 'Hi', senderId: 'ven1', read_by: ['ven1'] } });
+    await assertSucceeds(updateDoc(doc(as('tour2'), 'chats', 'o1', 'messages', 'm1'), { read_by: ['ven1', 'tour2'] }));
+    await assertFails(updateDoc(doc(as('tour2'), 'chats', 'o1', 'messages', 'm1'), { text: 'edited' }));
+  });
+});

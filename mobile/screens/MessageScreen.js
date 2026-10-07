@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Platform, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Text, SafeAreaView } from 'react-native';
 import KeyboardAvoider from '../components/KeyboardAvoider';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,24 +22,32 @@ export default function MessageScreen({ route, navigation }) {
     if (chatId) logEvent('vendor_contacted', { chatId });
   }, [chatId]);
 
+  // The chat record lists both people (its id is "<touristId>_<guideId>"); the security rules
+  // use it to decide who may read the messages, so it must exist before listening
+  const ensureChat = () => setDoc(doc(db, 'chats', chatId), {
+    participants: chatId.split('_').filter(Boolean),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+
   useEffect(() => {
     if (!chatId) return;
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    let unsub = () => {};
+    let cancelled = false;
 
-    const unsub = onSnapshot(q, (snap) => {
-      const msgs = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMessages(msgs);
-      setLoading(false);
-    }, (err) => {
-      console.warn('MessageScreen messages listener error:', err?.message || err);
-      setLoading(false);
+    ensureChat().catch(e => console.warn('Chat record not saved:', e?.message || e)).finally(() => {
+      if (cancelled) return;
+      unsub = onSnapshot(q, (snap) => {
+        setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      }, (err) => {
+        console.warn('MessageScreen messages listener error:', err?.message || err);
+        setLoading(false);
+      });
     });
 
-    return () => unsub();
+    return () => { cancelled = true; unsub(); };
   }, [chatId]);
 
   const handleSend = async () => {
@@ -55,6 +63,7 @@ export default function MessageScreen({ route, navigation }) {
         senderId: auth.currentUser.uid,
         createdAt: serverTimestamp()
       });
+      setDoc(doc(db, 'chats', chatId), { lastMessage: textToSend, lastSenderId: auth.currentUser.uid, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
     } catch (error) {
       console.error('Error sending message: ', error);
       setInputText(textToSend); // Restore if failed
