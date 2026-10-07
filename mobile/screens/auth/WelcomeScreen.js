@@ -14,9 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const FEATURE_BADGES = [
-  { icon: 'leaf', label: 'Eco-Certified\nGuides' },
-  { icon: 'map-marker-path', label: 'Smart Route\nPlanning' },
-  { icon: 'star-circle', label: 'Heritage\nSpots' },
+  { icon: 'leaf', labelKey: 'welcome_feat_guides' },
+  { icon: 'map-marker-path', labelKey: 'welcome_feat_routes' },
+  { icon: 'star-circle', labelKey: 'welcome_feat_heritage' },
 ];
 
 export default function WelcomeScreen({ navigation }) {
@@ -70,7 +70,7 @@ export default function WelcomeScreen({ navigation }) {
             {FEATURE_BADGES.map((b, i) => (
               <View key={i} style={styles.badge}>
                 <MaterialCommunityIcons name={b.icon} size={18} color="#A8DFC0" />
-                <Text style={styles.badgeText}>{b.label}</Text>
+                <Text style={styles.badgeText}>{i18n.t(b.labelKey)}</Text>
               </View>
             ))}
           </View>
@@ -81,7 +81,7 @@ export default function WelcomeScreen({ navigation }) {
             <Text style={styles.heroTitle}>Ceylo</Text>
             <Text style={styles.heroTagline}>{i18n.t('ui_eco_luxury_discovery_')}</Text>
             <Text style={styles.heroBody}>
-              Discover authentic Sri Lankan heritage through the eyes of expert local guides — sustainably, responsibly, unforgettably.
+              {i18n.t('welcome_body')}
             </Text>
           </View>
 

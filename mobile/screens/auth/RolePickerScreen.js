@@ -46,32 +46,32 @@ const ROLES = [
     icon: 'compass-outline',
     iconColor: '#006A3B',
     iconBg: '#E8F5E9',
-    title: 'Tourist',
-    description: 'Discover hidden gems, eco-resorts, and cultural heritage sites.',
+    titleKey: 'role_tourist',
+    descKey: 'role_tourist_desc',
   },
   {
     key: 'driver',
-    icon: 'bus-side',
+    icon: 'car-side',
     iconColor: '#0277BD',
     iconBg: '#E3F2FD',
-    title: 'Driver',
-    description: 'Provide sustainable transport and local navigation for explorers.',
+    titleKey: 'role_driver',
+    descKey: 'role_driver_desc',
   },
   {
     key: 'guide',
     icon: 'account-group-outline',
     iconColor: '#5D4037',
     iconBg: '#FFF3E0',
-    title: 'Guide',
-    description: 'Share cultural stories and protect the beauty of our island.',
+    titleKey: 'role_guide',
+    descKey: 'role_guide_desc',
   },
   {
     key: 'vendor',
     icon: 'storefront-outline',
     iconColor: '#E65100',
     iconBg: '#FFF8E1',
-    title: 'Vendor',
-    description: 'Provide sustainable goods, eco-stays, or experiences to travelers.',
+    titleKey: 'role_vendor',
+    descKey: 'role_vendor_desc',
   },
 ];
 
@@ -102,9 +102,9 @@ function RoleCard({ role, isActive, onSelect }) {
         {/* Text */}
         <View style={styles.roleText}>
           <Text style={[styles.roleTitle, isActive && styles.roleTitleActive]}>
-            {role.title}
+            {i18n.t(role.titleKey)}
           </Text>
-          <Text style={styles.roleDesc}>{role.description}</Text>
+          <Text style={styles.roleDesc}>{i18n.t(role.descKey)}</Text>
         </View>
 
         {/* Selection indicator */}
@@ -171,7 +171,7 @@ export default function RolePickerScreen({ navigation }) {
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <Text style={styles.heroTitle}>{i18n.t('ui_choose_your_journey')}</Text>
           <Text style={styles.heroSub}>
-            Experience the teardrop of the Indian{'\n'}Ocean exactly the way you want to.
+            {i18n.t('role_subtitle')}
           </Text>
         </Animated.View>
 

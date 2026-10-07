@@ -414,5 +414,18 @@
   "about_source": "Source: Wikipedia",
   "getting_there": "Getting there",
   "my_orders": "My Orders",
-  "my_orders_sub": "Marketplace orders and pickup status"
+  "my_orders_sub": "Marketplace orders and pickup status",
+  "welcome_feat_guides": "Eco-certified\nguides",
+  "welcome_feat_routes": "Smart route\nplanning",
+  "welcome_feat_heritage": "Heritage\nspots",
+  "welcome_body": "Discover authentic Sri Lankan heritage through the eyes of expert local guides — sustainably, responsibly, unforgettably.",
+  "role_subtitle": "Experience the teardrop of the Indian Ocean exactly the way you want to.",
+  "role_tourist": "Tourist",
+  "role_tourist_desc": "Discover hidden gems, eco-resorts and cultural heritage sites.",
+  "role_driver": "Driver",
+  "role_driver_desc": "Give rides to travellers and earn with your tuk-tuk, bike, car or van.",
+  "role_guide": "Guide",
+  "role_guide_desc": "Share cultural stories and protect the beauty of our island.",
+  "role_vendor": "Vendor",
+  "role_vendor_desc": "Offer local goods, eco-stays or experiences to travellers."
 }
