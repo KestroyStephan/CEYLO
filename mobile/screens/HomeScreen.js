@@ -7,6 +7,7 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import ProgressiveImage from '../components/ProgressiveImage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,7 +34,8 @@ const COLORS = {
 };
 
 export default function HomeScreen({ navigation }) {
-  useStatusBarStyle('dark-content');
+  useStatusBarStyle('light-content');
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [userName, setUserName] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -145,60 +147,64 @@ export default function HomeScreen({ navigation }) {
     loadDiscover(position).finally(() => setRefreshing(false));
   }, [position]);
 
-  const Header = () => (
-    <View style={styles.header}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Text style={styles.headerTitle}>CEYLO</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity onPress={() => setShowChatModal(true)}>
-          <View style={[styles.menuBtn, { position: 'relative' }]}>
-            <Feather name="message-circle" size={20} color={COLORS.primary} />
+  const forYou = discover?.sections.find(s => s.key === 'forYou')?.items[0] || null;
+
+  // Full-width photo hero: the top pick for this traveller, with greeting, weather and search
+  const Hero = () => (
+    <View style={styles.hero}>
+      {forYou?.image ? (
+        <ProgressiveImage source={{ uri: forYou.image }} style={StyleSheet.absoluteFillObject} />
+      ) : (
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: COLORS.dark }]} />
+      )}
+      <LinearGradient colors={['rgba(0,32,26,0.65)', 'rgba(0,32,26,0.15)', 'rgba(0,32,26,0.85)']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFillObject} />
+      <View style={[styles.heroTop, { paddingTop: insets.top + 10 }]}>
+        <Text style={styles.heroBrand}>CEYLO</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity onPress={() => setShowChatModal(true)} style={styles.heroIconBtn} accessibilityLabel="Conversations">
+            <Feather name="message-circle" size={19} color="#FFF" />
             {activeChats.length > 0 && (
-              <View style={styles.badgeCount}>
-                <Text style={{ color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold' }}>{activeChats.length}</Text>
-              </View>
+              <View style={styles.badgeCount}><Text style={styles.badgeText}>{activeChats.length}</Text></View>
             )}
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')}>
-          <View style={styles.ecoPointsBadge}>
-            <MaterialCommunityIcons name="leaf" size={14} color="#FFF" />
-            <Text style={styles.ecoPointsText}>{ecoPoints.toLocaleString()} pt</Text>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('EcoPassport')} style={styles.heroPoints} accessibilityLabel="Eco points">
+            <MaterialCommunityIcons name="leaf" size={14} color="#B9F6CA" />
+            <Text style={styles.heroPointsText}>{ecoPoints.toLocaleString()}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
-
-  const WelcomeSection = () => (
-    <View style={styles.welcomeSection}>
-      <View>
-        <Text style={styles.greeting}>{t('ayubowan').toUpperCase()},</Text>
-        <Text style={styles.name}>{userName || t('traveler')}</Text>
-        <Text style={styles.subtitle}>{t('home_subtitle')}</Text>
-        <WeatherChip weather={weatherNow} style={{ marginTop: 8 }} />
+      <View style={styles.heroBody}>
+        <Text style={styles.heroGreeting}>{t('ayubowan')}, {userName || t('traveler')}</Text>
+        <Text style={styles.heroLine}>Where to next?</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <WeatherChip weather={weatherNow} />
+          {forYou && (
+            <TouchableOpacity onPress={() => openItem(forYou)} style={styles.heroPick}>
+              <Text style={styles.heroPickText} numberOfLines={1}>Picked for you · {forYou.title}</Text>
+              <Feather name="arrow-up-right" size={13} color="#FFF" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
 
   const ACTIONS = [
-    { label: t('plan_trip'), icon: 'bag-suitcase-outline', color: COLORS.primary, bg: '#E0F2F1', go: () => navigation.navigate('Itinerary') },
-    { label: t('transport'), icon: 'car-multiple', color: '#1565C0', bg: '#E3F2FD', go: () => navigation.navigate('Transport') },
-    { label: 'Nearby', icon: 'map-marker-radius-outline', color: '#B26A00', bg: '#FFF4E0', go: () => navigation.navigate('NearbyPlaces') },
-    { label: 'Events', icon: 'calendar-star', color: '#C2185B', bg: '#FCE4EC', go: () => navigation.navigate('CulturalEvents') },
-    { label: t('local_guides'), icon: 'account-tie-outline', color: '#6A1B9A', bg: '#F3E5F5', go: () => navigation.navigate('GuidesList') },
+    { label: t('plan_trip'), icon: 'map-marker-path', go: () => navigation.navigate('Itinerary') },
+    { label: t('transport'), icon: 'car-side', go: () => navigation.navigate('Transport') },
+    { label: 'Nearby', icon: 'map-search-outline', go: () => navigation.navigate('NearbyPlaces') },
+    { label: 'Events', icon: 'calendar-star', go: () => navigation.navigate('CulturalEvents') },
+    { label: 'Guides', icon: 'account-tie-outline', go: () => navigation.navigate('GuidesList') },
   ];
 
   const QuickActions = () => (
-    <View style={styles.quickActionsContainer}>
+    <View style={styles.actionsCard}>
       {ACTIONS.map(a => (
         <TouchableOpacity key={a.icon} style={styles.actionItem} onPress={a.go} accessibilityLabel={a.label}>
-          <View style={[styles.actionIconBg, { backgroundColor: a.bg }]}>
-            <MaterialCommunityIcons name={a.icon} size={26} color={a.color} />
+          <View style={styles.actionIcon}>
+            <MaterialCommunityIcons name={a.icon} size={24} color={COLORS.primary} />
           </View>
-          <Text style={styles.actionText} numberOfLines={2}>{a.label}</Text>
+          <Text style={styles.actionText} numberOfLines={1}>{a.label}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -210,7 +216,7 @@ export default function HomeScreen({ navigation }) {
       <Feather name="search" size={18} color={COLORS.sub} />
       <TextInput
         style={styles.searchInput}
-        placeholder="Search places, e.g. Ella, beach, temple"
+        placeholder="Search Ella, beaches, temples…"
         placeholderTextColor="#9AA39E"
         value={search}
         onChangeText={setSearch}
@@ -226,14 +232,14 @@ export default function HomeScreen({ navigation }) {
     if (!w) return null;
     return (
       <TouchableOpacity style={styles.tripCard} activeOpacity={0.85} onPress={() => navigation.navigate('Itinerary')}>
-        <MaterialCommunityIcons name={w.fromTrip ? 'calendar-check' : 'calendar-plus'} size={22} color={COLORS.primary} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.tripTitle}>{w.fromTrip ? 'Your trip' : 'When are you travelling?'}</Text>
-          <Text style={styles.tripSub}>
-            {w.fromTrip ? `${fmtShort(w.start)} – ${fmtShort(w.end)} · suggestions match these dates` : 'Plan a trip with your dates to see what is on while you are here'}
-          </Text>
+        <View style={styles.tripIcon}>
+          <MaterialCommunityIcons name={w.fromTrip ? 'calendar-check' : 'calendar-plus'} size={20} color="#FFF" />
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.sub} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.tripTitle}>{w.fromTrip ? `Your trip · ${fmtShort(w.start)} – ${fmtShort(w.end)}` : 'Add your travel dates'}</Text>
+          <Text style={styles.tripSub}>{w.fromTrip ? 'Suggestions below match these dates' : 'See festivals and holidays during your stay'}</Text>
+        </View>
+        <Feather name="chevron-right" size={18} color={COLORS.sub} />
       </TouchableOpacity>
     );
   };
@@ -251,37 +257,99 @@ export default function HomeScreen({ navigation }) {
   const SEE_ALL = {
     gems: () => navigation.navigate('HiddenGemsList'),
     popular: () => navigation.navigate('HiddenGemsList', { filterType: 'all' }),
+    nearby: () => navigation.navigate('HiddenGemsList', { filterType: 'all' }),
     events: () => navigation.navigate('CulturalEvents'),
     during: () => navigation.navigate('CulturalEvents'),
     community: () => navigation.navigate('Marketplace'),
   };
 
-  const Section = ({ section }) => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{section.title}</Text>
-        {SEE_ALL[section.key] && <TouchableOpacity onPress={SEE_ALL[section.key]}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>}
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-        {section.items.map(item => (
-          <TouchableOpacity key={`${section.key}-${item.id}`} activeOpacity={0.9} onPress={() => openItem(item)} style={styles.tile}>
-            {item.image ? (
-              <ProgressiveImage source={{ uri: item.image }} style={styles.tileImage} />
-            ) : (
-              <View style={[styles.tileImage, styles.tilePlaceholder]}>
-                <MaterialCommunityIcons name={item.kind === 'event' ? 'calendar-star' : item.kind === 'service' ? 'storefront-outline' : 'image-off-outline'} size={30} color="#7A9A8A" />
-              </View>
-            )}
-            {item.kind === 'event' && item.event?.publicHoliday && (
-              <View style={styles.tileBadge}><Text style={styles.tileBadgeText}>Holiday</Text></View>
-            )}
-            <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.tileSub} numberOfLines={1}>{item.subtitle}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+  const SectionHead = ({ section }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      {SEE_ALL[section.key] && <TouchableOpacity onPress={SEE_ALL[section.key]} hitSlop={8}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>}
     </View>
   );
+
+  const Img = ({ item, style }) => (item.image ? (
+    <ProgressiveImage source={{ uri: item.image }} style={style} />
+  ) : (
+    <View style={[style, styles.tilePlaceholder]}>
+      <MaterialCommunityIcons name={item.kind === 'event' ? 'calendar-star' : item.kind === 'service' ? 'storefront-outline' : 'image-filter-hdr'} size={28} color="#7A9A8A" />
+    </View>
+  ));
+
+  // Dated events: date block on the photo, so the "when" is read first
+  const EventCard = ({ item }) => {
+    const d = item.event?.date && !item.event?.months ? new Date(item.event.date) : null;
+    return (
+      <TouchableOpacity activeOpacity={0.9} onPress={() => openItem(item)} style={styles.eventCard}>
+        <Img item={item} style={styles.eventImage} />
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.75)']} style={styles.eventShade} />
+        <View style={styles.dateBlock}>
+          {d ? (
+            <>
+              <Text style={styles.dateDay}>{d.getDate()}</Text>
+              <Text style={styles.dateMon}>{d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()}</Text>
+            </>
+          ) : <MaterialCommunityIcons name="weather-sunny" size={20} color={COLORS.dark} />}
+        </View>
+        {item.event?.publicHoliday && <View style={styles.holiday}><Text style={styles.holidayText}>Holiday</Text></View>}
+        <View style={styles.eventText}>
+          <Text style={styles.eventTitle} numberOfLines={2}>{item.title}</Text>
+          <Text style={styles.eventSub} numberOfLines={1}>{item.subtitle}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Personal picks: tall photo cards with the match reason on the image
+  const FeatureCard = ({ item }) => (
+    <TouchableOpacity activeOpacity={0.9} onPress={() => openItem(item)} style={styles.featureCard}>
+      <Img item={item} style={StyleSheet.absoluteFillObject} />
+      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.featureShade}>
+        <Text style={styles.featureTitle} numberOfLines={2}>{item.title}</Text>
+        <Text style={styles.featureSub} numberOfLines={1}>{item.subtitle}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
+  const Tile = ({ item }) => (
+    <TouchableOpacity activeOpacity={0.9} onPress={() => openItem(item)} style={styles.tile}>
+      <Img item={item} style={styles.tileImage} />
+      <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
+      <Text style={styles.tileSub} numberOfLines={1}>{item.subtitle}</Text>
+    </TouchableOpacity>
+  );
+
+  // Nearby: a short list reads faster than a carousel when distance is the point
+  const NearbyList = ({ section }) => (
+    <View style={styles.listCard}>
+      {section.items.slice(0, 4).map((item, i) => (
+        <TouchableOpacity key={item.id} onPress={() => openItem(item)} style={[styles.listRow, i > 0 && styles.listDivider]} activeOpacity={0.8}>
+          <Img item={item} style={styles.listThumb} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.listTitle} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.listSub} numberOfLines={1}>{item.place?.category} · {item.subtitle}</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color="#B0BAB4" />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const Section = ({ section }) => {
+    const Card = section.key === 'during' || section.key === 'events' ? EventCard : section.key === 'forYou' ? FeatureCard : Tile;
+    return (
+      <View style={styles.section}>
+        <SectionHead section={section} />
+        {section.key === 'nearby' ? <NearbyList section={section} /> : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.horizontalScroll}>
+            {section.items.map(item => <Card key={`${section.key}-${item.id}`} item={item} />)}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
 
   const Discover = () => {
     if (!discover && !discoverError) {
@@ -301,25 +369,15 @@ export default function HomeScreen({ navigation }) {
   const TrendingRoutes = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>{t('sustainable_routes')}</Text>
-          <Text style={styles.sectionSubtitle}>{t('sustainable_routes_sub')}</Text>
-        </View>
-        <TouchableOpacity onPress={() => navigation.navigate('SustainableRoutesList')}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>
+        <Text style={styles.sectionTitle}>{t('sustainable_routes')}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('SustainableRoutesList')} hitSlop={8}><Text style={styles.seeAll}>{t('see_all')}</Text></TouchableOpacity>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={styles.horizontalScroll}>
         {SUSTAINABLE_ROUTES.map((route) => (
-          <TouchableOpacity key={route.id} activeOpacity={0.8} onPress={() => navigation.navigate('ItineraryDetail', { routeData: route })}>
-            <View style={styles.routeCard}>
-              <ProgressiveImage source={{ uri: route.image }} style={styles.routeImage} />
-              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.routeOverlay}>
-                <View style={[styles.routeTypeTag, { backgroundColor: route.type === 'Nature' || route.type === 'Wildlife' ? COLORS.ecoGreen : route.type === 'Untouched' ? '#0277BD' : COLORS.accent }]}>
-                   <Text style={styles.routeTypeText}>{route.type}</Text>
-                </View>
-                <Text style={styles.routeTitle}>{route.title.replace(' ', '\n')}</Text>
-                <Text style={styles.routeSubtitle}>{route.subtitle}</Text>
-              </LinearGradient>
-            </View>
+          <TouchableOpacity key={route.id} activeOpacity={0.9} onPress={() => navigation.navigate('ItineraryDetail', { routeData: route })} style={styles.tile}>
+            <ProgressiveImage source={{ uri: route.image }} style={styles.tileImage} />
+            <Text style={styles.tileTitle} numberOfLines={1}>{route.title}</Text>
+            <Text style={styles.tileSub} numberOfLines={1}>{route.type} · {route.subtitle}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -329,27 +387,29 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.mainContainer}>
       <ScrollView
-        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        <Header />
-        <WelcomeSection />
-        {SearchBar()}
-        <QuickActions />
-        <TripCard />
-        <Discover />
-        <TrendingRoutes />
+        <Hero />
+        <View style={styles.body}>
+          <View style={styles.floatSearch}>{SearchBar()}</View>
+          <QuickActions />
+          <TripCard />
+          <Discover />
+          <TrendingRoutes />
+        </View>
       </ScrollView>
 
-      {/* Floating SOS Button */}
+      {/* Emergency: labelled, always reachable */}
       <TouchableOpacity
         style={styles.fabSOS}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
         onPress={() => navigation.navigate('SOSScreen')}
+        accessibilityLabel="Emergency SOS"
       >
-        <MaterialCommunityIcons name="phone-in-talk" size={24} color="#FFF" />
+        <MaterialCommunityIcons name="alarm-light-outline" size={18} color="#FFF" />
+        <Text style={styles.fabText}>SOS</Text>
       </TouchableOpacity>
 
       {/* Small Chat Modal */}
@@ -410,91 +470,79 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: COLORS.bg },
-  container: { flex: 1, paddingHorizontal: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 30 },
-  menuBtn: { backgroundColor: '#FFF', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  headerTitle: { fontSize: 22, fontFamily: 'Outfit-Bold', color: COLORS.dark, letterSpacing: 1 },
-  ecoPointsBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.ecoGreen, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 4, elevation: 3 },
-  ecoPointsText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 13 },
+  body: { paddingHorizontal: 20, marginTop: -28 },
+  bleed: { marginHorizontal: -20 },
 
-  welcomeSection: { marginBottom: 30 },
-  greeting: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: COLORS.primary, letterSpacing: 1.5 },
-  name: { fontSize: 32, fontFamily: 'Outfit-Bold', color: COLORS.text, marginTop: 4 },
-  subtitle: { fontSize: 14, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 4 },
+  hero: { height: 330, overflow: 'hidden', backgroundColor: COLORS.dark },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
+  heroBrand: { color: '#FFF', fontSize: 20, fontFamily: 'Outfit-Bold', letterSpacing: 3 },
+  heroIconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  heroPoints: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 12, height: 38, borderRadius: 19 },
+  heroPointsText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 14 },
+  heroBody: { position: 'absolute', left: 20, right: 20, bottom: 48 },
+  heroGreeting: { color: 'rgba(255,255,255,0.85)', fontSize: 14, fontFamily: 'Outfit-Medium' },
+  heroLine: { color: '#FFF', fontSize: 30, fontFamily: 'Outfit-Bold', marginTop: 2 },
+  heroPick: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 230 },
+  heroPickText: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-Medium', flexShrink: 1 },
 
-  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  actionItem: { alignItems: 'center', gap: 8, width: '19%' },
-  actionIconBg: { width: 56, height: 56, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 1 },
+  floatSearch: { shadowColor: '#0B2A22', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4, borderRadius: 16, backgroundColor: '#FFF' },
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF', borderRadius: 16, paddingHorizontal: 16, height: 54 },
+  searchInput: { flex: 1, fontSize: 15, fontFamily: 'Outfit-Regular', color: COLORS.text },
+
+  actionsCard: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, marginBottom: 18 },
+  actionItem: { alignItems: 'center', gap: 7, width: '19%' },
+  actionIcon: { width: 54, height: 54, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E3EAE5', alignItems: 'center', justifyContent: 'center' },
   actionText: { fontSize: 12, fontFamily: 'Outfit-Medium', color: COLORS.text, textAlign: 'center' },
 
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 14, height: 48, marginBottom: 24, borderWidth: 1, borderColor: '#E3EAE5' },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: 'Outfit-Regular', color: COLORS.text },
-  tripCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#EEF6F2', borderRadius: 14, padding: 14, marginBottom: 28 },
-  tripTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: COLORS.dark },
+  tripCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFF', borderRadius: 16, padding: 14, marginBottom: 28, borderWidth: 1, borderColor: '#E3EAE5' },
+  tripIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  tripTitle: { fontSize: 14, fontFamily: 'Outfit-Bold', color: COLORS.text },
   tripSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 2 },
-  tile: { width: 168 },
-  tileImage: { width: 168, height: 120, borderRadius: 14, backgroundColor: '#E6EEE9' },
-  tilePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  tileBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0,77,64,0.85)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  tileBadgeText: { color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold' },
+
+  section: { marginBottom: 30 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: { fontSize: 19, fontFamily: 'Outfit-Bold', color: COLORS.text },
+  seeAll: { color: COLORS.primary, fontFamily: 'Outfit-SemiBold', fontSize: 13 },
+  horizontalScroll: { gap: 14, paddingHorizontal: 20 },
+
+  featureCard: { width: 230, height: 290, borderRadius: 20, overflow: 'hidden', backgroundColor: '#DDE6E1' },
+  featureShade: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 60 },
+  featureTitle: { color: '#FFF', fontSize: 19, fontFamily: 'Outfit-Bold' },
+  featureSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontFamily: 'Outfit-Medium', marginTop: 4 },
+
+  eventCard: { width: 260, height: 170, borderRadius: 18, overflow: 'hidden', backgroundColor: '#DDE6E1' },
+  eventImage: { position: 'absolute', width: '100%', height: '100%' },
+  eventShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 },
+  dateBlock: { position: 'absolute', top: 12, left: 12, width: 46, height: 50, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
+  dateDay: { fontSize: 18, fontFamily: 'Outfit-Bold', color: COLORS.text, lineHeight: 20 },
+  dateMon: { fontSize: 10, fontFamily: 'Outfit-Bold', color: COLORS.primary, letterSpacing: 1 },
+  holiday: { position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(0,77,64,0.9)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  holidayText: { color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold' },
+  eventText: { position: 'absolute', left: 14, right: 14, bottom: 12 },
+  eventTitle: { color: '#FFF', fontSize: 16, fontFamily: 'Outfit-Bold' },
+  eventSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontFamily: 'Outfit-Medium', marginTop: 2 },
+
+  tile: { width: 160 },
+  tileImage: { width: 160, height: 116, borderRadius: 14, backgroundColor: '#E6EEE9' },
+  tilePlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#E6EEE9' },
   tileTitle: { fontSize: 14, fontFamily: 'Outfit-Bold', color: COLORS.text, marginTop: 8 },
   tileSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 2 },
+
+  listCard: { backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E3EAE5', paddingHorizontal: 12 },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  listDivider: { borderTopWidth: 1, borderTopColor: '#EEF2EF' },
+  listThumb: { width: 56, height: 56, borderRadius: 12 },
+  listTitle: { fontSize: 15, fontFamily: 'Outfit-Bold', color: COLORS.text },
+  listSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 2 },
+
   loadingBox: { alignItems: 'center', gap: 8, paddingVertical: 32 },
   loadingText: { fontSize: 13, fontFamily: 'Outfit-Regular', color: COLORS.sub },
-  bannerContainer: { borderRadius: 16, overflow: 'hidden', marginBottom: 35 },
-  bannerGradient: { flexDirection: 'row', alignItems: 'center', padding: 20 },
-  bannerTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: COLORS.dark, marginBottom: 4 },
-  bannerSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: COLORS.primary, paddingRight: 20, lineHeight: 18 },
 
-  section: { marginBottom: 28 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 15 },
-  sectionTitle: { fontSize: 20, fontFamily: 'Outfit-Bold', color: COLORS.text },
-  sectionSubtitle: { fontSize: 13, fontFamily: 'Outfit-Regular', color: COLORS.sub, marginTop: 2 },
-  seeAll: { color: COLORS.primary, fontFamily: 'Outfit-Bold', fontSize: 13, marginBottom: 4 },
+  fabSOS: { position: 'absolute', bottom: 24, right: 20, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#C62828', height: 48, paddingHorizontal: 18, borderRadius: 24, elevation: 6, shadowColor: '#C62828', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8 },
+  fabText: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 15, letterSpacing: 1 },
 
-  horizontalScroll: { gap: 16, paddingRight: 20, paddingBottom: 10 },
-
-  pickCard: { width: 200, height: 260, borderRadius: 20, overflow: 'hidden', backgroundColor: '#EEE', elevation: 4 },
-  pickImage: { width: '100%', height: '100%', position: 'absolute' },
-  pickOverlay: { flex: 1, padding: 16, justifyContent: 'flex-end' },
-  ecoBadgeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginBottom: 10, gap: 4 },
-  ecoBadgeTextEco: { color: COLORS.ecoGreen, fontFamily: 'Outfit-Bold', fontSize: 11 },
-  pickName: { fontFamily: 'Outfit-Bold', fontSize: 18, color: '#FFF', marginBottom: 4 },
-  pickLocation: { fontSize: 13, fontFamily: 'Outfit-Medium', color: 'rgba(255,255,255,0.8)' },
-
-  gemCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, padding: 12, borderRadius: 16, gap: 15 },
-  gemImage: { width: 80, height: 80, borderRadius: 12 },
-  gemContent: { flex: 1, justifyContent: 'center' },
-  gemTagRow: { flexDirection: 'row', marginBottom: 6 },
-  ecoCertifiedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
-  ecoCertifiedText: { color: COLORS.ecoGreen, fontSize: 10, fontFamily: 'Outfit-Bold', letterSpacing: 0.5 },
-  gemTitle: { fontFamily: 'Outfit-Bold', fontSize: 16, color: COLORS.text, marginBottom: 2 },
-  gemSubtitle: { fontFamily: 'Outfit-Regular', fontSize: 13, color: COLORS.sub },
-  gemAction: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0F4F1', justifyContent: 'center', alignItems: 'center' },
-
-  eventCard: { width: '100%', height: 240, borderRadius: 20, backgroundColor: COLORS.primary, overflow: 'hidden', elevation: 4 },
-  eventOverlay: { flex: 1, padding: 20, justifyContent: 'space-between' },
-  eventTopRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  eventTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 6 },
-  tagText: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-Bold' },
-  eventTagGold: { backgroundColor: COLORS.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  tagTextGold: { color: '#FFF', fontSize: 12, fontFamily: 'Outfit-Bold' },
-  eventTitle: { color: '#FFF', fontSize: 24, fontFamily: 'Outfit-Bold', marginBottom: 8 },
-  eventDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontFamily: 'Outfit-Regular', marginBottom: 15, lineHeight: 20 },
-  remindBtn: { backgroundColor: '#FFF', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 14 },
-  remindBtnText: { color: COLORS.dark, fontFamily: 'Outfit-Bold', fontSize: 14 },
-
-  routeCard: { width: 160, height: 180, borderRadius: 16, overflow: 'hidden', elevation: 3 },
-  routeImage: { position: 'absolute', width: '100%', height: '100%', resizeMode: 'cover' },
-  routeOverlay: { flex: 1, padding: 16, justifyContent: 'flex-end' },
-  routeTypeTag: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginBottom: 8 },
-  routeTypeText: { color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold', textTransform: 'uppercase' },
-  routeTitle: { color: '#FFF', fontFamily: 'Outfit-Bold', fontSize: 16, marginBottom: 4 },
-  routeSubtitle: { color: 'rgba(255,255,255,0.8)', fontFamily: 'Outfit-Regular', fontSize: 12 },
-
-  fabSOS: { position: 'absolute', bottom: 30, right: 20, backgroundColor: '#D32F2F', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 6, shadowColor: '#D32F2F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6 },
-
-  badgeCount: { position: 'absolute', top: -5, right: -5, backgroundColor: '#D32F2F', width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  badgeCount: { position: 'absolute', top: -3, right: -3, backgroundColor: '#E53935', minWidth: 17, height: 17, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
+  badgeText: { color: '#FFF', fontSize: 10, fontFamily: 'Outfit-Bold' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   chatModalContent: { width: '85%', backgroundColor: '#FFF', borderRadius: 20, maxHeight: '60%', overflow: 'hidden' },
   chatModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEE' },
