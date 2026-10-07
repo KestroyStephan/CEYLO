@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Container, Box, Typography, TextField, Button, Alert, Card, CardContent } from '@mui/material';
+import { 
+    Container, Box, Typography, TextField, Button, Alert, Card, CardContent,
+    InputAdornment, IconButton 
+} from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -12,6 +17,7 @@ export default function Login() {
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     // The profile/role is loaded asynchronously after sign-in; move on once it is ready
@@ -48,8 +54,6 @@ export default function Login() {
             setLoading(false);
         }
     }
-
-
 
     return (
         <Box
@@ -91,11 +95,25 @@ export default function Login() {
                                 inputRef={passwordRef}
                                 id="password"
                                 label="Password"
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 fullWidth
                                 required
                                 margin="normal"
                                 variant="outlined"
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label="toggle password visibility"
+                                                onClick={() => setShowPassword((prev) => !prev)}
+                                                edge="end"
+                                                size="small"
+                                            >
+                                                {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
                             />
                             <Button
                                 disabled={loading}
@@ -114,15 +132,6 @@ export default function Login() {
                                 Log In
                             </Button>
 
-                            <Button
-                                fullWidth
-                                variant="text"
-                                size="small"
-                                onClick={() => navigate('/register-provider')}
-                                sx={{ color: '#00695c', mt: 1, fontWeight: 600 }}
-                            >
-                                Register as Partner
-                            </Button>
                             <Button
                                 fullWidth
                                 variant="text"
