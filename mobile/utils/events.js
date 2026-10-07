@@ -99,6 +99,8 @@ export async function loadEvents() {
   try {
     const snap = await getDocs(collection(db, 'cultural_events'));
     list = snap.docs.filter(d => published(d.data())).map(d => normalise(d.id, d.data(), 'admin'));
+    // Nothing published yet (new install of the portal): show the maintained calendar meanwhile
+    if (list.length === 0) list = calendar.events.map(e => normalise(e.id, e, 'calendar'));
   } catch (e) {
     console.log('Could not load cultural_events, using the bundled calendar:', e.message);
     list = calendar.events.map(e => normalise(e.id, e, 'calendar'));
