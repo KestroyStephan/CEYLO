@@ -217,7 +217,7 @@ export default function ItineraryDetailScreen({ route, navigation }) {
           <View style={styles.timeLine}>
             <Text style={styles.timeText}>{item.time || 'Day ' + item.day}</Text>
             {firstOfDay.has(item.id) && <WeatherChip weather={weatherForDay(item.day)} compact style={{ marginTop: 2 }} />}
-            <View style={[styles.dot, { backgroundColor: (item.eco || 80) >= 90 ? '#4CAF50' : '#FF9800' }]} />
+            <View style={[styles.dot, { backgroundColor: item.eco == null ? '#B0BEC5' : item.eco >= 90 ? '#4CAF50' : '#FF9800' }]} />
             <View style={styles.line}>
               {/* Transport mode visual arc indicator */}
               <View style={styles.transportBadge}>
@@ -248,9 +248,11 @@ export default function ItineraryDetailScreen({ route, navigation }) {
               </View>
             )}
             <View style={styles.chipRow}>
-              <Chip style={[styles.ecoChip, { backgroundColor: (item.eco || 80) >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>
-                {item.eco || 80}% ECO
-              </Chip>
+              {item.eco != null && (
+                <Chip style={[styles.ecoChip, { backgroundColor: item.eco >= 90 ? '#E8F5E9' : '#FFF3E0' }]} textStyle={{ fontSize: 10 }}>
+                  {item.eco}% ECO
+                </Chip>
+              )}
               {item.category ? <Chip style={styles.feeChip} textStyle={{ fontSize: 10 }}>{item.category}</Chip> : null}
             </View>
           </View>

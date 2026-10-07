@@ -197,7 +197,7 @@ export default function GuideProfileScreen({ route, navigation }) {
             </View>
             {/* Eco Score Ring */}
             <View style={styles.ecoRing}>
-              <Text style={styles.ecoScore}>{guide.reviewCount || 94}</Text>
+              <Text style={styles.ecoScore}>{reviews.length}</Text>
               <Text style={styles.ecoLabel}>{i18n.t('ui_reviews')}</Text>
             </View>
           </View>
@@ -229,13 +229,15 @@ export default function GuideProfileScreen({ route, navigation }) {
           </View>
 
           {/* Experience */}
+          {Number(guide.experience) > 0 && (
           <View style={styles.expCard}>
             <View>
-              <Text style={styles.expNum}>{guide.experience || '1'}+</Text>
+              <Text style={styles.expNum}>{guide.experience}+</Text>
               <Text style={styles.expLabel}>{i18n.t('ui_years_exp')}</Text>
             </View>
             <MaterialCommunityIcons name="leaf" size={40} color="rgba(0,106,59,0.15)" />
           </View>
+          )}
           
           {/* Services Offered */}
           <Text style={styles.sectionTitle}>{i18n.t('ui_services_offered')}</Text>
