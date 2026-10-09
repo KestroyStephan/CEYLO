@@ -7,6 +7,7 @@ import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/f
 import { auth, db } from '../firebaseConfig';
 import ProgressiveImage from '../components/ProgressiveImage';
 import PayButton from '../components/PayButton';
+import ContactActions, { getPartnerPhone } from '../components/ContactActions';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 
 const ACCENT = '#00695C';
@@ -40,6 +41,13 @@ export default function MyOrdersScreen({ navigation, route }) {
       setOrders(list);
     }, () => setOrders([]));
   }, []);
+
+  // Vendor phone numbers (vendor profiles are public), loaded once per vendor
+  const [vendorPhones, setVendorPhones] = useState({});
+  useEffect(() => {
+    const ids = [...new Set(orders.map(o => o.vendorId).filter(id => id && !(id in vendorPhones)))];
+    ids.forEach(id => getPartnerPhone(id, 'vendors').then(phone => setVendorPhones(p => ({ ...p, [id]: phone }))));
+  }, [orders]);
 
   const cancel = (order) => Alert.alert('Cancel this order?', 'The vendor will see that you cancelled it.', [
     { text: 'Keep it', style: 'cancel' },
@@ -85,6 +93,12 @@ export default function MyOrdersScreen({ navigation, route }) {
               cashHint="Or pay the vendor in cash when you collect." />
           </View>
         )}
+        {['accepted', 'preparing', 'ready'].includes(item.status) && (
+          <View style={{ marginTop: 12, gap: 6 }}>
+            <Text style={styles.contactLabel}>Contact {item.vendorBusinessName || 'the vendor'}</Text>
+            <ContactActions name={item.vendorBusinessName} phone={vendorPhones[item.vendorId]} appCall={{ calleeId: item.vendorId, contextType: 'order', contextId: item.id }} />
+          </View>
+        )}
         {item.status === 'pending' && (
           <TouchableOpacity onPress={() => cancel(item)} style={styles.cancel}>
             <Text style={styles.cancelText}>Cancel order</Text>
@@ -123,6 +137,7 @@ export default function MyOrdersScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  contactLabel: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#4A5E4A' },
   container: { flex: 1, backgroundColor: '#F7F9F8' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10 },
   back: { padding: 8, marginRight: 4 },

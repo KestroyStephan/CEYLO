@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../../firebaseConfig';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import ContactActions from '../../components/ContactActions';
 
 const PRIMARY   = '#006A3B';
 const BG        = '#F6FBF3';
@@ -135,6 +136,12 @@ export default function VendorOrderManagementScreen({ route, navigation }) {
             </View>
           </View>
         )}
+        {!isCompleted && order.status !== 'cancelled' && (
+          <View style={styles.contactCard}>
+            <Text style={styles.notesLabel}>Contact {order.customerName || 'the customer'}</Text>
+            <ContactActions name={order.customerName} phone={order.customerPhone} appCall={{ calleeId: order.touristId, contextType: 'order', contextId: orderId }} style={{ marginTop: 8 }} />
+          </View>
+        )}
       </ScrollView>
 
       {/* Action Footer */}
@@ -162,6 +169,7 @@ export default function VendorOrderManagementScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  contactCard: { marginHorizontal: 20, marginTop: 14, padding: 16, borderRadius: 18, backgroundColor: '#FFFFFF' },
   center:       {flex:1,justifyContent:'center',alignItems:'center',backgroundColor:BG},
   noOrderText:  {fontSize:16,color:ON_SURF_V},
   header:       {flexDirection:'row',alignItems:'center',paddingTop:56,paddingHorizontal:20,paddingBottom:16,backgroundColor:SURFACE,borderBottomWidth:1,borderBottomColor:SURFACE_C},

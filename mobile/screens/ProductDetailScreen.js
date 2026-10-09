@@ -8,6 +8,7 @@ import { auth, db } from '../firebaseConfig';
 import ProgressiveImage from '../components/ProgressiveImage';
 import useStatusBarStyle from '../utils/useStatusBarStyle';
 import { toast } from '../components/Toast';
+import { getMyPhone } from '../components/ContactActions';
 
 const ACCENT = '#00695C';
 const { width } = Dimensions.get('window');
@@ -44,11 +45,13 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
     setPlacing(true);
     try {
+      const customerPhone = await getMyPhone(); // so the vendor can call about pickup
       const ref = await addDoc(collection(db, 'orders'), {
         vendorId: product.vendorId,
         vendorBusinessName: product.vendorBusinessName || '',
         touristId: user.uid,
         customerName: user.displayName || 'Traveller',
+        customerPhone,
         items: [{ productId: product.id, name: product.name_en || 'Product', price, qty, image: images[0] || null }],
         totalPrice: total,
         pickupLocation: product.pickupLocation || '',

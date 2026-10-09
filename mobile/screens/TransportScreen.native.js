@@ -19,6 +19,7 @@ import { nearbyDrivers, REQUEST_TTL_MS, MATCH_RADIUS_KM } from '../utils/rideDis
 import { notifyBooking } from '../services/aiClient';
 import { logEvent } from '../services/Analytics';
 import { toast } from '../components/Toast';
+import ContactActions from '../components/ContactActions';
 import { MAPS_API_KEY } from '../config';
 
 // Live traffic on a suggested route (from Google Directions)
@@ -1044,13 +1045,9 @@ export default function TransportScreen({ route, navigation }) {
                       driverRating ? `★ ${driverRating.avg.toFixed(1)} (${driverRating.n})` : 'New driver'].filter(Boolean).join('  •  ')}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.callDriverButton}
-                  onPress={() => Linking.openURL(`tel:${assignedDriver?.phone || ''}`)}
-                >
-                  <Ionicons name="call" size={20} color="#006A3B" />
-                </TouchableOpacity>
               </View>
+
+              <ContactActions name={assignedDriver?.name || 'your driver'} phone={assignedDriver?.phone} appCall={{ calleeId: activeBooking?.demoDriver ? null : activeBooking?.driverId, contextType: 'booking', contextId: activeBooking?.id }} style={{ marginTop: 12 }} />
 
               <View style={styles.fareRow}>
                 <Text style={styles.fareLabel}>{i18n.t('ui_estimated_fare')}</Text>

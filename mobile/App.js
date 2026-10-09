@@ -16,6 +16,7 @@ import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outf
 import { OfflineQueue } from './services/OfflineQueue';
 import { ToastHost } from './components/Toast';
 import { DialogHost } from './components/Dialog';
+import CallHost from './components/CallHost';
 import { NotificationService } from './services/NotificationService';
 // Registers the background geofencing task; must run at start-up
 import './services/GeofenceService';
@@ -362,6 +363,7 @@ export default function App() {
         </NavigationContainer>
         <ToastHost />
         <DialogHost />
+        <CallHost />
       </PaperProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

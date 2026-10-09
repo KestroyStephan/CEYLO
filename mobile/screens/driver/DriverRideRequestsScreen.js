@@ -17,6 +17,7 @@ import { stopLocationTracking } from '../../services/DriverLocationService';
 import { notifyBooking } from '../../services/aiClient';
 import { nearbyOfType, openDirections, fmtKm } from '../../services/places';
 import { MAPS_API_KEY } from '../../config';
+import ContactActions from '../../components/ContactActions';
 
 export default function DriverRideRequestsScreen({ navigation }) {
   const { t } = useTranslation();
@@ -291,15 +292,7 @@ export default function DriverRideRequestsScreen({ navigation }) {
           <Text style={styles.customerName}>
             {activeRide?.userName || 'Customer'}
           </Text>
-          <TouchableOpacity 
-            style={styles.callButton}
-            onPress={() => Linking.openURL(`tel:${activeRide?.userPhone || ''}`)}
-          >
-            <Ionicons name="call-outline" size={16} color="#006A3B" />
-            <Text style={styles.callButtonText}>
-              {activeRide?.userPhone || 'No phone number'}
-            </Text>
-          </TouchableOpacity>
+          <ContactActions name={activeRide?.userName || 'the rider'} phone={activeRide?.userPhone} appCall={{ calleeId: activeRide?.userId, contextType: 'booking', contextId: activeRide?.id }} style={{ marginTop: 8 }} />
 
           <View style={styles.divider} />
 

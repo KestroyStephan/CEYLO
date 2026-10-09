@@ -9,6 +9,7 @@ import PayButton from '../components/PayButton';
 import { db } from '../firebaseConfig';
 import { notifyBooking } from '../services/aiClient';
 import PersonAvatar from '../components/PersonAvatar';
+import ContactActions, { getPartnerPhone } from '../components/ContactActions';
 
 const { width } = Dimensions.get('window');
 
@@ -18,6 +19,7 @@ export default function WaitingApprovalScreen({ route, navigation }) {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
+  const [guidePhone, setGuidePhone] = useState(null);
 
   // After 15 minutes without a reply, offer other guides (Sprint 3)
   useEffect(() => {
@@ -65,6 +67,18 @@ export default function WaitingApprovalScreen({ route, navigation }) {
 
   const handleFindAnother = () => {
     navigation.navigate('GuidesList');
+  };
+
+  // The guide's number is shown only after they accept
+  const guideId = booking?.guideId;
+  const contactOpen = ['accepted', 'confirmed', 'in_progress'].includes(booking?.status);
+  useEffect(() => {
+    if (contactOpen && guideId && !guidePhone) getPartnerPhone(guideId).then(setGuidePhone);
+  }, [contactOpen, guideId]);
+  const openChat = () => {
+    if (!booking) return;
+    const tId = booking.touristId || booking.userId;
+    navigation.navigate('MessageScreen', { chatId: `${tId}_${booking.guideId}`, recipientName: guideName });
   };
 
   if (loading) {
@@ -141,20 +155,27 @@ export default function WaitingApprovalScreen({ route, navigation }) {
               <MaterialCommunityIcons name="check-circle-outline" size={18} color="#FFF" />
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              style={[styles.secondaryBtn, { marginTop: 12, flexDirection: 'row', gap: 8, width: '100%' }]} 
-              onPress={() => {
-                if (booking) {
-                  const tId = booking.touristId || booking.userId;
-                  const gId = booking.guideId || 'demo';
-                  const combinedChatId = `${tId}_${gId}`;
-                  console.log("WaitingApprovalScreen navigating to chat:", combinedChatId);
-                  navigation.navigate('MessageScreen', { chatId: combinedChatId, recipientName: guideName });
-                }
-              }}
-            >
-              <MaterialCommunityIcons name="message-text-outline" size={18} color="#006A3B" />
-              <Text style={styles.secondaryBtnText}>{i18n.t('ui_message_guide')}</Text>
+            <ContactActions name={guideName} phone={guidePhone} onChat={openChat} appCall={{ calleeId: booking?.guideId, contextType: 'booking', contextId: bookingId }} style={{ alignSelf: 'stretch', marginTop: 12 }} />
+          </>
+        )}
+
+        {status === 'in_progress' && (
+          <>
+            <MaterialCommunityIcons name="map-marker-path" size={60} color="#006A3B" style={styles.icon} />
+            <Text style={styles.title}>Your tour has started</Text>
+            <Text style={styles.subtitle}>{guideName} has started the tour. Enjoy the day, and keep this screen to reach your guide.</Text>
+            <ContactActions name={guideName} phone={guidePhone} onChat={openChat} appCall={{ calleeId: booking?.guideId, contextType: 'booking', contextId: bookingId }} style={{ alignSelf: 'stretch', marginTop: 4 }} />
+          </>
+        )}
+
+        {status === 'completed' && (
+          <>
+            <MaterialCommunityIcons name="star-circle" size={60} color="#D9891F" style={styles.icon} />
+            <Text style={styles.title}>Tour completed</Text>
+            <Text style={styles.subtitle}>Thank you for touring with {guideName}. A short review helps other travellers and supports local guides.</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.navigate('GuideProfile', { guide: { id: booking?.guideId, name: guideName, photoUrl: guidePhoto } })}>
+              <Text style={styles.primaryBtnText}>Rate your guide</Text>
+              <MaterialCommunityIcons name="star-outline" size={18} color="#FFF" />
             </TouchableOpacity>
           </>
         )}

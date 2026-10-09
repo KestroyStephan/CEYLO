@@ -454,3 +454,38 @@ describe('marketplace', () => {
     await assertSucceeds(getDocs(collectionGroup(t, 'products')));
   });
 });
+
+describe('in-app calls', () => {
+  const call = (over = {}) => ({
+    callerId: 'tourist1', callerName: 'T', calleeId: 'guide1', calleeName: 'G',
+    contextType: 'booking', contextId: 'b1', status: 'ringing', ...over,
+  });
+
+  test('a tourist can call the guide on their booking', async () => {
+    await seed({ 'bookings/b1': { userId: 'tourist1', touristId: 'tourist1', guideId: 'guide1', status: 'accepted' } });
+    await assertSucceeds(addDoc(collection(as('tourist1'), 'calls'), call()));
+  });
+
+  test('a tourist can call the vendor on their order', async () => {
+    await seed({ 'orders/o1': { touristId: 'tourist1', vendorId: 'vendor1', status: 'accepted' } });
+    await assertSucceeds(addDoc(collection(as('tourist1'), 'calls'), call({ calleeId: 'vendor1', contextType: 'order', contextId: 'o1' })));
+  });
+
+  test('nobody can call a stranger or call as someone else', async () => {
+    await seed({ 'bookings/b1': { userId: 'tourist1', guideId: 'guide1' } });
+    await assertFails(addDoc(collection(as('tourist1'), 'calls'), call({ calleeId: 'stranger' })));
+    await assertFails(addDoc(collection(as('stranger'), 'calls'), call({ callerId: 'stranger' })));
+    await assertFails(addDoc(collection(as('stranger'), 'calls'), call()));
+    await assertFails(addDoc(collection(as('tourist1'), 'calls'), call({ contextId: 'missing' })));
+  });
+
+  test('only the two people on the call can read and answer it', async () => {
+    await seed({ 'calls/c1': call() });
+    await assertSucceeds(getDoc(doc(as('guide1'), 'calls', 'c1')));
+    await assertFails(getDoc(doc(as('stranger'), 'calls', 'c1')));
+    await assertFails(updateDoc(doc(as('stranger'), 'calls', 'c1'), { status: 'accepted' }));
+    await assertFails(updateDoc(doc(as('guide1'), 'calls', 'c1'), { calleeId: 'stranger' }));
+    await assertSucceeds(updateDoc(doc(as('guide1'), 'calls', 'c1'), { status: 'accepted' }));
+    await assertSucceeds(updateDoc(doc(as('tourist1'), 'calls', 'c1'), { status: 'ended', durationSec: 42 }));
+  });
+});

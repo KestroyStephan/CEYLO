@@ -14,6 +14,7 @@ import GuideServicesScreen from '../screens/GuideServicesScreen';
 import MapScreen from '../screens/MapScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import MessageScreen from '../screens/MessageScreen';
+import GuideEarningsScreen from '../screens/GuideEarningsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -26,6 +27,7 @@ function GuideHomeStack() {
       <Stack.Screen name="GuideServices" component={GuideServicesScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="MessageScreen" component={MessageScreen} />
+      <Stack.Screen name="GuideEarnings" component={GuideEarningsScreen} />
     </Stack.Navigator>
   );
 }

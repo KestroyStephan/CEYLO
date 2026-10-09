@@ -340,6 +340,16 @@ export default function GuideDashboard({ navigation }) {
           </TouchableOpacity>
         ))}
 
+        {/* ─── Earnings and reviews ─── */}
+        <TouchableOpacity style={styles.bizCard} onPress={() => navigation.navigate('GuideEarnings')} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="wallet-outline" size={26} color="#006A3B" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bizTitle}>Earnings & reviews</Text>
+            <Text style={styles.bizSub}>Completed tours, paid vs cash, and what tourists say</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color="#6B7A75" />
+        </TouchableOpacity>
+
         {/* ─── Manage Offerings CTA ─── */}
         <LinearGradient colors={['#006A3B', '#004D2C']} style={styles.offeringsCard}>
           <MaterialCommunityIcons name="leaf" size={40} color="rgba(255,255,255,0.15)" style={styles.offeringsLeaf} />
@@ -423,6 +433,9 @@ export default function GuideDashboard({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  bizCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 18, padding: 16, marginHorizontal: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E3ECE6' },
+  bizTitle: { fontSize: 16, fontFamily: 'Outfit-Bold', color: '#1A2E1A' },
+  bizSub: { fontSize: 12, fontFamily: 'Outfit-Regular', color: '#5B6B66', marginTop: 2 },
   container: { flex: 1, backgroundColor: '#F4F7F4' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F4F7F4' },
   body: { paddingHorizontal: 20, paddingBottom: 100 },

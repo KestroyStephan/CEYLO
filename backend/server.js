@@ -149,66 +149,78 @@ app.get('/api/weather', async (req, res) => {
     res.json(weather);
 });
 
-// Chatbot code modification
-
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
-
-app.post('/api/chat', aiLimiter, async (req, res) => {
+// Chatbot: runs on CEYLO's trained model (intent classifier + trip planner)
+app.post('/api/chat', aiLimiter, (req, res) => {
     const { message, state } = req.body || {};
     if (typeof message !== 'string' || !message.trim()) {
         return res.status(400).json({ error: 'message is required' });
     }
-
-    // previous code
-    // const result = timed('chatbot', () => reply(message.slice(0, 1000), state && typeof state === 'object' ? state : {}));
-    // res.json({ model: 'ceylo-intent-classifier', result });
-
-    // Parameters: the tourist's trip details from the app
-    const trip = state && typeof state === 'object' ? state : {};
-    const destination = trip.destination || 'not decided yet';
-    const mood = trip.mood || 'not decided yet';
-    const days = trip.days || 'not decided yet';
-    const budget = trip.budget || 'not decided yet';
-
-    // Instructions for the model: tourism questions only
-    const systemPrompt = `You are Ceylo, a friendly travel assistant for tourists in Sri Lanka.
-Only answer questions about travel and tourism in Sri Lanka: places, trip plans, culture, festivals, food, transport, hotels, safety, weather, money and visas.
-If the question is not about travel or tourism, reply with one polite sentence saying you can only help with Sri Lanka travel, and nothing else.
-Use simple English and keep the answer under 80 words. Do not invent prices, phone numbers or hospitals.
-For emergencies tell them to press the SOS button or call 1990 (ambulance) or 119 (police).
-The tourist's trip: destination ${destination}, mood ${mood}, days ${days}, budget ${budget}.
-Answer only the tourist's latest message.`;
-
-    try {
-        const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: OLLAMA_MODEL,
-                stream: false,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: message.slice(0, 1000) },
-                ],
-            }),
-        });
-        const data = await response.json();
-        const answer = data.message ? data.message.content.trim() : '';
-        if (!answer) {
-            throw new Error(data.error || 'empty answer from Ollama');
-        }
-
-        // Same shape the app's chatbot screen expects
-        res.json({ model: OLLAMA_MODEL, result: { resp: answer, extractedState: trip, isReady: false, ui_options: [] } });
-    } catch (error) {
-        console.log('Ollama error:', error.message);
-        res.json({
-            model: OLLAMA_MODEL,
-            result: { resp: 'Sorry, the travel assistant is not available right now. Please try again in a moment.', extractedState: trip, isReady: false, ui_options: [] },
-        });
-    }
+    const result = timed('chatbot', () => reply(message.slice(0, 1000), state && typeof state === 'object' ? state : {}));
+    res.json({ model: 'ceylo-intent-classifier', result });
 });
+
+// Ollama (Llama 3) chatbot - turned off, the trained model above is used instead.
+// To use it again: comment out the route above and uncomment the code below.
+// // Chatbot code modification
+//
+// const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
+// const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+//
+// app.post('/api/chat', aiLimiter, async (req, res) => {
+//     const { message, state } = req.body || {};
+//     if (typeof message !== 'string' || !message.trim()) {
+//         return res.status(400).json({ error: 'message is required' });
+//     }
+//
+//     // previous code
+//     // const result = timed('chatbot', () => reply(message.slice(0, 1000), state && typeof state === 'object' ? state : {}));
+//     // res.json({ model: 'ceylo-intent-classifier', result });
+//
+//     // Parameters: the tourist's trip details from the app
+//     const trip = state && typeof state === 'object' ? state : {};
+//     const destination = trip.destination || 'not decided yet';
+//     const mood = trip.mood || 'not decided yet';
+//     const days = trip.days || 'not decided yet';
+//     const budget = trip.budget || 'not decided yet';
+//
+//     // Instructions for the model: tourism questions only
+//     const systemPrompt = `You are Ceylo, a friendly travel assistant for tourists in Sri Lanka.
+// Only answer questions about travel and tourism in Sri Lanka: places, trip plans, culture, festivals, food, transport, hotels, safety, weather, money and visas.
+// If the question is not about travel or tourism, reply with one polite sentence saying you can only help with Sri Lanka travel, and nothing else.
+// Use simple English and keep the answer under 80 words. Do not invent prices, phone numbers or hospitals.
+// For emergencies tell them to press the SOS button or call 1990 (ambulance) or 119 (police).
+// The tourist's trip: destination ${destination}, mood ${mood}, days ${days}, budget ${budget}.
+// Answer only the tourist's latest message.`;
+//
+//     try {
+//         const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({
+//                 model: OLLAMA_MODEL,
+//                 stream: false,
+//                 messages: [
+//                     { role: 'system', content: systemPrompt },
+//                     { role: 'user', content: message.slice(0, 1000) },
+//                 ],
+//             }),
+//         });
+//         const data = await response.json();
+//         const answer = data.message ? data.message.content.trim() : '';
+//         if (!answer) {
+//             throw new Error(data.error || 'empty answer from Ollama');
+//         }
+//
+//         // Same shape the app's chatbot screen expects
+//         res.json({ model: OLLAMA_MODEL, result: { resp: answer, extractedState: trip, isReady: false, ui_options: [] } });
+//     } catch (error) {
+//         console.log('Ollama error:', error.message);
+//         res.json({
+//             model: OLLAMA_MODEL,
+//             result: { resp: 'Sorry, the travel assistant is not available right now. Please try again in a moment.', extractedState: trip, isReady: false, ui_options: [] },
+//         });
+//     }
+// });
 
 // Destination facts, nearby places and the eco model's sustainability breakdown
 app.post('/api/insights', (req, res) => {
@@ -388,6 +400,57 @@ app.post('/api/notify-booking', requireAuth, async (req, res) => {
         res.json({ sent: 1, ticket: data.data || null });
     } catch (e) {
         res.status(502).json({ error: 'Notification failed: ' + e.message });
+    }
+});
+
+// In-app voice calls (Agora). The app writes calls/{callId}; the security rules allow a call only
+// between two people on the same booking or order, and readDoc() runs with the caller's own
+// token, so only the two people on a call get its Agora token or can ring the other phone.
+// AGORA_APP_CERTIFICATE (Render env only) is needed when the Agora project uses tokens.
+const AGORA_APP_ID = process.env.AGORA_APP_ID || '9b2ecc9f5f46409fa28e65940fa84c3e';
+const CALL_TOKEN_SECONDS = 2 * 60 * 60;
+
+app.post('/api/call/token', requireAuth, async (req, res) => {
+    const callId = String(req.body?.callId || '');
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(callId)) return res.status(400).json({ error: 'callId is required' });
+    try {
+        const call = await readDoc(`calls/${callId}`, req.idToken);
+        if (!call) return res.status(404).json({ error: 'Call not found' });
+        if (req.uid !== call.callerId && req.uid !== call.calleeId) return res.status(403).json({ error: 'Not part of this call' });
+        const cert = process.env.AGORA_APP_CERTIFICATE;
+        let token = '';
+        if (cert) {
+            const { RtcTokenBuilder, RtcRole } = require('agora-token');
+            token = RtcTokenBuilder.buildTokenWithUid(AGORA_APP_ID, cert, callId, 0, RtcRole.PUBLISHER, CALL_TOKEN_SECONDS, CALL_TOKEN_SECONDS);
+        }
+        res.json({ appId: AGORA_APP_ID, channel: callId, token });
+    } catch (e) {
+        res.status(502).json({ error: 'Could not prepare the call: ' + e.message });
+    }
+});
+
+app.post('/api/call/notify', requireAuth, async (req, res) => {
+    const callId = String(req.body?.callId || '');
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(callId)) return res.status(400).json({ error: 'callId is required' });
+    try {
+        const call = await readDoc(`calls/${callId}`, req.idToken);
+        if (!call || call.callerId !== req.uid) return res.status(403).json({ error: 'Only the caller can ring' });
+        const tokenDoc = await readDoc(`push_tokens/${call.calleeId}`, req.idToken);
+        const to = tokenDoc?.token;
+        if (!to || !String(to).startsWith('ExponentPushToken')) return res.json({ sent: 0, reason: 'no push token' });
+        await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to, sound: 'default', priority: 'high', ttl: 40,
+                title: `Incoming call from ${call.callerName || 'CEYLO'}`,
+                body: 'Open CEYLO to answer.',
+                data: { type: 'incoming_call', callId },
+            }),
+        });
+        res.json({ sent: 1 });
+    } catch (e) {
+        res.status(502).json({ error: 'Could not ring: ' + e.message });
     }
 });
 

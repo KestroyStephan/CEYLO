@@ -26,3 +26,7 @@ export const MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
   || Constants.expoConfig?.extra?.mapsApiKey   // copied from app.json by app.config.js
   || Constants.expoConfig?.android?.config?.googleMaps?.apiKey
   || '';
+
+// Agora project for in-app voice calls (the App ID is a public identifier, not a secret; the
+// App Certificate stays on the backend only). EXPO_PUBLIC_AGORA_APP_ID overrides it.
+export const AGORA_APP_ID = process.env.EXPO_PUBLIC_AGORA_APP_ID || '9b2ecc9f5f46409fa28e65940fa84c3e';

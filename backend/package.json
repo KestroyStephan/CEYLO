@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "agora-token": "2.0.6",
     "cors": "^2.8.6",
     "csv-parser": "^3.2.1",
     "express": "^5.2.1",

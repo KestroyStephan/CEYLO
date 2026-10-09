@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, auth } from '../firebaseConfig';
-import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { notifyBooking } from '../services/aiClient';
 import { toast } from '../components/Toast';
 import PersonAvatar from '../components/PersonAvatar';
+import ContactActions from '../components/ContactActions';
 
 const TYPE_COLORS = {
   'HERITAGE TOUR': '#6A1B9A',
@@ -15,6 +16,11 @@ const TYPE_COLORS = {
   'MARINE DIVE': '#00838F',
   'GUIDED TOUR': '#006A3B',
   'ADVENTURE': '#D84315',
+};
+
+// How a real guided tour moves: request -> accepted -> (tourist confirms) -> on tour -> completed
+const STATUS_LABEL = {
+  pending: 'NEW REQUEST', accepted: 'ACCEPTED', confirmed: 'CONFIRMED', in_progress: 'ON TOUR', completed: 'COMPLETED',
 };
 
 export default function GuideBookingsScreen({ route, navigation }) {
@@ -44,7 +50,7 @@ export default function GuideBookingsScreen({ route, navigation }) {
   const filteredBookings = bookings.filter(b => {
     if (filter === 'all') return true;
     if (filter === 'pending') return b.status === 'pending';
-    if (filter === 'upcoming') return b.status === 'accepted' || b.status === 'confirmed';
+    if (filter === 'upcoming') return ['accepted', 'confirmed', 'in_progress'].includes(b.status);
     if (filter === 'past') return b.status === 'completed';
     return true;
   });
@@ -55,7 +61,10 @@ export default function GuideBookingsScreen({ route, navigation }) {
       <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => setSelectedBooking(item)}>
         <PersonAvatar uri={item.touristPhoto} name={item.touristName || item.userName} size={56} style={styles.cardImg} />
         <View style={styles.cardBody}>
-          <Text style={[styles.type, { color: TYPE_COLORS[type] || '#006A3B' }]}>{type}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Text style={[styles.type, { color: TYPE_COLORS[type] || '#006A3B', marginBottom: 0 }]}>{type}</Text>
+            {STATUS_LABEL[item.status] ? <Text style={[styles.statusChip, item.status === 'in_progress' && styles.statusChipLive]}>{STATUS_LABEL[item.status]}</Text> : null}
+          </View>
           <Text style={styles.title}>{item.tourTitle || `Tour with ${item.touristName}`}</Text>
           <View style={styles.metaRow}>
             <MaterialCommunityIcons name="calendar-clock" size={14} color="#8A9E8A" />
@@ -76,20 +85,17 @@ export default function GuideBookingsScreen({ route, navigation }) {
   const handleUpdateStatus = async (status) => {
     if (!selectedBooking) return;
     try {
-      await updateDoc(doc(db, 'bookings', selectedBooking.id), { status });
+      const stamps = status === 'in_progress' ? { startedAt: serverTimestamp() }
+        : status === 'completed' ? { completedAt: serverTimestamp() } : {};
+      await updateDoc(doc(db, 'bookings', selectedBooking.id), { status, ...stamps });
+      if (status === 'in_progress') toast.success('Tour started', 'The tourist can see the tour has begun.');
+      if (status === 'completed') toast.success('Tour completed', 'The tourist will be asked to rate the tour.');
       notifyBooking(selectedBooking.id);
       const currentBooking = selectedBooking;
       setSelectedBooking(null);
       
       if (status === 'accepted') {
-        const tId = currentBooking.touristId || currentBooking.userId;
-        const gId = currentBooking.guideId || 'demo';
-        const combinedChatId = `${tId}_${gId}`;
-        console.log("GuideBookingsScreen accepted navigating to chat:", combinedChatId);
-        navigation.navigate('MessageScreen', { 
-          chatId: combinedChatId, 
-          recipientName: currentBooking.touristName 
-        });
+        toast.success('Booking accepted', `You can now call or message ${currentBooking.touristName || 'the tourist'} from the booking.`);
       }
     } catch (e) {
       console.error(e);
@@ -150,7 +156,9 @@ export default function GuideBookingsScreen({ route, navigation }) {
                 <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Date:</Text> {selectedBooking.selectedDate || selectedBooking.tourDate}</Text>
                 <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Persons:</Text> {selectedBooking.explorers || selectedBooking.groupSize || 1}</Text>
                 <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Cost:</Text> ${selectedBooking.totalAmount || selectedBooking.packageCost}</Text>
-                <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Location:</Text> {selectedBooking.pickupLocation || 'Not specified'}</Text>
+                <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Meeting point:</Text> {selectedBooking.pickupLocation || 'Not specified'}</Text>
+                <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Payment:</Text> {selectedBooking.paymentStatus === 'paid' ? 'Paid online' : 'Pay on the day'}</Text>
+                <Text style={styles.modalText}><Text style={{fontFamily: 'Outfit-Bold'}}>Status:</Text> {STATUS_LABEL[selectedBooking.status] || selectedBooking.status}</Text>
 
                 {selectedBooking.status === 'pending' && (
                   <View style={styles.modalActions}>
@@ -163,26 +171,35 @@ export default function GuideBookingsScreen({ route, navigation }) {
                   </View>
                 )}
 
-                {(selectedBooking.status === 'accepted' || selectedBooking.status === 'confirmed') && (
+                {['accepted', 'confirmed', 'in_progress'].includes(selectedBooking.status) && (
                   <View style={styles.modalActions}>
-                    <TouchableOpacity 
-                      style={[styles.actionBtn, { backgroundColor: '#006A3B', flexDirection: 'row', gap: 8 }]} 
-                      onPress={() => {
-                        const currentBooking = selectedBooking;
+                    <Text style={styles.contactLabel}>Contact {selectedBooking.touristName || 'the tourist'}</Text>
+                    <ContactActions
+                      name={selectedBooking.touristName}
+                      phone={selectedBooking.touristPhone}
+                      appCall={{ calleeId: selectedBooking.touristId || selectedBooking.userId, contextType: 'booking', contextId: selectedBooking.id }}
+                      onChat={() => {
+                        const b = selectedBooking;
                         setSelectedBooking(null);
-                        const tId = currentBooking.touristId || currentBooking.userId;
-                        const gId = currentBooking.guideId || 'demo';
-                        const combinedChatId = `${tId}_${gId}`;
-                        console.log("GuideBookingsScreen modal navigating to chat:", combinedChatId);
-                        navigation.navigate('MessageScreen', { 
-                          chatId: combinedChatId, 
-                          recipientName: currentBooking.touristName 
-                        });
+                        navigation.navigate('MessageScreen', { chatId: `${b.touristId || b.userId}_${b.guideId}`, recipientName: b.touristName });
                       }}
-                    >
-                      <MaterialCommunityIcons name="message-text" size={20} color="#FFF" />
-                      <Text style={styles.actionBtnText}>Message Tourist</Text>
-                    </TouchableOpacity>
+                    />
+                    {selectedBooking.status === 'in_progress' ? (
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#B26A00', marginTop: 12, flexDirection: 'row', gap: 8, justifyContent: 'center' }]}
+                        onPress={() => Alert.alert('Complete this tour?', 'The tourist will be asked to rate the tour.', [
+                          { text: 'Not yet', style: 'cancel' },
+                          { text: 'Complete tour', onPress: () => handleUpdateStatus('completed') },
+                        ])}>
+                        <MaterialCommunityIcons name="flag-checkered" size={20} color="#FFF" />
+                        <Text style={styles.actionBtnText}>Complete tour</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#006A3B', marginTop: 12, flexDirection: 'row', gap: 8, justifyContent: 'center' }]}
+                        onPress={() => handleUpdateStatus('in_progress')}>
+                        <MaterialCommunityIcons name="play-circle-outline" size={20} color="#FFF" />
+                        <Text style={styles.actionBtnText}>Start tour (guests met)</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
 
@@ -235,5 +252,8 @@ const styles = StyleSheet.create({
   actionBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   actionBtnText: { color: '#FFF', fontSize: 15, fontFamily: 'Outfit-Bold' },
   closeModalBtn: { marginTop: 10, paddingVertical: 14, alignItems: 'center' },
+  contactLabel: { fontSize: 13, fontFamily: 'Outfit-SemiBold', color: '#4A5E4A', marginBottom: 8 },
+  statusChip: { fontSize: 9, fontFamily: 'Outfit-Bold', color: '#00695C', backgroundColor: '#E3F0EA', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+  statusChipLive: { color: '#FFFFFF', backgroundColor: '#B26A00' },
   closeModalText: { color: '#6B7B6B', fontSize: 15, fontFamily: 'Outfit-Medium' }
 });

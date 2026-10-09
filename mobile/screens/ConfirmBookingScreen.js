@@ -12,6 +12,7 @@ import { db, auth } from '../firebaseConfig';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { getMyPhone } from '../components/ContactActions';
 import { toast } from '../components/Toast';
 import PersonAvatar from '../components/PersonAvatar';
 
@@ -137,6 +138,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
     }
     setLoading(true);
     try {
+      const touristPhone = await getMyPhone(); // so the guide can call once they accept
       const bookingRef = await addDoc(collection(db, 'bookings'), {
         type: 'guide',
         guideId: guide?.id,
@@ -146,6 +148,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
         userId: auth.currentUser.uid,
         touristName: auth.currentUser.displayName || 'Explorer',
         touristPhoto: auth.currentUser.photoURL || null,
+        touristPhone,
         status: 'pending',
         packageCost: hasPrice ? baseRatePerPerson : null,
         explorers,

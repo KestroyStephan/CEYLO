@@ -352,6 +352,39 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isSignedIn();
     }
+    // In-app voice calls: only between the two people on the same booking or order
+    match /calls/{callId} {
+      function onBooking(id, a, b) {
+        let d = get(/databases/$(database)/documents/bookings/$(id)).data;
+        let people = [d.get('userId', null), d.get('touristId', null), d.get('driverId', null),
+                      d.get('vendorId', null), d.get('guideId', null)];
+        return a in people && b in people;
+      }
+      function onOrder(id, a, b) {
+        let d = get(/databases/$(database)/documents/orders/$(id)).data;
+        let people = [d.get('touristId', null), d.get('vendorId', null)];
+        return a in people && b in people;
+      }
+      function sharedContext(data) {
+        return (data.contextType == 'booking' && exists(/databases/$(database)/documents/bookings/$(data.contextId))
+                  && onBooking(data.contextId, data.callerId, data.calleeId)) ||
+               (data.contextType == 'order' && exists(/databases/$(database)/documents/orders/$(data.contextId))
+                  && onOrder(data.contextId, data.callerId, data.calleeId));
+      }
+      allow create: if isSignedIn() && request.resource.data.callerId == request.auth.uid
+        && request.resource.data.calleeId is string
+        && request.resource.data.calleeId != request.auth.uid
+        && request.resource.data.status == 'ringing'
+        && request.resource.data.contextId is string
+        && sharedContext(request.resource.data);
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.callerId ||
+        request.auth.uid == resource.data.calleeId || isAdmin());
+      allow update: if isSignedIn()
+        && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.calleeId)
+        && changedKeys().hasOnly(['status', 'answeredAt', 'endedAt', 'durationSec'])
+        && request.resource.data.status in ['accepted', 'declined', 'missed', 'ended'];
+    }
+
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.touristId == request.auth.uid;
