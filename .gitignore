@@ -51,3 +51,7 @@ ai_datasets/*.csv
 AI-Powered Guide for Sustainable Eco and Cultural Tourism - Chapters 1-4.docx
 .continue/config.json
 CEYLO_Final_Presentation.pptx
+.claude/launch.json
+CEYLO_Demo_Flow.docx
+CEYLO_Viva_Preparation_Guide.docx
+backend/tests/server.test.js

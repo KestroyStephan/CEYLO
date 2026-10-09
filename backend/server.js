@@ -149,15 +149,65 @@ app.get('/api/weather', async (req, res) => {
     res.json(weather);
 });
 
-// Concierge chatbot, run by the trained intent classifier (no external AI service).
-// Body: { message: string, state?: { destination, days, budget, mood, awaiting } }
-app.post('/api/chat', aiLimiter, (req, res) => {
+// Chatbot code modification
+
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+
+app.post('/api/chat', aiLimiter, async (req, res) => {
     const { message, state } = req.body || {};
     if (typeof message !== 'string' || !message.trim()) {
         return res.status(400).json({ error: 'message is required' });
     }
-    const result = timed('chatbot', () => reply(message.slice(0, 1000), state && typeof state === 'object' ? state : {}));
-    res.json({ model: 'ceylo-intent-classifier', result });
+
+    // previous code
+    // const result = timed('chatbot', () => reply(message.slice(0, 1000), state && typeof state === 'object' ? state : {}));
+    // res.json({ model: 'ceylo-intent-classifier', result });
+
+    // Parameters: the tourist's trip details from the app
+    const trip = state && typeof state === 'object' ? state : {};
+    const destination = trip.destination || 'not decided yet';
+    const mood = trip.mood || 'not decided yet';
+    const days = trip.days || 'not decided yet';
+    const budget = trip.budget || 'not decided yet';
+
+    // Instructions for the model: tourism questions only
+    const systemPrompt = `You are Ceylo, a friendly travel assistant for tourists in Sri Lanka.
+Only answer questions about travel and tourism in Sri Lanka: places, trip plans, culture, festivals, food, transport, hotels, safety, weather, money and visas.
+If the question is not about travel or tourism, reply with one polite sentence saying you can only help with Sri Lanka travel, and nothing else.
+Use simple English and keep the answer under 80 words. Do not invent prices, phone numbers or hospitals.
+For emergencies tell them to press the SOS button or call 1990 (ambulance) or 119 (police).
+The tourist's trip: destination ${destination}, mood ${mood}, days ${days}, budget ${budget}.
+Answer only the tourist's latest message.`;
+
+    try {
+        const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: OLLAMA_MODEL,
+                stream: false,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: message.slice(0, 1000) },
+                ],
+            }),
+        });
+        const data = await response.json();
+        const answer = data.message ? data.message.content.trim() : '';
+        if (!answer) {
+            throw new Error(data.error || 'empty answer from Ollama');
+        }
+
+        // Same shape the app's chatbot screen expects
+        res.json({ model: OLLAMA_MODEL, result: { resp: answer, extractedState: trip, isReady: false, ui_options: [] } });
+    } catch (error) {
+        console.log('Ollama error:', error.message);
+        res.json({
+            model: OLLAMA_MODEL,
+            result: { resp: 'Sorry, the travel assistant is not available right now. Please try again in a moment.', extractedState: trip, isReady: false, ui_options: [] },
+        });
+    }
 });
 
 // Destination facts, nearby places and the eco model's sustainability breakdown
